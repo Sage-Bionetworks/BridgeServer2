@@ -49,13 +49,14 @@ public class AdherenceReportSearchValidator extends AbstractValidator {
         }
         Integer adherenceMin = search.getAdherenceMin();
         Integer adherenceMax = search.getAdherenceMax();
-        if (adherenceMax < adherenceMin) {
+        
+        if (adherenceMin != null && adherenceMax != null && adherenceMax < adherenceMin) {
             errors.rejectValue("adherenceMax", ADHERENCE_RANGE_ORDER_ERROR);
         }
-        if ((adherenceMin < 0 ||  adherenceMin > 100)) {
+        if (adherenceMin != null && (adherenceMin < 0 ||  adherenceMin > 100)) {
             errors.rejectValue("adherenceMin", ADHERENCE_RANGE_ERROR);   
         }
-        if ((adherenceMax < 0 ||  adherenceMax > 100)) {
+        if (adherenceMax != null && (adherenceMax < 0 ||  adherenceMax > 100)) {
             errors.rejectValue("adherenceMax", ADHERENCE_RANGE_ERROR);   
         }
     }

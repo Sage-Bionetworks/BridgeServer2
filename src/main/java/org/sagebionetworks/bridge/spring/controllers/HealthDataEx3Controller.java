@@ -24,6 +24,7 @@ import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordEx3;
 import org.sagebionetworks.bridge.services.HealthDataEx3Service;
 import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.models.accounts.UserSession;
 
 /**
  * This controller exposes the Exporter 3 implementation of Health Data Records. This is primarily used by the worker.
@@ -169,6 +170,46 @@ public class HealthDataEx3Controller extends BaseController {
         Integer pageSizeInt = BridgeUtils.getIntegerOrDefault(pageSize, null);
         return healthDataEx3Service.getRecordsForAppAndStudy(appId, studyId, createdOnStartDateTime,
                 createdOnEndDateTime, pageSizeInt, offsetKey)
+                .withRequestParam(ResourceList.START_TIME, createdOnStart)
+                .withRequestParam(ResourceList.END_TIME, createdOnEnd)
+                .withRequestParam(ResourceList.PAGE_SIZE, pageSizeInt)
+                .withRequestParam(ResourceList.OFFSET_KEY, offsetKey);
+    }
+
+    /** Retrieves the record for the given ID for self. */
+    @GetMapping(path="/v3/participants/self/exporter3/healthdata/{recordId}")
+    public HealthDataRecordEx3 getRecordForSelf(@PathVariable String recordId) {
+        UserSession session = getAuthenticatedAndConsentedSession();
+
+        HealthDataRecordEx3 record = healthDataEx3Service.getRecord(recordId).orElseThrow(() ->
+                new EntityNotFoundException(HealthDataRecordEx3.class));
+
+        // Make sure the caller can only get their own health data records for this API
+        if (!session.getAppId().equals(record.getAppId()) || !session.getHealthCode().equals(record.getHealthCode())) {
+            throw new EntityNotFoundException(HealthDataRecordEx3.class);
+        }
+
+        // Write record ID into the metrics, for logging and diagnostics.
+        Metrics metrics = getMetrics();
+        if (metrics != null) {
+            metrics.setRecordId(record.getId());
+        }
+
+        return record;
+    }
+
+    /** Retrieves all records for the given user and time range for self. */
+    @GetMapping(path="/v3/participants/self/exporter3/healthdata")
+    public ForwardCursorPagedResourceList<HealthDataRecordEx3> getRecordsForUserForSelf(
+            @RequestParam(required = false) String createdOnStart, @RequestParam(required = false) String createdOnEnd,
+            @RequestParam(required = false) String pageSize, @RequestParam(required = false) String offsetKey) {
+        UserSession session = getAuthenticatedAndConsentedSession();
+
+        DateTime createdOnStartDateTime = BridgeUtils.getDateTimeOrDefault(createdOnStart, null);
+        DateTime createdOnEndDateTime = BridgeUtils.getDateTimeOrDefault(createdOnEnd, null);
+        Integer pageSizeInt = BridgeUtils.getIntegerOrDefault(pageSize, null);
+        return healthDataEx3Service.getRecordsForHealthCode(session.getHealthCode(), createdOnStartDateTime, createdOnEndDateTime,
+                        pageSizeInt, offsetKey)
                 .withRequestParam(ResourceList.START_TIME, createdOnStart)
                 .withRequestParam(ResourceList.END_TIME, createdOnEnd)
                 .withRequestParam(ResourceList.PAGE_SIZE, pageSizeInt)

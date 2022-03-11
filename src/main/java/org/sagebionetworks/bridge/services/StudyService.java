@@ -25,6 +25,7 @@ import static org.sagebionetworks.bridge.models.studies.StudyPhase.RECRUITMENT;
 import static org.sagebionetworks.bridge.models.studies.StudyPhase.WITHDRAWN;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -82,11 +83,28 @@ public class StudyService {
         this.scheduleService = scheduleService;
     }
     
-    public void removeScheduleFromStudies(String appId, String scheduleGuid) {
+    public void removeStudyEtags(String appId, String scheduleGuid) {
         checkNotNull(appId);
         checkNotNull(scheduleGuid);
         
+        List<String> studyIds = studyDao.getStudyIdsUsingSchedule(appId, scheduleGuid);
+        for (String studyId : studyIds) {
+            CacheKey cacheKey = CacheKey.etag(Schedule2.class, appId, studyId);
+            cacheProvider.removeObject(cacheKey);
+        }
         studyDao.removeScheduleFromStudies(appId, scheduleGuid);
+    }
+    
+    public void updateStudyEtags(String appId, String scheduleGuid, DateTime timestamp) {
+        checkNotNull(appId);
+        checkNotNull(scheduleGuid);
+        checkNotNull(timestamp);
+        
+        List<String> studyIds = studyDao.getStudyIdsUsingSchedule(appId, scheduleGuid);
+        for (String studyId : studyIds) {
+            CacheKey cacheKey = CacheKey.etag(Schedule2.class, appId, studyId);
+            cacheProvider.setObject(cacheKey, timestamp);
+        }
     }
     
     public Study getStudy(String appId, String studyId, boolean throwsException) {
@@ -202,6 +220,7 @@ public class StudyService {
         if (!CAN_EDIT_STUDY_CORE.contains(existing.getPhase())) {
             study.setScheduleGuid(existing.getScheduleGuid());
             study.setCustomEvents(existing.getCustomEvents());
+            study.setStudyStartEventId(existing.getStudyStartEventId());
         } else if (existing.getScheduleGuid() != null) {
             study.setScheduleGuid(existing.getScheduleGuid());
         }
@@ -357,7 +376,7 @@ public class StudyService {
         
         CacheKey cacheKey = CacheKey.publicStudy(appId, studyId);
         cacheProvider.removeObject(cacheKey);
-        
+
         return study;
     }
     

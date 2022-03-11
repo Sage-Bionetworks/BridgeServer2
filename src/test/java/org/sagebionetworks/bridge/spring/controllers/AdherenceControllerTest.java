@@ -59,6 +59,7 @@ import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordList;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSearch;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamAdherenceReport;
+import org.sagebionetworks.bridge.models.schedules2.adherence.study.StudyAdherenceReport;
 import org.sagebionetworks.bridge.models.schedules2.adherence.weekly.WeeklyAdherenceReport;
 import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.AdherenceService;
@@ -658,5 +659,35 @@ public class AdherenceControllerTest extends Mockito {
             .thenReturn(Optional.empty());
 
         controller.getWeeklyAdherenceReportForWorker(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
-   }
+    }
+    
+    @Test
+    public void getStudyAdherenceReport() {
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_DESIGNER, STUDY_COORDINATOR);
+
+        Account account = Account.create();
+        when(mockAccountService.getAccount(AccountId.forId(TEST_APP_ID, TEST_USER_ID)))
+            .thenReturn(Optional.of(account));
+        
+        StudyAdherenceReport report = new StudyAdherenceReport();
+        when(mockService.getStudyAdherenceReport(TEST_APP_ID, TEST_STUDY_ID, account))
+                .thenReturn(report);
+
+        StudyAdherenceReport retValue = controller.getStudyAdherenceReport(TEST_STUDY_ID, TEST_USER_ID);
+        assertSame(retValue, report);
+        
+        verify(mockService).getStudyAdherenceReport(TEST_APP_ID, TEST_STUDY_ID, account);
+    }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class,
+            expectedExceptionsMessageRegExp = "Account not found.")
+    public void getStudyAdherenceReport_accountNotFound() {
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_DESIGNER, STUDY_COORDINATOR);
+
+        when(mockAccountService.getAccount(AccountId.forId(TEST_APP_ID, TEST_USER_ID)))
+            .thenReturn(Optional.empty());
+        
+        controller.getStudyAdherenceReport(TEST_STUDY_ID, TEST_USER_ID);
+    }
+
 }

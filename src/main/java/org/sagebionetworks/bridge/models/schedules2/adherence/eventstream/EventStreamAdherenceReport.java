@@ -5,57 +5,37 @@ import java.util.List;
 
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.json.DateTimeSerializer;
+import org.sagebionetworks.bridge.models.DateRange;
+import org.sagebionetworks.bridge.models.DayRange;
 import org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantStudyProgress;
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-@JsonPropertyOrder({ "activeOnly", "timestamp", "clientTimeZone", "adherencePercent", "dayRangeOfAllStreams",
-        "progression", "streams", "type" })
+@JsonPropertyOrder({ "timestamp", "clientTimeZone", "adherencePercent", "dayRangeOfAllStreams",
+        "dateRangeOfAllStreams", "earliestEventId", "progression", "streams", "type" })
 public class EventStreamAdherenceReport {
     
-    public static final class DayRange {
-        private final int min;
-        private final int max;
-        public DayRange(int min, int max) {
-            this.min = min;
-            this.max = max;
-        }
-        public int getMin() { return min; }
-        public int getMax() { return max; }
-    }
-    
-    private boolean activeOnly;
     private DateTime timestamp;
     private String clientTimeZone;
     private int adherencePercent = 100;
     private ParticipantStudyProgress progression;
     private List<EventStream> streams = new ArrayList<>();
+    private DayRange dayRangeOfAllStreams;
+    private DateRange dateRangeOfAllStreams;
+    private String earliestEventId;
     
     public DayRange getDayRangeOfAllStreams() {
-        if (streams.isEmpty()) {
-            return null;
-        }
-        // This can be done with streams, but I'm not convinced it's as fast. 
-        int min = Integer.MAX_VALUE;
-        int max = Integer.MIN_VALUE;
-        for (EventStream stream : streams) {
-            for (Integer i : stream.getByDayEntries().keySet()) {
-                if (i < min) {
-                    min = i;
-                }
-                if (i > max) {
-                    max = i;
-                }
-            }
-        }
-        return new DayRange(min, max);
+        return dayRangeOfAllStreams;
     }
-    public boolean isActiveOnly() {
-        return activeOnly;
+    public void setDayRangeOfAllStreams(DayRange dayRangeOfAllStreams) {
+        this.dayRangeOfAllStreams = dayRangeOfAllStreams;
     }
-    public void setActiveOnly(boolean activeOnly) {
-        this.activeOnly = activeOnly;
+    public DateRange getDateRangeOfAllStreams() {
+        return dateRangeOfAllStreams;
+    }
+    public void setDateRangeOfAllStreams(DateRange dateRangeOfAllStreams) {
+        this.dateRangeOfAllStreams = dateRangeOfAllStreams;
     }
     @JsonSerialize(using = DateTimeSerializer.class) // preserve time zone offset
     public DateTime getTimestamp() {
@@ -85,7 +65,10 @@ public class EventStreamAdherenceReport {
     public List<EventStream> getStreams() {
         return streams;
     }
-    public void setStreams(List<EventStream> streams) {
-        this.streams = streams;
+    public String getEarliestEventId() {
+        return earliestEventId;
+    }
+    public void setEarliestEventId(String earliestEventId) {
+        this.earliestEventId = earliestEventId;
     }
 }

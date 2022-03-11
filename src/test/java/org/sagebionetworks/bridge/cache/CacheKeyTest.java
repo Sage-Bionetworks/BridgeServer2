@@ -12,6 +12,7 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.models.ThrottleRequestType;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
+import org.sagebionetworks.bridge.models.schedules2.timelines.Timeline;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -28,6 +29,18 @@ public class CacheKeyTest {
     @Test(expectedExceptions = NullPointerException.class)
     public void nullsRejected() {
         CacheKey.appConfigList(null);
+    }
+    
+    @Test
+    public void etag() {
+        assertEquals(CacheKey.etag(Timeline.class, new String[] {"a", "b", "c"}).toString(),
+                "a:b:c:Timeline:Etag");
+    }
+    
+    @Test
+    public void scheduleModificationTimestamp() {
+        assertEquals(CacheKey.scheduleModificationTimestamp(TEST_APP_ID, TEST_STUDY_ID).toString(),
+                TEST_STUDY_ID + ":" + TEST_APP_ID + ":ScheduleModifiedOnByStudy");
     }
     
     @Test

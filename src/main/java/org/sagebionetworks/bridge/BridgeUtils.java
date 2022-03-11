@@ -129,6 +129,20 @@ public class BridgeUtils {
     }
     
     /**
+     * Joda time makes <= and >= comparisons somewhat tedious, so this method incorporates a 
+     * range-based test that is inclusive of both the start and end dates. Null for either value
+     * makes that side of the range unbounded.
+     */
+    public static final boolean isLocalDateInRange(LocalDate start, LocalDate end, LocalDate date) {
+        if (date == null) {
+            return false;
+        }
+        boolean onOrBefore = start == null || (start.isEqual(date) || start.isBefore(date));
+        boolean onOrAfter = end == null || (end.isEqual(date) || end.isAfter(date));
+        return onOrBefore && onOrAfter;
+    }
+    
+    /**
      * This converts the period to minutes, but only those fields that have a
      * conventional measurement in minutes (so months and years are ignored).
      */
@@ -794,6 +808,13 @@ public class BridgeUtils {
      */
     public static <T> Set<T> addToSet(Set<T> set, T item) {
         return new ImmutableSet.Builder<T>().addAll(set).add(item).build();
+    }
+    
+    /**
+     * Return a new immutable list that includes the additional item..
+     */
+    public static <T> List<T> addToList(List<T> set, T item) {
+        return new ImmutableList.Builder<T>().addAll(set).add(item).build();
     }
     
     public static boolean participantEligibleForDeletion(RequestInfoService requestInfoService, Account account) {

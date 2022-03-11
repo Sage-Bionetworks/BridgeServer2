@@ -10,6 +10,7 @@ import static org.sagebionetworks.bridge.validators.Validate.BRIDGE_RELAXED_ID_P
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_EMAIL_ERROR;
+import static org.sagebionetworks.bridge.validators.Validate.INVALID_EVENT_ID;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_PHONE_ERROR;
 import static org.sagebionetworks.bridge.validators.Validate.OWASP_REGEXP_VALID_EMAIL;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_TIME_ZONE;
@@ -23,8 +24,10 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.accounts.Phone;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEventIdsMap;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.studies.Address;
 import org.sagebionetworks.bridge.models.studies.Contact;
@@ -69,6 +72,7 @@ public class StudyValidator implements Validator {
     static final String SCHEDULE_GUID_FIELD = "scheduleGuid";
     static final String STREET_FIELD = "street";
     static final String STUDY_LOGO_URL_FIELD = "studyLogoUrl";
+    static final String STUDY_START_EVENT_ID_FIELD = "studyStartEventId";
     static final String STUDY_TIME_ZONE_FIELD = "studyTimeZone";
 
     static final String SCHEDULE_GUID_OWNER_ERROR_MSG = "is not owned by the caller’s organization";
@@ -104,6 +108,14 @@ public class StudyValidator implements Validator {
         }
         if (isBlank(study.getName())) {
             errors.rejectValue(NAME_FIELD, CANNOT_BE_BLANK);
+        }
+        if (study.getStudyStartEventId() != null) {
+            StudyActivityEventIdsMap map = new StudyActivityEventIdsMap();
+            map.addCustomEvents(study.getCustomEvents());
+            String eventId = BridgeUtils.formatActivityEventId(map, study.getStudyStartEventId());
+            if (eventId == null) {
+                errors.rejectValue(STUDY_START_EVENT_ID_FIELD, INVALID_EVENT_ID);    
+            }
         }
         validateStringLength(errors, 255, study.getName(), NAME_FIELD);
         if (study.getPhase() == null) {

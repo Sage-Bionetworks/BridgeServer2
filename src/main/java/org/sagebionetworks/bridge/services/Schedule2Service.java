@@ -22,12 +22,17 @@ import static org.sagebionetworks.bridge.validators.Schedule2Validator.INSTANCE;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import com.google.common.base.Stopwatch;
+
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dao.Schedule2Dao;
@@ -35,16 +40,23 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.PublishedEntityException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEventIdsMap;
 import org.sagebionetworks.bridge.models.schedules2.HasGuid;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.schedules2.Session;
 import org.sagebionetworks.bridge.models.schedules2.TimeWindow;
+import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceState;
+import org.sagebionetworks.bridge.models.schedules2.participantschedules.ParticipantSchedule;
+import org.sagebionetworks.bridge.models.schedules2.participantschedules.ParticipantScheduleGenerator;
 import org.sagebionetworks.bridge.models.schedules2.timelines.Scheduler;
 import org.sagebionetworks.bridge.models.schedules2.timelines.Timeline;
 import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.validators.Validate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Bridge v2 schedules. These replace the older SchedulePlans and their APIs. The 
@@ -54,10 +66,13 @@ import org.sagebionetworks.bridge.validators.Validate;
  */
 @Component
 public class Schedule2Service {
-    
+    private static final Logger LOG = LoggerFactory.getLogger(Schedule2Service.class);
+
     private OrganizationService organizationService;
     
     private StudyService studyService;
+    
+    private StudyActivityEventService studyActivityEventService;
     
     private Schedule2Dao dao;
     
@@ -69,6 +84,11 @@ public class Schedule2Service {
     @Autowired
     final void setStudyService(StudyService studyService) {
         this.studyService = studyService;
+    }
+    
+    @Autowired
+    final void setStudyActivityEventService(StudyActivityEventService studyActivityEventService) {
+        this.studyActivityEventService = studyActivityEventService;
     }
     
     @Autowired
@@ -185,11 +205,18 @@ public class Schedule2Service {
             // with keys and all, to the update API, and at some point we have to check that
             // we're talking about the same object.
             schedule.setGuid(study.getScheduleGuid());
-            return updateSchedule(study, existing, schedule);
+            schedule = updateSchedule(study, existing, schedule);
+            
+            studyService.updateStudyEtags(study.getAppId(), schedule.getGuid(), schedule.getModifiedOn());
+
+            return schedule;
         }
         schedule = createSchedule(study, schedule);
         study.setScheduleGuid(schedule.getGuid());
         studyService.updateStudy(schedule.getAppId(), study);
+        
+        studyService.updateStudyEtags(study.getAppId(), schedule.getGuid(), schedule.getModifiedOn());
+        
         return schedule;
     }
     
@@ -197,7 +224,7 @@ public class Schedule2Service {
      * Create a schedule. The schedule will be owned by the caller’s organization (unless
      * an admin or superadmin is making the call and they have specified an organization).
      */
-    public Schedule2 createSchedule(Study study, Schedule2 schedule) {
+    protected Schedule2 createSchedule(Study study, Schedule2 schedule) {
         checkNotNull(schedule);
         
         CAN_CREATE_SCHEDULES.checkAndThrow();
@@ -239,7 +266,7 @@ public class Schedule2Service {
      * Update a schedule. Will throw an exception once the schedule is published. Ownership
      * cannot be changed once a schedule is created.
      */
-    public Schedule2 updateSchedule(Study study, Schedule2 existing, Schedule2 schedule) {
+    protected Schedule2 updateSchedule(Study study, Schedule2 existing, Schedule2 schedule) {
         checkNotNull(existing);
         checkNotNull(schedule);
         
@@ -282,6 +309,9 @@ public class Schedule2Service {
         }
         existing.setPublished(true);
         existing.setModifiedOn(getModifiedOn());
+        
+        studyService.updateStudyEtags(appId, guid, existing.getModifiedOn());
+        
         return dao.updateSchedule(existing);
     }
     
@@ -289,7 +319,7 @@ public class Schedule2Service {
      * Logically delete this schedule. It is still available to callers who have a 
      * reference to the schedule.
      */
-    public void deleteSchedule(String appId, String guid) {
+    protected void deleteSchedule(String appId, String guid) {
         checkNotNull(appId);
         checkNotNull(guid);
         
@@ -299,6 +329,9 @@ public class Schedule2Service {
             throw new EntityNotFoundException(Schedule2.class);
         }
         CAN_EDIT_SCHEDULES.checkAndThrow(ORG_ID, existing.getOwnerId());
+        
+        studyService.removeStudyEtags(appId, guid);
+        
         dao.deleteSchedule(existing);
     }
     
@@ -316,7 +349,7 @@ public class Schedule2Service {
         
         CAN_EDIT_SCHEDULES.checkAndThrow(ORG_ID, existing.getOwnerId());
         
-        studyService.removeScheduleFromStudies(appId, guid);
+        studyService.removeStudyEtags(appId, guid);
         
         dao.deleteSchedulePermanently(existing);
     }
@@ -375,4 +408,42 @@ public class Schedule2Service {
             session.setStartEventIds(events);
         }
     }
+    
+    public ParticipantSchedule getParticipantSchedule(String appId, String studyId, Account account) {
+        checkNotNull(appId);
+        checkNotNull(studyId);
+        checkNotNull(account);
+        
+        Stopwatch watch = Stopwatch.createStarted();
+
+        List<StudyActivityEvent> events = studyActivityEventService.getRecentStudyActivityEvents(
+                account.getAppId(), studyId, account.getId()).getItems();
+
+        AdherenceState.Builder builder = new AdherenceState.Builder();
+        builder.withEvents(events);
+        builder.withNow(getCreatedOn());
+        builder.withClientTimeZone(DateTimeZone.getDefault().getID());
+        if (account.getClientTimeZone() != null) {
+            builder.withClientTimeZone(account.getClientTimeZone());    
+        }
+        AdherenceState state = builder.build();
+        
+        Schedule2 schedule = null;
+        ParticipantSchedule participantSchedule = null;
+        Study study = studyService.getStudy(appId, studyId, true);
+        if (study.getScheduleGuid() != null) {
+            schedule = getScheduleForStudy(appId, study).orElse(null);
+        }
+        if (schedule == null) {
+            Timeline timeline = new Timeline.Builder().build();
+            participantSchedule = ParticipantScheduleGenerator.INSTANCE.generate(state, timeline);
+        } else {
+            Timeline timeline = Scheduler.INSTANCE.calculateTimeline(schedule);
+            participantSchedule = ParticipantScheduleGenerator.INSTANCE.generate(state, timeline);
+        }
+        watch.stop();
+        LOG.info("Participant schedule took " + watch.elapsed(TimeUnit.MILLISECONDS) + "ms");
+        return participantSchedule;
+    }
+
 }

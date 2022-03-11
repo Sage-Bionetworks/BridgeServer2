@@ -38,8 +38,9 @@ public class TemplateController extends BaseController {
     }
     
     @GetMapping("/v3/templates")
-    public PagedResourceList<? extends Template> getTemplates(@RequestParam(name = "type") String templateType, 
-            @RequestParam(required = false) String offsetBy, @RequestParam(required = false) String pageSize, 
+    public PagedResourceList<? extends Template> getTemplates(
+            @RequestParam(name = "type", required = false) String templateType,
+            @RequestParam(required = false) String offsetBy, @RequestParam(required = false) String pageSize,
             @RequestParam(required = false) String includeDeleted) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         

@@ -32,6 +32,7 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.collect.ImmutableSet;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -71,7 +72,7 @@ import org.sagebionetworks.bridge.models.reports.ReportData;
 import org.sagebionetworks.bridge.models.reports.ReportDataKey;
 import org.sagebionetworks.bridge.models.reports.ReportIndex;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
-import org.sagebionetworks.bridge.models.schedules2.adherence.participantschedule.ParticipantSchedule;
+import org.sagebionetworks.bridge.models.schedules2.participantschedules.ParticipantSchedule;
 import org.sagebionetworks.bridge.models.schedules2.timelines.Timeline;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.studies.EnrollmentDetail;
@@ -84,7 +85,8 @@ import org.sagebionetworks.bridge.services.Schedule2Service;
 import org.sagebionetworks.bridge.services.StudyActivityEventService;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.UserAdminService;
-import org.sagebionetworks.bridge.services.AdherenceService;
+import org.sagebionetworks.bridge.spring.util.EtagSupport;
+import org.sagebionetworks.bridge.spring.util.EtagCacheKey;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.services.EnrollmentService;
 
@@ -126,8 +128,6 @@ public class StudyParticipantController extends BaseController {
 
     private ReportService reportService;
     
-    private AdherenceService adherenceService;
-    
     @Autowired
     final void setParticipantService(ParticipantService participantService) {
         this.participantService = participantService;
@@ -163,15 +163,14 @@ public class StudyParticipantController extends BaseController {
         this.reportService = reportService;
     }
     
-    @Autowired
-    final void setAdherenceService(AdherenceService adherenceService) {
-        this.adherenceService = adherenceService; 
-    }
-    
     DateTime getDateTime() {
         return DateTime.now();
     }
     
+    @EtagSupport({
+        // Most recent modification to the schedule
+        @EtagCacheKey(model=Schedule2.class, keys={"appId", "studyId"})
+    })
     @GetMapping("/v5/studies/{studyId}/participants/self/timeline")
     public ResponseEntity<Timeline> getTimelineForSelf(@PathVariable String studyId) {
         UserSession session = getAuthenticatedAndConsentedSession();
@@ -188,14 +187,14 @@ public class StudyParticipantController extends BaseController {
         
         Study study = studyService.getStudy(session.getAppId(), studyId, true);
         DateTime modifiedSince = modifiedSinceHeader();
-        DateTime modifiedOn = modifiedOn(studyId);
+        DateTime modifiedOn = modifiedOn(session.getAppId(), studyId);
         
         if (isUpToDate(modifiedSince, modifiedOn)) {
             return new ResponseEntity<>(NOT_MODIFIED);
         }
         Schedule2 schedule = scheduleService.getScheduleForStudy(session.getAppId(), study)
                 .orElseThrow(() -> new EntityNotFoundException(Schedule2.class));
-        cacheProvider.setObject(scheduleModificationTimestamp(studyId), schedule.getModifiedOn().toString());
+        cacheProvider.setObject(scheduleModificationTimestamp(session.getAppId(), studyId), schedule.getModifiedOn().toString());
         
         studyActivityEventService.publishEvent(new StudyActivityEvent.Builder()
                 .withAppId(session.getAppId())
@@ -211,9 +210,9 @@ public class StudyParticipantController extends BaseController {
         return getDateTimeOrDefault(request().getHeader(IF_MODIFIED_SINCE), null);
     }
 
-    private DateTime modifiedOn(String studyId) {
+    private DateTime modifiedOn(String appId, String studyId) {
         return getDateTimeOrDefault(cacheProvider.getObject(
-                scheduleModificationTimestamp(studyId), String.class), null);
+                scheduleModificationTimestamp(appId, studyId), String.class), null);
     }
     
     private boolean isUpToDate(DateTime modifiedSince, DateTime modifiedOn) {
@@ -239,6 +238,10 @@ public class StudyParticipantController extends BaseController {
         return PREPARING_ROSTER_MSG;
     }
     
+    @EtagSupport({
+        // Most recent modification to the schedule
+        @EtagCacheKey(model=Schedule2.class, keys={"appId", "studyId"})
+    })
     @GetMapping("/v5/studies/{studyId}/participants/{userId}/timeline")
     public Timeline getTimelineForUser(@PathVariable String studyId, @PathVariable String userId) {
         UserSession session = getAdministrativeSession();
@@ -255,6 +258,14 @@ public class StudyParticipantController extends BaseController {
         return scheduleService.getTimelineForSchedule(session.getAppId(), study.getScheduleGuid());
     }
     
+    @EtagSupport({
+        // Most recent modification to the schedule
+        @EtagCacheKey(model=Schedule2.class, keys={"appId", "studyId"}),
+        // Most recent modification to the participant’s collection of events
+        @EtagCacheKey(model=StudyActivityEvent.class, keys={"userId"}),
+        // Most recent modification to the participant’s time zone
+        @EtagCacheKey(model=DateTimeZone.class, keys={"userId"})
+    })
     @GetMapping("/v5/studies/{studyId}/participants/{userId}/schedule")
     public ParticipantSchedule getParticipantScheduleForUser(@PathVariable String studyId, @PathVariable String userId) {
         UserSession session = getAdministrativeSession();
@@ -263,12 +274,19 @@ public class StudyParticipantController extends BaseController {
         
         Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
         
-        return adherenceService.getParticipantSchedule(session.getAppId(), studyId, account);
+        return scheduleService.getParticipantSchedule(session.getAppId(), studyId, account);
     }
     
+    @EtagSupport({
+        // Most recent modification to the schedule
+        @EtagCacheKey(model=Schedule2.class, keys={"appId", "studyId"}),
+        // Most recent modification to the participant’s collection of events
+        @EtagCacheKey(model=StudyActivityEvent.class, keys={"userId"}),
+        // Most recent modification to the participant’s time zone
+        @EtagCacheKey(model=DateTimeZone.class, keys={"userId"})
+    })
     @GetMapping("/v5/studies/{studyId}/participants/self/schedule")
-    public ParticipantSchedule getParticipantScheduleForSelf(@PathVariable String studyId, 
-            @RequestParam(required = false) String clientTimeZone) {
+    public ParticipantSchedule getParticipantScheduleForSelf(@PathVariable String studyId) {
         UserSession session = getAuthenticatedAndConsentedSession();
         
         // This produces the desired error (unauthorized rather than 404)
@@ -279,18 +297,13 @@ public class StudyParticipantController extends BaseController {
         Account account = accountService.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
         
-        boolean updateClientTimeZone = (clientTimeZone != null && !clientTimeZone.equals(account.getClientTimeZone()));
-        if (updateClientTimeZone) {
-            account.setClientTimeZone(clientTimeZone);
-        }
-        
         // Even if the call fails, we want to know they tried it
         DateTime timelineRequestedOn = getDateTime();
         RequestInfo requestInfo = getRequestInfoBuilder(session)
                 .withTimelineAccessedOn(timelineRequestedOn).build();
         requestInfoService.updateRequestInfo(requestInfo);
         
-        ParticipantSchedule schedule = adherenceService.getParticipantSchedule(session.getAppId(), studyId, account);
+        ParticipantSchedule schedule = scheduleService.getParticipantSchedule(session.getAppId(), studyId, account);
 
         studyActivityEventService.publishEvent(new StudyActivityEvent.Builder()
                 .withAppId(session.getAppId())
@@ -298,11 +311,7 @@ public class StudyParticipantController extends BaseController {
                 .withUserId(session.getId())
                 .withObjectType(TIMELINE_RETRIEVED)
                 .withTimestamp(timelineRequestedOn).build(), false, true);
-        
-        // We don't update the call until we're quite certain this call will succeed
-        if (updateClientTimeZone) {
-            accountService.updateAccount(account);
-        }
+
         return schedule;
     }
     

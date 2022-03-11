@@ -13,6 +13,7 @@ import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
+import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.SCHEDULE_GUID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
@@ -504,6 +505,7 @@ public class StudyServiceTest {
         existing.setCreatedOn(DateTime.now());
         existing.setScheduleGuid(SCHEDULE_GUID);
         existing.setCustomEvents(events);
+        existing.setStudyStartEventId("event1");
         when(mockStudyDao.getStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(existing);
         when(mockScheduleService.getSchedule(TEST_APP_ID, SCHEDULE_GUID)).thenReturn(new Schedule2());
 
@@ -512,6 +514,7 @@ public class StudyServiceTest {
         study.setName("new name");
         study.setIdentifier(TEST_STUDY_ID);
         study.setScheduleGuid("some-other-guid");
+        study.setStudyStartEventId("event2");
         study.setCustomEvents(ImmutableList.of(new StudyCustomEvent("event2", IMMUTABLE)));
         
         service.updateStudy(TEST_APP_ID, study);
@@ -519,6 +522,7 @@ public class StudyServiceTest {
         verify(mockStudyDao).updateStudy(studyCaptor.capture());
         assertEquals(studyCaptor.getValue().getScheduleGuid(), SCHEDULE_GUID);
         assertEquals(studyCaptor.getValue().getCustomEvents(), events);
+        assertEquals(studyCaptor.getValue().getStudyStartEventId(), "event1");
     }
     
     @Test
@@ -908,9 +912,26 @@ public class StudyServiceTest {
     }
     
     @Test
-    public void removeScheduleFromStudies() {
-        service.removeScheduleFromStudies(TEST_APP_ID, SCHEDULE_GUID);
+    public void removeStudyEtags() {
+        when(mockStudyDao.getStudyIdsUsingSchedule(TEST_APP_ID, SCHEDULE_GUID))
+            .thenReturn(ImmutableList.of("studyA", "studyB"));
+        
+        service.removeStudyEtags(TEST_APP_ID, SCHEDULE_GUID);
         verify(mockStudyDao).removeScheduleFromStudies(TEST_APP_ID, SCHEDULE_GUID);
+        
+        verify(mockCacheProvider).removeObject(CacheKey.etag(Schedule2.class, TEST_APP_ID, "studyA"));
+        verify(mockCacheProvider).removeObject(CacheKey.etag(Schedule2.class, TEST_APP_ID, "studyB"));
+    }
+    
+    @Test
+    public void updateStudyEtags() {
+        when(mockStudyDao.getStudyIdsUsingSchedule(TEST_APP_ID, SCHEDULE_GUID))
+            .thenReturn(ImmutableList.of("studyA", "studyB"));
+        
+        service.updateStudyEtags(TEST_APP_ID, SCHEDULE_GUID, CREATED_ON);
+        
+        verify(mockCacheProvider).setObject(CacheKey.etag(Schedule2.class, TEST_APP_ID, "studyA"), CREATED_ON);
+        verify(mockCacheProvider).setObject(CacheKey.etag(Schedule2.class, TEST_APP_ID, "studyB"), CREATED_ON);
     }
     
     @Test

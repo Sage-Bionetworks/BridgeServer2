@@ -926,6 +926,21 @@ ADD CONSTRAINT FOREIGN KEY (`sessionGuid`) REFERENCES `Sessions` (`guid`) ON DEL
 
 -- changeset bridge:63
 
+ALTER TABLE `Substudies`
+ADD COLUMN `studyStartEventId` varchar(255);
+
+-- changeset bridge:64
+
+ALTER TABLE `WeeklyAdherenceReports`
+ADD COLUMN `weekInStudy` int(4);
+
+-- changeset bridge:65
+
+ALTER TABLE `WeeklyAdherenceReports`
+ADD COLUMN `startDate` varchar(10);
+
+-- changeset bridge:66
+
 CREATE TABLE IF NOT EXISTS `Permissions` (
   `guid` varchar(60) NOT NULL,
   `appId` varchar(255) NOT NULL,

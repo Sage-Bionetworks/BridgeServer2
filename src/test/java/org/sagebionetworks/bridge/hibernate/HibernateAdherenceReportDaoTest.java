@@ -110,8 +110,8 @@ public class HibernateAdherenceReportDaoTest extends Mockito {
         AdherenceReportSearch search = new AdherenceReportSearch();
         search.setTestFilter(BOTH);
         search.setLabelFilters(ImmutableSet.of("label"));
-        search.setAdherenceMin(10);
-        search.setAdherenceMax(75);
+        search.setAdherenceMin(0); // verify ends of the range are included
+        search.setAdherenceMax(100);
         search.setProgressionFilters(ImmutableSet.of(IN_PROGRESS));
         search.setIdFilter("anId");
         search.setOffsetBy(50);
@@ -130,8 +130,8 @@ public class HibernateAdherenceReportDaoTest extends Mockito {
         assertEquals(stringCaptor.getAllValues().get(0), SELECT_COUNT + FULL_SQL);
         assertEquals(stringCaptor.getAllValues().get(1), SELECT_DISTINCT + FULL_SQL);
         assertEquals(paramsCaptor.getValue().get(LABEL_FILTER_FIELD+"0"), "%label%");
-        assertEquals(paramsCaptor.getValue().get(ADHERENCE_MIN_FIELD), 10);
-        assertEquals(paramsCaptor.getValue().get(ADHERENCE_MAX_FIELD), 75);
+        assertEquals(paramsCaptor.getValue().get(ADHERENCE_MIN_FIELD), 0);
+        assertEquals(paramsCaptor.getValue().get(ADHERENCE_MAX_FIELD), 100);
         assertEquals(paramsCaptor.getValue().get(PROGRESSION_FILTER_FIELD), ImmutableSet.of(IN_PROGRESS));
     }
     
