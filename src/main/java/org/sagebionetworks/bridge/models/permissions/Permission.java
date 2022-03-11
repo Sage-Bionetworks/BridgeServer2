@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.models.permissions;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
 import javax.persistence.Entity;
@@ -12,6 +13,7 @@ import java.util.Objects;
 
 @Entity
 @Table(name = "Permissions")
+@JsonPropertyOrder({ "guid", "userId", "accessLevel", "entityType", "entityId" })
 public final class Permission implements BridgeEntity {
     
     @Id
@@ -78,7 +80,12 @@ public final class Permission implements BridgeEntity {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Permission that = (Permission) o;
-        return Objects.equals(guid, that.guid) && Objects.equals(appId, that.appId) && Objects.equals(userId, that.userId) && accessLevel == that.accessLevel && entityType == that.entityType && Objects.equals(entityId, that.entityId);
+        return Objects.equals(guid, that.guid)
+                && Objects.equals(appId, that.appId)
+                && Objects.equals(userId, that.userId)
+                && accessLevel == that.accessLevel
+                && entityType == that.entityType
+                && Objects.equals(entityId, that.entityId);
     }
     
     @Override

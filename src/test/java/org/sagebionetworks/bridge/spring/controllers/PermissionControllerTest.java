@@ -22,6 +22,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
+import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountRef;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -257,7 +258,9 @@ public class PermissionControllerTest extends Mockito {
     
         doNothing().when(mockService).deletePermission(eq(TEST_APP_ID), eq(GUID));
     
-        controller.deletePermission(GUID);
+        StatusMessage message = controller.deletePermission(GUID);
+        
+        assertEquals(message.getMessage(), "Permission deleted.");
     
         verify(mockService).deletePermission(eq(TEST_APP_ID), eq(GUID));
     }

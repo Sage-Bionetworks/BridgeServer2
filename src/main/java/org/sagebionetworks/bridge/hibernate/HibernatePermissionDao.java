@@ -41,10 +41,8 @@ public class HibernatePermissionDao implements PermissionDao {
         QueryBuilder builder = new QueryBuilder();
         builder.append(GET_BY_USER, APP_ID, appId, USER_ID, userId);
         
-        ImmutableSet<Permission> permissions = ImmutableSet.copyOf(hibernateHelper.queryGet(
+        return ImmutableSet.copyOf(hibernateHelper.queryGet(
                 builder.getQuery(), builder.getParameters(), null, null, Permission.class));
-        
-        return permissions;
     }
     
     @Override
@@ -56,10 +54,8 @@ public class HibernatePermissionDao implements PermissionDao {
         QueryBuilder builder = new QueryBuilder();
         builder.append(GET_BY_ENTITY_TYPE, APP_ID, appId, ENTITY_TYPE, entityType, ENTITY_ID, entityId);
     
-        ImmutableSet<Permission> permissions = ImmutableSet.copyOf(hibernateHelper.queryGet(
+        return ImmutableSet.copyOf(hibernateHelper.queryGet(
                 builder.getQuery(), builder.getParameters(), null, null, Permission.class));
-    
-        return permissions;
     }
     
     @Override
