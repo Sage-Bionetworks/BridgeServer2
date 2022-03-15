@@ -517,6 +517,7 @@ public class StudyServiceTest {
         existing.setCreatedOn(DateTime.now());
         existing.setScheduleGuid(SCHEDULE_GUID);
         existing.setCustomEvents(events);
+        existing.setStudyStartEventId("event1");
         when(mockStudyDao.getStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(existing);
         when(mockScheduleService.getSchedule(TEST_APP_ID, SCHEDULE_GUID)).thenReturn(new Schedule2());
 
@@ -525,6 +526,7 @@ public class StudyServiceTest {
         study.setName("new name");
         study.setIdentifier(TEST_STUDY_ID);
         study.setScheduleGuid("some-other-guid");
+        study.setStudyStartEventId("event2");
         study.setCustomEvents(ImmutableList.of(new StudyCustomEvent("event2", IMMUTABLE)));
         
         service.updateStudy(TEST_APP_ID, study);
@@ -532,6 +534,7 @@ public class StudyServiceTest {
         verify(mockStudyDao).updateStudy(studyCaptor.capture());
         assertEquals(studyCaptor.getValue().getScheduleGuid(), SCHEDULE_GUID);
         assertEquals(studyCaptor.getValue().getCustomEvents(), events);
+        assertEquals(studyCaptor.getValue().getStudyStartEventId(), "event1");
     }
     
     @Test

@@ -447,9 +447,8 @@ public class UploadService {
         }
 
         // kick off upload validation
-        // Note: Exporter 3.0 is disabled for redrive. See https://sagebionetworks.jira.com/browse/BRIDGE-3080
         App app = appService.getApp(appId);
-        if (!redrive && app.isExporter3Enabled()) {
+        if (app.isExporter3Enabled()) {
             exporter3Service.completeUpload(app, upload);
         }
 

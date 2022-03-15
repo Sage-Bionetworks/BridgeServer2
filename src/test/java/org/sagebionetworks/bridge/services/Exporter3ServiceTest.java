@@ -472,7 +472,11 @@ public class Exporter3ServiceTest {
     }
 
     @Test
-    public void completeUpload_NoParticipantVersion() {
+    public void completeUpload_Case2() {
+        // Normal test case with the following changes
+        // 1. No participant version
+        // 2. Existing record
+
         // Set up inputs.
         Upload upload = Upload.create();
         upload.setHealthCode(TestConstants.HEALTH_CODE);
@@ -484,8 +488,14 @@ public class Exporter3ServiceTest {
         when(mockAccountService.getAccount(any())).thenReturn(Optional.of(account));
 
         // Mock HealthDataEx3Service.
+        HealthDataRecordEx3 existingRecord = HealthDataRecordEx3.create();
+        existingRecord.setId(RECORD_ID);
+        existingRecord.setVersion(1L);
+        when(mockHealthDataEx3Service.getRecord(RECORD_ID)).thenReturn(Optional.of(existingRecord));
+
         HealthDataRecordEx3 createdRecord = HealthDataRecordEx3.create();
         createdRecord.setId(RECORD_ID);
+        createdRecord.setVersion(2L);
         when(mockHealthDataEx3Service.createOrUpdateRecord(any())).thenReturn(createdRecord);
 
         // Mock ParticipantVersionService.
@@ -498,10 +508,13 @@ public class Exporter3ServiceTest {
         // Execute.
         exporter3Service.completeUpload(app, upload);
 
-        // Just verify that the saved record doesn't have a participant version.
+        // Verify that the saved record has no participant version and has the version copied from the existing record.
         ArgumentCaptor<HealthDataRecordEx3> recordToCreateCaptor = ArgumentCaptor.forClass(HealthDataRecordEx3.class);
         verify(mockHealthDataEx3Service).createOrUpdateRecord(recordToCreateCaptor.capture());
-        assertNull(recordToCreateCaptor.getValue().getParticipantVersion());
+
+        HealthDataRecordEx3 recordToCreate = recordToCreateCaptor.getValue();
+        assertNull(recordToCreate.getParticipantVersion());
+        assertEquals(recordToCreate.getVersion().longValue(), 1L);
     }
 
     @Test

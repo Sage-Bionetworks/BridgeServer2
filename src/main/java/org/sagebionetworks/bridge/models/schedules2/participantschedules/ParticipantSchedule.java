@@ -1,6 +1,7 @@
-package org.sagebionetworks.bridge.models.schedules2.adherence.participantschedule;
+package org.sagebionetworks.bridge.models.schedules2.participantschedules;
 
 import java.util.List;
+import java.util.Map;
 
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.json.DateTimeSerializer;
@@ -18,7 +19,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
  * user, along with information about their adherence to this schedule.
  */
 @JsonPropertyOrder({ "createdOn", "clientTimeZone", "dateRange", "schedule", "sessions", "assessments", "studyBursts",
-        "type" })
+        "eventTimestamps", "type" })
 public class ParticipantSchedule {
     
     private DateRange dateRange;
@@ -28,6 +29,7 @@ public class ParticipantSchedule {
     private List<AssessmentInfo> assessments;
     private List<SessionInfo> sessions;
     private List<StudyBurstInfo> studyBursts;
+    private Map<String, DateTime> eventTimestamps;
 
     public DateRange getDateRange() {
         return dateRange;
@@ -71,5 +73,11 @@ public class ParticipantSchedule {
     }
     public void setClientTimeZone(String clientTimeZone) {
         this.clientTimeZone = clientTimeZone;
+    }
+    public Map<String, DateTime> getEventTimestamps() {
+        return eventTimestamps;
+    }
+    public void setEventTimestamps(Map<String, DateTime> eventTimestamps) {
+        this.eventTimestamps = eventTimestamps;
     }
 }

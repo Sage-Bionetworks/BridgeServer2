@@ -16,6 +16,7 @@ import org.sagebionetworks.bridge.models.studies.StudyCustomEvent;
 import static org.sagebionetworks.bridge.TestConstants.COLOR_SCHEME;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.TIMELINE_RETRIEVED;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.FUTURE_ONLY;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.IMMUTABLE;
 import static org.sagebionetworks.bridge.models.studies.IrbDecisionType.APPROVED;
@@ -46,6 +47,12 @@ public class HibernateStudyTest {
     private static final LocalDate APPROVED_ON = DateTime.now().toLocalDate();
     private static final LocalDate EXPIRES_ON = DateTime.now().plusDays(10).toLocalDate();
     private static final List<SignInType> TYPES = ImmutableList.of(EMAIL_MESSAGE, EMAIL_PASSWORD);
+    
+    @Test
+    public void studyStartEventIdDefaultsToTimelineRetrieved( ) {
+        Study study = Study.create();
+        assertEquals(study.getStudyStartEventId(), TIMELINE_RETRIEVED.name().toLowerCase());
+    }
     
     @Test
     public void getCustomEventsMap() {
@@ -94,9 +101,10 @@ public class HibernateStudyTest {
         Study study = createStudy();
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(study);
-        assertEquals(node.size(), 30);
+        assertEquals(node.size(), 31);
         assertEquals(node.get("identifier").textValue(), "oneId");
         assertEquals(node.get("name").textValue(), "name");
+        assertEquals(node.get("studyStartEventId").textValue(), "enrollment");
         assertTrue(node.get("deleted").booleanValue());
         assertTrue(node.get("exporter3Enabled").booleanValue());
         assertEquals(node.get("createdOn").textValue(), CREATED_ON.toString());
@@ -144,6 +152,7 @@ public class HibernateStudyTest {
         deser.setLogoGuid(GUID);
         assertEquals(deser.getIdentifier(), "oneId");
         assertEquals(deser.getName(), "name");
+        assertEquals(deser.getStudyStartEventId(), "enrollment");
         assertTrue(deser.isDeleted());
         assertEquals(deser.getExporter3Configuration(), study.getExporter3Configuration());
         assertTrue(deser.isExporter3Enabled());
@@ -213,6 +222,7 @@ public class HibernateStudyTest {
         study.setIdentifier("oneId");
         study.setAppId(TEST_APP_ID);
         study.setName("name");
+        study.setStudyStartEventId("enrollment");
         study.setDeleted(true);
         study.setExporter3Configuration(TestUtils.getValidExporter3Config());
         study.setExporter3Enabled(true);

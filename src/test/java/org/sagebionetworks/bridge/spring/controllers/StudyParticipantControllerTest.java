@@ -104,7 +104,7 @@ import org.sagebionetworks.bridge.models.reports.ReportData;
 import org.sagebionetworks.bridge.models.reports.ReportDataKey;
 import org.sagebionetworks.bridge.models.reports.ReportIndex;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
-import org.sagebionetworks.bridge.models.schedules2.adherence.participantschedule.ParticipantSchedule;
+import org.sagebionetworks.bridge.models.schedules2.participantschedules.ParticipantSchedule;
 import org.sagebionetworks.bridge.models.schedules2.timelines.Timeline;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.studies.EnrollmentDetail;
@@ -266,6 +266,12 @@ public class StudyParticipantControllerTest extends Mockito {
         assertPost(StudyParticipantController.class, "saveParticipantReport");
         assertDelete(StudyParticipantController.class, "deleteParticipantReportRecord");
         assertDelete(StudyParticipantController.class, "deleteParticipantReport");
+        assertGet(StudyParticipantController.class, "getParticipantScheduleForSelf");
+        assertGet(StudyParticipantController.class, "getParticipantScheduleForUser");
+        assertGet(StudyParticipantController.class, "getParticipantReportForSelf");
+        assertGet(StudyParticipantController.class, "getTimelineForUser");
+        assertPost(StudyParticipantController.class, "saveParticipantReportForSelf");
+        assertPost(StudyParticipantController.class, "sendInstallLink");
     }
     
     @Test
@@ -1971,7 +1977,7 @@ public class StudyParticipantControllerTest extends Mockito {
         mockAccountInStudy();
         
         ParticipantSchedule schedule = new ParticipantSchedule();
-        when(mockAdherenceService.getParticipantSchedule(
+        when(mockScheduleService.getParticipantSchedule(
                 eq(TEST_APP_ID), eq(TEST_STUDY_ID), any())).thenReturn(schedule);
         
         ParticipantSchedule retValue = controller.getParticipantScheduleForUser(TEST_STUDY_ID, TEST_USER_ID);
@@ -1988,77 +1994,11 @@ public class StudyParticipantControllerTest extends Mockito {
         when(controller.getDateTime()).thenReturn(CREATED_ON);
         
         ParticipantSchedule schedule = new ParticipantSchedule();
-        when(mockAdherenceService.getParticipantSchedule(
+        when(mockScheduleService.getParticipantSchedule(
                 eq(TEST_APP_ID), eq(TEST_STUDY_ID), any())).thenReturn(schedule);
         
-        ParticipantSchedule retValue = controller.getParticipantScheduleForSelf(TEST_STUDY_ID, null);
+        ParticipantSchedule retValue = controller.getParticipantScheduleForSelf(TEST_STUDY_ID);
         assertSame(retValue, schedule);
-        
-        verify(mockAccountService, never()).updateAccount(accountCaptor.capture());
-        
-        verify(mockRequestInfoService).updateRequestInfo(requestInfoCaptor.capture());
-        RequestInfo info = requestInfoCaptor.getValue();
-        assertEquals(info.getTimelineAccessedOn(), CREATED_ON);
-        
-        verify(mockStudyActivityEventService).publishEvent(eventCaptor.capture(), eq(false), eq(true));
-        StudyActivityEvent event = eventCaptor.getValue();
-        assertEquals(event.getAppId(), TEST_APP_ID);
-        assertEquals(event.getStudyId(), TEST_STUDY_ID);
-        assertEquals(event.getUserId(), TEST_USER_ID);
-        assertEquals(event.getEventId(), TIMELINE_RETRIEVED.name().toLowerCase());
-        assertEquals(event.getTimestamp(), CREATED_ON);
-    }
-    
-    @Test
-    public void getParticipantScheduleForSelf_setsTimezone() {
-        session.setParticipant(new StudyParticipant.Builder()
-                .withId(TEST_USER_ID).withStudyIds(ImmutableSet.of(TEST_STUDY_ID)).build());
-        doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
-        mockAccountInStudy(TEST_USER_ID);
-        
-        when(controller.getDateTime()).thenReturn(CREATED_ON);
-        
-        ParticipantSchedule schedule = new ParticipantSchedule();
-        when(mockAdherenceService.getParticipantSchedule(
-                eq(TEST_APP_ID), eq(TEST_STUDY_ID), any())).thenReturn(schedule);
-        
-        ParticipantSchedule retValue = controller.getParticipantScheduleForSelf(TEST_STUDY_ID, TEST_CLIENT_TIME_ZONE);
-        assertSame(retValue, schedule);
-        
-        verify(mockAccountService).updateAccount(accountCaptor.capture());
-        assertEquals(accountCaptor.getValue().getClientTimeZone(), TEST_CLIENT_TIME_ZONE);
-        
-        verify(mockRequestInfoService).updateRequestInfo(requestInfoCaptor.capture());
-        RequestInfo info = requestInfoCaptor.getValue();
-        assertEquals(info.getTimelineAccessedOn(), CREATED_ON);
-        
-        verify(mockStudyActivityEventService).publishEvent(eventCaptor.capture(), eq(false), eq(true));
-        StudyActivityEvent event = eventCaptor.getValue();
-        assertEquals(event.getAppId(), TEST_APP_ID);
-        assertEquals(event.getStudyId(), TEST_STUDY_ID);
-        assertEquals(event.getUserId(), TEST_USER_ID);
-        assertEquals(event.getEventId(), TIMELINE_RETRIEVED.name().toLowerCase());
-        assertEquals(event.getTimestamp(), CREATED_ON);
-    }
-    
-    @Test
-    public void getParticipantScheduleForSelf_skipsExistingTimezone() {
-        session.setParticipant(new StudyParticipant.Builder()
-                .withId(TEST_USER_ID).withStudyIds(ImmutableSet.of(TEST_STUDY_ID)).build());
-        doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
-        mockAccountInStudy(TEST_USER_ID);
-        account.setClientTimeZone(TEST_CLIENT_TIME_ZONE);
-        
-        when(controller.getDateTime()).thenReturn(CREATED_ON);
-        
-        ParticipantSchedule schedule = new ParticipantSchedule();
-        when(mockAdherenceService.getParticipantSchedule(
-                eq(TEST_APP_ID), eq(TEST_STUDY_ID), any())).thenReturn(schedule);
-        
-        ParticipantSchedule retValue = controller.getParticipantScheduleForSelf(TEST_STUDY_ID, TEST_CLIENT_TIME_ZONE);
-        assertSame(retValue, schedule);
-        
-        verify(mockAccountService, never()).updateAccount(accountCaptor.capture());
         
         verify(mockRequestInfoService).updateRequestInfo(requestInfoCaptor.capture());
         RequestInfo info = requestInfoCaptor.getValue();
@@ -2081,7 +2021,7 @@ public class StudyParticipantControllerTest extends Mockito {
         mockAccountInStudy(TEST_USER_ID);
         account.setClientTimeZone(TEST_CLIENT_TIME_ZONE);
         
-        controller.getParticipantScheduleForSelf(TEST_STUDY_ID, TEST_CLIENT_TIME_ZONE);
+        controller.getParticipantScheduleForSelf(TEST_STUDY_ID);
     }
     
     private void mockAccountInStudy() {

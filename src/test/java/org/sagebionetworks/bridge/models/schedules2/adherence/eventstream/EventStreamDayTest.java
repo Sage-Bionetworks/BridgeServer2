@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.models.schedules2.adherence.eventstream;
 
 import static java.util.stream.Collectors.toSet;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
 
 import org.joda.time.LocalDate;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -37,6 +38,7 @@ public class EventStreamDayTest {
         day.setStudyBurstNum(2);
         day.addTimeWindow(createWindow("guid1"));
         day.setTimeWindows(ImmutableList.of(createWindow("guid2"), createWindow("guid1")));
+        day.setToday(true);
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(day);
         assertEquals(node.get("label").textValue(), "Label");
@@ -50,6 +52,7 @@ public class EventStreamDayTest {
         assertEquals(node.get("startDay").intValue(), 3);
         assertEquals(node.get("startDate").textValue(), "2021-10-01");
         assertEquals(node.get("timeWindows").size(), 2);
+        assertTrue(node.get("today").booleanValue());
         
         EventStreamDay deser = BridgeObjectMapper.get().readValue(node.toString(), EventStreamDay.class);
         assertEquals(deser.getSessionGuid(), "sessionGuid");
@@ -65,6 +68,7 @@ public class EventStreamDayTest {
         assertEquals(deser.getTimeWindows().stream()
                 .map(EventStreamWindow::getTimeWindowGuid)
                 .collect(toSet()), ImmutableSet.of("guid1", "guid2"));
+        assertTrue(deser.isToday());
     }
     
     @Test

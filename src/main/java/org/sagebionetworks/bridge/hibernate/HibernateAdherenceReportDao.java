@@ -59,10 +59,10 @@ public class HibernateAdherenceReportDao implements AdherenceReportDao {
         WhereClauseBuilder where = builder.startWhere(AND);
         where.append("h.appId = :appId", APP_ID_FIELD, appId);
         where.append("h.studyId = :studyId", STUDY_ID_FIELD, studyId);
-        if (search.getAdherenceMin() > 0) {
+        if (search.getAdherenceMin() != null) {
             where.append("h.weeklyAdherencePercent >= :adherenceMin", ADHERENCE_MIN_FIELD, search.getAdherenceMin());    
         }
-        if (search.getAdherenceMax() < 100) {
+        if (search.getAdherenceMax() != null) {
             where.append("h.weeklyAdherencePercent <= :adherenceMax", ADHERENCE_MAX_FIELD, search.getAdherenceMax());    
         }
         if (search.getProgressionFilters() != null && !search.getProgressionFilters().isEmpty()) {

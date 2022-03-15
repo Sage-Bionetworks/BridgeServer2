@@ -13,7 +13,6 @@ import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionComp
 import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.UNSTARTED;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamAdherenceReportGenerator.INSTANCE;
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
@@ -21,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceState;
@@ -50,15 +50,35 @@ public class EventStreamAdherenceReportGeneratorTest {
             "Main Sequence", 1, "*", "Session #1", false);
     
     @Test
+    public void calculatesReport() throws Exception {
+        AdherenceRecord adherenceRecord = createRecord(STARTED_ON, FINISHED_ON, "sessionInstanceGuid", false);
+        StudyActivityEvent event = createEvent("sessionStartEventId", NOW.minusDays(14));
+
+        AdherenceState state = createState(NOW, META1, event, adherenceRecord);
+
+        EventStreamAdherenceReport report = INSTANCE.generate(state);
+
+        assertEquals(report.getTimestamp(), NOW.withZone(DateTimeZone.forID("America/Chicago")));
+        assertEquals(report.getAdherencePercent(), 100);
+        assertEquals(report.getStreams().size(), 1);
+        assertEquals(report.getDayRangeOfAllStreams().getMin(), 13);
+        assertEquals(report.getDayRangeOfAllStreams().getMax(), 15);
+        assertEquals(report.getDateRangeOfAllStreams().getStartDate().toString(), "2021-10-14");
+        assertEquals(report.getDateRangeOfAllStreams().getEndDate().toString(), "2021-10-16");
+        assertEquals(report.getClientTimeZone(), "America/Chicago");
+        assertEquals(report.getEarliestEventId(), "sessionStartEventId");
+    }
+    
+    @Test
     public void generate_metadataCopiedToReport() throws Exception {
         // We will focus on calculation of the completion states in the report, but here let's 
         // verify the metadata is being copied over into the report.
         AdherenceState state = createState(NOW, META1, null, null);
 
         EventStreamAdherenceReport report = INSTANCE.generate(state);
-        assertEquals(report.getTimestamp(), NOW);
+        
+        assertEquals(report.getTimestamp(), NOW.withZone(DateTimeZone.forID("America/Chicago")));
         assertEquals(report.getAdherencePercent(), 100);
-        assertFalse(report.isActiveOnly());
         assertEquals(report.getStreams().size(), 1);
         
         EventStream stream = report.getStreams().get(0);
@@ -284,72 +304,6 @@ public class EventStreamAdherenceReportGeneratorTest {
     }
     
     @Test
-    public void showActiveShowsActive() { 
-        AdherenceRecord adherenceRecord = createRecord(null, null, "sessionInstanceGuid", false);
-        StudyActivityEvent event = createEvent("sessionStartEventId", NOW.minusDays(14));
-
-        AdherenceState state = createState(NOW, META1, event, adherenceRecord, true);
-
-        EventStreamAdherenceReport report = INSTANCE.generate(state);
-        assertEquals(getReportStates(report), ImmutableList.of(UNSTARTED));
-    }
-
-    @Test
-    public void showActiveFiltersNotYetAvailable() throws Exception { 
-        StudyActivityEvent event = createEvent("sessionStartEventId", NOW.minusDays(14));
-
-        AdherenceState state = createState(NOW.minusDays(10), META1, event, null, true);
-
-        EventStreamAdherenceReport report = INSTANCE.generate(state);
-        assertTrue(report.getStreams().isEmpty());        
-    }
-
-    @Test
-    public void showActiveFiltersNotApplicable() throws Exception { 
-        AdherenceState state = createState(NOW.minusDays(10), META1, null, null, true);
-
-        EventStreamAdherenceReport report = INSTANCE.generate(state);
-        assertTrue(report.getStreams().isEmpty());        
-    }
-    
-    @Test
-    public void showActiveFiltersExpired() throws Exception { 
-        AdherenceRecord adherenceRecord = createRecord(null, null, "sessionInstanceGuid", false);
-        StudyActivityEvent event = createEvent("sessionStartEventId", NOW.minusDays(14));
-
-        AdherenceState state = createState(NOW.plusDays(2), META1, event, adherenceRecord, true);
-
-        EventStreamAdherenceReport report = INSTANCE.generate(state);
-        assertTrue(report.getStreams().isEmpty());
-    }
-    
-    @Test
-    public void showActiveFiltersCompleted() throws Exception {
-        // Note thought that we will return completed sessions if they are in their time window, and
-        // we want users to see that they've finished it.
-        AdherenceRecord adherenceRecord = createRecord(STARTED_ON, FINISHED_ON, "sessionInstanceGuid", false);
-        StudyActivityEvent event = createEvent("sessionStartEventId", NOW.minusDays(17));
-        
-        AdherenceState state = createState(NOW, META1, event, adherenceRecord, true);
-        
-        EventStreamAdherenceReport report = INSTANCE.generate(state);
-        assertTrue(report.getStreams().isEmpty());
-    }
-    
-    @Test
-    public void showActiveDoesNotFilterCompletedInWindow() throws Exception {
-        // Note thought that we will return completed sessions if they are in their time window, and
-        // we want users to see that they've finished it.
-        AdherenceRecord adherenceRecord = createRecord(STARTED_ON, FINISHED_ON, "sessionInstanceGuid", false);
-        StudyActivityEvent event = createEvent("sessionStartEventId", NOW.minusDays(14));
-        
-        AdherenceState state = createState(NOW, META1, event, adherenceRecord, true);
-
-        EventStreamAdherenceReport report = INSTANCE.generate(state);
-        assertEquals(getReportStates(report), ImmutableList.of(COMPLETED));
-    }
-    
-    @Test
     public void groupsUnderEventId() throws Exception {
         AdherenceRecord adherenceRecord = createRecord(STARTED_ON, FINISHED_ON, "gnescr0HRz5T2JEjc0Ad6Q", false);        
         StudyActivityEvent event = createEvent("study_burst:Main Sequence:01", NOW.minusDays(3));
@@ -436,8 +390,8 @@ public class EventStreamAdherenceReportGeneratorTest {
         if (adherenceRecord != null) {
             builder.withAdherenceRecords(ImmutableList.of(adherenceRecord));
         }
-        builder.withShowActive(showActive);
         builder.withNow(now);
+        builder.withClientTimeZone("America/Chicago");
         return builder.build();
     }
     

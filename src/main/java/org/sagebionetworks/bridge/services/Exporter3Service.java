@@ -436,6 +436,13 @@ public class Exporter3Service {
             record.setParticipantVersion(participantVersion.get().getParticipantVersion());
         }
 
+        // If the record already exists (for example, this is a redrive), we need to set the version attribute properly
+        // so we overwrite the old record properly.
+        Optional<HealthDataRecordEx3> oldRecord = healthDataEx3Service.getRecord(upload.getUploadId());
+        if (oldRecord.isPresent()) {
+            record.setVersion(oldRecord.get().getVersion());
+        }
+
         // Save record.
         record = healthDataEx3Service.createOrUpdateRecord(record);
 

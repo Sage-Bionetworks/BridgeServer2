@@ -923,3 +923,19 @@ ADD COLUMN `assessmentGuid` varchar(60),
 ADD COLUMN `sessionGuid` varchar(60),
 ADD CONSTRAINT FOREIGN KEY (`assessmentGuid`) REFERENCES `Assessments` (`guid`) ON DELETE CASCADE,
 ADD CONSTRAINT FOREIGN KEY (`sessionGuid`) REFERENCES `Sessions` (`guid`) ON DELETE CASCADE;
+
+-- changeset bridge:63
+
+ALTER TABLE `Substudies`
+ADD COLUMN `studyStartEventId` varchar(255);
+
+-- changeset bridge:64
+
+ALTER TABLE `WeeklyAdherenceReports`
+ADD COLUMN `weekInStudy` int(4);
+
+-- changeset bridge:65
+
+ALTER TABLE `WeeklyAdherenceReports`
+ADD COLUMN `startDate` varchar(10);
+

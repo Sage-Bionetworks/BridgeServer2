@@ -1,19 +1,16 @@
-package org.sagebionetworks.bridge.models.schedules2.adherence.participantschedule;
+package org.sagebionetworks.bridge.models.schedules2.participantschedules;
 
-import static java.lang.Boolean.TRUE;
 import static java.util.stream.Collectors.toList;
 
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
 import org.sagebionetworks.bridge.models.DateRange;
-import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceState;
-import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceUtils;
-import org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState;
 import org.sagebionetworks.bridge.models.schedules2.timelines.ScheduledAssessment;
 import org.sagebionetworks.bridge.models.schedules2.timelines.ScheduledSession;
 import org.sagebionetworks.bridge.models.schedules2.timelines.SessionInfo;
@@ -41,6 +38,7 @@ public class ParticipantScheduleGenerator {
         Multimap<LocalDate, ScheduledSession> chronology = LinkedHashMultimap.create();
         LocalDate earliestDate = LATEST_LOCAL_DATE;
         LocalDate latestDate = EARLIEST_LOCAL_DATE;
+        Map<String, DateTime> eventTimestamps = new HashMap<>();
         
         for (ScheduledSession schSession : timeline.getSchedule()) {
             String eventId = schSession.getStartEventId();
@@ -48,21 +46,13 @@ public class ParticipantScheduleGenerator {
             if (eventTimestamp == null) {
                 continue;
             }
-            Integer days = state.getDaysSinceEventById(eventId);
             LocalDate startDate = eventTimestamp.plusDays(schSession.getStartDay()).toLocalDate();
             LocalDate endDate = eventTimestamp.plusDays(schSession.getEndDay()).toLocalDate();
-            AdherenceRecord record = state.getAdherenceRecordByGuid(schSession.getInstanceGuid());
-            SessionCompletionState schState = AdherenceUtils.calculateSessionState(
-                    record, schSession.getStartDay(), schSession.getEndDay(), days);
+            eventTimestamps.put(eventId,  eventTimestamp);
             
             ScheduledSession.Builder builder = schSession.toBuilder();
             builder.withStartDate(startDate);
             builder.withEndDate(endDate);
-            // We do not show state for persistent sessions, because it makes no sense (it's the most recent
-            // timestamp, but that's just confusing).
-            if (!TRUE.equals(schSession.isPersistent())) {
-                builder.withState(schState);
-            }
             if (startDate.isBefore(earliestDate)) {
                 earliestDate = startDate;
             }
@@ -70,39 +60,13 @@ public class ParticipantScheduleGenerator {
                 latestDate = endDate;
             }
             for (ScheduledAssessment schAssessment : schSession.getAssessments()) {
-                AdherenceRecord asmtRecord = state.getAdherenceRecordByGuid(schAssessment.getInstanceGuid());    
-                SessionCompletionState asmtState = AdherenceUtils.calculateSessionState(
-                        asmtRecord, schSession.getStartDay(), schSession.getEndDay(), days);
-                
-                // Copy these values over to from the adherence record if they exist, and put the timestamp
-                // in the supplied timezone if it has been persisted.
-                DateTime finishedOn = null;
-                String clientTimeZone = null;
-                if (asmtRecord != null && asmtRecord.getFinishedOn() != null) {
-                    finishedOn = asmtRecord.getFinishedOn();
-                }
-                if (asmtRecord != null && asmtRecord.getClientTimeZone() != null) {
-                    clientTimeZone = asmtRecord.getClientTimeZone();
-                }
-                if (finishedOn != null && clientTimeZone != null) {
-                    DateTimeZone zone = DateTimeZone.forID(clientTimeZone);
-                    finishedOn = finishedOn.withZone(zone);
-                }
                 ScheduledAssessment.Builder asmtBuilder = new ScheduledAssessment.Builder()
                         .withRefKey(schAssessment.getRefKey())
-                        .withInstanceGuid(schAssessment.getInstanceGuid())
-                        .withFinishedOn(finishedOn)
-                        .withClientTimeZone(clientTimeZone);
-                // We do not show state for persistent sessions, because it makes no sense (it's the most recent
-                // timestamp, but that's just confusing).
-                if (!TRUE.equals(schSession.isPersistent())) {
-                    asmtBuilder.withState(asmtState);
-                }
+                        .withInstanceGuid(schAssessment.getInstanceGuid());
                 builder.withScheduledAssessment(asmtBuilder.build());
             }
             // null these out, not useful
             schSession.getTimeWindow().setGuid(null);
-            builder.withStartEventId(null);
             builder.withStartDay(null);
             builder.withEndDay(null);
             chronology.put(startDate, builder.build());
@@ -129,6 +93,7 @@ public class ParticipantScheduleGenerator {
                 .map(SessionInfo::createScheduleEntry).collect(toList()));
         schedule.setAssessments(timeline.getAssessments());
         schedule.setStudyBursts(timeline.getStudyBursts());
+        schedule.setEventTimestamps(eventTimestamps);
         return schedule;
     }
 }

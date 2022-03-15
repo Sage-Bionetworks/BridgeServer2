@@ -212,8 +212,10 @@ public class AssessmentService {
         
     public Assessment getAssessmentById(String appId, String ownerId, String identifier, int revision) {
         checkArgument(isNotBlank(appId));
-        checkArgument(isNotBlank(identifier));
         
+        if (isBlank(identifier)) {
+            throw new BadRequestException(IDENTIFIER_REQUIRED);
+        }
         if (revision < 1) {
             throw new BadRequestException(NONPOSITIVE_REVISION_ERROR);
         }
@@ -223,8 +225,10 @@ public class AssessmentService {
         
     public Assessment getLatestAssessment(String appId, String ownerId, String identifier) {
         checkArgument(isNotBlank(appId));
-        checkArgument(isNotBlank(identifier));
         
+        if (isBlank(identifier)) {
+            throw new BadRequestException(IDENTIFIER_REQUIRED);
+        }
         return getLatestInternal(appId, ownerId, identifier, false)
             .orElseThrow(() -> new EntityNotFoundException(Assessment.class));
     }

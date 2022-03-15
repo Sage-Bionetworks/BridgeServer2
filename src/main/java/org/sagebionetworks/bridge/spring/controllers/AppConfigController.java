@@ -76,7 +76,7 @@ public class AppConfigController extends BaseController {
     }
     
     @GetMapping("/v3/appconfigs")
-    public ResourceList<AppConfig> getAppConfigs(@RequestParam String includeDeleted) {
+    public ResourceList<AppConfig> getAppConfigs(@RequestParam(required = false) String includeDeleted) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         
         boolean includeDeletedFlag = Boolean.valueOf(includeDeleted);
@@ -120,7 +120,7 @@ public class AppConfigController extends BaseController {
     }
     
     @DeleteMapping("/v3/appconfigs/{guid}")
-    public StatusMessage deleteAppConfig(@PathVariable String guid, @RequestParam String physical) {
+    public StatusMessage deleteAppConfig(@PathVariable String guid, @RequestParam(required = false) String physical) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         
         if ("true".equals(physical) && session.isInRole(ADMIN)) {
