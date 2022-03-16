@@ -1,6 +1,9 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_UPDATE_STUDIES;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
 
 import java.io.IOException;
 
@@ -41,7 +44,8 @@ public class Exporter3Controller extends BaseController {
     @ResponseStatus(HttpStatus.CREATED)
     public Exporter3Configuration initExporter3ForStudy(@PathVariable String studyId) throws BridgeSynapseException, IOException,
             SynapseException {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+        UserSession session = getAuthenticatedSession(STUDY_DESIGNER, DEVELOPER);
+        CAN_UPDATE_STUDIES.checkAndThrow(STUDY_ID, studyId);
         return exporter3Service.initExporter3ForStudy(session.getAppId(), studyId);
     }
 }

@@ -174,27 +174,28 @@ public class StudyController extends BaseController {
         return study;
     }
 
+    // This exists because apps want to get rudimentary study data to show participants before they've created their
+    // account. For the worker API, see getStudyForWorker() below.
     @GetMapping(path = "/v1/apps/{appId}/studies/{studyId}", produces = { APPLICATION_JSON_UTF8_VALUE })
-    public String getStudyForApp(@PathVariable String appId, @PathVariable String studyId,
-            @RequestParam(required = false) String full)
+    public String getStudyForApp(@PathVariable String appId, @PathVariable String studyId)
             throws JsonProcessingException {
-        boolean fullBool = Boolean.parseBoolean(full);
-        if (fullBool) {
-            getAuthenticatedSession(WORKER);
+        CacheKey key = CacheKey.publicStudy(appId, studyId);
+        String json = cacheProvider.getObject(key, String.class);
+        if (json == null) {
             appService.getApp(appId);
             Study study = service.getStudy(appId, studyId, true);
-            return BridgeObjectMapper.get().writeValueAsString(study);
-        } else {
-            CacheKey key = CacheKey.publicStudy(appId, studyId);
-            String json = cacheProvider.getObject(key, String.class);
-            if (json == null) {
-                appService.getApp(appId);
-                Study study = service.getStudy(appId, studyId, true);
-                json = Study.STUDY_SUMMARY_WRITER.writeValueAsString(study);
-                cacheProvider.setObject(key, json, ONE_DAY_IN_SECONDS);
-            }
-            return json;
+            json = Study.STUDY_SUMMARY_WRITER.writeValueAsString(study);
+            cacheProvider.setObject(key, json, ONE_DAY_IN_SECONDS);
         }
+        return json;
+    }
+
+    @GetMapping("/v2/apps/{appId}/studies/{studyId}")
+    public Study getStudyForWorker(@PathVariable String appId, @PathVariable String studyId) {
+        getAuthenticatedSession(WORKER);
+        // This throws a 404 with the correct error message if the app doesn't exist.
+        appService.getApp(appId);
+        return service.getStudy(appId, studyId, true);
     }
 
     @GetMapping(path = "/v1/apps/{appId}/studies")
