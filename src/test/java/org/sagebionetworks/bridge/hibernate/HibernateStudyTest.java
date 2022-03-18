@@ -101,11 +101,12 @@ public class HibernateStudyTest {
         Study study = createStudy();
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(study);
-        assertEquals(node.size(), 29);
+        assertEquals(node.size(), 31);
         assertEquals(node.get("identifier").textValue(), "oneId");
         assertEquals(node.get("name").textValue(), "name");
         assertEquals(node.get("studyStartEventId").textValue(), "enrollment");
         assertTrue(node.get("deleted").booleanValue());
+        assertTrue(node.get("exporter3Enabled").booleanValue());
         assertEquals(node.get("createdOn").textValue(), CREATED_ON.toString());
         assertEquals(node.get("modifiedOn").textValue(), MODIFIED_ON.toString());
         assertTrue(node.get("clientData").get("booleanFlag").booleanValue());
@@ -142,6 +143,10 @@ public class HibernateStudyTest {
         assertNull(node.get("appId"));
         assertEquals(node.get("customEvents").get(0).get("eventId").textValue(), "event1");
         assertEquals(node.get("customEvents").get(0).get("updateType").textValue(), "immutable");
+
+        // Don't need to fully test serialization, since this is tested elsewhere. Just test that it's not null and
+        // that it de-serializes back to the correct value.
+        assertNotNull(node.get("exporter3Configuration"));
         
         Study deser = BridgeObjectMapper.get().readValue(node.toString(), Study.class);
         deser.setLogoGuid(GUID);
@@ -149,6 +154,8 @@ public class HibernateStudyTest {
         assertEquals(deser.getName(), "name");
         assertEquals(deser.getStudyStartEventId(), "enrollment");
         assertTrue(deser.isDeleted());
+        assertEquals(deser.getExporter3Configuration(), study.getExporter3Configuration());
+        assertTrue(deser.isExporter3Enabled());
         assertEquals(deser.getCreatedOn(), CREATED_ON);
         assertEquals(deser.getModifiedOn(), MODIFIED_ON);
         assertEquals(deser.getDetails(), "someDetails");
@@ -217,6 +224,8 @@ public class HibernateStudyTest {
         study.setName("name");
         study.setStudyStartEventId("enrollment");
         study.setDeleted(true);
+        study.setExporter3Configuration(TestUtils.getValidExporter3Config());
+        study.setExporter3Enabled(true);
         study.setCreatedOn(CREATED_ON);
         study.setModifiedOn(MODIFIED_ON);
         study.setClientData(TestUtils.getClientData());
@@ -250,7 +259,7 @@ public class HibernateStudyTest {
         
         StudyCustomEvent event = new StudyCustomEvent("event1", IMMUTABLE);
         study.getCustomEvents().add(event);
-        
+
         return study;
     }
 }

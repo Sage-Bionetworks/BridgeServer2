@@ -9,6 +9,7 @@ import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.models.studies.StudyPhase.CAN_EDIT_STUDY_CORE;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
@@ -88,7 +90,15 @@ public class Schedule2Controller extends BaseController {
         
         return ResponseEntity.status(status).body(retValue);
     }
-    
+
+    /** Returns a list of all study IDs in the given app that use the given schedule. */
+    @GetMapping("/v1/apps/{appId}/schedules/{scheduleGuid}/studies")
+    public ResourceList<String> getStudyIdsUsingSchedule(@PathVariable String appId, @PathVariable String scheduleGuid) {
+        getAuthenticatedSession(WORKER);
+        List<String> studyIdList = studyService.getStudyIdsUsingSchedule(appId, scheduleGuid);
+        return new ResourceList<>(studyIdList);
+    }
+
     @EtagSupport({
         // Most recent modification to the schedule
         @EtagCacheKey(model=Schedule2.class, keys={"appId", "studyId"})

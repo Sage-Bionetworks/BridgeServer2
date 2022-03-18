@@ -42,6 +42,7 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.Exporter3Configuration;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordEx3;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.worker.Exporter3Request;
 import org.sagebionetworks.bridge.models.worker.WorkerRequest;
@@ -160,6 +161,7 @@ public class Exporter3Service {
     private ParticipantVersionService participantVersionService;
     private S3Helper s3Helper;
     private AmazonSQSClient sqsClient;
+    private StudyService studyService;
     private SynapseHelper synapseHelper;
 
     @Autowired
@@ -203,6 +205,11 @@ public class Exporter3Service {
         this.sqsClient = sqsClient;
     }
 
+    @Autowired
+    final void setStudyService(StudyService studyService) {
+        this.studyService = studyService;
+    }
+
     @Resource(name="exporterSynapseHelper")
     public final void setSynapseHelper(SynapseHelper synapseHelper) {
         this.synapseHelper = synapseHelper;
@@ -228,10 +235,76 @@ public class Exporter3Service {
             isAppModified = true;
         }
 
+        boolean isConfigModified = initExporter3Internal(app.getName(), appId, ex3Config);
+        if (isConfigModified) {
+            isAppModified = true;
+        }
+
+        // Finally, enable Exporter 3.0 if it's not already enabled.
+        if (!app.isExporter3Enabled()) {
+            app.setExporter3Enabled(true);
+            isAppModified = true;
+        }
+
+        // Update app if necessary. We mark this as an admin update, because the only field that changed is
+        // exporter3config and exporter3enabled.
+        if (isAppModified) {
+            appService.updateApp(app, true);
+        }
+
+        return ex3Config;
+    }
+
+    /**
+     * Initializes configs and Synapse resources for Exporter 3.0 for a study. This follows the same rules as
+     * initializing for apps.
+     */
+    public Exporter3Configuration initExporter3ForStudy(String appId, String studyId) throws BridgeSynapseException,
+            IOException, SynapseException {
+        boolean isStudyModified = false;
+        Study study = studyService.getStudy(appId, studyId, true);
+
+        // Init the Exporter3Config object.
+        Exporter3Configuration ex3Config = study.getExporter3Configuration();
+        if (ex3Config == null) {
+            ex3Config = new Exporter3Configuration();
+            study.setExporter3Configuration(ex3Config);
+            isStudyModified = true;
+        }
+
+        boolean isConfigModified = initExporter3Internal(study.getName(), appId + '/' + studyId, ex3Config);
+        if (isConfigModified) {
+            isStudyModified = true;
+        }
+
+        // Finally, enable Exporter 3.0 if it's not already enabled.
+        if (!study.isExporter3Enabled()) {
+            study.setExporter3Enabled(true);
+            isStudyModified = true;
+        }
+
+        // Update study if necessary. We mark this as an admin update, because the only field that changed is
+        // exporter3config and exporter3enabled.
+        if (isStudyModified) {
+            studyService.updateStudy(appId, study);
+        }
+
+        return ex3Config;
+    }
+
+    // Package-scoped for unit tests.
+    // Parent name is the name of the app or study this is being initialized for.
+    // Base key is the base S3 key for all files in S3. This is either [appID] or [appId]/[studyId] if this is for a
+    // study.
+    // This modifies the passed in Exporter3Config. Returns true if ex3Config was modified.
+    boolean initExporter3Internal(String parentName, String baseKey, Exporter3Configuration ex3Config)
+            throws BridgeSynapseException, IOException, SynapseException {
+        boolean isModified = false;
+
         // Name in Synapse are globally unique, so we add a random token to the name to ensure it
         // doesn't conflict with an existing name. Also, Synapse names can only contain a certain
         // subset of characters. We've verified this name is acceptable for this transformation.
-        String synapseName = BridgeUtils.toSynapseFriendlyName(app.getName());
+        String synapseName = BridgeUtils.toSynapseFriendlyName(parentName);
         String nameScopingToken = getNameScopingToken();
 
         // Create data access team.
@@ -244,7 +317,7 @@ public class Exporter3Service {
             LOG.info("Created Synapse team " + dataAccessTeamId);
 
             ex3Config.setDataAccessTeamId(dataAccessTeamId);
-            isAppModified = true;
+            isModified = true;
         }
         Set<Long> adminPrincipalIds = ImmutableSet.of(exporterSynapseId, bridgeAdminTeamId);
         Set<Long> readOnlyPrincipalIds = ImmutableSet.of(bridgeStaffTeamId, dataAccessTeamId);
@@ -262,7 +335,7 @@ public class Exporter3Service {
             synapseHelper.createAclWithRetry(projectId, adminPrincipalIds, readOnlyPrincipalIds);
 
             ex3Config.setProjectId(projectId);
-            isAppModified = true;
+            isModified = true;
 
             // We also need to add this project to the tracking view.
             if (StringUtils.isNotBlank(synapseTrackingViewId)) {
@@ -288,7 +361,7 @@ public class Exporter3Service {
             LOG.info("Created Synapse table " + participantVersionTableId);
 
             ex3Config.setParticipantVersionTableId(participantVersionTableId);
-            isAppModified = true;
+            isModified = true;
         }
 
         // Create Folder for raw data.
@@ -306,19 +379,19 @@ public class Exporter3Service {
             synapseHelper.createAclWithRetry(rawDataFolderId, adminPrincipalIds, readOnlyPrincipalIds);
 
             ex3Config.setRawDataFolderId(rawDataFolderId);
-            isAppModified = true;
+            isModified = true;
         }
 
         // Create storage location.
         Long storageLocationId = ex3Config.getStorageLocationId();
         if (storageLocationId == null) {
             // Create owner.txt so that we can create the storage location.
-            s3Helper.writeLinesToS3(rawHealthDataBucket, appId + "/owner.txt",
+            s3Helper.writeLinesToS3(rawHealthDataBucket, baseKey + "/owner.txt",
                     ImmutableList.of(exporterSynapseUser));
 
             // Create storage location.
             ExternalS3StorageLocationSetting storageLocation = new ExternalS3StorageLocationSetting();
-            storageLocation.setBaseKey(appId);
+            storageLocation.setBaseKey(baseKey);
             storageLocation.setBucket(rawHealthDataBucket);
             storageLocation.setStsEnabled(true);
             storageLocation = synapseHelper.createStorageLocationForEntity(rawDataFolderId, storageLocation);
@@ -326,22 +399,10 @@ public class Exporter3Service {
             LOG.info("Created Synapse storage location " + storageLocationId);
 
             ex3Config.setStorageLocationId(storageLocationId);
-            isAppModified = true;
+            isModified = true;
         }
 
-        // Finally, enable Exporter 3.0 if it's not already enabled.
-        if (!app.isExporter3Enabled()) {
-            app.setExporter3Enabled(true);
-            isAppModified = true;
-        }
-
-        // Update app if necessary. We mark this as an admin update, because the only field that changed is
-        // exporter3config and exporter3enabled.
-        if (isAppModified) {
-            appService.updateApp(app, true);
-        }
-
-        return ex3Config;
+        return isModified;
     }
 
     // Package-scoped for unit tests.

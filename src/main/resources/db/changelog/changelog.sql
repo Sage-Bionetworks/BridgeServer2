@@ -939,3 +939,12 @@ ADD COLUMN `weekInStudy` int(4);
 ALTER TABLE `WeeklyAdherenceReports`
 ADD COLUMN `startDate` varchar(10);
 
+-- changeset bridge:66
+
+ALTER TABLE `Substudies`
+ADD COLUMN `exporter3Configuration` text COLLATE utf8_unicode_ci;
+
+-- changeset bridge:67
+
+ALTER TABLE `Substudies`
+ADD COLUMN `exporter3Enabled` tinyint(1) DEFAULT '0';

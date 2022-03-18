@@ -540,6 +540,7 @@ public class TestUtils {
         app.setName("Test App ["+clazz.getSimpleName()+"]");
         app.setShortName("ShortName");
         app.setAutoVerificationEmailSuppressed(true);
+        app.setExporter3Configuration(getValidExporter3Config());
         app.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
         app.setAppIdExcludedInExport(true);
         app.setIdentifier(id);
@@ -578,15 +579,17 @@ public class TestUtils {
         }
         app.setDefaultTemplates(defaultTemplates);
 
+        return app;
+    }
+
+    public static Exporter3Configuration getValidExporter3Config() {
         Exporter3Configuration exporter3Config = new Exporter3Configuration();
         exporter3Config.setDataAccessTeamId(1234L);
         exporter3Config.setParticipantVersionTableId("participant-version-synapse-table-id");
         exporter3Config.setProjectId("synapse-project-id");
         exporter3Config.setRawDataFolderId("synapse-folder-id");
         exporter3Config.setStorageLocationId(5678L);
-        app.setExporter3Configuration(exporter3Config);
-
-        return app;
+        return exporter3Config;
     }
 
     public static SchedulePlan getABTestSchedulePlan(String appId) {
