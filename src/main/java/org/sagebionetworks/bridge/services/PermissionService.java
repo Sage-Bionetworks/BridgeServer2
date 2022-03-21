@@ -99,10 +99,6 @@ public class PermissionService {
         Permission existingPermission = permissionDao.getPermission(appId, permission.getGuid())
                 .orElseThrow(() -> new EntityNotFoundException(Permission.class));
         
-//        if (existingPermission == null) {
-//            throw new EntityNotFoundException(Permission.class);
-//        }
-        
         // Can only update accessLevel
         permission.setAppId(existingPermission.getAppId());
         permission.setUserId(existingPermission.getUserId());
