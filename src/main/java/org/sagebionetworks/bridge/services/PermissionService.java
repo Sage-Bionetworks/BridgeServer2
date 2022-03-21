@@ -96,18 +96,11 @@ public class PermissionService {
     
         Validate.entityThrowingException(INSTANCE, permission);
         
-        Permission existingPermission = permissionDao.getPermission(appId, permission.getGuid());
-        if (existingPermission == null) {
-            throw new EntityNotFoundException(Permission.class);
-        }
-//        System.out.println(permission);
-//        System.out.println(existingPermission);
-//        // TODO: verify all fields except for accessLevel match
-//        if (!permission.getAppId().equals(existingPermission.getAppId()) ||
-//            !permission.getUserId().equals(existingPermission.getUserId()) ||
-//            !permission.getEntityType().equals(existingPermission.getEntityType()) ||
-//            !permission.getEntityId().equals(existingPermission.getEntityId())) {
-//            throw new InvalidEntityException(permission, "Can only update accessLevel.");
+        Permission existingPermission = permissionDao.getPermission(appId, permission.getGuid())
+                .orElseThrow(() -> new EntityNotFoundException(Permission.class));
+        
+//        if (existingPermission == null) {
+//            throw new EntityNotFoundException(Permission.class);
 //        }
         
         // Can only update accessLevel

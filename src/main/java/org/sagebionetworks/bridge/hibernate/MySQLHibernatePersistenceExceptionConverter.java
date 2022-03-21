@@ -12,8 +12,6 @@ import com.amazonaws.util.Throwables;
 import com.google.common.collect.ImmutableMap;
 
 import org.hibernate.NonUniqueObjectException;
-import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.models.permissions.Permission;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
@@ -79,15 +77,8 @@ public class MySQLHibernatePersistenceExceptionConverter implements PersistenceE
     @Override
     public RuntimeException convert(PersistenceException exception, Object entity) {
         String name = (entity == null) ? "item" : getTypeName(entity.getClass());
-        System.out.println("EXCEPTION ------------------");
-        System.out.println(exception);
-        System.out.println("OBJECT ---------------------");
-        System.out.println(entity);
+
         if (exception instanceof OptimisticLockException) {
-            // I'm not sure why getting a non-existent permission by guid is creating an OptimisticLockException
-//            if (entity instanceof Permission) {
-//                return new EntityNotFoundException(Permission.class);
-//            }
             return new ConcurrentModificationException(String.format(WRONG_VERSION_MSG, name));
         }
         if (exception instanceof NonUniqueObjectException) {
@@ -100,18 +91,11 @@ public class MySQLHibernatePersistenceExceptionConverter implements PersistenceE
         if (throwable instanceof java.sql.SQLIntegrityConstraintViolationException) {
             String rawMessage = throwable.getMessage();
             String displayMessage = DEFAULT_CONSTRAINT_MSG;
-            System.out.println("----------- MESSAGE START ------------");
-            System.out.println(throwable);
-            System.out.println("-----RAW-----");
-            System.out.println(rawMessage);
-            System.out.println("----------- MESSAGE END ------------");
             // SQLIntegrityConstraintViolation can contain different constraint violations, 
             // including foreign key and duplicate entry violations
             if (rawMessage.contains("Duplicate entry")) {
-                System.out.println("ARE WE NOT DUPLICATES?????");
                 displayMessage = selectMsg(
                         rawMessage, UNIQUE_KEY_CONSTRAINTS, UNIQUE_CONSTRAINT_MSG, name, displayMessage);
-                System.out.println(displayMessage);
             } else if (rawMessage.contains("a foreign key constraint fails")) {
                 if (rawMessage.contains("Cannot add or update a child row")) {
                     displayMessage = selectMsg(

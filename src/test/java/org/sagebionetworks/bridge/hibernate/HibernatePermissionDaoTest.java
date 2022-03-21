@@ -16,12 +16,14 @@ import org.testng.annotations.Test;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 
 public class HibernatePermissionDaoTest extends Mockito {
     
@@ -44,7 +46,21 @@ public class HibernatePermissionDaoTest extends Mockito {
     
     @Test
     public void getPermission_pass() {
-        dao.getPermission(TEST_APP_ID, GUID);
+        Permission permission = createPermission();
+        when(mockHelper.getById(eq(Permission.class), eq(GUID))).thenReturn(permission);
+        
+        Optional<Permission> result = dao.getPermission(TEST_APP_ID, GUID);
+        assertEquals(permission, result.get());
+        
+        verify(mockHelper).getById(eq(Permission.class), eq(GUID));
+    }
+    
+    @Test
+    public void getPermission_noMatchingPermission() {
+        when(mockHelper.getById(eq(Permission.class), eq(GUID))).thenReturn(null);
+        
+        Optional<Permission> result = dao.getPermission(TEST_APP_ID, GUID);
+        assertFalse(result.isPresent());
         
         verify(mockHelper).getById(eq(Permission.class), eq(GUID));
     }

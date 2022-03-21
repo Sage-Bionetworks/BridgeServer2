@@ -145,7 +145,7 @@ public class PermissionServiceTest extends Mockito {
         
         when(mockDao.updatePermission(eq(TEST_APP_ID), any())).thenReturn(permission);
         doReturn(permissionDetail).when(service).getPermissionDetail(eq(TEST_APP_ID), any());
-        when(mockDao.getPermission(eq(TEST_APP_ID), eq(GUID))).thenReturn(existingPermission);
+        when(mockDao.getPermission(eq(TEST_APP_ID), eq(GUID))).thenReturn(Optional.of(existingPermission));
         
         PermissionDetail returnedDetail = service.updatePermission(TEST_APP_ID, permission);
     
@@ -153,6 +153,41 @@ public class PermissionServiceTest extends Mockito {
     
         assertEquals(returnedDetail, permissionDetail);
     
+        Permission captured = permissionCaptor.getValue();
+        assertEquals(captured.getGuid(), GUID);
+        assertEquals(captured.getAppId(), TEST_APP_ID);
+        assertEquals(captured.getUserId(), TEST_USER_ID);
+        assertEquals(captured.getAccessLevel(), AccessLevel.ADMIN);
+        assertEquals(captured.getEntityType(), EntityType.STUDY);
+        assertEquals(captured.getEntityId(), TEST_STUDY_ID);
+    }
+    
+    @Test
+    public void updatePermission_onlyUpdatesAccessLevel() {
+        Permission permission = createPermission();
+        permission.setAppId("fake-app-id");
+        permission.setUserId("fake-user-id");
+        permission.setEntityType(ORGANIZATION);
+        permission.setEntityId("fake-entity-id");
+        
+        Permission existingPermission = createPermission();
+        existingPermission.setAccessLevel(AccessLevel.LIST);
+        
+        Account account = Account.create();
+        account.setEmail("email@email.com");
+        EntityRef entityRef = new EntityRef(EntityType.STUDY, TEST_STUDY_ID, "test-study-name");
+        PermissionDetail permissionDetail = new PermissionDetail(permission, entityRef, new AccountRef(account));
+        
+        when(mockDao.updatePermission(eq(TEST_APP_ID), any())).thenReturn(permission);
+        doReturn(permissionDetail).when(service).getPermissionDetail(eq(TEST_APP_ID), any());
+        when(mockDao.getPermission(eq(TEST_APP_ID), eq(GUID))).thenReturn(Optional.of(existingPermission));
+        
+        PermissionDetail returnedDetail = service.updatePermission(TEST_APP_ID, permission);
+        
+        verify(mockDao).updatePermission(eq(TEST_APP_ID), permissionCaptor.capture());
+        
+        assertEquals(returnedDetail, permissionDetail);
+        
         Permission captured = permissionCaptor.getValue();
         assertEquals(captured.getGuid(), GUID);
         assertEquals(captured.getAppId(), TEST_APP_ID);
@@ -170,55 +205,10 @@ public class PermissionServiceTest extends Mockito {
         service.updatePermission(TEST_APP_ID, permission);
     }
     
-    @Test(expectedExceptions = EntityNotFoundException.class,
-          expectedExceptionsMessageRegExp = "Permission with provided GUID does not exist.")
+    @Test(expectedExceptions = EntityNotFoundException.class)
     public void updatePermission_noExistingPermission() {
         Permission permission = createPermission();
-        when(mockDao.getPermission(any(), any())).thenReturn(null);
-        
-        service.updatePermission(TEST_APP_ID, permission);
-    }
-    
-    @Test(expectedExceptions = InvalidEntityException.class,
-            expectedExceptionsMessageRegExp = "Can only update accessLevel.")
-    public void updatePermission_incorrectAppIdPermission() {
-        Permission permission = createPermission();
-        Permission existingPermission = createPermission();
-        existingPermission.setAppId("fake-app-id");
-        when(mockDao.getPermission(any(), any())).thenReturn(existingPermission);
-        
-        service.updatePermission(TEST_APP_ID, permission);
-    }
-    
-    @Test(expectedExceptions = InvalidEntityException.class,
-            expectedExceptionsMessageRegExp = "Can only update accessLevel.")
-    public void updatePermission_incorrectUserIdPermission() {
-        Permission permission = createPermission();
-        Permission existingPermission = createPermission();
-        existingPermission.setUserId("fake-user-id");
-        when(mockDao.getPermission(any(), any())).thenReturn(existingPermission);
-        
-        service.updatePermission(TEST_APP_ID, permission);
-    }
-    
-    @Test(expectedExceptions = InvalidEntityException.class,
-            expectedExceptionsMessageRegExp = "Can only update accessLevel.")
-    public void updatePermission_incorrectEntityTypePermission() {
-        Permission permission = createPermission();
-        Permission existingPermission = createPermission();
-        existingPermission.setEntityType(ASSESSMENT_LIBRARY);
-        when(mockDao.getPermission(any(), any())).thenReturn(existingPermission);
-        
-        service.updatePermission(TEST_APP_ID, permission);
-    }
-    
-    @Test(expectedExceptions = InvalidEntityException.class,
-            expectedExceptionsMessageRegExp = "Can only update accessLevel.")
-    public void updatePermission_incorrectEntityIdPermission() {
-        Permission permission = createPermission();
-        Permission existingPermission = createPermission();
-        existingPermission.setEntityId("fake-entity-id");
-        when(mockDao.getPermission(any(), any())).thenReturn(existingPermission);
+        when(mockDao.getPermission(any(), any())).thenReturn(Optional.empty());
         
         service.updatePermission(TEST_APP_ID, permission);
     }

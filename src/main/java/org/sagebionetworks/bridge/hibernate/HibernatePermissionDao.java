@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 
 import java.util.List;
+import java.util.Optional;
 
 @Component
 public class HibernatePermissionDao implements PermissionDao {
@@ -33,11 +34,16 @@ public class HibernatePermissionDao implements PermissionDao {
     }
     
     @Override
-    public Permission getPermission(String appId, String guid) {
+    public Optional<Permission> getPermission(String appId, String guid) {
         checkArgument(isNotBlank(appId));
         checkArgument(isNotBlank(guid));
         
-        return hibernateHelper.getById(Permission.class, guid);
+        Permission permission = hibernateHelper.getById(Permission.class, guid);
+        if (permission == null) {
+            return Optional.empty();
+        }
+        
+        return Optional.of(permission);
     }
     
     @Override
