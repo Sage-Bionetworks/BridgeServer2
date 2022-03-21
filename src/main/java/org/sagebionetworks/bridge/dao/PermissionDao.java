@@ -3,7 +3,7 @@ package org.sagebionetworks.bridge.dao;
 import org.sagebionetworks.bridge.models.permissions.Permission;
 import org.sagebionetworks.bridge.models.permissions.EntityType;
 
-import java.util.Set;
+import java.util.List;
 
 /**
  * DAO to manage administrative permissions by entity.
@@ -11,21 +11,29 @@ import java.util.Set;
 public interface PermissionDao {
     
     /**
+     * Retrieve a permission by its guid.
+     * @param appId
+     * @param guid the id of the permission to retrive
+     * @return a permission
+     */
+    Permission getPermission(String appId, String guid);
+    
+    /**
      * Retrieve all permissions granted to a user.
      * @param appId
      * @param userId the id of the administrative user
-     * @return set of permissions
+     * @return list of permissions
      */
-    Set<Permission> getPermissionsForUser(String appId, String userId);
+    List<Permission> getPermissionsForUser(String appId, String userId);
     
     /**
      * Retrieve all permissions granting access to a specific entity.
      * @param appId
      * @param entityType the type of entity
      * @param entityId   the id of the entity
-     * @return set of permissions
+     * @return list of permissions
      */
-    Set<Permission> getPermissionsForEntity(String appId, EntityType entityType, String entityId);
+    List<Permission> getPermissionsForEntity(String appId, EntityType entityType, String entityId);
     
     /**
      * Create a new permission record.

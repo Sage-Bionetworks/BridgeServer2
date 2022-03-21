@@ -3,30 +3,49 @@ package org.sagebionetworks.bridge.services;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.sagebionetworks.bridge.models.permissions.EntityType.*;
 import static org.sagebionetworks.bridge.validators.PermissionValidator.INSTANCE;
 
+import com.google.common.collect.ImmutableSet;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.PermissionDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountRef;
+import org.sagebionetworks.bridge.models.assessments.Assessment;
+import org.sagebionetworks.bridge.models.organizations.Organization;
+import org.sagebionetworks.bridge.models.permissions.EntityRef;
 import org.sagebionetworks.bridge.models.permissions.EntityType;
 import org.sagebionetworks.bridge.models.permissions.Permission;
 import org.sagebionetworks.bridge.models.permissions.PermissionDetail;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.HashSet;
+import javax.persistence.OptimisticLockException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 @Component
 public class PermissionService {
     
+    private Set<EntityType> orgTypes = ImmutableSet.of(ASSESSMENT_LIBRARY, MEMBERS, ORGANIZATION, SPONSORED_STUDIES);
+    private Set<EntityType> studyTypes = ImmutableSet.of(PARTICIPANTS, STUDY, STUDY_PI);
+    private Set<EntityType> assessmentTypes = ImmutableSet.of(ASSESSMENT);
+    
     private PermissionDao permissionDao;
     
     private AccountService accountService;
+    
+    private OrganizationService organizationService;
+    
+    private StudyService studyService;
+    
+    private AssessmentService assessmentService;
     
     @Autowired
     final void setPermissionDao(PermissionDao permissionDao) {
@@ -36,6 +55,21 @@ public class PermissionService {
     @Autowired
     final void setAccountService(AccountService accountService) {
         this.accountService = accountService;
+    }
+    
+    @Autowired
+    final void setOrganizationService(OrganizationService organizationService) {
+        this.organizationService = organizationService;
+    }
+    
+    @Autowired
+    final void setStudyService(StudyService studyService) {
+        this.studyService = studyService;
+    }
+    
+    @Autowired
+    final void setAssessmentService(AssessmentService assessmentService) {
+        this.assessmentService = assessmentService;
     }
     
     // For mock testing
@@ -62,26 +96,53 @@ public class PermissionService {
     
         Validate.entityThrowingException(INSTANCE, permission);
         
+        Permission existingPermission = permissionDao.getPermission(appId, permission.getGuid());
+        if (existingPermission == null) {
+            throw new EntityNotFoundException(Permission.class);
+        }
+//        System.out.println(permission);
+//        System.out.println(existingPermission);
+//        // TODO: verify all fields except for accessLevel match
+//        if (!permission.getAppId().equals(existingPermission.getAppId()) ||
+//            !permission.getUserId().equals(existingPermission.getUserId()) ||
+//            !permission.getEntityType().equals(existingPermission.getEntityType()) ||
+//            !permission.getEntityId().equals(existingPermission.getEntityId())) {
+//            throw new InvalidEntityException(permission, "Can only update accessLevel.");
+//        }
+        
+        // Can only update accessLevel
+        permission.setAppId(existingPermission.getAppId());
+        permission.setUserId(existingPermission.getUserId());
+        permission.setEntityType(existingPermission.getEntityType());
+        permission.setEntityId(existingPermission.getEntityId());
+        
         Permission updatedPermission = permissionDao.updatePermission(appId, permission);
     
         return getPermissionDetail(appId, updatedPermission);
     }
     
-    public Set<Permission> getPermissionsForUser(String appId, String userId) {
+    public List<PermissionDetail> getPermissionsForUser(String appId, String userId) {
         checkArgument(isNotBlank(appId));
         checkArgument(isNotBlank(userId));
-        
-        return permissionDao.getPermissionsForUser(appId, userId);
+    
+        List<Permission> permissions = permissionDao.getPermissionsForUser(appId, userId);
+    
+        List<PermissionDetail> permissionDetails = new ArrayList<>();
+        for (Permission permission : permissions) {
+            permissionDetails.add(getPermissionDetail(appId, permission));
+        }
+    
+        return permissionDetails;
     }
     
-    public Set<PermissionDetail> getPermissionsForEntity(String appId, String entityType, String entityId) {
+    public List<PermissionDetail> getPermissionsForEntity(String appId, String entityType, String entityId) {
         checkArgument(isNotBlank(appId));
         checkNotNull(entityType);
         checkArgument(isNotBlank(entityId));
         
-        Set<Permission> permissions = permissionDao.getPermissionsForEntity(appId, EntityType.valueOf(entityType), entityId);
+        List<Permission> permissions = permissionDao.getPermissionsForEntity(appId, EntityType.valueOf(entityType), entityId);
         
-        Set<PermissionDetail> permissionDetails = new HashSet<>();
+        List<PermissionDetail> permissionDetails = new ArrayList<>();
         for (Permission permission : permissions) {
             permissionDetails.add(getPermissionDetail(appId, permission));
         }
@@ -102,6 +163,20 @@ public class PermissionService {
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
         AccountRef userAccountRef = new AccountRef(userAccount);
         
-        return new PermissionDetail(permission, userAccountRef);
+        String entityName = "";
+        if (orgTypes.contains(permission.getEntityType())) {
+            Organization organization = organizationService.getOrganization(appId, permission.getEntityId());
+            entityName = organization.getName();
+        } else if (studyTypes.contains(permission.getEntityType())) {
+            Study study = studyService.getStudy(appId, permission.getEntityId(), false);
+            entityName = study.getName();
+        } else if (assessmentTypes.contains(permission.getEntityType())) {
+            Assessment assessment = assessmentService.getAssessmentByGuid(appId, null, permission.getEntityId());
+            entityName = assessment.getTitle();
+        }
+    
+        EntityRef entityRef = new EntityRef(permission.getEntityType(), permission.getEntityId(), entityName);
+        
+        return new PermissionDetail(permission, entityRef, userAccountRef);
     }
 }

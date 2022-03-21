@@ -4,7 +4,6 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
-import com.google.common.collect.ImmutableSet;
 import org.sagebionetworks.bridge.dao.PermissionDao;
 import org.sagebionetworks.bridge.models.permissions.Permission;
 import org.sagebionetworks.bridge.models.permissions.EntityType;
@@ -12,7 +11,7 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 
-import java.util.Set;
+import java.util.List;
 
 @Component
 public class HibernatePermissionDao implements PermissionDao {
@@ -34,19 +33,27 @@ public class HibernatePermissionDao implements PermissionDao {
     }
     
     @Override
-    public Set<Permission> getPermissionsForUser(String appId, String userId) {
+    public Permission getPermission(String appId, String guid) {
+        checkArgument(isNotBlank(appId));
+        checkArgument(isNotBlank(guid));
+        
+        return hibernateHelper.getById(Permission.class, guid);
+    }
+    
+    @Override
+    public List<Permission> getPermissionsForUser(String appId, String userId) {
         checkArgument(isNotBlank(appId));
         checkArgument(isNotBlank(userId));
         
         QueryBuilder builder = new QueryBuilder();
         builder.append(GET_BY_USER, APP_ID, appId, USER_ID, userId);
         
-        return ImmutableSet.copyOf(hibernateHelper.queryGet(
-                builder.getQuery(), builder.getParameters(), null, null, Permission.class));
+        return hibernateHelper.queryGet(
+                builder.getQuery(), builder.getParameters(), null, null, Permission.class);
     }
     
     @Override
-    public Set<Permission> getPermissionsForEntity(String appId, EntityType entityType, String entityId) {
+    public List<Permission> getPermissionsForEntity(String appId, EntityType entityType, String entityId) {
         checkArgument(isNotBlank(appId));
         checkNotNull(entityType);
         checkArgument(isNotBlank(entityId));
@@ -54,8 +61,8 @@ public class HibernatePermissionDao implements PermissionDao {
         QueryBuilder builder = new QueryBuilder();
         builder.append(GET_BY_ENTITY_TYPE, APP_ID, appId, ENTITY_TYPE, entityType, ENTITY_ID, entityId);
     
-        return ImmutableSet.copyOf(hibernateHelper.queryGet(
-                builder.getQuery(), builder.getParameters(), null, null, Permission.class));
+        return hibernateHelper.queryGet(
+                builder.getQuery(), builder.getParameters(), null, null, Permission.class);
     }
     
     @Override

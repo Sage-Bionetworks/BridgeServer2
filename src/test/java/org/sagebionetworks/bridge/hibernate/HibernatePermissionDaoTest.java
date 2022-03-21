@@ -14,8 +14,8 @@ import org.sagebionetworks.bridge.models.permissions.AccessLevel;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
@@ -43,11 +43,18 @@ public class HibernatePermissionDaoTest extends Mockito {
     }
     
     @Test
+    public void getPermission_pass() {
+        dao.getPermission(TEST_APP_ID, GUID);
+        
+        verify(mockHelper).getById(eq(Permission.class), eq(GUID));
+    }
+    
+    @Test
     public void getPermissionsForUser_pass() {
         Permission permission = createPermission();
         when(mockHelper.queryGet(any(), any(), any(), any(), any())).thenReturn(ImmutableList.of(permission));
         
-        Set<Permission> permissions = dao.getPermissionsForUser(TEST_APP_ID, TEST_USER_ID);
+        List<Permission> permissions = dao.getPermissionsForUser(TEST_APP_ID, TEST_USER_ID);
         
         assertEquals(permissions.size(), 1);
         Permission returnedPermission = permissions.stream().findFirst().orElse(null);
@@ -64,7 +71,7 @@ public class HibernatePermissionDaoTest extends Mockito {
         Permission permission = createPermission();
         when(mockHelper.queryGet(any(), any(), any(), any(), any())).thenReturn(ImmutableList.of(permission));
         
-        Set<Permission> permissions = dao.getPermissionsForEntity(TEST_APP_ID, EntityType.STUDY, TEST_STUDY_ID);
+        List<Permission> permissions = dao.getPermissionsForEntity(TEST_APP_ID, EntityType.STUDY, TEST_STUDY_ID);
     
         assertEquals(permissions.size(), 1);
         Permission returnedPermission = permissions.stream().findFirst().orElse(null);

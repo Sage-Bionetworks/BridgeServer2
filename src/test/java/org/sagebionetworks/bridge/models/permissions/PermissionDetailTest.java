@@ -34,17 +34,22 @@ public class PermissionDetailTest {
         Account account = Account.create();
         account.setEmail("testAccount@testEmail.com");
         AccountRef accountRef = new AccountRef(account);
+    
+        EntityRef entityRef = new EntityRef(EntityType.STUDY, TEST_STUDY_ID, "test-study-name");
         
-        PermissionDetail permissionDetail = new PermissionDetail(permission, accountRef);
+        PermissionDetail permissionDetail = new PermissionDetail(permission, entityRef, accountRef);
     
         JsonNode node = BridgeObjectMapper.get().valueToTree(permissionDetail);
-        assertEquals(node.size(), 7);
+        assertEquals(node.size(), 8);
         assertEquals(node.get("guid").textValue(), GUID);
         assertNull(node.get("appId"));
         assertEquals(node.get("userId").textValue(), TEST_USER_ID);
         assertEquals(node.get("accessLevel").textValue(), "admin");
         assertEquals(node.get("entityType").textValue(), "study");
         assertEquals(node.get("entityId").textValue(), TEST_STUDY_ID);
+        assertEquals(node.get("entityRef").get("entityType").textValue(), "study");
+        assertEquals(node.get("entityRef").get("entityId").textValue(), TEST_STUDY_ID);
+        assertEquals(node.get("entityRef").get("entityName").textValue(), "test-study-name");
         assertEquals(node.get("userAccountRef").get("email").textValue(), "testAccount@testEmail.com");
         assertEquals(node.get("type").textValue(), "PermissionDetail");
     }

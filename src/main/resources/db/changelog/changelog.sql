@@ -952,9 +952,9 @@ CREATE TABLE IF NOT EXISTS `Permissions` (
   `organizationId` varchar(255) AS (IF(entityType IN ('ASSESSMENT_LIBRARY', 'MEMBERS', 'ORGANIZATION', 'SPONSORED_STUDIES'), entityId, NULL)) STORED,
   `studyId` varchar(255) AS (IF(entityType IN ('PARTICIPANTS', 'STUDY', 'STUDY_PI'), entityId, NULL)) STORED,
   PRIMARY KEY (`guid`),
-  UNIQUE KEY (`appId`, `userId`, `entityType`, `entityId`),
-  FOREIGN KEY (`userId`) REFERENCES `Accounts` (`id`) ON DELETE CASCADE,
-  FOREIGN KEY (`assessmentId`) REFERENCES Assessments(`guid`) ON DELETE CASCADE,
-  FOREIGN KEY (`appId`, `organizationId`) REFERENCES Organizations(`appId`, `identifier`) ON DELETE CASCADE,
-  FOREIGN KEY (`studyId`, `appId`) REFERENCES Substudies(`id`, `studyId`) ON DELETE CASCADE
+  UNIQUE KEY `Permissions-UserId-AccessLevel-EntityType-EntityId-Index` (`userId`, `accessLevel`, `entityType`, `entityId`),
+  CONSTRAINT `Permission-User-Constraint` FOREIGN KEY (`userId`) REFERENCES `Accounts` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `Permission-Assessment-Constraint` FOREIGN KEY (`assessmentId`) REFERENCES Assessments(`guid`) ON DELETE CASCADE,
+  CONSTRAINT `Permission-Organization-Constraint` FOREIGN KEY (`appId`, `organizationId`) REFERENCES Organizations(`appId`, `identifier`) ON DELETE CASCADE,
+  CONSTRAINT `Permission-Study-Constraint` FOREIGN KEY (`studyId`, `appId`) REFERENCES Substudies(`id`, `studyId`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;

@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Set;
+import java.util.List;
 
 @CrossOrigin
 @RestController
@@ -31,7 +31,7 @@ public class PermissionController extends BaseController{
     }
     
     @GetMapping("v1/permissions/{userId}")
-    public Set<Permission> getPermissionsForUser(@PathVariable String userId) {
+    public List<PermissionDetail> getPermissionsForUser(@PathVariable String userId) {
         UserSession session = getAuthenticatedSession(ADMIN);
         
         String appId = session.getAppId();
@@ -40,7 +40,7 @@ public class PermissionController extends BaseController{
     }
     
     @GetMapping("v1/permissions/{entityType}/{entityId}")
-    public Set<PermissionDetail> getPermissionsForEntity(
+    public List<PermissionDetail> getPermissionsForEntity(
             @PathVariable String entityType, @PathVariable String entityId) {
         UserSession session = getAuthenticatedSession(ADMIN);
         

@@ -14,7 +14,7 @@ import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableList;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
@@ -26,6 +26,7 @@ import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountRef;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.permissions.EntityRef;
 import org.sagebionetworks.bridge.models.permissions.EntityType;
 import org.sagebionetworks.bridge.models.permissions.Permission;
 import org.sagebionetworks.bridge.models.permissions.AccessLevel;
@@ -37,7 +38,7 @@ import org.testng.annotations.Test;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import java.util.Set;
+import java.util.List;
 
 public class PermissionControllerTest extends Mockito {
     
@@ -84,15 +85,15 @@ public class PermissionControllerTest extends Mockito {
     public void getPermissionsForUser_pass() {
         doReturn(session).when(controller).getAuthenticatedSession(ADMIN);
     
-        Permission permission = createPermission();
+        PermissionDetail permissionDetail = createPermissionDetail();
         
-        when(mockService.getPermissionsForUser(eq(TEST_APP_ID), eq(TEST_USER_ID))).thenReturn(ImmutableSet.of(permission));
+        when(mockService.getPermissionsForUser(eq(TEST_APP_ID), eq(TEST_USER_ID))).thenReturn(ImmutableList.of(permissionDetail));
         
-        Set<Permission> retValue = controller.getPermissionsForUser(TEST_USER_ID);
+        List<PermissionDetail> retValue = controller.getPermissionsForUser(TEST_USER_ID);
         
         verify(mockService).getPermissionsForUser(eq(TEST_APP_ID), eq(TEST_USER_ID));
         
-        assertEquals(retValue, ImmutableSet.of(permission));
+        assertEquals(retValue, ImmutableList.of(permissionDetail));
     }
     
     @Test
@@ -102,13 +103,13 @@ public class PermissionControllerTest extends Mockito {
         PermissionDetail permissionDetail = createPermissionDetail();
     
         when(mockService.getPermissionsForEntity(eq(TEST_APP_ID), eq("STUDY"), eq(TEST_STUDY_ID)))
-                .thenReturn(ImmutableSet.of(permissionDetail));
+                .thenReturn(ImmutableList.of(permissionDetail));
     
-        Set<PermissionDetail> retValue = controller.getPermissionsForEntity("STUDY", TEST_STUDY_ID);
+        List<PermissionDetail> retValue = controller.getPermissionsForEntity("STUDY", TEST_STUDY_ID);
     
         verify(mockService).getPermissionsForEntity(eq(TEST_APP_ID), eq("STUDY"), eq(TEST_STUDY_ID));
     
-        assertEquals(retValue, ImmutableSet.of(permissionDetail));
+        assertEquals(retValue, ImmutableList.of(permissionDetail));
     }
     
     @Test
@@ -279,6 +280,11 @@ public class PermissionControllerTest extends Mockito {
     private PermissionDetail createPermissionDetail() {
         Account account = Account.create();
         AccountRef accountRef = new AccountRef(account);
-        return new PermissionDetail(createPermission(), accountRef);
+        
+        Permission permission = createPermission();
+        
+        EntityRef entityRef = new EntityRef(permission.getEntityType(), permission.getEntityId(), "test-study-name");
+                
+        return new PermissionDetail(permission, entityRef, accountRef);
     }
 }
