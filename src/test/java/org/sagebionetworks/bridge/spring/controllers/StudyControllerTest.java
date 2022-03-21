@@ -124,6 +124,7 @@ public class StudyControllerTest extends Mockito {
         doReturn(session).when(controller).getAuthenticatedSession(STUDY_DESIGNER, STUDY_COORDINATOR, ORG_ADMIN);
         doReturn(session).when(controller).getAuthenticatedSession(ADMIN);
         doReturn(session).when(controller).getAuthenticatedSession(STUDY_DESIGNER, DEVELOPER);
+        doReturn(session).when(controller).getAuthenticatedSession(WORKER);
         doReturn(session).when(controller).getAdministrativeSession();
         
         doReturn(mockRequest).when(controller).request();
@@ -146,6 +147,7 @@ public class StudyControllerTest extends Mockito {
         assertAccept(StudyController.class, "createStudyLogo");
         assertCreate(StudyController.class, "finishStudyLogo");
         assertGet(StudyController.class, "getStudyForApp");
+        assertGet(StudyController.class, "getStudyForWorker");
         assertPost(StudyController.class, "design");
         assertPost(StudyController.class, "recruitment");
         assertPost(StudyController.class, "closeEnrollment");
@@ -457,7 +459,25 @@ public class StudyControllerTest extends Mockito {
         verify(mockCacheProvider, never()).setObject(any(), any(), anyInt());
         verify(mockStudyService, never()).getStudy(any(), any(), anyBoolean());
     }
-    
+
+    @Test
+    public void getStudyForWorker() {
+        // Mock dependencies.
+        Study study = Study.create();
+        study.setName("Name1");
+        study.setIdentifier("id1");
+        study.setVersion(10L);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+
+        // Execute and validate.
+        Study retValue = controller.getStudyForWorker(TEST_APP_ID, TEST_STUDY_ID);
+        assertEquals(retValue.getName(), "Name1");
+        assertEquals(retValue.getIdentifier(), "id1");
+        assertEquals(retValue.getVersion().intValue(), 10);
+
+        verify(mockStudyService).getStudy(TEST_APP_ID, TEST_STUDY_ID, true);
+    }
+
     @Test
     public void design() {
         doReturn(session).when(controller).getAdministrativeSession();

@@ -1,11 +1,15 @@
 package org.sagebionetworks.bridge.models.apps;
 
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
 import org.testng.annotations.Test;
+
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
 public class Exporter3ConfigurationTest {
     @Test
@@ -48,6 +52,33 @@ public class Exporter3ConfigurationTest {
         assertFalse(config.isConfigured());
         config.setStorageLocationId(2L);
         assertTrue(config.isConfigured());
+    }
+
+    @Test
+    public void serialize() throws Exception {
+        // Make POJO.
+        Exporter3Configuration config = new Exporter3Configuration();
+        config.setDataAccessTeamId(1L);
+        config.setParticipantVersionTableId("test-table-id");
+        config.setProjectId("test-project-id");
+        config.setRawDataFolderId("test-folder-id");
+        config.setStorageLocationId(2L);
+
+        // Convert to JsonNode.
+        JsonNode jsonNode = BridgeObjectMapper.get().convertValue(config, JsonNode.class);
+        assertEquals(jsonNode.size(), 7);
+        assertTrue(jsonNode.get("configured").booleanValue());
+        assertEquals(jsonNode.get("dataAccessTeamId").intValue(), 1);
+        assertEquals(jsonNode.get("participantVersionTableId").textValue(), "test-table-id");
+        assertEquals(jsonNode.get("projectId").textValue(), "test-project-id");
+        assertEquals(jsonNode.get("rawDataFolderId").textValue(), "test-folder-id");
+        assertEquals(jsonNode.get("storageLocationId").intValue(), 2);
+        assertEquals(jsonNode.get("type").textValue(), "Exporter3Configuration");
+
+        // Convert back to POJO.
+        Exporter3Configuration converted = BridgeObjectMapper.get().treeToValue(jsonNode,
+                Exporter3Configuration.class);
+        assertEquals(converted, config);
     }
 
     @Test

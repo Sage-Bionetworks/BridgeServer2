@@ -7,6 +7,7 @@ import org.sagebionetworks.bridge.hibernate.HibernateStudy;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType;
+import org.sagebionetworks.bridge.models.apps.Exporter3Configuration;
 import org.sagebionetworks.bridge.models.assessments.ColorScheme;
 
 import static java.util.stream.Collectors.toMap;
@@ -57,7 +58,15 @@ public interface Study extends BridgeEntity {
     
     String getDetails();
     void setDetails(String details);
-    
+
+    /** Configuration required for Exporter 3.0. */
+    Exporter3Configuration getExporter3Configuration();
+    void setExporter3Configuration(Exporter3Configuration exporter3Configuration);
+
+    /** True if Exporter 3.0 is enabled for this study. */
+    boolean isExporter3Enabled();
+    void setExporter3Enabled(boolean exporter3Enabled);
+
     StudyPhase getPhase();
     void setPhase(StudyPhase phrase);
     

@@ -54,7 +54,6 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
-import org.sagebionetworks.bridge.models.apps.Exporter3Configuration;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.HasLang;
 import org.sagebionetworks.bridge.models.RequestInfo;
@@ -168,12 +167,6 @@ public class BridgeUtils {
         } catch(UnsupportedOperationException e) {
             return 0L;
         }
-    }
-
-    /** Returns true if the given app is configured for Exporter 3.0. */
-    public static boolean isExporter3Configured(App app) {
-        Exporter3Configuration exporter3Config = app.getExporter3Configuration();
-        return app.isExporter3Enabled() && exporter3Config != null && exporter3Config.isConfigured();
     }
 
     public static Map<String,String> mapStudyMemberships(Account account) {

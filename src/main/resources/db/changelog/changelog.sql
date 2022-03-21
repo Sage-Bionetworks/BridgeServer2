@@ -941,6 +941,16 @@ ADD COLUMN `startDate` varchar(10);
 
 -- changeset bridge:66
 
+ALTER TABLE `Substudies`
+ADD COLUMN `exporter3Configuration` text COLLATE utf8_unicode_ci;
+
+-- changeset bridge:67
+
+ALTER TABLE `Substudies`
+ADD COLUMN `exporter3Enabled` tinyint(1) DEFAULT '0';
+
+-- changeset bridge:68
+
 CREATE TABLE IF NOT EXISTS `Permissions` (
   `guid` varchar(60) NOT NULL,
   `appId` varchar(255) NOT NULL,

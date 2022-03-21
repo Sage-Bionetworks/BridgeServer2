@@ -31,6 +31,7 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.VersionHolder;
@@ -173,6 +174,8 @@ public class StudyController extends BaseController {
         return study;
     }
 
+    // This exists because apps want to get rudimentary study data to show participants before they've created their
+    // account. For the worker API, see getStudyForWorker() below.
     @GetMapping(path = "/v1/apps/{appId}/studies/{studyId}", produces = { APPLICATION_JSON_UTF8_VALUE })
     public String getStudyForApp(@PathVariable String appId, @PathVariable String studyId)
             throws JsonProcessingException {
@@ -186,7 +189,15 @@ public class StudyController extends BaseController {
         }
         return json;
     }
-    
+
+    @GetMapping("/v2/apps/{appId}/studies/{studyId}")
+    public Study getStudyForWorker(@PathVariable String appId, @PathVariable String studyId) {
+        getAuthenticatedSession(WORKER);
+        // This throws a 404 with the correct error message if the app doesn't exist.
+        appService.getApp(appId);
+        return service.getStudy(appId, studyId, true);
+    }
+
     @GetMapping(path = "/v1/apps/{appId}/studies")
     public PagedResourceList<Study> getAppStudiesForWorker(@PathVariable String appId,
             @RequestParam(required = false) String offsetBy, 
