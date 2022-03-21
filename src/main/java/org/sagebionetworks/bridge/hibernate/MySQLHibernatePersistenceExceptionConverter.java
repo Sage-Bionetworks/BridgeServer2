@@ -56,6 +56,10 @@ public class MySQLHibernatePersistenceExceptionConverter implements PersistenceE
             .put("`fk_substudy`", "an account")
             .build();
     
+    /**
+     * Foreign key missing parent constraints: the name of the constraint is used to inform the caller about an attempt
+     * to add a reference to a parent entity that does not exist.
+     */
     private static final Map<String, String> FOREIGN_KEY_MISSING_PARENT_CONSTRAINTS = new ImmutableMap.Builder<String,String>()
             .put("Permission-User-Constraint", "user account")
             .put("Permission-Assessment-Constraint", "assessment")

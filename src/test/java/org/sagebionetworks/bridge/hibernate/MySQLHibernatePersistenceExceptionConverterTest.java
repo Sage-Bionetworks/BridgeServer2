@@ -24,6 +24,7 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.models.assessments.HibernateAssessment;
 import org.sagebionetworks.bridge.models.organizations.Organization;
+import org.sagebionetworks.bridge.models.permissions.Permission;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 
 public class MySQLHibernatePersistenceExceptionConverterTest extends Mockito {
@@ -143,6 +144,58 @@ public class MySQLHibernatePersistenceExceptionConverterTest extends Mockito {
         
         assertEquals(converted.getMessage(),
                 "Cannot update this organization because it has duplicate primary keys");
+        assertEquals(converted.getStatusCode(), HttpStatus.SC_CONFLICT);
+        assertEquals(converted.getClass().getSimpleName(), "ConstraintViolationException");
+    }
+    
+    @Test
+    public void sqlIntegrityConstraintViolation_PermissionUserConstraint() {
+        PersistenceException pe = buildIntegrityConstraintViolation("Permission-User-Constraint",
+                "Cannot add or update a child row: a foreign key constraint fails ... Permission-User-Constraint`");
+
+        BridgeServiceException converted = (BridgeServiceException)converter.convert(pe, new Permission());
+
+        assertEquals(converted.getMessage(),
+                "This permission cannot be created or updated because the referenced user account does not exist.");
+        assertEquals(converted.getStatusCode(), HttpStatus.SC_CONFLICT);
+        assertEquals(converted.getClass().getSimpleName(), "ConstraintViolationException");
+    }
+    
+    @Test
+    public void sqlIntegrityConstraintViolation_PermissionAssessmentConstraint() {
+        PersistenceException pe = buildIntegrityConstraintViolation("Permission-Assessment-Constraint",
+                "Cannot add or update a child row: a foreign key constraint fails ... Permission-Assessment-Constraint`");
+        
+        BridgeServiceException converted = (BridgeServiceException)converter.convert(pe, new Permission());
+        
+        assertEquals(converted.getMessage(),
+                "This permission cannot be created or updated because the referenced assessment does not exist.");
+        assertEquals(converted.getStatusCode(), HttpStatus.SC_CONFLICT);
+        assertEquals(converted.getClass().getSimpleName(), "ConstraintViolationException");
+    }
+    
+    @Test
+    public void sqlIntegrityConstraintViolation_PermissionOrganizationConstraint() {
+        PersistenceException pe = buildIntegrityConstraintViolation("Permission-Organization-Constraint",
+                "Cannot add or update a child row: a foreign key constraint fails ... Permission-Organization-Constraint`");
+        
+        BridgeServiceException converted = (BridgeServiceException)converter.convert(pe, new Permission());
+        
+        assertEquals(converted.getMessage(),
+                "This permission cannot be created or updated because the referenced organization does not exist.");
+        assertEquals(converted.getStatusCode(), HttpStatus.SC_CONFLICT);
+        assertEquals(converted.getClass().getSimpleName(), "ConstraintViolationException");
+    }
+    
+    @Test
+    public void sqlIntegrityConstraintViolation_PermissionStudyConstraint() {
+        PersistenceException pe = buildIntegrityConstraintViolation("Permission-Study-Constraint",
+                "Cannot add or update a child row: a foreign key constraint fails ... Permission-Study-Constraint`");
+        
+        BridgeServiceException converted = (BridgeServiceException)converter.convert(pe, new Permission());
+        
+        assertEquals(converted.getMessage(),
+                "This permission cannot be created or updated because the referenced study does not exist.");
         assertEquals(converted.getStatusCode(), HttpStatus.SC_CONFLICT);
         assertEquals(converted.getClass().getSimpleName(), "ConstraintViolationException");
     }
