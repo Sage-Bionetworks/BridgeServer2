@@ -30,7 +30,7 @@ public class StudyAdherenceReport {
     private Set<String> unsetEventIds;
     private Set<String> unscheduledSessions;
     private List<StudyReportWeek> weeks;
-    private StudyReportWeek currentWeek;
+    private StudyReportWeek weekReport;
     private NextActivity nextActivity;
     private Map<String, DateTime> eventTimestamps;
     
@@ -102,11 +102,11 @@ public class StudyAdherenceReport {
         this.unscheduledSessions = unscheduledSessions;
     }
     @JsonIgnore
-    public StudyReportWeek getCurrentWeek() {
-        return currentWeek;
+    public StudyReportWeek getWeekReport() {
+        return weekReport;
     }
-    public void setCurrentWeek(StudyReportWeek currentWeek) {
-        this.currentWeek = currentWeek;
+    public void setWeekReport(StudyReportWeek weekReport) {
+        this.weekReport = weekReport;
     }
     public NextActivity getNextActivity() {
         return nextActivity;

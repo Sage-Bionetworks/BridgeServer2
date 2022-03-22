@@ -425,7 +425,7 @@ public class AdherenceService {
         weeklyReport.setClientTimeZone(report.getClientTimeZone());
         weeklyReport.setCreatedOn(report.getCreatedOn());
         weeklyReport.setNextActivity(report.getNextActivity());
-        StudyReportWeek week = report.getCurrentWeek();
+        StudyReportWeek week = report.getWeekReport();
         weeklyReport.setSearchableLabels(week.getSearchableLabels());
         weeklyReport.setRows(week.getRows());
         weeklyReport.setByDayEntries(week.getByDayEntries());

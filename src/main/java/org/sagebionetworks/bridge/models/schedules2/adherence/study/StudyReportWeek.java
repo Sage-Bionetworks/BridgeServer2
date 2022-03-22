@@ -1,11 +1,14 @@
 package org.sagebionetworks.bridge.models.schedules2.adherence.study;
 
+import static java.util.stream.Collectors.toList;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
 
 import org.joda.time.LocalDate;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamDay;
@@ -73,5 +76,26 @@ public class StudyReportWeek {
     }
     public List<WeeklyAdherenceReportRow> getRows() {
         return rows;
+    }
+    public void visitDays(BiConsumer<EventStreamDay, Integer> consumer) {
+        for (List<EventStreamDay> days : byDayEntries.values()) {
+            for (int i=0; i < days.size(); i++) {
+                consumer.accept(days.get(i), i);
+            }
+        }
+    }
+    public StudyReportWeek copy() {
+        StudyReportWeek week = new StudyReportWeek();
+        week.setWeekInStudy(weekInStudy);
+        week.setStartDate(startDate);
+        week.setAdherencePercent(adherencePercent);
+        week.getSearchableLabels().addAll(searchableLabels);
+        week.getRows().addAll(rows);
+        for (int i=0; i < 7; i++) {
+            List<EventStreamDay> days = byDayEntries.get(i).stream()
+                    .map(day -> day.copy()).collect(toList());
+            week.getByDayEntries().put(i, days);
+        }
+        return week;
     }
 }

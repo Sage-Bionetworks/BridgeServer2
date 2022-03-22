@@ -92,14 +92,6 @@ import com.google.common.collect.Maps;
 
 public class BridgeUtils {
 
-    public static void print(String tag, Object object) {
-        try {
-            System.out.println(tag + BridgeObjectMapper.get().writeValueAsString(object));
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
-        }
-    }
-
     public static class StudyAssociations {
         private final Set<String> studyIdsVisibleToCaller;
         private final Map<String, String> externalIdsVisibleToCaller;
