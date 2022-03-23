@@ -67,7 +67,7 @@ public class ParticipantVersionService {
     public void createParticipantVersionFromAccount(Account account) {
         String appId = account.getAppId();
         App app = appService.getApp(appId);
-        if (!BridgeUtils.isExporter3Configured(app)) {
+        if (!app.isExporter3Enabled()) {
             // If Exporter 3.0 isn't enabled, there's no point in creating a Participant Version.
             return;
         }

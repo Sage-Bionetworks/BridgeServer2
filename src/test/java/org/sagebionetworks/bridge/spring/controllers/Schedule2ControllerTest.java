@@ -16,7 +16,9 @@ import static org.sagebionetworks.bridge.models.studies.StudyPhase.DESIGN;
 import static org.sagebionetworks.bridge.models.studies.StudyPhase.RECRUITMENT;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertSame;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -24,6 +26,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 import org.mockito.ArgumentCaptor;
@@ -42,6 +45,7 @@ import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
@@ -86,7 +90,8 @@ public class Schedule2ControllerTest extends Mockito {
         doReturn(session).when(controller).getAdministrativeSession();
         doReturn(session).when(controller).getAuthenticatedSession(STUDY_DESIGNER, DEVELOPER);
         doReturn(session).when(controller).getAuthenticatedSession(ADMIN);
-        
+        doReturn(session).when(controller).getAuthenticatedSession(WORKER);
+
         doReturn(mockRequest).when(controller).request();
         doReturn(mockResponse).when(controller).response();
     }
@@ -101,6 +106,7 @@ public class Schedule2ControllerTest extends Mockito {
         assertCrossOrigin(Schedule2Controller.class);
         assertGet(Schedule2Controller.class, "getSchedule");
         assertPost(Schedule2Controller.class, "createOrUpdateSchedule");
+        assertGet(Schedule2Controller.class, "getStudyIdsUsingSchedule");
         assertGet(Schedule2Controller.class, "getTimeline");
         assertDelete(Schedule2Controller.class, "deleteSchedule");
     }
@@ -206,7 +212,18 @@ public class Schedule2ControllerTest extends Mockito {
         ResponseEntity<Schedule2> retValue = controller.createOrUpdateSchedule(TEST_STUDY_ID);
         assertEquals(retValue.getStatusCodeValue(), 200);        
     }
-    
+
+    @Test
+    public void getStudyIdsUsingSchedule() {
+        List<String> studyIdList = ImmutableList.of(TEST_STUDY_ID);
+        when(mockStudyService.getStudyIdsUsingSchedule(TEST_APP_ID, SCHEDULE_GUID)).thenReturn(studyIdList);
+
+        ResourceList<String> retVal = controller.getStudyIdsUsingSchedule(TEST_APP_ID, SCHEDULE_GUID);
+        assertSame(retVal.getItems(), studyIdList);
+
+        verify(mockStudyService).getStudyIdsUsingSchedule(TEST_APP_ID, SCHEDULE_GUID);
+    }
+
     @Test
     public void getTimeline() {
         Study study = Study.create();
