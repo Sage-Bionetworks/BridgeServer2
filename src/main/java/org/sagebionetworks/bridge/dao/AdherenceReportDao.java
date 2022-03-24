@@ -12,6 +12,6 @@ public interface AdherenceReportDao {
     PagedResourceList<WeeklyAdherenceReport> getWeeklyAdherenceReports(String appId, String studyId,
             AdherenceReportSearch search);
     
-    AdherenceStatistics getWeeklyAdherenceStatistics(String appId, String studyId, Integer adherenceThreshold);
+    AdherenceStatistics getAdherenceStatistics(String appId, String studyId, Integer adherenceThreshold);
     
 }

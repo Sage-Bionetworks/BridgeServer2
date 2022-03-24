@@ -49,12 +49,14 @@ import org.sagebionetworks.bridge.AuthEvaluatorField;
 import org.sagebionetworks.bridge.dao.AdherenceRecordDao;
 import org.sagebionetworks.bridge.dao.AdherenceReportDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.AdherenceReportSearch;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountRef;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEventIdsMap;
+import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordList;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordType;
@@ -79,6 +81,8 @@ import org.slf4j.LoggerFactory;
 
 @Component
 public class AdherenceService {
+    private static final String NO_THRESHOLD_VALUE_ERROR = "An adherence threshold value is missing from the request and the study as a default";
+
     private static final Logger LOG = LoggerFactory.getLogger(AdherenceService.class);
 
     private AdherenceRecordDao recordDao;
@@ -490,17 +494,21 @@ public class AdherenceService {
         return func.apply(builder.build());
     }
     
-    public AdherenceStatistics geAdherenceStatistics(String appId, String studyId, Integer adherenceThreshold) {
+    public AdherenceStatistics getAdherenceStatistics(String appId, String studyId, Integer adherenceThreshold) {
         checkNotNull(appId);
         checkNotNull(studyId);
         
+        Study study = studyService.getStudy(appId, studyId, true);
+        
+        scheduleService.getScheduleForStudy(appId, study)
+            .orElseThrow(() -> new EntityNotFoundException(Schedule2.class));
+        
         if (adherenceThreshold == null) {
-            Study study = studyService.getStudy(appId, studyId, true);
             adherenceThreshold = study.getAdherenceThresholdPercentage();
         }
         if (adherenceThreshold == null) {
-            throw new BadRequestException("No value for the adherence cutoff either in study or request");
+            throw new BadRequestException(NO_THRESHOLD_VALUE_ERROR);
         }
-        return reportDao.getWeeklyAdherenceStatistics(appId, studyId, adherenceThreshold);
+        return reportDao.getAdherenceStatistics(appId, studyId, adherenceThreshold);
     }
 }

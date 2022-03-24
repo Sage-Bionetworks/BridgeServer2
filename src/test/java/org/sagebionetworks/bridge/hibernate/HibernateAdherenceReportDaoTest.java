@@ -40,10 +40,10 @@ import com.google.common.collect.ImmutableSet;
 
 import org.mockito.MockitoAnnotations;
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.AdherenceReportSearch;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceStatistics;
+import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceStatisticsEntry;
 import org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantStudyProgress;
 import org.sagebionetworks.bridge.models.schedules2.adherence.weekly.WeeklyAdherenceReport;
 
@@ -314,7 +314,7 @@ public class HibernateAdherenceReportDaoTest extends Mockito {
         when(mockSessionFactory.openSession()).thenReturn(mockSession);
         when(mockSession.createNativeQuery(any())).thenReturn(mockQuery);
         
-        AdherenceStatistics stats = dao.getWeeklyAdherenceStatistics(TEST_APP_ID, TEST_STUDY_ID, 22);
+        AdherenceStatistics stats = dao.getAdherenceStatistics(TEST_APP_ID, TEST_STUDY_ID, 22);
         assertEquals(stats.getAdherenceThresholdPercentage(), Integer.valueOf(22));
         assertTrue(stats.getEntries().isEmpty());
     }
@@ -327,18 +327,23 @@ public class HibernateAdherenceReportDaoTest extends Mockito {
         String json = TestUtils.createJson("[{'label':'Session #2 / Week 10',"
                 +"'searchableLabel':':label1:','sessionGuid':'lgjaORpbvHSMvmGWPaHxJy9v',"
                 +"'startEventId':'custom:event1','sessionName':'Session #2',"
-                +"'weekInStudy':10,'type':'WeeklyAdherenceReportRow'}]");
+                +"'weekInStudy':10,'type':'WeeklyAdherenceReportRow'},{'label':'Session #4 / Week 1',"
+                +"'searchableLabel':':label2:','sessionGuid':'aaaa','startEventId':'custom:event2',"
+                +"'sessionName':'Session #4','weekInStudy':1,'type':'WeeklyAdherenceReportRow'}]");
         
         Object[] row = new Object[] {":label1:", BigInteger.valueOf(10), json};
         List<Object[]> results = ImmutableList.of(row);
         when(mockHelper.nativeQuery(stringCaptor.capture(), paramsCaptor.capture()))
             .thenReturn(results);
         
-        AdherenceStatistics stats = dao.getWeeklyAdherenceStatistics(TEST_APP_ID, TEST_STUDY_ID, 22);
+        AdherenceStatistics stats = dao.getAdherenceStatistics(TEST_APP_ID, TEST_STUDY_ID, 22);
         assertEquals(stats.getAdherenceThresholdPercentage(), Integer.valueOf(22));
-        System.out.println(BridgeObjectMapper.get().writeValueAsString(stats));
-        
-        // {"adherenceThresholdPercentage":22,"entries":[{"label":"Session #2 / Week 10","searchableLabel":":label1:","sessionName":"Session #2","weekInStudy":10,"totalActive":10,"type":"AdherenceStatisticsEntry"}],"type":"AdherenceStatistics"}
-
+        assertEquals(stats.getEntries().size(), 1);
+        AdherenceStatisticsEntry entry = stats.getEntries().get(0);
+        assertEquals(entry.getLabel(), "Session #2 / Week 10");
+        assertEquals(entry.getSearchableLabel(), ":label1:");
+        assertEquals(entry.getSessionName(), "Session #2");
+        assertEquals(entry.getWeekInStudy(), Integer.valueOf(10));
+        assertEquals(entry.getTotalActive(), Integer.valueOf(10));
     }
 }

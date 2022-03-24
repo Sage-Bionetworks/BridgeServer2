@@ -70,6 +70,7 @@ import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dao.AdherenceRecordDao;
 import org.sagebionetworks.bridge.dao.AdherenceReportDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.AdherenceReportSearch;
@@ -78,11 +79,13 @@ import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEventIdsMap;
+import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.schedules2.StudyBurst;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordList;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordType;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSearch;
+import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceStatistics;
 import org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantStudyProgress;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamAdherenceReport;
 import org.sagebionetworks.bridge.models.schedules2.adherence.study.StudyAdherenceReport;
@@ -1060,6 +1063,72 @@ public class AdherenceServiceTest extends Mockito {
         StudyAdherenceReport report = service.getStudyAdherenceReport(TEST_APP_ID, TEST_STUDY_ID, account);
         assertEquals(report.getCreatedOn(), MODIFIED_ON.withZone(DateTimeZone.forID("America/Denver")));
         assertEquals(report.getClientTimeZone(), "America/Denver");
+    }
+    
+    @Test
+    public void getAdherenceStatistics_adherenceFromParam() {
+        Study study = Study.create();
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+        
+        Schedule2 schedule = new Schedule2();
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study)).thenReturn(Optional.of(schedule));
+        
+        AdherenceStatistics stats = new AdherenceStatistics();
+        when(mockReportDao.getAdherenceStatistics(TEST_APP_ID, TEST_STUDY_ID, Integer.valueOf(74))).thenReturn(stats);
+        
+        AdherenceStatistics retValue = service.getAdherenceStatistics(TEST_APP_ID, TEST_STUDY_ID, 74);
+        assertSame(retValue, stats);
+    }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class, 
+            expectedExceptionsMessageRegExp = "Study not found.")
+    public void getAdherenceStatistics_studyNotFound() {
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true))
+            .thenThrow(new EntityNotFoundException(Study.class));
+        
+        service.getAdherenceStatistics(TEST_APP_ID, TEST_STUDY_ID, null);
+    }
+
+    @Test(expectedExceptions = EntityNotFoundException.class, 
+            expectedExceptionsMessageRegExp = "Schedule not found.")
+    public void getAdherenceStatistics_scheduleNotFound() {
+        Study study = Study.create();
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+        
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study)).thenReturn(Optional.empty());
+        
+        service.getAdherenceStatistics(TEST_APP_ID, TEST_STUDY_ID, null);
+    }
+
+    @Test
+    public void getAdherenceStatistics_adherenceFromStudy() {
+        Study study = Study.create();
+        study.setAdherenceThresholdPercentage(Integer.valueOf(32));
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+        
+        Schedule2 schedule = new Schedule2();
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study)).thenReturn(Optional.of(schedule));
+        
+        AdherenceStatistics stats = new AdherenceStatistics();
+        when(mockReportDao.getAdherenceStatistics(TEST_APP_ID, TEST_STUDY_ID, Integer.valueOf(32))).thenReturn(stats);
+        
+        AdherenceStatistics retValue = service.getAdherenceStatistics(TEST_APP_ID, TEST_STUDY_ID, null);
+        assertSame(retValue, stats);
+    }
+
+    @Test(expectedExceptions = BadRequestException.class, 
+            expectedExceptionsMessageRegExp = "An adherence threshold value is missing from the request and the study as a default")
+    public void getAdherenceStatistics_noAdherence() {
+        Study study = Study.create();
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+        
+        Schedule2 schedule = new Schedule2();
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study)).thenReturn(Optional.of(schedule));
+        
+        AdherenceStatistics stats = new AdherenceStatistics();
+        when(mockReportDao.getAdherenceStatistics(TEST_APP_ID, TEST_STUDY_ID, Integer.valueOf(32))).thenReturn(stats);
+        
+        service.getAdherenceStatistics(TEST_APP_ID, TEST_STUDY_ID, null);
     }
     
     private AdherenceRecord ar(DateTime startedOn, DateTime finishedOn, String guid, boolean declined) {

@@ -138,7 +138,7 @@ public class AdherenceController extends BaseController {
     }
     
     @GetMapping("/v5/studies/{studyId}/adherence/weekly/stats")    
-    public AdherenceStatistics geAdherenceStatistics(@PathVariable String studyId,
+    public AdherenceStatistics getAdherenceStatistics(@PathVariable String studyId,
             @RequestParam(required = false) String adherenceThreshold) {
         UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_DESIGNER, STUDY_COORDINATOR);
 
@@ -146,7 +146,7 @@ public class AdherenceController extends BaseController {
         
         Integer adherenceThresholdInt = BridgeUtils.getIntegerOrDefault(adherenceThreshold, null);
         
-        return service.geAdherenceStatistics(session.getAppId(), studyId, adherenceThresholdInt);
+        return service.getAdherenceStatistics(session.getAppId(), studyId, adherenceThresholdInt);
     }
     
     @PostMapping("/v5/studies/{studyId}/participants/self/adherence")

@@ -40,7 +40,7 @@ public class HibernateAdherenceReportDao implements AdherenceReportDao {
     
     private static final TypeReference<List<WeeklyAdherenceReportRow>> ROWS_LIST = new TypeReference<List<WeeklyAdherenceReportRow>>() {};
     
-    static final String STATISTICS_SQL = "SELECT label, count(*) as total, any_value(rows) FROM WeeklyAdherenceReportLabels "
+    static final String STATISTICS_SQL = "SELECT label, count(*) as total, reports.rows FROM WeeklyAdherenceReportLabels "
             +"labels LEFT JOIN WeeklyAdherenceReports AS reports ON labels.appId = reports.appId AND labels.studyId = "
             +"reports.studyId and labels.userId = reports.userId WHERE reports.appId = :appId AND reports.studyId = :studyId "
             +"GROUP BY label";
@@ -146,7 +146,7 @@ public class HibernateAdherenceReportDao implements AdherenceReportDao {
     }
 
     @Override
-    public AdherenceStatistics getWeeklyAdherenceStatistics(String appId, String studyId, Integer adherenceThreshold) {
+    public AdherenceStatistics getAdherenceStatistics(String appId, String studyId, Integer adherenceThreshold) {
         AdherenceStatistics stats = new AdherenceStatistics();
         
         Map<String, AdherenceStatisticsEntry> entries = new HashMap<>();

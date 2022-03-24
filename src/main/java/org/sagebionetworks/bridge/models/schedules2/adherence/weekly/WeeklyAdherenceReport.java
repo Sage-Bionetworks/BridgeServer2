@@ -71,7 +71,7 @@ public class WeeklyAdherenceReport {
     @ElementCollection(fetch = FetchType.EAGER)
     private Set<String> searchableLabels;
     @Convert(converter = WeeklyAdherenceReportRowListConverter.class)
-    List<WeeklyAdherenceReportRow> rows;
+    List<WeeklyAdherenceReportRow> rows; // TODO: This is now a reserved keyword in 8+ MySQL *eyeroll*
     
     public WeeklyAdherenceReport() {
         byDayEntries = new HashMap<>();    
