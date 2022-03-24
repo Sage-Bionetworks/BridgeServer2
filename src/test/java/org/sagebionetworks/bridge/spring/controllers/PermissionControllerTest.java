@@ -22,6 +22,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
+import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountRef;
@@ -37,8 +38,6 @@ import org.testng.annotations.Test;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import java.util.List;
 
 public class PermissionControllerTest extends Mockito {
     
@@ -89,11 +88,11 @@ public class PermissionControllerTest extends Mockito {
         
         when(mockService.getPermissionsForUser(eq(TEST_APP_ID), eq(TEST_USER_ID))).thenReturn(ImmutableList.of(permissionDetail));
         
-        List<PermissionDetail> retValue = controller.getPermissionsForUser(TEST_USER_ID);
+        ResourceList<PermissionDetail> retValue = controller.getPermissionsForUser(TEST_USER_ID);
         
         verify(mockService).getPermissionsForUser(eq(TEST_APP_ID), eq(TEST_USER_ID));
         
-        assertEquals(retValue, ImmutableList.of(permissionDetail));
+        assertEquals(retValue.getItems(), ImmutableList.of(permissionDetail));
     }
     
     @Test
@@ -105,11 +104,11 @@ public class PermissionControllerTest extends Mockito {
         when(mockService.getPermissionsForEntity(eq(TEST_APP_ID), eq("STUDY"), eq(TEST_STUDY_ID)))
                 .thenReturn(ImmutableList.of(permissionDetail));
     
-        List<PermissionDetail> retValue = controller.getPermissionsForEntity("STUDY", TEST_STUDY_ID);
+        ResourceList<PermissionDetail> retValue = controller.getPermissionsForEntity("STUDY", TEST_STUDY_ID);
     
         verify(mockService).getPermissionsForEntity(eq(TEST_APP_ID), eq("STUDY"), eq(TEST_STUDY_ID));
     
-        assertEquals(retValue, ImmutableList.of(permissionDetail));
+        assertEquals(retValue.getItems(), ImmutableList.of(permissionDetail));
     }
     
     @Test
@@ -207,6 +206,7 @@ public class PermissionControllerTest extends Mockito {
         assertEquals(captured.getAccessLevel(), AccessLevel.ADMIN);
         assertEquals(captured.getEntityType(), EntityType.STUDY);
         assertEquals(captured.getEntityId(), TEST_STUDY_ID);
+        assertEquals(captured.getVersion(), 1L);
     }
     
     @Test
@@ -274,6 +274,7 @@ public class PermissionControllerTest extends Mockito {
         permission.setAccessLevel(AccessLevel.ADMIN);
         permission.setEntityType(EntityType.STUDY);
         permission.setEntityId(TEST_STUDY_ID);
+        permission.setVersion(1L);
         return permission;
     }
     

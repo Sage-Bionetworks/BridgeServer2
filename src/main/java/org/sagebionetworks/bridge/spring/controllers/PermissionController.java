@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 
+import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.permissions.Permission;
@@ -17,8 +18,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-
 @CrossOrigin
 @RestController
 public class PermissionController extends BaseController{
@@ -31,22 +30,22 @@ public class PermissionController extends BaseController{
     }
     
     @GetMapping("v1/permissions/{userId}")
-    public List<PermissionDetail> getPermissionsForUser(@PathVariable String userId) {
+    public ResourceList<PermissionDetail> getPermissionsForUser(@PathVariable String userId) {
         UserSession session = getAuthenticatedSession(ADMIN);
         
         String appId = session.getAppId();
         
-        return permissionService.getPermissionsForUser(appId, userId);
+        return new ResourceList<>(permissionService.getPermissionsForUser(appId, userId));
     }
     
     @GetMapping("v1/permissions/{entityType}/{entityId}")
-    public List<PermissionDetail> getPermissionsForEntity(
+    public ResourceList<PermissionDetail> getPermissionsForEntity(
             @PathVariable String entityType, @PathVariable String entityId) {
         UserSession session = getAuthenticatedSession(ADMIN);
         
         String appId = session.getAppId();
         
-        return permissionService.getPermissionsForEntity(appId, entityType, entityId);
+        return new ResourceList<>(permissionService.getPermissionsForEntity(appId, entityType, entityId));
     }
     
     @PostMapping("v1/permissions")

@@ -1,12 +1,18 @@
 package org.sagebionetworks.bridge.services;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import static org.sagebionetworks.bridge.models.permissions.EntityType.*;
+import static org.sagebionetworks.bridge.models.permissions.EntityType.ASSESSMENT;
+import static org.sagebionetworks.bridge.models.permissions.EntityType.ASSESSMENT_LIBRARY;
+import static org.sagebionetworks.bridge.models.permissions.EntityType.MEMBERS;
+import static org.sagebionetworks.bridge.models.permissions.EntityType.ORGANIZATION;
+import static org.sagebionetworks.bridge.models.permissions.EntityType.PARTICIPANTS;
+import static org.sagebionetworks.bridge.models.permissions.EntityType.SPONSORED_STUDIES;
+import static org.sagebionetworks.bridge.models.permissions.EntityType.STUDY;
+import static org.sagebionetworks.bridge.models.permissions.EntityType.STUDY_PI;
 import static org.sagebionetworks.bridge.validators.PermissionValidator.INSTANCE;
 
 import com.google.common.collect.ImmutableSet;
+import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.PermissionDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -31,9 +37,9 @@ import java.util.Set;
 @Component
 public class PermissionService {
     
-    private Set<EntityType> orgTypes = ImmutableSet.of(ASSESSMENT_LIBRARY, MEMBERS, ORGANIZATION, SPONSORED_STUDIES);
-    private Set<EntityType> studyTypes = ImmutableSet.of(PARTICIPANTS, STUDY, STUDY_PI);
-    private Set<EntityType> assessmentTypes = ImmutableSet.of(ASSESSMENT);
+    private final Set<EntityType> orgTypes = ImmutableSet.of(ASSESSMENT_LIBRARY, MEMBERS, ORGANIZATION, SPONSORED_STUDIES);
+    private final Set<EntityType> studyTypes = ImmutableSet.of(PARTICIPANTS, STUDY, STUDY_PI);
+    private final Set<EntityType> assessmentTypes = ImmutableSet.of(ASSESSMENT);
     
     private PermissionDao permissionDao;
     
@@ -75,11 +81,20 @@ public class PermissionService {
         return BridgeUtils.generateGuid();
     }
     
+    protected DateTime getModifiedOn() {
+        return DateTime.now();
+    }
+    
     public PermissionDetail createPermission(String appId, Permission permission) {
-        checkArgument(isNotBlank(appId));
+        checkNotNull(appId);
         checkNotNull(permission);
+    
+        DateTime now = getModifiedOn();
         
         permission.setGuid(generateGuid());
+        permission.setCreatedOn(now);
+        permission.setModifiedOn(now);
+        permission.setVersion(0L);
         
         Validate.entityThrowingException(INSTANCE, permission);
         
@@ -89,19 +104,21 @@ public class PermissionService {
     }
     
     public PermissionDetail updatePermission(String appId, Permission permission) {
-        checkArgument(isNotBlank(appId));
+        checkNotNull(appId);
         checkNotNull(permission);
     
         Validate.entityThrowingException(INSTANCE, permission);
         
         Permission existingPermission = permissionDao.getPermission(appId, permission.getGuid())
                 .orElseThrow(() -> new EntityNotFoundException(Permission.class));
-        
+
         // Can only update accessLevel
         permission.setAppId(existingPermission.getAppId());
         permission.setUserId(existingPermission.getUserId());
         permission.setEntityType(existingPermission.getEntityType());
         permission.setEntityId(existingPermission.getEntityId());
+        permission.setCreatedOn(existingPermission.getCreatedOn());
+        permission.setModifiedOn(getModifiedOn());
         
         Permission updatedPermission = permissionDao.updatePermission(appId, permission);
     
@@ -109,8 +126,11 @@ public class PermissionService {
     }
     
     public List<PermissionDetail> getPermissionsForUser(String appId, String userId) {
-        checkArgument(isNotBlank(appId));
-        checkArgument(isNotBlank(userId));
+        checkNotNull(appId);
+        checkNotNull(userId);
+    
+        AccountId accountId = AccountId.forId(appId, userId);
+        accountService.getAccount(accountId).orElseThrow(() -> new EntityNotFoundException(Account.class));
     
         List<Permission> permissions = permissionDao.getPermissionsForUser(appId, userId);
     
@@ -123,9 +143,12 @@ public class PermissionService {
     }
     
     public List<PermissionDetail> getPermissionsForEntity(String appId, String entityType, String entityId) {
-        checkArgument(isNotBlank(appId));
+        checkNotNull(appId);
         checkNotNull(entityType);
-        checkArgument(isNotBlank(entityId));
+        checkNotNull(entityId);
+        
+        // This will throw an EntityNotFound Exception for the entity if it does not exist.
+        getEntityName(appId, EntityType.valueOf(entityType), entityId);
         
         List<Permission> permissions = permissionDao.getPermissionsForEntity(appId, EntityType.valueOf(entityType), entityId);
         
@@ -138,8 +161,10 @@ public class PermissionService {
     }
     
     public void deletePermission(String appId, String guid) {
-        checkArgument(isNotBlank(appId));
-        checkArgument(isNotBlank(guid));
+        checkNotNull(appId);
+        checkNotNull(guid);
+    
+        permissionDao.getPermission(appId, guid).orElseThrow(() -> new EntityNotFoundException(Permission.class));
         
         permissionDao.deletePermission(appId, guid);
     }
@@ -150,20 +175,25 @@ public class PermissionService {
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
         AccountRef userAccountRef = new AccountRef(userAccount);
         
-        String entityName = "";
-        if (orgTypes.contains(permission.getEntityType())) {
-            Organization organization = organizationService.getOrganization(appId, permission.getEntityId());
-            entityName = organization.getName();
-        } else if (studyTypes.contains(permission.getEntityType())) {
-            Study study = studyService.getStudy(appId, permission.getEntityId(), false);
-            entityName = study.getName();
-        } else if (assessmentTypes.contains(permission.getEntityType())) {
-            Assessment assessment = assessmentService.getAssessmentByGuid(appId, null, permission.getEntityId());
-            entityName = assessment.getTitle();
-        }
+        String entityName = getEntityName(appId, permission.getEntityType(), permission.getEntityId());
     
         EntityRef entityRef = new EntityRef(permission.getEntityType(), permission.getEntityId(), entityName);
         
         return new PermissionDetail(permission, entityRef, userAccountRef);
+    }
+    
+    private String getEntityName(String appId, EntityType entityType, String entityId) {
+        String entityName = "";
+        if (orgTypes.contains(entityType)) {
+            Organization organization = organizationService.getOrganization(appId, entityId);
+            entityName = organization.getName();
+        } else if (studyTypes.contains(entityType)) {
+            Study study = studyService.getStudy(appId, entityId, true);
+            entityName = study.getName();
+        } else if (assessmentTypes.contains(entityType)) {
+            Assessment assessment = assessmentService.getAssessmentByGuid(appId, null, entityId);
+            entityName = assessment.getTitle();
+        }
+        return entityName;
     }
 }

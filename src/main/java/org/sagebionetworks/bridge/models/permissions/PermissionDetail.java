@@ -1,57 +1,58 @@
 package org.sagebionetworks.bridge.models.permissions;
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.models.accounts.AccountRef;
 
 import java.util.Objects;
 
-@JsonPropertyOrder({ "guid", "userId", "accessLevel", "entityType", "entityId", "entityRef", "userAccountRef" })
+@JsonPropertyOrder({ "guid", "accessLevel", "account", "entity", "createdOn", "modifiedOn", "version" })
 public final class PermissionDetail {
     
     private final String guid;
-    private final String userId;
     private final AccessLevel accessLevel;
-    private final EntityType entityType;
-    private final String entityId;
-    private final EntityRef entityRef;
-    private final AccountRef userAccountRef;
+    private final AccountRef account;
+    private final EntityRef entity;
+    private final DateTime createdOn;
+    private final DateTime modifiedOn;
+    private final long version;
     
-    public PermissionDetail(Permission permission, EntityRef entityRef, AccountRef userAccountRef) {
+    public PermissionDetail(Permission permission, EntityRef entity, AccountRef account) {
         this.guid = permission.getGuid();
-        this.userId = permission.getUserId();
         this.accessLevel = permission.getAccessLevel();
-        this.entityType = permission.getEntityType();
-        this.entityId = permission.getEntityId();
-        this.entityRef = entityRef;
-        this.userAccountRef = userAccountRef;
+        this.entity = entity;
+        this.account = account;
+        this.createdOn = permission.getCreatedOn();
+        this.modifiedOn = permission.getModifiedOn();
+        this.version = permission.getVersion();
     }
     
     public String getGuid() {
         return guid;
     }
     
-    public String getUserId() {
-        return userId;
-    }
-    
     public AccessLevel getAccessLevel() {
         return accessLevel;
     }
     
-    public EntityType getEntityType() {
-        return entityType;
+    public AccountRef getAccount() {
+        return account;
     }
     
-    public String getEntityId() {
-        return entityId;
+    public EntityRef getEntity() {
+        return entity;
     }
     
-    public AccountRef getUserAccountRef() {
-        return userAccountRef;
+    public DateTime getCreatedOn() {
+        return createdOn;
     }
     
-    public EntityRef getEntityRef() {
-        return entityRef;
+    public DateTime getModifiedOn() {
+        return modifiedOn;
+    }
+    
+    public long getVersion() {
+        return version;
     }
     
     @Override
@@ -59,18 +60,18 @@ public final class PermissionDetail {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         PermissionDetail that = (PermissionDetail) o;
-        return Objects.equals(guid, that.guid) && 
-               Objects.equals(userId, that.userId) && 
+        return version == that.version && 
+                Objects.equals(guid, that.guid) && 
                 accessLevel == that.accessLevel && 
-                entityType == that.entityType && 
-                Objects.equals(entityId, that.entityId) && 
-                Objects.equals(entityRef, that.entityRef) &&
-                Objects.equals(userAccountRef, that.userAccountRef);
+                Objects.equals(account, that.account) && 
+                Objects.equals(entity, that.entity) && 
+                Objects.equals(createdOn, that.createdOn) && 
+                Objects.equals(modifiedOn, that.modifiedOn);
     }
     
     @Override
     public int hashCode() {
-        return Objects.hash(guid, userId, accessLevel, entityType, entityId, entityRef, userAccountRef);
+        return Objects.hash(guid, accessLevel, account, entity, createdOn, modifiedOn, version);
     }
     
 }

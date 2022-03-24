@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.models.permissions;
 
+import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
+import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
@@ -30,6 +32,9 @@ public class PermissionDetailTest {
         permission.setAccessLevel(AccessLevel.ADMIN);
         permission.setEntityType(EntityType.STUDY);
         permission.setEntityId(TEST_STUDY_ID);
+        permission.setCreatedOn(CREATED_ON);
+        permission.setModifiedOn(MODIFIED_ON);
+        permission.setVersion(10L);
     
         Account account = Account.create();
         account.setEmail("testAccount@testEmail.com");
@@ -43,14 +48,14 @@ public class PermissionDetailTest {
         assertEquals(node.size(), 8);
         assertEquals(node.get("guid").textValue(), GUID);
         assertNull(node.get("appId"));
-        assertEquals(node.get("userId").textValue(), TEST_USER_ID);
         assertEquals(node.get("accessLevel").textValue(), "admin");
-        assertEquals(node.get("entityType").textValue(), "study");
-        assertEquals(node.get("entityId").textValue(), TEST_STUDY_ID);
-        assertEquals(node.get("entityRef").get("entityType").textValue(), "study");
-        assertEquals(node.get("entityRef").get("entityId").textValue(), TEST_STUDY_ID);
-        assertEquals(node.get("entityRef").get("entityName").textValue(), "test-study-name");
-        assertEquals(node.get("userAccountRef").get("email").textValue(), "testAccount@testEmail.com");
+        assertEquals(node.get("account").get("email").textValue(), "testAccount@testEmail.com");
+        assertEquals(node.get("entity").get("entityType").textValue(), "study");
+        assertEquals(node.get("entity").get("entityId").textValue(), TEST_STUDY_ID);
+        assertEquals(node.get("entity").get("entityName").textValue(), "test-study-name");
+        assertEquals(node.get("createdOn").textValue(), CREATED_ON.toString());
+        assertEquals(node.get("modifiedOn").textValue(), MODIFIED_ON.toString());
+        assertEquals(node.get("version").longValue(), 10L);
         assertEquals(node.get("type").textValue(), "PermissionDetail");
     }
 }

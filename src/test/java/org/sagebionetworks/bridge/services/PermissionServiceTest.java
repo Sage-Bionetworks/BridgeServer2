@@ -1,7 +1,9 @@
 package org.sagebionetworks.bridge.services;
 
+import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
+import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
@@ -12,6 +14,7 @@ import static org.testng.Assert.fail;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import org.joda.time.DateTime;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
@@ -75,6 +78,7 @@ public class PermissionServiceTest extends Mockito {
     @Test
     public void createPermission_pass() {
         when(service.generateGuid()).thenReturn(GUID);
+        when(service.getModifiedOn()).thenReturn(CREATED_ON);
         Permission permission = createPermission();
         
         Account account = Account.create();
@@ -87,6 +91,7 @@ public class PermissionServiceTest extends Mockito {
     
         PermissionDetail returnedPermission = service.createPermission(TEST_APP_ID, permission);
         
+        verify(service).getModifiedOn();
         verify(mockDao).createPermission(eq(TEST_APP_ID), permissionCaptor.capture());
         
         assertEquals(returnedPermission, permissionDetail);
@@ -98,6 +103,9 @@ public class PermissionServiceTest extends Mockito {
         assertEquals(captured.getAccessLevel(), AccessLevel.ADMIN);
         assertEquals(captured.getEntityType(), EntityType.STUDY);
         assertEquals(captured.getEntityId(), TEST_STUDY_ID);
+        assertEquals(captured.getCreatedOn(), CREATED_ON);
+        assertEquals(captured.getModifiedOn(), CREATED_ON);
+        assertEquals(captured.getVersion(), 0L);
     }
     
     @Test
@@ -134,6 +142,7 @@ public class PermissionServiceTest extends Mockito {
     
     @Test
     public void updatePermission_pass() {
+        when(service.getModifiedOn()).thenReturn(MODIFIED_ON);
         Permission permission = createPermission();
         Permission existingPermission = createPermission();
         existingPermission.setAccessLevel(AccessLevel.LIST);
@@ -149,6 +158,7 @@ public class PermissionServiceTest extends Mockito {
         
         PermissionDetail returnedDetail = service.updatePermission(TEST_APP_ID, permission);
     
+        verify(service).getModifiedOn();
         verify(mockDao).updatePermission(eq(TEST_APP_ID), permissionCaptor.capture());
     
         assertEquals(returnedDetail, permissionDetail);
@@ -160,15 +170,22 @@ public class PermissionServiceTest extends Mockito {
         assertEquals(captured.getAccessLevel(), AccessLevel.ADMIN);
         assertEquals(captured.getEntityType(), EntityType.STUDY);
         assertEquals(captured.getEntityId(), TEST_STUDY_ID);
+        assertEquals(captured.getCreatedOn(), CREATED_ON);
+        assertEquals(captured.getModifiedOn(), MODIFIED_ON);
+        assertEquals(captured.getVersion(), 1L);
     }
     
     @Test
     public void updatePermission_onlyUpdatesAccessLevel() {
+        when(service.getModifiedOn()).thenReturn(MODIFIED_ON);
         Permission permission = createPermission();
         permission.setAppId("fake-app-id");
         permission.setUserId("fake-user-id");
         permission.setEntityType(ORGANIZATION);
         permission.setEntityId("fake-entity-id");
+        permission.setCreatedOn(DateTime.now());
+        permission.setModifiedOn(DateTime.now());
+        permission.setVersion(5L);
         
         Permission existingPermission = createPermission();
         existingPermission.setAccessLevel(AccessLevel.LIST);
@@ -195,6 +212,9 @@ public class PermissionServiceTest extends Mockito {
         assertEquals(captured.getAccessLevel(), AccessLevel.ADMIN);
         assertEquals(captured.getEntityType(), EntityType.STUDY);
         assertEquals(captured.getEntityId(), TEST_STUDY_ID);
+        assertEquals(captured.getCreatedOn(), CREATED_ON);
+        assertEquals(captured.getModifiedOn(), MODIFIED_ON);
+        assertEquals(captured.getVersion(), 5L);
     }
     
     @Test(expectedExceptions = InvalidEntityException.class)
@@ -222,6 +242,7 @@ public class PermissionServiceTest extends Mockito {
         EntityRef entityRef = new EntityRef(EntityType.STUDY, TEST_STUDY_ID, "test-study-name");
         PermissionDetail permissionDetail = new PermissionDetail(permission, entityRef, new AccountRef(account));
         
+        when(mockAccountService.getAccount(any())).thenReturn(Optional.of(account));
         when(mockDao.getPermissionsForUser(eq(TEST_APP_ID), eq(TEST_USER_ID)))
                 .thenReturn(ImmutableList.of(permission));
         doReturn(permissionDetail).when(service).getPermissionDetail(eq(TEST_APP_ID), any());
@@ -234,14 +255,24 @@ public class PermissionServiceTest extends Mockito {
         assertEquals(returnedDetail, permissionDetail);
     }
     
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void getPermissionsForUser_nonExistentUser() {
+        when(mockAccountService.getAccount(any())).thenReturn(Optional.empty());
+        
+        service.getPermissionsForUser(TEST_APP_ID, TEST_USER_ID);
+    }
+    
     @Test
-    public void getPermissionsForObject_pass() {
+    public void getPermissionsForEntity_pass() {
         Permission permission = createPermission();
         
         Account account = Account.create();
         account.setEmail("email@email.com");
         EntityRef entityRef = new EntityRef(EntityType.STUDY, TEST_STUDY_ID, "test-study-name");
         PermissionDetail permissionDetail = new PermissionDetail(permission, entityRef, new AccountRef(account));
+        
+        Study study = Study.create();
+        when(mockStudyService.getStudy(eq(TEST_APP_ID), eq(TEST_STUDY_ID), eq(true))).thenReturn(study);
         
         when(mockDao.getPermissionsForEntity(eq(TEST_APP_ID), eq(EntityType.STUDY), eq(TEST_STUDY_ID)))
                 .thenReturn(ImmutableList.of(permission));
@@ -256,10 +287,47 @@ public class PermissionServiceTest extends Mockito {
     }
     
     @Test
+    public void getPermissionsForEntity_nonExistentEntity() {
+        when(mockOrgService.getOrganization(eq(TEST_APP_ID), any())).thenThrow(EntityNotFoundException.class);
+        when(mockStudyService.getStudy(eq(TEST_APP_ID), any(), eq(true)))
+                .thenThrow(EntityNotFoundException.class);
+        when(mockAssessmentService.getAssessmentByGuid(eq(TEST_APP_ID), any(), any()))
+                .thenThrow(EntityNotFoundException.class);
+    
+        for (EntityType entityType : EntityType.values()) {
+            String entityId = entityType.name() + "-testId";
+            
+            try {
+                service.getPermissionsForEntity(TEST_APP_ID, entityType.toString(), entityId);
+                fail("Should have failed to find the entity of type " + entityType.toString());
+            } catch (EntityNotFoundException e) {
+                if (orgTypes.contains(entityType)) {
+                    verify(mockOrgService).getOrganization(eq(TEST_APP_ID), eq(entityId));
+                } else if (studyTypes.contains(entityType)) {
+                    verify(mockStudyService).getStudy(eq(TEST_APP_ID), eq(entityId), eq(true));
+                } else if (assessmentTypes.contains(entityType)) {
+                    verify(mockAssessmentService).getAssessmentByGuid(eq(TEST_APP_ID), eq(null), eq(entityId));
+                } else {
+                    fail("Unexpected entity type");
+                }
+            }
+        }
+    }
+    
+    @Test
     public void deletePermission_pass() {
+        when(mockDao.getPermission(eq(TEST_APP_ID), eq(GUID))).thenReturn(Optional.of(createPermission()));
         doNothing().when(mockDao).deletePermission(eq(TEST_APP_ID), eq(GUID));
+        
         service.deletePermission(TEST_APP_ID, GUID);
         verify(mockDao).deletePermission(eq(TEST_APP_ID), eq(GUID));
+    }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void deletePermission_noExistingPermission() {
+        when(mockDao.getPermission(any(), any())).thenReturn(Optional.empty());
+        
+        service.deletePermission(TEST_APP_ID, GUID);
     }
     
     @Test
@@ -269,20 +337,16 @@ public class PermissionServiceTest extends Mockito {
         when(mockAccountService.getAccount(any())).thenReturn(Optional.of(account));
     
         Study study = Study.create();
-        study.setName("test-study-name");
-        when(mockStudyService.getStudy(any(), any(), eq(false))).thenReturn(study);
+        when(mockStudyService.getStudy(any(), any(), eq(true))).thenReturn(study);
         
         Permission permission = createPermission();
         PermissionDetail permissionDetail = service.getPermissionDetail(TEST_APP_ID, permission);
         
         assertEquals(permissionDetail.getGuid(), GUID);
-        assertEquals(permissionDetail.getUserId(), TEST_USER_ID);
         assertEquals(permissionDetail.getAccessLevel(), AccessLevel.ADMIN);
-        assertEquals(permissionDetail.getEntityType(), EntityType.STUDY);
-        assertEquals(permissionDetail.getEntityId(), TEST_STUDY_ID);
-        assertNotNull(permissionDetail.getUserAccountRef());
+        assertNotNull(permissionDetail.getAccount());
         
-        AccountRef accountRef = permissionDetail.getUserAccountRef();
+        AccountRef accountRef = permissionDetail.getAccount();
         assertEquals(accountRef.getEmail(), EMAIL);
     }
     
@@ -298,7 +362,7 @@ public class PermissionServiceTest extends Mockito {
         
         Study study = Study.create();
         study.setName("test-study-name");
-        when(mockStudyService.getStudy(eq(TEST_APP_ID), any(), eq(false))).thenReturn(study);
+        when(mockStudyService.getStudy(eq(TEST_APP_ID), any(), eq(true))).thenReturn(study);
     
         Assessment assessment = new Assessment();
         assessment.setTitle("test-assessment-name");
@@ -313,17 +377,14 @@ public class PermissionServiceTest extends Mockito {
             PermissionDetail permissionDetail = service.getPermissionDetail(TEST_APP_ID, permission);
             
             assertEquals(permissionDetail.getGuid(), GUID);
-            assertEquals(permissionDetail.getUserId(), TEST_USER_ID);
             assertEquals(permissionDetail.getAccessLevel(), AccessLevel.ADMIN);
-            assertEquals(permissionDetail.getEntityType(), entityType);
-            assertEquals(permissionDetail.getEntityId(), entityId);
-            assertNotNull(permissionDetail.getUserAccountRef());
-            assertNotNull(permissionDetail.getEntityRef());
+            assertNotNull(permissionDetail.getAccount());
+            assertNotNull(permissionDetail.getEntity());
             
-            AccountRef accountRef = permissionDetail.getUserAccountRef();
+            AccountRef accountRef = permissionDetail.getAccount();
             assertEquals(accountRef.getEmail(), EMAIL);
             
-            EntityRef entityRef = permissionDetail.getEntityRef();
+            EntityRef entityRef = permissionDetail.getEntity();
             assertEquals(entityRef.getEntityType(), entityType);
             assertEquals(entityRef.getEntityId(), entityId);
             
@@ -347,6 +408,9 @@ public class PermissionServiceTest extends Mockito {
         permission.setAccessLevel(AccessLevel.ADMIN);
         permission.setEntityType(EntityType.STUDY);
         permission.setEntityId(TEST_STUDY_ID);
+        permission.setCreatedOn(CREATED_ON);
+        permission.setModifiedOn(CREATED_ON);
+        permission.setVersion(1L);
         return permission;
     }
 }

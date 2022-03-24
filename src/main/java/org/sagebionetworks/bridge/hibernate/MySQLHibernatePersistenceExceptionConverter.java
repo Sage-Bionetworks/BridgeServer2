@@ -100,14 +100,12 @@ public class MySQLHibernatePersistenceExceptionConverter implements PersistenceE
             if (rawMessage.contains("Duplicate entry")) {
                 displayMessage = selectMsg(
                         rawMessage, UNIQUE_KEY_CONSTRAINTS, UNIQUE_CONSTRAINT_MSG, name, displayMessage);
+            } else if (rawMessage.contains("Cannot add or update a child row: a foreign key constraint fails")) {
+                displayMessage = selectMsg(
+                        rawMessage, FOREIGN_KEY_MISSING_PARENT_CONSTRAINTS, MISSING_PARENT_INVALID_FK_CONSTRAINT_MSG, name, displayMessage);
             } else if (rawMessage.contains("a foreign key constraint fails")) {
-                if (rawMessage.contains("Cannot add or update a child row")) {
-                    displayMessage = selectMsg(
-                            rawMessage, FOREIGN_KEY_MISSING_PARENT_CONSTRAINTS, MISSING_PARENT_INVALID_FK_CONSTRAINT_MSG, name, displayMessage);
-                } else {
-                    displayMessage = selectMsg(
-                            rawMessage, FOREIGN_KEY_CONSTRAINTS, FK_CONSTRAINT_MSG, name, displayMessage);
-                }
+                displayMessage = selectMsg(
+                        rawMessage, FOREIGN_KEY_CONSTRAINTS, FK_CONSTRAINT_MSG, name, displayMessage);
             }
             return new ConstraintViolationException.Builder().withMessage(displayMessage).build();
         }

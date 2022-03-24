@@ -1,13 +1,17 @@
 package org.sagebionetworks.bridge.models.permissions;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.joda.time.DateTime;
+import org.sagebionetworks.bridge.hibernate.DateTimeToLongAttributeConverter;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
+import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
 import javax.persistence.Id;
 import javax.persistence.Table;
+import javax.persistence.Version;
 import java.util.Objects;
 
 @Entity
@@ -24,6 +28,12 @@ public final class Permission implements BridgeEntity {
     @Enumerated(EnumType.STRING)
     private EntityType entityType;
     private String entityId;
+    @Convert(converter = DateTimeToLongAttributeConverter.class)
+    private DateTime createdOn;
+    @Convert(converter = DateTimeToLongAttributeConverter.class)
+    private DateTime modifiedOn;
+    @Version
+    private long version;
     
     public String getGuid() {
         return guid;
@@ -73,22 +83,48 @@ public final class Permission implements BridgeEntity {
         this.entityId = entityId;
     }
     
+    public DateTime getCreatedOn() {
+        return createdOn;
+    }
+    
+    public void setCreatedOn(DateTime createdOn) {
+        this.createdOn = createdOn;
+    }
+    
+    public DateTime getModifiedOn() {
+        return modifiedOn;
+    }
+    
+    public void setModifiedOn(DateTime modifiedOn) {
+        this.modifiedOn = modifiedOn;
+    }
+    
+    public long getVersion() {
+        return version;
+    }
+    
+    public void setVersion(long version) {
+        this.version = version;
+    }
+    
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Permission that = (Permission) o;
-        return Objects.equals(guid, that.guid)
-                && Objects.equals(appId, that.appId)
-                && Objects.equals(userId, that.userId)
-                && accessLevel == that.accessLevel
-                && entityType == that.entityType
-                && Objects.equals(entityId, that.entityId);
+        return version == that.version && 
+                Objects.equals(guid, that.guid) && 
+                Objects.equals(appId, that.appId) && 
+                Objects.equals(userId, that.userId) && 
+                accessLevel == that.accessLevel && 
+                entityType == that.entityType && 
+                Objects.equals(entityId, that.entityId) && 
+                Objects.equals(createdOn, that.createdOn) && 
+                Objects.equals(modifiedOn, that.modifiedOn);
     }
     
     @Override
     public int hashCode() {
-        return Objects.hash(guid, appId, userId, accessLevel, entityType, entityId);
+        return Objects.hash(guid, appId, userId, accessLevel, entityType, entityId, createdOn, modifiedOn, version);
     }
-    
 }
