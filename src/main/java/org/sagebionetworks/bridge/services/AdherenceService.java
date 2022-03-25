@@ -81,9 +81,10 @@ import org.slf4j.LoggerFactory;
 
 @Component
 public class AdherenceService {
-    private static final String NO_THRESHOLD_VALUE_ERROR = "An adherence threshold value is missing from the request and the study as a default";
-
     private static final Logger LOG = LoggerFactory.getLogger(AdherenceService.class);
+    
+    static final String THRESHOLD_OUT_OF_RANGE_ERROR = "Adherence threshold must be from 1-100.";
+    static final String NO_THRESHOLD_VALUE_ERROR = "An adherence threshold value must be supplied in the request or set as a study default.";
 
     private AdherenceRecordDao recordDao;
     
@@ -508,6 +509,9 @@ public class AdherenceService {
         }
         if (adherenceThreshold == null) {
             throw new BadRequestException(NO_THRESHOLD_VALUE_ERROR);
+        }
+        if (adherenceThreshold < 1 || adherenceThreshold > 100) {
+            throw new BadRequestException(THRESHOLD_OUT_OF_RANGE_ERROR);
         }
         return reportDao.getAdherenceStatistics(appId, studyId, adherenceThreshold);
     }

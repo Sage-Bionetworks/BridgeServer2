@@ -1117,7 +1117,7 @@ public class AdherenceServiceTest extends Mockito {
     }
 
     @Test(expectedExceptions = BadRequestException.class, 
-            expectedExceptionsMessageRegExp = "An adherence threshold value is missing from the request and the study as a default")
+            expectedExceptionsMessageRegExp = AdherenceService.NO_THRESHOLD_VALUE_ERROR)
     public void getAdherenceStatistics_noAdherence() {
         Study study = Study.create();
         when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
@@ -1129,6 +1129,36 @@ public class AdherenceServiceTest extends Mockito {
         when(mockReportDao.getAdherenceStatistics(TEST_APP_ID, TEST_STUDY_ID, Integer.valueOf(32))).thenReturn(stats);
         
         service.getAdherenceStatistics(TEST_APP_ID, TEST_STUDY_ID, null);
+    }
+    
+    @Test(expectedExceptions = BadRequestException.class, 
+            expectedExceptionsMessageRegExp = AdherenceService.THRESHOLD_OUT_OF_RANGE_ERROR)
+    public void getAdherenceStatistics_adherenceTooLow() {
+        Study study = Study.create();
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+        
+        Schedule2 schedule = new Schedule2();
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study)).thenReturn(Optional.of(schedule));
+        
+        AdherenceStatistics stats = new AdherenceStatistics();
+        when(mockReportDao.getAdherenceStatistics(TEST_APP_ID, TEST_STUDY_ID, Integer.valueOf(32))).thenReturn(stats);
+        
+        service.getAdherenceStatistics(TEST_APP_ID, TEST_STUDY_ID, -3);
+    }
+    
+    @Test(expectedExceptions = BadRequestException.class, 
+            expectedExceptionsMessageRegExp = AdherenceService.THRESHOLD_OUT_OF_RANGE_ERROR)
+    public void getAdherenceStatistics_adherenceTooHigh() {
+        Study study = Study.create();
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+        
+        Schedule2 schedule = new Schedule2();
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study)).thenReturn(Optional.of(schedule));
+        
+        AdherenceStatistics stats = new AdherenceStatistics();
+        when(mockReportDao.getAdherenceStatistics(TEST_APP_ID, TEST_STUDY_ID, Integer.valueOf(32))).thenReturn(stats);
+        
+        service.getAdherenceStatistics(TEST_APP_ID, TEST_STUDY_ID, 200);
     }
     
     private AdherenceRecord ar(DateTime startedOn, DateTime finishedOn, String guid, boolean declined) {

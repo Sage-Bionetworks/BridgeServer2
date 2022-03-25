@@ -7,7 +7,6 @@ import static org.sagebionetworks.bridge.models.SearchTermPredicate.AND;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -33,14 +32,15 @@ import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.google.common.collect.Lists;
 
 @Component
 public class HibernateAdherenceReportDao implements AdherenceReportDao {
     
     private static final TypeReference<List<WeeklyAdherenceReportRow>> ROWS_LIST = new TypeReference<List<WeeklyAdherenceReportRow>>() {};
     
-    static final String STATISTICS_SQL = "SELECT label, count(*) as total, reports.rows FROM WeeklyAdherenceReportLabels "
+    // For this to work, the default ONLY_FULL_GROUP_BY sql_mode flag must be removed from MySQL. None of our environments
+    // have this value, but local installations will need to create the ~/.my.cnf file as described in the README.md file.
+    static final String STATISTICS_SQL = "SELECT label, count(*) as total, any_value(rows) FROM WeeklyAdherenceReportLabels "
             +"labels LEFT JOIN WeeklyAdherenceReports AS reports ON labels.appId = reports.appId AND labels.studyId = "
             +"reports.studyId and labels.userId = reports.userId WHERE reports.appId = :appId AND reports.studyId = :studyId "
             +"GROUP BY label";
@@ -149,33 +149,26 @@ public class HibernateAdherenceReportDao implements AdherenceReportDao {
     public AdherenceStatistics getAdherenceStatistics(String appId, String studyId, Integer adherenceThreshold) {
         AdherenceStatistics stats = new AdherenceStatistics();
         
-        Map<String, AdherenceStatisticsEntry> entries = new HashMap<>();
+        List<AdherenceStatisticsEntry> entries = new ArrayList<>();
         
         QueryBuilder builder = new QueryBuilder();
         builder.append(STATISTICS_SQL, "appId", appId, "studyId", studyId);
         List<Object[]> results = hibernateHelper.nativeQuery(builder.getQuery(), builder.getParameters());
         for (Object[] oneResult : results) {
-            try {
-                String label = (String)oneResult[0];
-                BigInteger totalActive = (BigInteger)oneResult[1];
-                List<WeeklyAdherenceReportRow> rows = BridgeObjectMapper.get().readValue((String)oneResult[2], ROWS_LIST);
-                for (WeeklyAdherenceReportRow oneRow : rows) {
-                    if (oneRow.getSearchableLabel().equals(label)) {
-                        AdherenceStatisticsEntry entry = new AdherenceStatisticsEntry();
-                        entry.setLabel(oneRow.getLabel());
-                        entry.setSearchableLabel(oneRow.getSearchableLabel());
-                        entry.setSessionName(oneRow.getSessionName());
-                        entry.setWeekInStudy(oneRow.getWeekInStudy());
-                        entry.setStudyBurstId(oneRow.getStudyBurstId());
-                        entry.setStudyBurstNum(oneRow.getStudyBurstNum());
-                        entry.setTotalActive(totalActive.intValue());
-                        entries.put(label, entry);
-                        break;
-                    }
-                }
-            } catch (JsonProcessingException e) {
-                throw new BridgeServiceException(e);
-            }
+            String searchableLabel = (String)oneResult[0];
+            BigInteger totalActive = (BigInteger)oneResult[1];
+            String rowsJson = (String)oneResult[2];
+            WeeklyAdherenceReportRow row = findRow(rowsJson, searchableLabel);
+            
+            AdherenceStatisticsEntry entry = new AdherenceStatisticsEntry();
+            entry.setLabel(row.getLabel());
+            entry.setSearchableLabel(row.getSearchableLabel());
+            entry.setSessionName(row.getSessionName());
+            entry.setWeekInStudy(row.getWeekInStudy());
+            entry.setStudyBurstId(row.getStudyBurstId());
+            entry.setStudyBurstNum(row.getStudyBurstNum());
+            entry.setTotalActive(totalActive.intValue());
+            entries.add(entry);
         }
         
         builder = new QueryBuilder();
@@ -188,16 +181,32 @@ public class HibernateAdherenceReportDao implements AdherenceReportDao {
         
         Integer compliant = (total != null && noncompliant != null) ? total - noncompliant : null;
         
-        List<AdherenceStatisticsEntry> entriesList = Lists.newArrayList(entries.values());
-        entriesList.sort(ENTRIES_COMPARATOR);
+        entries.sort(ENTRIES_COMPARATOR);
         
         stats.setAdherenceThresholdPercentage(adherenceThreshold);
         stats.setNoncompliant(noncompliant);
         stats.setCompliant(compliant);
         stats.setTotalActive(total);
-        stats.setEntries(entriesList);
+        stats.setEntries(entries);
         
         return stats;
+    }
+    
+    private WeeklyAdherenceReportRow findRow(String rowsJson, String searchableLabel) {
+        try {
+            List<WeeklyAdherenceReportRow> rows = BridgeObjectMapper.get().readValue(rowsJson, ROWS_LIST);
+            for (WeeklyAdherenceReportRow oneRow : rows) {
+                if (oneRow.getSearchableLabel().equals(searchableLabel)) {
+                    return oneRow;
+                }
+            }
+        } catch (JsonProcessingException e) {
+            throw new BridgeServiceException(e);
+        }
+        // The row JSON is a compound value and the searchableLabel must be one of the values in the row... this is
+        // why it doesn't matter which set of rows we get, because we'l put that specific entry out. If it’s not 
+        // there at all...something is not correct.
+        throw new BridgeServiceException("Weekly report rows do not include searchableLabel: " + searchableLabel);
     }
     
     private Integer getCount(QueryBuilder builder) {
