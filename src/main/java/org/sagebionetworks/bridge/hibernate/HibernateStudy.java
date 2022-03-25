@@ -28,6 +28,7 @@ import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 
 import org.sagebionetworks.bridge.json.BridgeTypeName;
+import org.sagebionetworks.bridge.models.apps.Exporter3Configuration;
 import org.sagebionetworks.bridge.models.assessments.ColorScheme;
 import org.sagebionetworks.bridge.models.studies.Contact;
 import org.sagebionetworks.bridge.models.studies.IrbDecisionType;
@@ -61,6 +62,9 @@ public class HibernateStudy implements Study {
     @Column(columnDefinition = "mediumtext", name = "clientData", nullable = true)
     @Convert(converter = JsonNodeAttributeConverter.class)
     private JsonNode clientData;
+    @Convert(converter = Exporter3ConfigurationConverter.class)
+    private Exporter3Configuration exporter3Configuration;
+    private boolean exporter3Enabled;
     @Enumerated(EnumType.STRING)
     private StudyPhase phase;
     private String details;
@@ -264,7 +268,27 @@ public class HibernateStudy implements Study {
     public void setDetails(String details) {
         this.details = details;
     }
-    
+
+    @Override
+    public Exporter3Configuration getExporter3Configuration() {
+        return exporter3Configuration;
+    }
+
+    @Override
+    public void setExporter3Configuration(Exporter3Configuration exporter3Configuration) {
+        this.exporter3Configuration = exporter3Configuration;
+    }
+
+    @Override
+    public boolean isExporter3Enabled() {
+        return exporter3Enabled;
+    }
+
+    @Override
+    public void setExporter3Enabled(boolean exporter3Enabled) {
+        this.exporter3Enabled = exporter3Enabled;
+    }
+
     @Override
     public StudyPhase getPhase() {
         return phase;

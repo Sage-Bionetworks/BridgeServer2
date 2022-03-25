@@ -57,6 +57,7 @@ import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.Exporter3Configuration;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordEx3;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.worker.Exporter3Request;
 import org.sagebionetworks.bridge.models.worker.WorkerRequest;
@@ -90,6 +91,7 @@ public class Exporter3ServiceTest {
             DATA_ACCESS_TEAM_ID);
 
     private App app;
+    private Study study;
 
     @Mock
     private AccountService mockAccountService;
@@ -108,6 +110,9 @@ public class Exporter3ServiceTest {
 
     @Mock
     private AmazonSQSClient mockSqsClient;
+
+    @Mock
+    private StudyService mockStudyService;
 
     @Mock
     private SynapseHelper mockSynapseHelper;
@@ -142,6 +147,13 @@ public class Exporter3ServiceTest {
         app.setIdentifier(TestConstants.TEST_APP_ID);
         app.setName(APP_NAME);
         when(mockAppService.getApp(TestConstants.TEST_APP_ID)).thenReturn(app);
+
+        // Similarly, study service.
+        study = Study.create();
+        study.setIdentifier(TestConstants.TEST_STUDY_ID);
+        study.setName(APP_NAME);
+        when(mockStudyService.getStudy(eq(TestConstants.TEST_APP_ID), eq(TestConstants.TEST_STUDY_ID), anyBoolean()))
+                .thenReturn(study);
     }
 
     @Test
@@ -150,7 +162,149 @@ public class Exporter3ServiceTest {
         app.setExporter3Configuration(null);
         app.setExporter3Enabled(false);
 
+        mockSynapseResourceCreation();
+
+        // Execute and verify output.
+        Exporter3Configuration returnedEx3Config = exporter3Service.initExporter3(TestConstants.TEST_APP_ID);
+        verifyEx3ConfigAndSynapse(returnedEx3Config, TestConstants.TEST_APP_ID);
+
+        //  Verify updated app.
+        ArgumentCaptor<App> appToUpdateCaptor = ArgumentCaptor.forClass(App.class);
+        verify(mockAppService).updateApp(appToUpdateCaptor.capture(), eq((true)));
+
+        App appToUpdate = appToUpdateCaptor.getValue();
+        assertTrue(appToUpdate.isExporter3Enabled());
+
+        Exporter3Configuration ex3ConfigToCreate = appToUpdate.getExporter3Configuration();
+        assertEquals(ex3ConfigToCreate, returnedEx3Config);
+    }
+
+    @Test
+    public void initExporter3_AlreadyConfigured() throws Exception {
+        // App is already configured for Exporter 3.0.
+        Exporter3Configuration ex3Config = makeConfiguredEx3Config();
+
+        app.setExporter3Configuration(ex3Config);
+        app.setExporter3Enabled(true);
+
+        // Execute and verify. The output returned is the same as the one in the app.
+        Exporter3Configuration returnedEx3Config = exporter3Service.initExporter3(TestConstants.TEST_APP_ID);
+        assertEquals(returnedEx3Config, ex3Config);
+
+        // Verify we don't call through to back-end services.
+        verifyZeroInteractions(mockS3Helper, mockSynapseHelper);
+        verify(mockAppService, never()).updateApp(any(), anyBoolean());
+    }
+
+    // branch coverage
+    @Test
+    public void initExporter3_MissingTrackingView() throws Exception {
+        // App EX 3 Config doesn't have project, so we can verify the tracking view stuff.
+        Exporter3Configuration ex3Config = makeConfiguredEx3Config();
+        ex3Config.setProjectId(null);
+
+        app.setExporter3Configuration(ex3Config);
+        app.setExporter3Enabled(true);
+
         // Mock SynapseHelper.
+        Project createdProject = new Project();
+        createdProject.setId(PROJECT_ID);
+        when(mockSynapseHelper.createEntityWithRetry(any(Project.class))).thenReturn(createdProject);
+
+        // For whatever reason, the tracking view does not exist in Synapse.
+        when(mockSynapseHelper.getEntityWithRetry(SYNAPSE_TRACKING_VIEW_ID, EntityView.class))
+                .thenReturn(null);
+
+        // Execute and verify output.
+        Exporter3Configuration returnedEx3Config = exporter3Service.initExporter3(TestConstants.TEST_APP_ID);
+        assertEquals(returnedEx3Config.getDataAccessTeamId().longValue(), DATA_ACCESS_TEAM_ID);
+        assertEquals(returnedEx3Config.getProjectId(), PROJECT_ID);
+        assertEquals(returnedEx3Config.getRawDataFolderId(), RAW_FOLDER_ID);
+        assertEquals(returnedEx3Config.getStorageLocationId().longValue(), STORAGE_LOCATION_ID);
+
+        // Just verify the tracking view stuff. Specifically, since it doesn't exist, we never wrote it back to
+        // Synapse.
+        verify(mockSynapseHelper, never()).updateEntityWithRetry(any(EntityView.class));
+    }
+
+    // branch coverage
+    @Test
+    public void initExporter3_ErrorAddingToTrackingView() throws Exception {
+        // App EX 3 Config doesn't have project, so we can verify the tracking view stuff.
+        Exporter3Configuration ex3Config = makeConfiguredEx3Config();
+        ex3Config.setProjectId(null);
+
+        app.setExporter3Configuration(ex3Config);
+        app.setExporter3Enabled(true);
+
+        // Mock SynapseHelper.
+        Project createdProject = new Project();
+        createdProject.setId(PROJECT_ID);
+        when(mockSynapseHelper.createEntityWithRetry(any(Project.class))).thenReturn(createdProject);
+
+        EntityView trackingView = new EntityView();
+        trackingView.setScopeIds(new ArrayList<>());
+        when(mockSynapseHelper.getEntityWithRetry(SYNAPSE_TRACKING_VIEW_ID, EntityView.class))
+                .thenReturn(trackingView);
+
+        when(mockSynapseHelper.updateEntityWithRetry(any(EntityView.class)))
+                .thenThrow(UnknownSynapseServerException.class);
+
+        // Execute and verify output.
+        Exporter3Configuration returnedEx3Config = exporter3Service.initExporter3(TestConstants.TEST_APP_ID);
+        assertEquals(returnedEx3Config.getDataAccessTeamId().longValue(), DATA_ACCESS_TEAM_ID);
+        assertEquals(returnedEx3Config.getProjectId(), PROJECT_ID);
+        assertEquals(returnedEx3Config.getRawDataFolderId(), RAW_FOLDER_ID);
+        assertEquals(returnedEx3Config.getStorageLocationId().longValue(), STORAGE_LOCATION_ID);
+
+        // Just verify the tracking view stuff. We call update, and then silently swallow the exception.
+        verify(mockSynapseHelper).updateEntityWithRetry(any(EntityView.class));
+    }
+
+    @Test
+    public void initExporter3ForStudy() throws Exception {
+        // Study has no exporter3config.
+        study.setExporter3Configuration(null);
+        study.setExporter3Enabled(false);
+
+        mockSynapseResourceCreation();
+
+        // Execute and verify output.
+        Exporter3Configuration returnedEx3Config = exporter3Service.initExporter3ForStudy(TestConstants.TEST_APP_ID,
+                TestConstants.TEST_STUDY_ID);
+        verifyEx3ConfigAndSynapse(returnedEx3Config, TestConstants.TEST_APP_ID + '/' +
+                TestConstants.TEST_STUDY_ID);
+
+        //  Verify updated study.
+        ArgumentCaptor<Study> studyToUpdateCaptor = ArgumentCaptor.forClass(Study.class);
+        verify(mockStudyService).updateStudy(eq(TestConstants.TEST_APP_ID), studyToUpdateCaptor.capture());
+
+        Study studyToUpdate = studyToUpdateCaptor.getValue();
+        assertTrue(studyToUpdate.isExporter3Enabled());
+
+        Exporter3Configuration ex3ConfigToCreate = studyToUpdate.getExporter3Configuration();
+        assertEquals(ex3ConfigToCreate, returnedEx3Config);
+    }
+
+    @Test
+    public void initExporter3ForStudy_AlreadyConfigured() throws Exception {
+        // Study is already configured for Exporter 3.0.
+        Exporter3Configuration ex3Config = makeConfiguredEx3Config();
+
+        study.setExporter3Configuration(ex3Config);
+        study.setExporter3Enabled(true);
+
+        // Execute and verify. The output returned is the same as the one in the app.
+        Exporter3Configuration returnedEx3Config = exporter3Service.initExporter3ForStudy(TestConstants.TEST_APP_ID,
+                TestConstants.TEST_STUDY_ID);
+        assertEquals(returnedEx3Config, ex3Config);
+
+        // Verify we don't call through to back-end services.
+        verifyZeroInteractions(mockS3Helper, mockSynapseHelper);
+        verify(mockAppService, never()).updateApp(any(), anyBoolean());
+    }
+
+    private void mockSynapseResourceCreation() throws Exception {
         Team createdTeam = new Team();
         createdTeam.setId(String.valueOf(DATA_ACCESS_TEAM_ID));
         when(mockSynapseHelper.createTeamWithRetry(any())).thenReturn(createdTeam);
@@ -177,14 +331,15 @@ public class Exporter3ServiceTest {
         createdStorageLocation.setStorageLocationId(STORAGE_LOCATION_ID);
         when(mockSynapseHelper.createStorageLocationForEntity(eq(RAW_FOLDER_ID),
                 any(ExternalS3StorageLocationSetting.class))).thenReturn(createdStorageLocation);
+    }
 
-        // Execute and verify output.
-        Exporter3Configuration returnedEx3Config = exporter3Service.initExporter3(TestConstants.TEST_APP_ID);
-        assertEquals(returnedEx3Config.getDataAccessTeamId().longValue(), DATA_ACCESS_TEAM_ID);
-        assertEquals(returnedEx3Config.getParticipantVersionTableId(), PARTICIPANT_VERSION_TABLE_ID);
-        assertEquals(returnedEx3Config.getProjectId(), PROJECT_ID);
-        assertEquals(returnedEx3Config.getRawDataFolderId(), RAW_FOLDER_ID);
-        assertEquals(returnedEx3Config.getStorageLocationId().longValue(), STORAGE_LOCATION_ID);
+    private void verifyEx3ConfigAndSynapse(Exporter3Configuration ex3Config, String s3BaseKey) throws Exception {
+        // Validate returned EX3 Config.
+        assertEquals(ex3Config.getDataAccessTeamId().longValue(), DATA_ACCESS_TEAM_ID);
+        assertEquals(ex3Config.getParticipantVersionTableId(), PARTICIPANT_VERSION_TABLE_ID);
+        assertEquals(ex3Config.getProjectId(), PROJECT_ID);
+        assertEquals(ex3Config.getRawDataFolderId(), RAW_FOLDER_ID);
+        assertEquals(ex3Config.getStorageLocationId().longValue(), STORAGE_LOCATION_ID);
 
         // Verify created team.
         ArgumentCaptor<Team> teamToCreateCaptor = ArgumentCaptor.forClass(Team.class);
@@ -227,7 +382,7 @@ public class Exporter3ServiceTest {
                 READ_ONLY_PRINCIPAL_ID_SET);
 
         // Verify we write to S3 for the storage location.
-        verify(mockS3Helper).writeLinesToS3(RAW_HEALTH_DATA_BUCKET, TestConstants.TEST_APP_ID + "/owner.txt",
+        verify(mockS3Helper).writeLinesToS3(RAW_HEALTH_DATA_BUCKET, s3BaseKey + "/owner.txt",
                 ImmutableList.of(EXPORTER_SYNAPSE_USER));
 
         // Verify created storage location.
@@ -237,114 +392,19 @@ public class Exporter3ServiceTest {
                 storageLocationToCreateCaptor.capture());
 
         ExternalS3StorageLocationSetting storageLocationToCreate = storageLocationToCreateCaptor.getValue();
-        assertEquals(storageLocationToCreate.getBaseKey(), TestConstants.TEST_APP_ID);
+        assertEquals(storageLocationToCreate.getBaseKey(), s3BaseKey);
         assertEquals(storageLocationToCreate.getBucket(), RAW_HEALTH_DATA_BUCKET);
         assertTrue(storageLocationToCreate.getStsEnabled());
-
-        //  Verify updated app.
-        ArgumentCaptor<App> appToUpdateCaptor = ArgumentCaptor.forClass(App.class);
-        verify(mockAppService).updateApp(appToUpdateCaptor.capture(), eq((true)));
-
-        App appToUpdate = appToUpdateCaptor.getValue();
-        assertTrue(appToUpdate.isExporter3Enabled());
-
-        Exporter3Configuration ex3ConfigToCreate = appToUpdate.getExporter3Configuration();
-        assertEquals(ex3ConfigToCreate, returnedEx3Config);
     }
 
-    @Test
-    public void initExporter3_AlreadyConfigured() throws Exception {
-        // App is already configured for Exporter 3.0.
+    private static Exporter3Configuration makeConfiguredEx3Config() {
         Exporter3Configuration ex3Config = new Exporter3Configuration();
         ex3Config.setDataAccessTeamId(DATA_ACCESS_TEAM_ID);
         ex3Config.setParticipantVersionTableId(PARTICIPANT_VERSION_TABLE_ID);
         ex3Config.setProjectId(PROJECT_ID);
         ex3Config.setRawDataFolderId(RAW_FOLDER_ID);
         ex3Config.setStorageLocationId(STORAGE_LOCATION_ID);
-
-        app.setExporter3Configuration(ex3Config);
-        app.setExporter3Enabled(true);
-
-        // Execute and verify. The output returned is the same as the one in the app.
-        Exporter3Configuration returnedEx3Config = exporter3Service.initExporter3(TestConstants.TEST_APP_ID);
-        assertEquals(returnedEx3Config, ex3Config);
-
-        // Verify we don't call through to back-end services.
-        verifyZeroInteractions(mockS3Helper, mockSynapseHelper);
-        verify(mockAppService, never()).updateApp(any(), anyBoolean());
-    }
-
-    // branch coverage
-    @Test
-    public void initExporter3_MissingTrackingView() throws Exception {
-        // App EX 3 Config doesn't have project, so we can verify the tracking view stuff.
-        Exporter3Configuration ex3Config = new Exporter3Configuration();
-        ex3Config.setDataAccessTeamId(DATA_ACCESS_TEAM_ID);
-        ex3Config.setParticipantVersionTableId(PARTICIPANT_VERSION_TABLE_ID);
-        ex3Config.setProjectId(null);
-        ex3Config.setRawDataFolderId(RAW_FOLDER_ID);
-        ex3Config.setStorageLocationId(STORAGE_LOCATION_ID);
-
-        app.setExporter3Configuration(ex3Config);
-        app.setExporter3Enabled(true);
-
-        // Mock SynapseHelper.
-        Project createdProject = new Project();
-        createdProject.setId(PROJECT_ID);
-        when(mockSynapseHelper.createEntityWithRetry(any(Project.class))).thenReturn(createdProject);
-
-        // For whatever reason, the tracking view does not exist in Synapse.
-        when(mockSynapseHelper.getEntityWithRetry(SYNAPSE_TRACKING_VIEW_ID, EntityView.class))
-                .thenReturn(null);
-
-        // Execute and verify output.
-        Exporter3Configuration returnedEx3Config = exporter3Service.initExporter3(TestConstants.TEST_APP_ID);
-        assertEquals(returnedEx3Config.getDataAccessTeamId().longValue(), DATA_ACCESS_TEAM_ID);
-        assertEquals(returnedEx3Config.getProjectId(), PROJECT_ID);
-        assertEquals(returnedEx3Config.getRawDataFolderId(), RAW_FOLDER_ID);
-        assertEquals(returnedEx3Config.getStorageLocationId().longValue(), STORAGE_LOCATION_ID);
-
-        // Just verify the tracking view stuff. Specifically, since it doesn't exist, we never wrote it back to
-        // Synapse.
-        verify(mockSynapseHelper, never()).updateEntityWithRetry(any(EntityView.class));
-    }
-
-    // branch coverage
-    @Test
-    public void initExporter3_ErrorAddingToTrackingView() throws Exception {
-        // App EX 3 Config doesn't have project, so we can verify the tracking view stuff.
-        Exporter3Configuration ex3Config = new Exporter3Configuration();
-        ex3Config.setDataAccessTeamId(DATA_ACCESS_TEAM_ID);
-        ex3Config.setParticipantVersionTableId(PARTICIPANT_VERSION_TABLE_ID);
-        ex3Config.setProjectId(null);
-        ex3Config.setRawDataFolderId(RAW_FOLDER_ID);
-        ex3Config.setStorageLocationId(STORAGE_LOCATION_ID);
-
-        app.setExporter3Configuration(ex3Config);
-        app.setExporter3Enabled(true);
-
-        // Mock SynapseHelper.
-        Project createdProject = new Project();
-        createdProject.setId(PROJECT_ID);
-        when(mockSynapseHelper.createEntityWithRetry(any(Project.class))).thenReturn(createdProject);
-
-        EntityView trackingView = new EntityView();
-        trackingView.setScopeIds(new ArrayList<>());
-        when(mockSynapseHelper.getEntityWithRetry(SYNAPSE_TRACKING_VIEW_ID, EntityView.class))
-                .thenReturn(trackingView);
-
-        when(mockSynapseHelper.updateEntityWithRetry(any(EntityView.class)))
-                .thenThrow(UnknownSynapseServerException.class);
-
-        // Execute and verify output.
-        Exporter3Configuration returnedEx3Config = exporter3Service.initExporter3(TestConstants.TEST_APP_ID);
-        assertEquals(returnedEx3Config.getDataAccessTeamId().longValue(), DATA_ACCESS_TEAM_ID);
-        assertEquals(returnedEx3Config.getProjectId(), PROJECT_ID);
-        assertEquals(returnedEx3Config.getRawDataFolderId(), RAW_FOLDER_ID);
-        assertEquals(returnedEx3Config.getStorageLocationId().longValue(), STORAGE_LOCATION_ID);
-
-        // Just verify the tracking view stuff. We call update, and then silently swallow the exception.
-        verify(mockSynapseHelper).updateEntityWithRetry(any(EntityView.class));
+        return ex3Config;
     }
 
     @Test
