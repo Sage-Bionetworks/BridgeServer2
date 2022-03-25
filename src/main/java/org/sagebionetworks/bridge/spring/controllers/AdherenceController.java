@@ -137,7 +137,7 @@ public class AdherenceController extends BaseController {
         return service.getWeeklyAdherenceReports(session.getAppId(), studyId, search);
     }
     
-    @GetMapping("/v5/studies/{studyId}/adherence/weekly/stats")    
+    @GetMapping("/v5/studies/{studyId}/adherence/stats")    
     public AdherenceStatistics getAdherenceStatistics(@PathVariable String studyId,
             @RequestParam(required = false) String adherenceThreshold) {
         UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_DESIGNER, STUDY_COORDINATOR);

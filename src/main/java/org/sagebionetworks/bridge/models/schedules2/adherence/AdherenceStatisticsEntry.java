@@ -2,8 +2,8 @@ package org.sagebionetworks.bridge.models.schedules2.adherence;
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
-@JsonPropertyOrder({ "label", "searchableLabel", "sessionName", "weekInStudy", "studyBurstId", "studyBurstNum", "count",
-        "type" })
+@JsonPropertyOrder({ "label", "searchableLabel", "sessionName", "weekInStudy", "studyBurstId", "studyBurstNum",
+        "totalActive", "type" })
 public class AdherenceStatisticsEntry {
     private String label;
     private String searchableLabel;

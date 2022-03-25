@@ -147,8 +147,6 @@ public class HibernateAdherenceReportDao implements AdherenceReportDao {
 
     @Override
     public AdherenceStatistics getAdherenceStatistics(String appId, String studyId, Integer adherenceThreshold) {
-        AdherenceStatistics stats = new AdherenceStatistics();
-        
         List<AdherenceStatisticsEntry> entries = new ArrayList<>();
         
         QueryBuilder builder = new QueryBuilder();
@@ -183,12 +181,12 @@ public class HibernateAdherenceReportDao implements AdherenceReportDao {
         
         entries.sort(ENTRIES_COMPARATOR);
         
+        AdherenceStatistics stats = new AdherenceStatistics();
         stats.setAdherenceThresholdPercentage(adherenceThreshold);
         stats.setNoncompliant(noncompliant);
         stats.setCompliant(compliant);
         stats.setTotalActive(total);
         stats.setEntries(entries);
-        
         return stats;
     }
     
@@ -204,7 +202,7 @@ public class HibernateAdherenceReportDao implements AdherenceReportDao {
             throw new BridgeServiceException(e);
         }
         // The row JSON is a compound value and the searchableLabel must be one of the values in the row... this is
-        // why it doesn't matter which set of rows we get, because we'l put that specific entry out. If it’s not 
+        // why it doesn't matter which set of rows we get, because we'll put that entry out of the list. If it’s not 
         // there at all...something is not correct.
         throw new BridgeServiceException("Weekly report rows do not include searchableLabel: " + searchableLabel);
     }
