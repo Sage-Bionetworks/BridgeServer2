@@ -26,7 +26,6 @@ import org.joda.time.LocalTime;
 import org.joda.time.Period;
 import org.mockito.Mockito;
 import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.schedules2.AssessmentReference;
@@ -626,8 +625,6 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
         builder.withAdherenceRecords(createAdherenceRecords());
         builder.withClientTimeZone("America/Chicago");
         StudyAdherenceReport report = INSTANCE.generate(builder.build());
-        
-        System.out.println(BridgeObjectMapper.get().writeValueAsString(report));
         
         // testAccount is set in the service, not the generator
         assertEquals(report.getAdherencePercent(), Integer.valueOf(0));

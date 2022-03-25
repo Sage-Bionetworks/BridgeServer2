@@ -53,6 +53,7 @@ import com.google.common.collect.Iterables;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.joda.time.LocalDate;
 import org.joda.time.Period;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -78,6 +79,8 @@ import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEventIdsMap;
+import org.sagebionetworks.bridge.models.schedules2.Schedule2;
+import org.sagebionetworks.bridge.models.schedules2.Session;
 import org.sagebionetworks.bridge.models.schedules2.StudyBurst;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordList;
@@ -87,8 +90,11 @@ import org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantStudyPr
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamAdherenceReport;
 import org.sagebionetworks.bridge.models.schedules2.adherence.study.StudyAdherenceReport;
 import org.sagebionetworks.bridge.models.schedules2.adherence.study.StudyAdherenceReportGeneratorTest;
+import org.sagebionetworks.bridge.models.schedules2.adherence.weekly.NextActivity;
 import org.sagebionetworks.bridge.models.schedules2.adherence.weekly.WeeklyAdherenceReport;
 import org.sagebionetworks.bridge.models.schedules2.timelines.MetadataContainer;
+import org.sagebionetworks.bridge.models.schedules2.timelines.Scheduler;
+import org.sagebionetworks.bridge.models.schedules2.timelines.Timeline;
 import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -901,6 +907,9 @@ public class AdherenceServiceTest extends Mockito {
         study.setScheduleGuid(SCHEDULE_GUID);
         when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
         
+        when(mockScheduleService.getScheduleMetadata(SCHEDULE_GUID))
+            .thenReturn(StudyAdherenceReportGeneratorTest.createTimelineMetadata());        
+
         List<StudyActivityEvent> events = ImmutableList.of();
         ResourceList<StudyActivityEvent> page = new ResourceList<>(events, true);
         when(mockStudyActivityEventService.getRecentStudyActivityEvents(
@@ -913,6 +922,56 @@ public class AdherenceServiceTest extends Mockito {
                 TEST_APP_ID, TEST_STUDY_ID, account);
         assertEquals(retValue.getClientTimeZone(), "America/Denver");
         assertEquals(retValue.getCreatedOn(), MODIFIED_ON.withZone(DateTimeZone.forID("America/Denver")));
+        assertNull(retValue.getNextActivity());
+    }
+    
+    @Test
+    public void getWeeklyAdherenceReport_noRowsCopiesNextActivity() throws Exception {
+        RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
+
+        Account account = Account.create();
+        account.setAppId(TEST_APP_ID);
+        account.setId(TEST_USER_ID);
+        account.setFirstName("firstName");
+        account.setLastName("lastName");
+        account.setEmail(TestConstants.EMAIL);
+        account.setPhone(TestConstants.PHONE);
+        account.getEnrollments().add(Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, TEST_EXTERNAL_ID));
+
+        Study study = Study.create();
+        study.setScheduleGuid(SCHEDULE_GUID);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+        
+        // We have to shift records into the future so they end up in the nextActivity
+        // object.
+        Schedule2 schedule = StudyAdherenceReportGeneratorTest.createSchedule();
+        schedule.setDuration(Period.parse("P42W"));
+        for (Session session : schedule.getSessions()) {
+            session.setDelay(Period.parse("P40W"));
+        }
+        Timeline timeline = Scheduler.INSTANCE.calculateTimeline(schedule);
+        
+        when(mockScheduleService.getScheduleMetadata(SCHEDULE_GUID))
+            .thenReturn(timeline.getMetadata());        
+
+        StudyActivityEvent e1 = new StudyActivityEvent.Builder()
+                .withEventId("timeline_retrieved")
+                .withTimestamp(MODIFIED_ON.minusWeeks(10))
+                .build();
+        List<StudyActivityEvent> events = ImmutableList.of(e1);
+        ResourceList<StudyActivityEvent> page = new ResourceList<>(events, true);
+        when(mockStudyActivityEventService.getRecentStudyActivityEvents(
+                TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID)).thenReturn(page);
+        
+        PagedResourceList<AdherenceRecord> page2 = new PagedResourceList<>(ImmutableList.of(), 0);
+        when(mockRecordDao.getAdherenceRecords(any())).thenReturn(page2);
+
+        WeeklyAdherenceReport retValue = service.getWeeklyAdherenceReport(TEST_APP_ID, TEST_STUDY_ID, account);
+        NextActivity activity = retValue.getNextActivity();
+        assertEquals(activity.getSessionGuid(), "baselineGuid");
+        assertEquals(activity.getSessionName(), "Baseline Tapping Test");
+        assertEquals(activity.getWeekInStudy(), Integer.valueOf(41));
+        assertEquals(activity.getStartDate(), LocalDate.parse("2015-08-24"));
     }
     
     @Test

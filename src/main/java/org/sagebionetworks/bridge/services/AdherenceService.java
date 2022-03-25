@@ -424,7 +424,7 @@ public class AdherenceService {
         weeklyReport.setTestAccount(report.isTestAccount());
         weeklyReport.setClientTimeZone(report.getClientTimeZone());
         weeklyReport.setCreatedOn(report.getCreatedOn());
-        weeklyReport.setNextActivity(report.getNextActivity());
+        
         StudyReportWeek week = report.getWeekReport();
         weeklyReport.setSearchableLabels(week.getSearchableLabels());
         weeklyReport.setRows(week.getRows());
@@ -432,7 +432,9 @@ public class AdherenceService {
         weeklyReport.setWeeklyAdherencePercent(week.getAdherencePercent());
         weeklyReport.setWeekInStudy(week.getWeekInStudy());
         weeklyReport.setStartDate(week.getStartDate());
-        
+        if (week.getRows().isEmpty()) {
+            weeklyReport.setNextActivity(report.getNextActivity());    
+        }
         reportDao.saveWeeklyAdherenceReport(weeklyReport);
         return weeklyReport;
     }

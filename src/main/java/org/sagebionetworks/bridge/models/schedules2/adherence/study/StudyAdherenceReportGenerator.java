@@ -33,7 +33,6 @@ import org.sagebionetworks.bridge.models.schedules2.adherence.weekly.NextActivit
 import org.sagebionetworks.bridge.models.schedules2.adherence.weekly.WeeklyAdherenceReportRow;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 
 public class StudyAdherenceReportGenerator {
