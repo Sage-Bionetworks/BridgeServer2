@@ -4,7 +4,9 @@ Bridge Server 2.0 running on Spring Boot.
 ## Set-up
 In your home directory, add a file `BridgeServer2.conf` and add any other local overrides.
 
-If you are using a local MySQL instance, it should not have any `sql_mode` flags set (none are set in our Aurora DB instances in any environment, and some of our SQL depends on this behavior...more recent MySQL installations set a number of these mode flags by default). Verify that no `sql_mode` values are set by adding this `.my.cnf` file in your home directory (depending on your installation of MySQL, you may need to locate this file in another location):
+If you are using a local MySQL instance, it should not have any `sql_mode` flags set (none are set in our Aurora DB instances in any environment, and some of our SQL depends on this behavior...more recent MySQL installations set a number of these mode flags by default). Verify that no `sql_mode` values are set by adding a `.my.cnf` (in your home directory) or `my.cnf` file (in other directories) based on where your MySQL installation is looking for this file. [Here’s a good explanation of how to determine the right location](https://www.sitepoint.com/quick-tip-how-to-permanently-change-sql-mode-in-mysql/) and there may be installed or pre-existing config files that will overwrite your changes if you don’t supercede them in the precedence order MySQL is using to find the file. On Macs for example, `/etc/my.cnf` is the first place a `dmg`-installed version of MySQL will look for this file, but it is different if you install MySQL using `brew`.
+
+The contents should be:
 
     [mysqld]
     bind-address = 127.0.0.1

@@ -39,8 +39,8 @@ public class HibernateAdherenceReportDao implements AdherenceReportDao {
     private static final TypeReference<List<WeeklyAdherenceReportRow>> ROWS_LIST = new TypeReference<List<WeeklyAdherenceReportRow>>() {};
     
     // For this to work, the default ONLY_FULL_GROUP_BY sql_mode flag must be removed from MySQL. None of our environments
-    // have this value, but local installations will need to create the ~/.my.cnf file as described in the README.md file.
-    static final String STATISTICS_SQL = "SELECT label, count(*) as total, any_value(rows) FROM WeeklyAdherenceReportLabels "
+    // have this value, but local installations will need to clear sql_mode flags as described in the README.md file.
+    static final String STATISTICS_SQL = "SELECT label, count(*) as total, rows FROM WeeklyAdherenceReportLabels "
             +"labels LEFT JOIN WeeklyAdherenceReports AS reports ON labels.appId = reports.appId AND labels.studyId = "
             +"reports.studyId and labels.userId = reports.userId WHERE reports.appId = :appId AND reports.studyId = :studyId "
             +"GROUP BY label";
