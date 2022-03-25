@@ -33,6 +33,7 @@ import org.sagebionetworks.bridge.models.schedules2.adherence.weekly.NextActivit
 import org.sagebionetworks.bridge.models.schedules2.adherence.weekly.WeeklyAdherenceReportRow;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 
 public class StudyAdherenceReportGenerator {
@@ -300,6 +301,9 @@ public class StudyAdherenceReportGenerator {
         }
         
         // Find and carry over *all* activities from prior weeks that are not done and that are not expired.
+        
+        List<EventStreamDay> carryOvers = new ArrayList<>();
+        
         int initialDayZeroEntries = weekReport.getByDayEntries().get(0).size();
         for (StudyReportWeek oneWeek : weeks) {
             if (isLocalDateInRange(weekReport.getStartDate(), null, oneWeek.getStartDate())) {
@@ -310,11 +314,11 @@ public class StudyAdherenceReportGenerator {
                         .anyMatch(window -> UNKNOWN.contains(window.getState()));
                 if (match) {
                     EventStreamDay dayCopy = day.copy();
-                    dayCopy.setToday(weekReport.getStartDate().isEqual(localToday));
                     dayCopy.setTimeWindows(day.getTimeWindows().stream()
                         .filter(win -> UNKNOWN.contains(win.getState()))
                         .collect(toList()));
                     weekReport.getByDayEntries().get(0).add(dayCopy);
+                    carryOvers.add(dayCopy);
                 }
             });
         }
@@ -328,7 +332,12 @@ public class StudyAdherenceReportGenerator {
             adhPercent = calculateAdherencePercentage(weekReport.getByDayEntries());
         }
         weekReport.setAdherencePercent(adhPercent);
-        clearUnusedFields(weekReport, localToday);
+        clearUnusedFields(weekReport,  localToday);
+        // reset this because we want it to be marked for display as today if it's
+        // in the today column, even though its startDate is prior to that day
+        for (EventStreamDay carryOver : carryOvers) {
+            carryOver.setToday(weekReport.getStartDate().isEqual(localToday));
+        }
         return weekReport;
     }
     

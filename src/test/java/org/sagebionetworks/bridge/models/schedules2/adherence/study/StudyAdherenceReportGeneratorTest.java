@@ -26,6 +26,7 @@ import org.joda.time.LocalTime;
 import org.joda.time.Period;
 import org.mockito.Mockito;
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.schedules2.AssessmentReference;
@@ -79,8 +80,6 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
         AdherenceRecord rec3 = new AdherenceRecord();
         rec3.setInstanceGuid("freUhgN8OBMQOuUJBY_b4Q");
         rec3.setDeclined(true);
-        // rec3.setStartedOn(DateTime.now());
-        // rec3.setFinishedOn(DateTime.now());
         
         // study burst 2 tapping test: ZWFzGqjQucjHS2YM6wLmSQ
         AdherenceRecord rec4 = new AdherenceRecord();
@@ -628,9 +627,11 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
         builder.withClientTimeZone("America/Chicago");
         StudyAdherenceReport report = INSTANCE.generate(builder.build());
         
+        System.out.println(BridgeObjectMapper.get().writeValueAsString(report));
+        
         // testAccount is set in the service, not the generator
         assertEquals(report.getAdherencePercent(), Integer.valueOf(0));
-        // assertEquals(report.getProgression(), ParticipantStudyProgress.IN_PROGRESS);
+        assertEquals(report.getProgression(), ParticipantStudyProgress.IN_PROGRESS);
         assertEquals(report.getDateRange().getStartDate(), LocalDate.parse("2022-03-08"));
         assertEquals(report.getDateRange().getEndDate(), LocalDate.parse("2022-03-22"));
         
@@ -776,11 +777,6 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
         
         assertEquals(week1Day2.get(0).getSessionGuid(), "baselineGuid");
         assertEquals(week1Day2.get(0).getStartEventId(), "timeline_retrieved");
-        assertTimeWindow(week1Day2.get(0).getTimeWindows().get(0), "xyvAcmEYAVAzCMfGhf187g", 
-                "win2", COMPLETED, "2022-03-03");
-        
-        assertEquals(week1Day2.get(0).getSessionGuid(), "baselineGuid");
-        assertEquals(week1Day2.get(0).getStartEventId(), "timeline_retrieved");
         assertEquals(week1Day2.get(0).getStartDate(), LocalDate.parse("2022-03-03"));
         assertTimeWindow(week1Day2.get(0).getTimeWindows().get(0), "xyvAcmEYAVAzCMfGhf187g", 
                 "win2", COMPLETED, "2022-03-03");
@@ -873,6 +869,7 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
         assertEquals(carryOverDay.getStartEventId(), "timeline_retrieved");
         // note, this wasn't changed to the day 0 date, and it shouldn't be
         assertEquals(carryOverDay.getStartDate(), LocalDate.parse("2022-03-02"));
+        assertFalse(carryOverDay.isToday());
         
         assertEquals(carryOverDay.getTimeWindows().size(), 1);
         assertEquals(carryOverDay.getTimeWindows().get(0).getSessionInstanceGuid(), "pqVRM8cV-buumqQvUGwRsQ");
@@ -881,25 +878,34 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
         assertEquals(carryOverDay.getTimeWindows().get(0).getEndDate(), LocalDate.parse("2022-04-25"));
     }    
     
-    
     @Test
-    public void generate_unusefulFieldsNullified() throws Exception {
-        StudyAdherenceReport report = createReport();
+    public void createWeekReport_carryOverDayKeepsOriginalDayAndTodayFlag() throws Exception {
+        Schedule2 schedule = createSchedule();
+        schedule.setDuration(Period.parse("P8W"));
+        schedule.getSessions().get(0).getTimeWindows().get(0).setExpiration(null);
+        List<TimelineMetadata> meta = Scheduler.INSTANCE.calculateTimeline(schedule).getMetadata();
         
-        for (StudyReportWeek week : report.getWeeks()) {
-            for (List<EventStreamDay> days : week.getByDayEntries().values()) {
-                for (EventStreamDay oneDay : days) {
-                    assertNull(oneDay.getStudyBurstId());
-                    assertNull(oneDay.getStudyBurstNum());
-                    assertNull(oneDay.getSessionName());
-                    assertNull(oneDay.getWeek());
-                    assertNull(oneDay.getStartDay());
-                    for (EventStreamWindow window : oneDay.getTimeWindows()) {
-                        assertNull(window.getEndDay());
-                    }
-                }
-            }
-        }
+        AdherenceState.Builder builder = createAdherenceState();
+        builder.withMetadata(meta);
+        builder.withNow(DateTime.parse("2022-04-12"));
+        
+        StudyAdherenceReport report = INSTANCE.generate(builder.build());
+        
+        StudyReportWeek weekReport = report.getWeekReport();
+        
+        EventStreamDay carryOverDay = weekReport.getByDayEntries().get(0).get(0);
+        assertEquals(carryOverDay.getSessionGuid(), "initialSurveyGuid");
+        assertEquals(carryOverDay.getStartEventId(), "timeline_retrieved");
+        // note, this wasn't changed to the day 0 date, and it shouldn't be, but
+        // we do set the today flag for display purposes
+        assertEquals(carryOverDay.getStartDate(), LocalDate.parse("2022-03-02"));
+        assertTrue(carryOverDay.isToday());
+        
+        assertEquals(carryOverDay.getTimeWindows().size(), 1);
+        assertEquals(carryOverDay.getTimeWindows().get(0).getSessionInstanceGuid(), "pqVRM8cV-buumqQvUGwRsQ");
+        assertEquals(carryOverDay.getTimeWindows().get(0).getTimeWindowGuid(), "win1");
+        assertEquals(carryOverDay.getTimeWindows().get(0).getState(), SessionCompletionState.UNSTARTED);
+        assertEquals(carryOverDay.getTimeWindows().get(0).getEndDate(), LocalDate.parse("2022-04-25"));
     }
     
     private void assertDay(EventStreamDay day, String date, int windowEntries, boolean isToday) {
