@@ -75,7 +75,7 @@ public class MySQLHibernatePersistenceExceptionConverter implements PersistenceE
             .put("PRIMARY", "primary keys")
             .put("TimeWindow-guid-sessionGuid-idx", "time window GUIDs")
             .put("Session-guid-scheduleGuid-idx", "session GUIDs")
-            .put("Permissions-UserId-AccessLevel-EntityType-EntityId-Index", "permission records")
+            .put("Permissions-UserId-AccessLevel-EntityType-EntityId-Index", "access level permission")
             .build();
 
     @Override
