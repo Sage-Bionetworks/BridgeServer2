@@ -218,7 +218,7 @@ public class HibernateAdherenceReportDao implements AdherenceReportDao {
             if (query.list().isEmpty()) {
                 return null;
             }
-            return ((List<Integer>)query.list()).get(0).intValue();
+            return ((List<Integer>)query.list()).get(0);
         }
     }
 }    
