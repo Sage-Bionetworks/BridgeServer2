@@ -2,10 +2,8 @@ package org.sagebionetworks.bridge.models.schedules2.adherence;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.google.common.collect.ImmutableMap;
 
 @JsonPropertyOrder({ "adherenceThresholdPercentage", "compliant", "noncompliant", "totalActive", "entries", "type" })
 public class AdherenceStatistics {
