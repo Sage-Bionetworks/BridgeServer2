@@ -385,7 +385,7 @@ public class AdherenceService {
         report.setCreatedOn(createdOn);
         report.setClientTimeZone(timeZone);
         
-        deriveWeeklyAdherenceFromStudyAdherenceReport(studyId, account, report);
+        deriveWeeklyAdherenceFromStudyReportWeek(studyId, account, report);
         
         watch.stop();
         LOG.info("Study adherence report took " + watch.elapsed(TimeUnit.MILLISECONDS) + "ms");
@@ -412,14 +412,14 @@ public class AdherenceService {
         report.setCreatedOn(createdOn);
         report.setClientTimeZone(timeZone);
         
-        WeeklyAdherenceReport weeklyReport = deriveWeeklyAdherenceFromStudyAdherenceReport(studyId, account, report);
+        WeeklyAdherenceReport weeklyReport = deriveWeeklyAdherenceFromStudyReportWeek(studyId, account, report);
         
         watch.stop();
         LOG.info("Weekly adherence report took " + watch.elapsed(TimeUnit.MILLISECONDS) + "ms");
         return weeklyReport;
     }
 
-    protected WeeklyAdherenceReport deriveWeeklyAdherenceFromStudyAdherenceReport(String studyId, Account account,
+    protected WeeklyAdherenceReport deriveWeeklyAdherenceFromStudyReportWeek(String studyId, Account account,
             StudyAdherenceReport report) {
         WeeklyAdherenceReport weeklyReport = new WeeklyAdherenceReport();
         weeklyReport.setAppId(account.getAppId());
@@ -430,15 +430,16 @@ public class AdherenceService {
         weeklyReport.setTestAccount(report.isTestAccount());
         weeklyReport.setClientTimeZone(report.getClientTimeZone());
         weeklyReport.setCreatedOn(report.getCreatedOn());
-        weeklyReport.setNextActivity(report.getNextActivity());
-        StudyReportWeek week = report.getCurrentWeek();
-        if (week != null) {
-            weeklyReport.setSearchableLabels(week.getSearchableLabels());
-            weeklyReport.setRows(week.getRows());
-            weeklyReport.setByDayEntries(week.getByDayEntries());
-            weeklyReport.setWeeklyAdherencePercent(week.getAdherencePercent());
-            weeklyReport.setWeekInStudy(week.getWeekInStudy());
-            weeklyReport.setStartDate(week.getStartDate());
+        
+        StudyReportWeek week = report.getWeekReport();
+        weeklyReport.setSearchableLabels(week.getSearchableLabels());
+        weeklyReport.setRows(week.getRows());
+        weeklyReport.setByDayEntries(week.getByDayEntries());
+        weeklyReport.setWeeklyAdherencePercent(week.getAdherencePercent());
+        weeklyReport.setWeekInStudy(week.getWeekInStudy());
+        weeklyReport.setStartDate(week.getStartDate());
+        if (week.getRows().isEmpty()) {
+            weeklyReport.setNextActivity(report.getNextActivity());    
         }
         reportDao.saveWeeklyAdherenceReport(weeklyReport);
         return weeklyReport;
