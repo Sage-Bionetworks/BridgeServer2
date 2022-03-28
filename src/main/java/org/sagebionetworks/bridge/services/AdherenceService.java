@@ -49,17 +49,20 @@ import org.sagebionetworks.bridge.AuthEvaluatorField;
 import org.sagebionetworks.bridge.dao.AdherenceRecordDao;
 import org.sagebionetworks.bridge.dao.AdherenceReportDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.AdherenceReportSearch;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountRef;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEventIdsMap;
+import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordList;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordType;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSearch;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceState;
+import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceStatistics;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamAdherenceReport;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamAdherenceReportGenerator;
 import org.sagebionetworks.bridge.models.schedules2.adherence.study.StudyAdherenceReport;
@@ -79,6 +82,9 @@ import org.slf4j.LoggerFactory;
 @Component
 public class AdherenceService {
     private static final Logger LOG = LoggerFactory.getLogger(AdherenceService.class);
+    
+    static final String THRESHOLD_OUT_OF_RANGE_ERROR = "Adherence threshold must be from 1-100.";
+    static final String NO_THRESHOLD_VALUE_ERROR = "An adherence threshold value must be supplied in the request or set as a study default.";
 
     private AdherenceRecordDao recordDao;
     
@@ -487,5 +493,26 @@ public class AdherenceService {
         builder.withAdherenceRecords(adherenceRecords);
         builder.withStudyStartEventId(study.getStudyStartEventId());
         return func.apply(builder.build());
+    }
+    
+    public AdherenceStatistics getAdherenceStatistics(String appId, String studyId, Integer adherenceThreshold) {
+        checkNotNull(appId);
+        checkNotNull(studyId);
+        
+        Study study = studyService.getStudy(appId, studyId, true);
+        
+        scheduleService.getScheduleForStudy(appId, study)
+            .orElseThrow(() -> new EntityNotFoundException(Schedule2.class));
+        
+        if (adherenceThreshold == null) {
+            adherenceThreshold = study.getAdherenceThresholdPercentage();
+        }
+        if (adherenceThreshold == null) {
+            throw new BadRequestException(NO_THRESHOLD_VALUE_ERROR);
+        }
+        if (adherenceThreshold < 1 || adherenceThreshold > 100) {
+            throw new BadRequestException(THRESHOLD_OUT_OF_RANGE_ERROR);
+        }
+        return reportDao.getAdherenceStatistics(appId, studyId, adherenceThreshold);
     }
 }

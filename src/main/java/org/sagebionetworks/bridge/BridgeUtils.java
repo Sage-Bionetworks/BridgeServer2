@@ -88,7 +88,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 public class BridgeUtils {
-
+    
     public static class StudyAssociations {
         private final Set<String> studyIdsVisibleToCaller;
         private final Map<String, String> externalIdsVisibleToCaller;
