@@ -842,7 +842,7 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
         
         AdherenceState.Builder builder = createAdherenceState();
         builder.withMetadata(meta);
-        builder.withNow(DateTime.parse("2022-04-15"));
+        builder.withNow(DateTime.parse("2022-04-15T12:00:00.000-08:00"));
         
         StudyAdherenceReport report = INSTANCE.generate(builder.build());
         
@@ -884,7 +884,7 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
         
         AdherenceState.Builder builder = createAdherenceState();
         builder.withMetadata(meta);
-        builder.withNow(DateTime.parse("2022-04-12"));
+        builder.withNow(DateTime.parse("2022-04-12T12:00:00.000-08:00"));
         
         StudyAdherenceReport report = INSTANCE.generate(builder.build());
         
@@ -1108,7 +1108,7 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
         builder.withStudyStartEventId(null);
         builder.withEvents(ImmutableList.of()); // no “earliest event” to fall back on 
         builder.withMetadata(meta);
-        builder.withNow(DateTime.parse("2022-04-15"));
+        builder.withNow(DateTime.parse("2022-04-15T12:00:00.000-08:00"));
         
         StudyAdherenceReport report = INSTANCE.generate(builder.build());
         
@@ -1138,7 +1138,7 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
         AdherenceState.Builder builder = createAdherenceState();
         builder.withMetadata(meta);
         builder.withAdherenceRecords(createAdherenceRecords());
-        builder.withNow(DateTime.parse("2022-04-15"));
+        builder.withNow(DateTime.parse("2022-04-15T12:00:00.000-08:00"));
         
         StudyAdherenceReport report = INSTANCE.generate(builder.build());
         
@@ -1164,7 +1164,7 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
         
         AdherenceState.Builder builder = createAdherenceState();
         builder.withMetadata(meta);
-        builder.withNow(DateTime.parse("2022-04-15"));
+        builder.withNow(DateTime.parse("2022-04-15T12:00:00.000-08:00"));
         
         StudyAdherenceReport report = INSTANCE.generate(builder.build());
         
