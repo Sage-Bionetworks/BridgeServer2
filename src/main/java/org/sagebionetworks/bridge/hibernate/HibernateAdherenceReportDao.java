@@ -4,21 +4,59 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.BridgeUtils.OR_JOINER;
 import static org.sagebionetworks.bridge.models.SearchTermPredicate.AND;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.Resource;
 
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.query.NativeQuery;
+import org.hibernate.type.StandardBasicTypes;
 import org.sagebionetworks.bridge.dao.AdherenceReportDao;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.hibernate.QueryBuilder.WhereClauseBuilder;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.AccountTestFilter;
 import org.sagebionetworks.bridge.models.AdherenceReportSearch;
 import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceStatistics;
+import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceStatisticsEntry;
 import org.sagebionetworks.bridge.models.schedules2.adherence.weekly.WeeklyAdherenceReport;
+import org.sagebionetworks.bridge.models.schedules2.adherence.weekly.WeeklyAdherenceReportRow;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 
 @Component
 public class HibernateAdherenceReportDao implements AdherenceReportDao {
+    
+    private static final TypeReference<List<WeeklyAdherenceReportRow>> ROWS_LIST = new TypeReference<List<WeeklyAdherenceReportRow>>() {};
+    
+    // For this to work, the default ONLY_FULL_GROUP_BY sql_mode flag must be removed from MySQL. None of our environments
+    // have this value, but local installations will need to clear sql_mode flags as described in the README.md file.
+    static final String STATISTICS_SQL = "SELECT label, count(*) as total, rows FROM WeeklyAdherenceReportLabels "
+            +"labels LEFT JOIN WeeklyAdherenceReports AS reports ON labels.appId = reports.appId AND labels.studyId = "
+            +"reports.studyId and labels.userId = reports.userId WHERE reports.appId = :appId AND reports.studyId = :studyId "
+            +"GROUP BY label";
+    
+    static final String ALL_ACTIVE_SQL = "SELECT count(distinct userId) AS count FROM BridgeDB.WeeklyAdherenceReports WHERE "
+            +"appId = :appId AND studyId = :studyId AND weeklyAdherencePercent IS NOT NULL";
+    
+    static final String UNDER_THRESHOLD_SQL = "SELECT count(distinct userId) AS count FROM BridgeDB.WeeklyAdherenceReports WHERE "
+            +"appId = :appId AND studyId = :studyId AND weeklyAdherencePercent < :threshold";
+
+    static final Comparator<String> STRING_COMPARATOR = Comparator.nullsLast((r1, r2) -> r1.compareToIgnoreCase(r2));
+    
+    static final Comparator<AdherenceStatisticsEntry> ENTRIES_COMPARATOR = (r1, r2) -> {
+        int sb = STRING_COMPARATOR.compare(r1.getStudyBurstId(), r2.getStudyBurstId());
+        return (sb != 0) ? sb : STRING_COMPARATOR.compare(r1.getSessionName(), r2.getSessionName());
+    };
 
     static final String SELECT_COUNT = "SELECT COUNT(*) ";
     static final String SELECT_DISTINCT = "SELECT DISTINCT h ";
@@ -31,10 +69,17 @@ public class HibernateAdherenceReportDao implements AdherenceReportDao {
     static final String APP_ID_FIELD = "appId";
     
     private HibernateHelper hibernateHelper;
+    
+    private SessionFactory sessionFactory;
 
     @Resource(name = "mysqlHibernateHelper")
     final void setHibernateHelper(HibernateHelper hibernateHelper) {
         this.hibernateHelper = hibernateHelper;
+    }
+    
+    @Autowired
+    final void setSessionFactory(SessionFactory sessionFactory) {
+        this.sessionFactory = sessionFactory;
     }
 
     @Override
@@ -98,5 +143,82 @@ public class HibernateAdherenceReportDao implements AdherenceReportDao {
                 builder.getParameters(), search.getOffsetBy(), search.getPageSize(), WeeklyAdherenceReport.class);
 
         return new PagedResourceList<>(reports, total, true);
+    }
+
+    @Override
+    public AdherenceStatistics getAdherenceStatistics(String appId, String studyId, Integer adherenceThreshold) {
+        List<AdherenceStatisticsEntry> entries = new ArrayList<>();
+        
+        QueryBuilder builder = new QueryBuilder();
+        builder.append(STATISTICS_SQL, "appId", appId, "studyId", studyId);
+        List<Object[]> results = hibernateHelper.nativeQuery(builder.getQuery(), builder.getParameters());
+        for (Object[] oneResult : results) {
+            String searchableLabel = (String)oneResult[0];
+            BigInteger totalActive = (BigInteger)oneResult[1];
+            String rowsJson = (String)oneResult[2];
+            WeeklyAdherenceReportRow row = findRow(rowsJson, searchableLabel);
+            
+            AdherenceStatisticsEntry entry = new AdherenceStatisticsEntry();
+            entry.setLabel(row.getLabel());
+            entry.setSearchableLabel(row.getSearchableLabel());
+            entry.setSessionName(row.getSessionName());
+            entry.setWeekInStudy(row.getWeekInStudy());
+            entry.setStudyBurstId(row.getStudyBurstId());
+            entry.setStudyBurstNum(row.getStudyBurstNum());
+            entry.setTotalActive(totalActive.intValue());
+            entries.add(entry);
+        }
+        
+        builder = new QueryBuilder();
+        builder.append(ALL_ACTIVE_SQL, "appId", appId, "studyId", studyId);
+        Integer total = getCount(builder);
+
+        builder = new QueryBuilder();
+        builder.append(UNDER_THRESHOLD_SQL, "appId", appId, "studyId", studyId, "threshold", adherenceThreshold);
+        Integer noncompliant = getCount(builder);
+        
+        Integer compliant = (total != null && noncompliant != null) ? total - noncompliant : null;
+        
+        entries.sort(ENTRIES_COMPARATOR);
+        
+        AdherenceStatistics stats = new AdherenceStatistics();
+        stats.setAdherenceThresholdPercentage(adherenceThreshold);
+        stats.setNoncompliant(noncompliant);
+        stats.setCompliant(compliant);
+        stats.setTotalActive(total);
+        stats.setEntries(entries);
+        return stats;
+    }
+    
+    private WeeklyAdherenceReportRow findRow(String rowsJson, String searchableLabel) {
+        try {
+            List<WeeklyAdherenceReportRow> rows = BridgeObjectMapper.get().readValue(rowsJson, ROWS_LIST);
+            for (WeeklyAdherenceReportRow oneRow : rows) {
+                if (oneRow.getSearchableLabel().equals(searchableLabel)) {
+                    return oneRow;
+                }
+            }
+        } catch (JsonProcessingException e) {
+            throw new BridgeServiceException(e);
+        }
+        // The row JSON is a compound value and the searchableLabel must be one of the values in the row... this is
+        // why it doesn't matter which set of rows we get, because we'll put that entry out of the list. If it’s not 
+        // there at all...something is not correct.
+        throw new BridgeServiceException("Weekly report rows do not include searchableLabel: " + searchableLabel);
+    }
+    
+    private Integer getCount(QueryBuilder builder) {
+        try (Session session = sessionFactory.openSession()) {  
+            @SuppressWarnings("unchecked")
+            NativeQuery<Integer> query = session.createNativeQuery(builder.getQuery());
+            query.addScalar("count", StandardBasicTypes.INTEGER);
+            for (Map.Entry<String, Object> entry : builder.getParameters().entrySet()) {
+                query.setParameter(entry.getKey(), entry.getValue());
+            }
+            if (query.list().isEmpty()) {
+                return null;
+            }
+            return ((List<Integer>)query.list()).get(0);
+        }
     }
 }    

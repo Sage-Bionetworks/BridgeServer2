@@ -58,6 +58,7 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordList;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSearch;
+import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceStatistics;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamAdherenceReport;
 import org.sagebionetworks.bridge.models.schedules2.adherence.study.StudyAdherenceReport;
 import org.sagebionetworks.bridge.models.schedules2.adherence.weekly.WeeklyAdherenceReport;
@@ -690,4 +691,42 @@ public class AdherenceControllerTest extends Mockito {
         controller.getStudyAdherenceReport(TEST_STUDY_ID, TEST_USER_ID);
     }
 
+    @Test
+    public void getAdherenceStatistics() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(TEST_USER_ID)
+                .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_DESIGNER, STUDY_COORDINATOR);
+        
+        AdherenceStatistics stats = new AdherenceStatistics();
+        when(mockService.getAdherenceStatistics(TEST_APP_ID, TEST_STUDY_ID, Integer.valueOf(32))).thenReturn(stats);
+        
+        AdherenceStatistics retValue = controller.getAdherenceStatistics(TEST_STUDY_ID, "32");
+        assertSame(retValue, stats);
+    }
+
+    @Test
+    public void getAdherenceStatistics_defaultValues() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(TEST_USER_ID)
+                .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_DESIGNER, STUDY_COORDINATOR);
+        
+        AdherenceStatistics stats = new AdherenceStatistics();
+        when(mockService.getAdherenceStatistics(TEST_APP_ID, TEST_STUDY_ID, null)).thenReturn(stats);
+        
+        AdherenceStatistics retValue = controller.getAdherenceStatistics(TEST_STUDY_ID, null);
+        assertSame(retValue, stats);
+    }
+
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void getAdherenceStatistics_unauthorized() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(TEST_USER_ID)
+                .withOrgSponsoredStudies(ImmutableSet.of("some-other-study"))
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR)).build());
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_DESIGNER, STUDY_COORDINATOR);
+        
+        controller.getAdherenceStatistics(TEST_STUDY_ID, null);
+    }
 }

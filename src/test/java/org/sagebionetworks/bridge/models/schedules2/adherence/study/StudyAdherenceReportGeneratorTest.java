@@ -9,17 +9,19 @@ import static org.sagebionetworks.bridge.models.schedules2.PerformanceOrder.SEQU
 import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.COMPLETED;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.EXPIRED;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.NOT_YET_AVAILABLE;
+import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.UNSTARTED;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.study.StudyAdherenceReportGenerator.INSTANCE;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotEquals;
 import static org.testng.Assert.assertNull;
-import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
 import java.util.List;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
+import org.joda.time.LocalDate;
 import org.joda.time.LocalTime;
 import org.joda.time.Period;
 import org.mockito.Mockito;
@@ -34,6 +36,7 @@ import org.sagebionetworks.bridge.models.schedules2.TimeWindow;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceState;
 import org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantStudyProgress;
+import org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamDay;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamWindow;
 import org.sagebionetworks.bridge.models.schedules2.adherence.weekly.WeeklyAdherenceReportRow;
@@ -47,11 +50,16 @@ import com.google.common.collect.ImmutableSet;
 
 public class StudyAdherenceReportGeneratorTest extends Mockito {
     
+    private static final DateTime STUDY_BURST_3_TS = DateTime.parse("2022-03-22T16:23:15.999-08:00");
+    private static final DateTime STUDY_BURST_2_TS = DateTime.parse("2022-03-15T16:23:15.999-08:00");
+    private static final DateTime STUDY_BURST_1_TS = DateTime.parse("2022-03-08T16:23:15.999-08:00");
+    private static final DateTime EVENT_2_TS = DateTime.parse("2022-03-10T16:23:15.999-08:00");
+    private static final DateTime TIMELINE_RETRIEVED_TS = DateTime.parse("2022-03-01T16:23:15.999-08:00");
     private static final DateTime NOW = DateTime.parse("2022-03-15T01:00:00.000-08:00");
 
     public static StudyAdherenceReport createReport() throws Exception {
         AdherenceState state = createAdherenceState().build();
-        return StudyAdherenceReportGenerator.INSTANCE.generate(state);
+        return INSTANCE.generate(state);
     }
     
     public static List<AdherenceRecord> createAdherenceRecords() {
@@ -71,8 +79,6 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
         AdherenceRecord rec3 = new AdherenceRecord();
         rec3.setInstanceGuid("freUhgN8OBMQOuUJBY_b4Q");
         rec3.setDeclined(true);
-        // rec3.setStartedOn(DateTime.now());
-        // rec3.setFinishedOn(DateTime.now());
         
         // study burst 2 tapping test: ZWFzGqjQucjHS2YM6wLmSQ
         AdherenceRecord rec4 = new AdherenceRecord();
@@ -90,12 +96,12 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
     public static List<StudyActivityEvent> createEvents() {
         StudyActivityEvent e1 = new StudyActivityEvent.Builder()
                 .withEventId("timeline_retrieved")
-                .withTimestamp(DateTime.parse("2022-03-01T16:23:15.999-08:00"))
+                .withTimestamp(TIMELINE_RETRIEVED_TS)
                 .withObjectType(ActivityEventObjectType.TIMELINE_RETRIEVED)
                 .build();
         StudyActivityEvent e2 = new StudyActivityEvent.Builder()
                 .withEventId("custom:event2")
-                .withTimestamp(DateTime.parse("2022-03-10T16:23:15.999-08:00"))
+                .withTimestamp(EVENT_2_TS)
                 .withObjectType(ActivityEventObjectType.CUSTOM)
                 .build();
         
@@ -103,17 +109,17 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
         // the schedule is calculated!
         StudyActivityEvent e3 = new StudyActivityEvent.Builder()
                 .withEventId("study_burst:Study Burst:01")
-                .withTimestamp(DateTime.parse("2022-03-08T16:23:15.999-08:00"))
+                .withTimestamp(STUDY_BURST_1_TS)
                 .withObjectType(ActivityEventObjectType.STUDY_BURST)
                 .build();
         StudyActivityEvent e4 = new StudyActivityEvent.Builder()
                 .withEventId("study_burst:Study Burst:02")
-                .withTimestamp(DateTime.parse("2022-03-15T16:23:15.999-08:00"))
+                .withTimestamp(STUDY_BURST_2_TS)
                 .withObjectType(ActivityEventObjectType.STUDY_BURST)
                 .build();
         StudyActivityEvent e5 = new StudyActivityEvent.Builder()
                 .withEventId("study_burst:Study Burst:03")
-                .withTimestamp(DateTime.parse("2022-03-22T16:23:15.999-08:00"))
+                .withTimestamp(STUDY_BURST_3_TS)
                 .withObjectType(ActivityEventObjectType.STUDY_BURST)
                 .build();
         return ImmutableList.of(e1, e2, e3, e4, e5);
@@ -248,6 +254,672 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
     }
     
     @Test
+    public void generate() throws Exception {
+        DateTimeZone zone = DateTimeZone.forID("America/Chicago");
+        
+        AdherenceState.Builder builder = createAdherenceState();
+        builder.withAdherenceRecords(createAdherenceRecords());
+        builder.withClientTimeZone("America/Chicago");
+        StudyAdherenceReport report = INSTANCE.generate(builder.build());
+        
+        // testAccount is set in the service, not the generator
+        assertEquals(report.getAdherencePercent(), Integer.valueOf(33));
+        assertEquals(report.getProgression(), ParticipantStudyProgress.IN_PROGRESS);
+        assertEquals(report.getDateRange().getStartDate(), LocalDate.parse("2022-03-01"));
+        assertEquals(report.getDateRange().getEndDate(), LocalDate.parse("2022-03-27"));
+        
+        assertEquals(report.getUnsetEventIds(), ImmutableSet.of("custom:event1"));
+        assertEquals(report.getUnscheduledSessions(), ImmutableSet.of("Supplemental Survey"));
+        assertEquals(report.getEventTimestamps().get("timeline_retrieved"), TIMELINE_RETRIEVED_TS.withZone(zone));
+        assertEquals(report.getEventTimestamps().get("study_burst:Study Burst:01"), STUDY_BURST_1_TS.withZone(zone));
+        assertEquals(report.getEventTimestamps().get("study_burst:Study Burst:02"), STUDY_BURST_2_TS.withZone(zone));
+        assertEquals(report.getEventTimestamps().get("study_burst:Study Burst:03"), STUDY_BURST_3_TS.withZone(zone));
+        // Not used in the test schedule
+        assertNull(report.getEventTimestamps().get("custom:event2"));
+
+        assertEquals(report.getWeeks().size(), 4);
+        StudyReportWeek week1 = report.getWeeks().get(0);
+        assertEquals(week1.getStartDate(), LocalDate.parse("2022-03-01"));
+        assertEquals(week1.getWeekInStudy(), 1);
+        assertEquals(week1.getAdherencePercent(), Integer.valueOf(100));
+        assertEquals(week1.getRows().size(), 2);
+        
+        WeeklyAdherenceReportRow week1Row1 = week1.getRows().get(0);
+        assertEquals(week1Row1.getLabel(), "Baseline Tapping Test / Week 1");
+        assertEquals(week1Row1.getSearchableLabel(), ":Baseline Tapping Test:Week 1:");
+        assertEquals(week1Row1.getSessionGuid(), "baselineGuid");
+        assertEquals(week1Row1.getStartEventId(), "timeline_retrieved");
+        assertEquals(week1Row1.getSessionName(), "Baseline Tapping Test");
+        assertEquals(week1Row1.getWeekInStudy(), Integer.valueOf(1));
+        
+        WeeklyAdherenceReportRow week1Row2 = week1.getRows().get(1);
+        assertEquals(week1Row2.getLabel(), "Initial Survey / Week 1");
+        assertEquals(week1Row2.getSearchableLabel(), ":Initial Survey:Week 1:");
+        assertEquals(week1Row2.getSessionGuid(), "initialSurveyGuid");
+        assertEquals(week1Row2.getStartEventId(), "timeline_retrieved");
+        assertEquals(week1Row2.getSessionName(), "Initial Survey");
+        assertEquals(week1Row2.getWeekInStudy(), Integer.valueOf(1));
+        
+        List<EventStreamDay> week1Day0 = week1.getByDayEntries().get(0);
+        assertEquals(week1Day0.size(), 2);
+        assertDay(week1Day0.get(0), "2022-03-01", 0, false);
+        assertDay(week1Day0.get(1), "2022-03-01", 0, false);
+        
+        List<EventStreamDay> week1Day1 = week1.getByDayEntries().get(1);
+        assertEquals(week1Day1.size(), 2);
+        assertDay(week1Day1.get(0), "2022-03-02", 0, false);
+        assertDay(week1Day1.get(1), "2022-03-02", 1, false);
+        
+        assertEquals(week1Day1.get(1).getSessionGuid(), "initialSurveyGuid");
+        assertEquals(week1Day1.get(1).getStartEventId(), "timeline_retrieved");
+        assertTimeWindow(week1Day1.get(1).getTimeWindows().get(0), "pqVRM8cV-buumqQvUGwRsQ", 
+                "win1", COMPLETED, "2022-03-02");
+        
+        List<EventStreamDay> week1Day2 = week1.getByDayEntries().get(2);
+        assertEquals(week1Day2.size(), 2);
+        assertDay(week1Day2.get(0), "2022-03-03", 1, false);
+        assertDay(week1Day2.get(1), "2022-03-03", 0, false);
+        
+        assertEquals(week1Day2.get(0).getSessionGuid(), "baselineGuid");
+        assertEquals(week1Day2.get(0).getStartEventId(), "timeline_retrieved");
+        assertEquals(week1Day2.get(0).getStartDate(), LocalDate.parse("2022-03-03"));
+        assertTimeWindow(week1Day2.get(0).getTimeWindows().get(0), "xyvAcmEYAVAzCMfGhf187g", 
+                "win2", COMPLETED, "2022-03-03");
+        
+        List<EventStreamDay> week1Day3 = week1.getByDayEntries().get(3);
+        assertEquals(week1Day3.size(), 2);
+        assertDay(week1Day3.get(0), "2022-03-04", 0, false);
+        assertDay(week1Day3.get(1), "2022-03-04", 0, false);
+        
+        List<EventStreamDay> week1Day4 = week1.getByDayEntries().get(4);
+        assertEquals(week1Day4.size(), 2);
+        assertDay(week1Day4.get(0), "2022-03-05", 0, false);
+        assertDay(week1Day4.get(1), "2022-03-05", 0, false);
+        
+        List<EventStreamDay> week1Day5 = week1.getByDayEntries().get(5);
+        assertEquals(week1Day5.size(), 2);
+        assertDay(week1Day5.get(0), "2022-03-06", 0, false);
+        assertDay(week1Day5.get(1), "2022-03-06", 0, false);
+        
+        List<EventStreamDay> week1Day6 = week1.getByDayEntries().get(6);
+        assertEquals(week1Day6.size(), 2);
+        assertDay(week1Day6.get(0), "2022-03-07", 0, false);
+        assertDay(week1Day6.get(1), "2022-03-07", 0, false);
+        
+        StudyReportWeek week2 = report.getWeeks().get(1);
+        assertEquals(week2.getStartDate(), LocalDate.parse("2022-03-08"));
+        assertEquals(week2.getWeekInStudy(), 2);
+        assertEquals(week2.getAdherencePercent(), Integer.valueOf(0));
+        assertEquals(week2.getRows().size(), 1);
+        
+        WeeklyAdherenceReportRow week2Row1 = week2.getRows().get(0);
+        assertEquals(week2Row1.getLabel(), "Study Burst 1 / Week 2 / Study Burst Tapping Test");
+        assertEquals(week2Row1.getSearchableLabel(), 
+                ":Study Burst:Study Burst 1:Week 2:Study Burst Tapping Test:");
+        assertEquals(week2Row1.getSessionGuid(), "burstTappingGuid");
+        assertEquals(week2Row1.getStartEventId(), "study_burst:Study Burst:01");
+        assertEquals(week2Row1.getSessionName(), "Study Burst Tapping Test");
+        assertEquals(week2Row1.getWeekInStudy(), Integer.valueOf(2));
+        assertEquals(week2Row1.getStudyBurstId(), "Study Burst");
+        assertEquals(week2Row1.getStudyBurstNum(), Integer.valueOf(1));
+        
+        List<EventStreamDay> week2Day1 = week2.getByDayEntries().get(0);
+        assertEquals(week2Day1.size(), 1);
+        assertDay(week2Day1.get(0), "2022-03-08", 1, false);
+        assertEquals(week2Day1.get(0).getSessionGuid(), "burstTappingGuid");
+        assertEquals(week2Day1.get(0).getStartEventId(), "study_burst:Study Burst:01");
+        assertEquals(week2Day1.get(0).getTimeWindows().size(), 1);
+        assertTimeWindow(week2Day1.get(0).getTimeWindows().get(0), "freUhgN8OBMQOuUJBY_b4Q", "win3",
+                SessionCompletionState.DECLINED, "2022-03-08");
+        
+        List<EventStreamDay> week2Day2 = week2.getByDayEntries().get(1);
+        assertEquals(week2Day2.size(), 1);
+        assertEquals(week2Day2.get(0).getStartDate(), LocalDate.parse("2022-03-09"));
+        assertTrue(week2Day2.get(0).getTimeWindows().isEmpty());
+        
+        List<EventStreamDay> week2Day3 = week2.getByDayEntries().get(2);
+        assertEquals(week2Day3.size(), 1);
+        assertEquals(week2Day3.get(0).getStartDate(), LocalDate.parse("2022-03-10"));
+        assertTrue(week2Day3.get(0).getTimeWindows().isEmpty());
+        
+        List<EventStreamDay> week2Day4 = week2.getByDayEntries().get(3);
+        assertEquals(week2Day4.size(), 1);
+        assertEquals(week2Day4.get(0).getStartDate(), LocalDate.parse("2022-03-11"));
+        assertTrue(week2Day4.get(0).getTimeWindows().isEmpty());
+        
+        List<EventStreamDay> week2Day5 = week2.getByDayEntries().get(4);
+        assertEquals(week2Day5.size(), 1);
+        assertEquals(week2Day5.get(0).getStartDate(), LocalDate.parse("2022-03-12"));
+        assertTrue(week2Day5.get(0).getTimeWindows().isEmpty());
+        
+        List<EventStreamDay> week2Day6 = week2.getByDayEntries().get(5);
+        assertEquals(week2Day6.size(), 1);
+        assertEquals(week2Day6.get(0).getStartDate(), LocalDate.parse("2022-03-13"));
+        assertTrue(week2Day6.get(0).getTimeWindows().isEmpty());
+
+        List<EventStreamDay> week2Day7 = week2.getByDayEntries().get(6);
+        assertEquals(week2Day7.size(), 1);
+        assertEquals(week2Day7.get(0).getStartDate(), LocalDate.parse("2022-03-14"));
+        assertTrue(week2Day7.get(0).getTimeWindows().isEmpty());
+
+        StudyReportWeek week3 = report.getWeeks().get(2);
+        assertEquals(week3.getStartDate(), LocalDate.parse("2022-03-15"));
+        assertEquals(week3.getWeekInStudy(), 3);
+        assertEquals(week3.getAdherencePercent(), Integer.valueOf(0));
+        
+        WeeklyAdherenceReportRow week3Row1 = week3.getRows().get(0);
+        assertEquals(week3Row1.getLabel(), "Study Burst 2 / Week 3 / Study Burst Tapping Test");
+        assertEquals(week3Row1.getSearchableLabel(), 
+                ":Study Burst:Study Burst 2:Week 3:Study Burst Tapping Test:");
+        assertEquals(week3Row1.getSessionGuid(), "burstTappingGuid");
+        assertEquals(week3Row1.getStartEventId(), "study_burst:Study Burst:02");
+        assertEquals(week3Row1.getSessionName(), "Study Burst Tapping Test");
+        assertEquals(week3Row1.getWeekInStudy(), Integer.valueOf(3));
+        assertEquals(week3Row1.getStudyBurstId(), "Study Burst");
+        assertEquals(week3Row1.getStudyBurstNum(), Integer.valueOf(2));
+        
+        List<EventStreamDay> week3Day1 = week3.getByDayEntries().get(0);
+        assertTrue(week3Day1.get(0).isToday());
+        assertEquals(week3Day1.get(0).getSessionGuid(), "burstTappingGuid");
+        assertEquals(week3Day1.get(0).getStartEventId(), "study_burst:Study Burst:02");
+        assertEquals(week3Day1.get(0).getStartDate(), LocalDate.parse("2022-03-15"));
+        assertEquals(week3Day1.get(0).getTimeWindows().size(), 1);
+        assertTimeWindow(week3Day1.get(0).getTimeWindows().get(0), "B01W5ru8Cjr8DAbODKcMKA", "win3",
+                SessionCompletionState.STARTED, "2022-03-15");
+        
+        List<EventStreamDay> week3Day2 = week3.getByDayEntries().get(1);
+        assertEquals(week3Day2.size(), 1);
+        assertEquals(week3Day2.get(0).getStartDate(), LocalDate.parse("2022-03-16"));
+        assertTrue(week3Day2.get(0).getTimeWindows().isEmpty());
+        
+        List<EventStreamDay> week3Day3 = week3.getByDayEntries().get(2);
+        assertEquals(week3Day3.size(), 1);
+        assertEquals(week3Day3.get(0).getStartDate(), LocalDate.parse("2022-03-17"));
+        assertTrue(week3Day3.get(0).getTimeWindows().isEmpty());
+        
+        List<EventStreamDay> week3Day4 = week3.getByDayEntries().get(3);
+        assertEquals(week3Day4.size(), 1);
+        assertEquals(week3Day4.get(0).getStartDate(), LocalDate.parse("2022-03-18"));
+        assertTrue(week3Day4.get(0).getTimeWindows().isEmpty());
+        
+        List<EventStreamDay> week3Day5 = week3.getByDayEntries().get(4);
+        assertEquals(week3Day5.size(), 1);
+        assertEquals(week3Day5.get(0).getStartDate(), LocalDate.parse("2022-03-19"));
+        assertTrue(week3Day5.get(0).getTimeWindows().isEmpty());
+        
+        List<EventStreamDay> week3Day6 = week3.getByDayEntries().get(5);
+        assertEquals(week3Day6.size(), 1);
+        assertEquals(week3Day6.get(0).getStartDate(), LocalDate.parse("2022-03-20"));
+        assertTrue(week3Day6.get(0).getTimeWindows().isEmpty());
+        
+        List<EventStreamDay> week3Day7 = week3.getByDayEntries().get(6);
+        assertEquals(week3Day7.size(), 1);
+        assertEquals(week3Day7.get(0).getStartDate(), LocalDate.parse("2022-03-21"));
+        assertTrue(week3Day7.get(0).getTimeWindows().isEmpty());
+        
+        StudyReportWeek week4 = report.getWeeks().get(3);
+        assertEquals(week4.getStartDate(), LocalDate.parse("2022-03-22"));
+        assertEquals(week4.getWeekInStudy(), 4);
+        
+        WeeklyAdherenceReportRow week4Row1 = week4.getRows().get(0);
+        assertEquals(week4Row1.getLabel(), "Study Burst 3 / Week 4 / Study Burst Tapping Test");
+        assertEquals(week4Row1.getSearchableLabel(), 
+                ":Study Burst:Study Burst 3:Week 4:Study Burst Tapping Test:");
+        assertEquals(week4Row1.getSessionGuid(), "burstTappingGuid");
+        assertEquals(week4Row1.getStartEventId(), "study_burst:Study Burst:03");
+        assertEquals(week4Row1.getSessionName(), "Study Burst Tapping Test");
+        assertEquals(week4Row1.getWeekInStudy(), Integer.valueOf(4));
+        assertEquals(week4Row1.getStudyBurstId(), "Study Burst");
+        assertEquals(week4Row1.getStudyBurstNum(), Integer.valueOf(3));
+        
+        WeeklyAdherenceReportRow week4Row2 = week4.getRows().get(1);
+        assertEquals(week4Row2.getLabel(), "Final Survey / Week 4");
+        assertEquals(week4Row2.getSearchableLabel(), ":Final Survey:Week 4:");
+        assertEquals(week4Row2.getSessionGuid(), "finalSurveyGuid");
+        assertEquals(week4Row2.getStartEventId(), "timeline_retrieved");
+        assertEquals(week4Row2.getSessionName(), "Final Survey");
+        assertEquals(week4Row2.getWeekInStudy(), Integer.valueOf(4));
+        assertNull(week4Row2.getStudyBurstId());
+        assertNull(week4Row2.getStudyBurstNum());
+        
+        List<EventStreamDay> week4Day1 = week4.getByDayEntries().get(0);
+        assertEquals(week4Day1.size(), 2);
+        assertFalse(week4Day1.get(0).isToday());
+        assertEquals(week4Day1.get(0).getSessionGuid(), "burstTappingGuid");
+        assertEquals(week4Day1.get(0).getStartEventId(), "study_burst:Study Burst:03");
+        assertEquals(week4Day1.get(0).getStartDate(), LocalDate.parse("2022-03-22"));
+        assertTimeWindow(week4Day1.get(0).getTimeWindows().get(0), "sdOEXR4pJ-EyQQF8YmjwFw", "win3",
+            SessionCompletionState.NOT_YET_AVAILABLE, "2022-03-22");
+        assertTrue(week4Day1.get(1).getTimeWindows().isEmpty());
+        
+        List<EventStreamDay> week4Day2 = week4.getByDayEntries().get(1);
+        assertEquals(week4Day2.size(), 2);
+        assertTrue(week4Day2.get(0).getTimeWindows().isEmpty());
+        assertTrue(week4Day2.get(1).getTimeWindows().isEmpty());
+        
+        List<EventStreamDay> week4Day3 = week4.getByDayEntries().get(2);
+        assertEquals(week4Day3.size(), 2);
+        assertTrue(week4Day3.get(0).getTimeWindows().isEmpty());
+        assertTrue(week4Day3.get(1).getTimeWindows().isEmpty());
+        
+        List<EventStreamDay> week4Day4 = week4.getByDayEntries().get(3);
+        assertEquals(week4Day4.size(), 2);
+        assertFalse(week4Day4.get(1).isToday());
+        assertEquals(week4Day4.get(1).getSessionGuid(), "finalSurveyGuid");
+        assertEquals(week4Day4.get(1).getStartEventId(), "timeline_retrieved");
+        assertEquals(week4Day4.get(1).getStartDate(), LocalDate.parse("2022-03-25"));
+        assertTimeWindow(week4Day4.get(1).getTimeWindows().get(0), "7aD28QS4xd0GLZELfIh0-Q", "win4",
+                SessionCompletionState.NOT_YET_AVAILABLE, "2022-03-27");
+        
+        List<EventStreamDay> week4Day5 = week4.getByDayEntries().get(4);
+        assertEquals(week4Day5.size(), 2);
+        assertTrue(week4Day5.get(0).getTimeWindows().isEmpty());
+        assertTrue(week4Day5.get(1).getTimeWindows().isEmpty());
+
+        List<EventStreamDay> week4Day6 = week4.getByDayEntries().get(5);
+        assertEquals(week4Day6.size(), 2);
+        assertTrue(week4Day6.get(0).getTimeWindows().isEmpty());
+        assertTrue(week4Day6.get(1).getTimeWindows().isEmpty());
+        
+        List<EventStreamDay> week4Day7 = week4.getByDayEntries().get(6);
+        assertEquals(week4Day7.size(), 2);
+        assertTrue(week4Day7.get(0).getTimeWindows().isEmpty());
+        assertTrue(week4Day7.get(1).getTimeWindows().isEmpty());        
+    }
+    
+    @Test
+    public void generate_noClientTimeZone() throws Exception {
+        AdherenceState.Builder builder = createAdherenceState();
+        builder.withAdherenceRecords(createAdherenceRecords());
+        StudyAdherenceReport report = INSTANCE.generate(builder.build());
+        
+        assertEquals(report.getEventTimestamps().get("timeline_retrieved"), TIMELINE_RETRIEVED_TS);
+        assertEquals(report.getEventTimestamps().get("study_burst:Study Burst:01"), STUDY_BURST_1_TS);
+        assertEquals(report.getEventTimestamps().get("study_burst:Study Burst:02"), STUDY_BURST_2_TS);
+        assertEquals(report.getEventTimestamps().get("study_burst:Study Burst:03"), STUDY_BURST_3_TS);
+    }
+    
+    @Test
+    public void generate_noAdherenceRecords() throws Exception {
+        AdherenceState.Builder builder = createAdherenceState();
+        builder.withClientTimeZone("America/Chicago");
+        StudyAdherenceReport report = INSTANCE.generate(builder.build());
+        
+        assertEquals(report.getAdherencePercent(), Integer.valueOf(0));
+        StudyReportWeek week1 = report.getWeeks().get(0);
+        assertEquals(week1.getAdherencePercent(), Integer.valueOf(0));
+        assertEquals(week1.getRows().size(), 2);
+
+        List<EventStreamDay> week1Day1 = week1.getByDayEntries().get(1);
+        assertEquals(week1Day1.get(1).getTimeWindows().get(0).getState(), EXPIRED);
+        
+        List<EventStreamDay> week1Day2 = week1.getByDayEntries().get(2);
+        assertEquals(week1Day2.get(0).getTimeWindows().get(0).getState(), EXPIRED);
+        
+        StudyReportWeek week2 = report.getWeeks().get(1);
+        List<EventStreamDay> week2Day1 = week2.getByDayEntries().get(0);
+        assertEquals(week2Day1.get(0).getTimeWindows().get(0).getState(), EXPIRED);
+        
+        StudyReportWeek week3 = report.getWeeks().get(2);
+        List<EventStreamDay> week3Day1 = week3.getByDayEntries().get(0);
+        assertEquals(week3Day1.get(0).getTimeWindows().get(0).getState(), UNSTARTED);
+        
+        StudyReportWeek week4 = report.getWeeks().get(3);
+        List<EventStreamDay> week4Day1 = week4.getByDayEntries().get(0);
+        assertEquals(week4Day1.get(0).getTimeWindows().get(0).getState(), NOT_YET_AVAILABLE);
+        
+        List<EventStreamDay> week4Day4 = week4.getByDayEntries().get(3);
+        assertEquals(week4Day4.get(1).getTimeWindows().get(0).getState(), NOT_YET_AVAILABLE);
+    }
+    
+    @Test
+    public void generate_noEvents() throws Exception {
+        AdherenceState.Builder builder = createAdherenceState();
+        builder.withAdherenceRecords(createAdherenceRecords());
+        builder.withClientTimeZone("America/Chicago");
+        builder.withEvents(ImmutableList.of());
+        
+        StudyAdherenceReport report = INSTANCE.generate(builder.build());
+        
+        // testAccount is set in the service, not the generator
+        assertNull(report.getAdherencePercent());
+        assertEquals(report.getProgression(), ParticipantStudyProgress.UNSTARTED);
+        assertNull(report.getDateRange());
+        
+        assertEquals(report.getUnsetEventIds(), ImmutableSet.of("custom:event1", "timeline_retrieved", 
+                "study_burst:Study Burst:01", "study_burst:Study Burst:02", "study_burst:Study Burst:03"));
+        assertEquals(report.getUnscheduledSessions(), ImmutableSet.of("Supplemental Survey", "Initial Survey",
+                "Baseline Tapping Test", "Study Burst Tapping Test", "Final Survey"));
+        assertTrue(report.getEventTimestamps().isEmpty());
+
+        assertEquals(report.getWeeks().size(), 0);
+        
+        // Verify this too
+        assertNull(report.getWeekReport().getAdherencePercent());
+    }
+    
+    @Test
+    public void generate_noSchedule() throws Exception {
+        AdherenceState.Builder builder = createAdherenceState();
+        builder.withMetadata(ImmutableList.of());
+        builder.withAdherenceRecords(createAdherenceRecords());
+        builder.withClientTimeZone("America/Chicago");
+        StudyAdherenceReport report = INSTANCE.generate(builder.build());
+        
+        // testAccount is set in the service, not the generator
+        assertNull(report.getAdherencePercent());
+        assertEquals(report.getProgression(), ParticipantStudyProgress.NO_SCHEDULE);
+        assertNull(report.getDateRange());
+        
+        assertTrue(report.getUnsetEventIds().isEmpty());
+        assertTrue(report.getUnscheduledSessions().isEmpty());
+        assertTrue(report.getEventTimestamps().isEmpty());
+        assertTrue(report.getWeeks().isEmpty());
+    }
+    
+    @Test
+    public void generate_noStudyStartEvent() throws Exception {
+        AdherenceState.Builder builder = createAdherenceState();
+        // remove timeline_retrieved
+        builder.withEvents(createEvents().subList(1,  createEvents().size()));
+        builder.withAdherenceRecords(createAdherenceRecords());
+        builder.withClientTimeZone("America/Chicago");
+        StudyAdherenceReport report = INSTANCE.generate(builder.build());
+        
+        // testAccount is set in the service, not the generator
+        assertEquals(report.getAdherencePercent(), Integer.valueOf(0));
+        assertEquals(report.getProgression(), ParticipantStudyProgress.IN_PROGRESS);
+        assertEquals(report.getDateRange().getStartDate(), LocalDate.parse("2022-03-08"));
+        assertEquals(report.getDateRange().getEndDate(), LocalDate.parse("2022-03-22"));
+        
+        assertEquals(report.getUnsetEventIds(), ImmutableSet.of("custom:event1", "timeline_retrieved"));
+        assertEquals(report.getUnscheduledSessions(),
+                ImmutableSet.of("Supplemental Survey", "Initial Survey", "Baseline Tapping Test", "Final Survey"));
+        
+        assertEquals(report.getWeeks().size(), 3);
+        
+        // It's the study bursts, just test a few fields to verify this.
+        StudyReportWeek week1 = report.getWeeks().get(0);
+        assertEquals(week1.getRows().get(0).getLabel(), 
+                "Study Burst 1 / Week 1 / Study Burst Tapping Test");
+        
+        StudyReportWeek week2 = report.getWeeks().get(1);
+        assertEquals(week2.getRows().get(0).getLabel(), 
+                "Study Burst 2 / Week 2 / Study Burst Tapping Test");
+        
+        StudyReportWeek week3 = report.getWeeks().get(2);
+        assertEquals(week3.getRows().get(0).getLabel(), 
+                "Study Burst 3 / Week 3 / Study Burst Tapping Test");
+    }
+    
+    @Test
+    public void findOrCreateDay_sessionTriggeredByTwoDifferentEventsCreatesOneRow() throws Exception {
+        DateTimeZone zone = DateTimeZone.forID("America/Chicago");
+        
+        // Adjusted the schedule so that it triggers the first session by two events (custom:event2). We want
+        // these events to have the same timestamps so we can verify they are not duplicated. We're going to 
+        // lose one event ID if everything currently works correctly.
+        StudyActivityEvent e1 = new StudyActivityEvent.Builder()
+                .withEventId("timeline_retrieved")
+                .withTimestamp(TIMELINE_RETRIEVED_TS)
+                .withObjectType(ActivityEventObjectType.TIMELINE_RETRIEVED)
+                .build();
+        StudyActivityEvent e2 = new StudyActivityEvent.Builder()
+                .withEventId("custom:event2")
+                .withTimestamp(TIMELINE_RETRIEVED_TS)
+                .withObjectType(ActivityEventObjectType.CUSTOM)
+                .build();
+        StudyActivityEvent e3 = new StudyActivityEvent.Builder()
+                .withEventId("study_burst:Study Burst:01")
+                .withTimestamp(STUDY_BURST_1_TS)
+                .withObjectType(ActivityEventObjectType.STUDY_BURST)
+                .build();
+        StudyActivityEvent e4 = new StudyActivityEvent.Builder()
+                .withEventId("study_burst:Study Burst:02")
+                .withTimestamp(STUDY_BURST_2_TS)
+                .withObjectType(ActivityEventObjectType.STUDY_BURST)
+                .build();
+        StudyActivityEvent e5 = new StudyActivityEvent.Builder()
+                .withEventId("study_burst:Study Burst:03")
+                .withTimestamp(STUDY_BURST_3_TS)
+                .withObjectType(ActivityEventObjectType.STUDY_BURST)
+                .build();
+        List<StudyActivityEvent> events =  ImmutableList.of(e1, e2, e3, e4, e5);
+        
+        Schedule2 schedule = createSchedule();
+        schedule.getSessions().get(0).setStartEventIds(ImmutableList.of("timeline_retrieved", "custom:event2"));
+
+        List<TimelineMetadata> metadata = Scheduler.INSTANCE.calculateTimeline(schedule).getMetadata();
+
+        AdherenceState.Builder builder = createAdherenceState();
+        builder.withAdherenceRecords(createAdherenceRecords());
+        builder.withClientTimeZone("America/Chicago");
+        builder.withMetadata(metadata);
+        builder.withEvents(events);
+        
+        StudyAdherenceReport report = INSTANCE.generate(builder.build());
+        
+        // testAccount is set in the service, not the generator
+        assertEquals(report.getAdherencePercent(), Integer.valueOf(28));
+        assertEquals(report.getProgression(), ParticipantStudyProgress.IN_PROGRESS);
+        assertEquals(report.getDateRange().getStartDate(), LocalDate.parse("2022-03-01"));
+        assertEquals(report.getDateRange().getEndDate(), LocalDate.parse("2022-03-27"));
+        
+        assertEquals(report.getUnsetEventIds(), ImmutableSet.of("custom:event1"));
+        assertEquals(report.getUnscheduledSessions(), ImmutableSet.of("Supplemental Survey"));
+        assertEquals(report.getEventTimestamps().get("timeline_retrieved"), TIMELINE_RETRIEVED_TS.withZone(zone));
+        assertEquals(report.getEventTimestamps().get("study_burst:Study Burst:01"), STUDY_BURST_1_TS.withZone(zone));
+        assertEquals(report.getEventTimestamps().get("study_burst:Study Burst:02"), STUDY_BURST_2_TS.withZone(zone));
+        assertEquals(report.getEventTimestamps().get("study_burst:Study Burst:03"), STUDY_BURST_3_TS.withZone(zone));
+        assertEquals(report.getEventTimestamps().get("custom:event2"), DateTime.parse("2022-03-01T18:23:15.999-06:00").withZone(zone));
+
+        assertEquals(report.getWeeks().size(), 4);
+        StudyReportWeek week1 = report.getWeeks().get(0);
+        assertEquals(week1.getStartDate(), LocalDate.parse("2022-03-01"));
+        assertEquals(week1.getWeekInStudy(), 1);
+        assertEquals(week1.getAdherencePercent(), Integer.valueOf(66));
+        assertEquals(week1.getRows().size(), 3);
+        
+        WeeklyAdherenceReportRow week1Row1 = week1.getRows().get(0);
+        assertEquals(week1Row1.getLabel(), "Baseline Tapping Test / Week 1");
+        assertEquals(week1Row1.getSearchableLabel(), ":Baseline Tapping Test:Week 1:");
+        assertEquals(week1Row1.getSessionGuid(), "baselineGuid");
+        assertEquals(week1Row1.getStartEventId(), "timeline_retrieved");
+        assertEquals(week1Row1.getSessionName(), "Baseline Tapping Test");
+        assertEquals(week1Row1.getWeekInStudy(), Integer.valueOf(1));
+        
+        WeeklyAdherenceReportRow week1Row2 = week1.getRows().get(1);
+        assertEquals(week1Row2.getLabel(), "Initial Survey / Week 1");
+        assertEquals(week1Row2.getSearchableLabel(), ":Initial Survey:Week 1:");
+        assertEquals(week1Row2.getSessionGuid(), "initialSurveyGuid");
+        assertEquals(week1Row2.getStartEventId(), "custom:event2");
+        assertEquals(week1Row2.getSessionName(), "Initial Survey");
+        assertEquals(week1Row2.getWeekInStudy(), Integer.valueOf(1));
+        
+        WeeklyAdherenceReportRow week1Row3 = week1.getRows().get(2);
+        assertEquals(week1Row3.getLabel(), "Initial Survey / Week 1");
+        assertEquals(week1Row3.getSearchableLabel(), ":Initial Survey:Week 1:");
+        assertEquals(week1Row3.getSessionGuid(), "initialSurveyGuid");
+        assertEquals(week1Row3.getStartEventId(), "timeline_retrieved");
+        assertEquals(week1Row3.getSessionName(), "Initial Survey");
+        assertEquals(week1Row3.getWeekInStudy(), Integer.valueOf(1));
+        
+        List<EventStreamDay> week1Day0 = week1.getByDayEntries().get(0);
+        assertEquals(week1Day0.size(), 3);
+        assertDay(week1Day0.get(0), "2022-03-01", 0, false);
+        assertDay(week1Day0.get(1), "2022-03-01", 0, false);
+        assertDay(week1Day0.get(2), "2022-03-01", 0, false);
+        
+        List<EventStreamDay> week1Day1 = week1.getByDayEntries().get(1);
+        assertEquals(week1Day1.size(), 3);
+        assertDay(week1Day1.get(0), "2022-03-02", 0, false);
+        assertDay(week1Day1.get(1), "2022-03-02", 1, false);
+        assertDay(week1Day1.get(2), "2022-03-02", 1, false);
+        
+        assertEquals(week1Day1.get(1).getSessionGuid(), "initialSurveyGuid");
+        assertEquals(week1Day1.get(1).getStartEventId(), "custom:event2");
+        assertTimeWindow(week1Day1.get(1).getTimeWindows().get(0), "E_ZDacDPqL-vBKGnB6u6Iw", 
+                "win1", EXPIRED, "2022-03-02");
+        
+        assertEquals(week1Day1.get(2).getSessionGuid(), "initialSurveyGuid");
+        assertEquals(week1Day1.get(2).getStartEventId(), "timeline_retrieved");
+        assertTimeWindow(week1Day1.get(2).getTimeWindows().get(0), "pqVRM8cV-buumqQvUGwRsQ", 
+                "win1", COMPLETED, "2022-03-02");
+        
+        List<EventStreamDay> week1Day2 = week1.getByDayEntries().get(2);
+        assertEquals(week1Day2.size(), 3);
+        assertDay(week1Day2.get(0), "2022-03-03", 1, false);
+        assertDay(week1Day2.get(1), "2022-03-03", 0, false);
+        assertDay(week1Day2.get(2), "2022-03-03", 0, false);
+        
+        assertEquals(week1Day2.get(0).getSessionGuid(), "baselineGuid");
+        assertEquals(week1Day2.get(0).getStartEventId(), "timeline_retrieved");
+        assertEquals(week1Day2.get(0).getStartDate(), LocalDate.parse("2022-03-03"));
+        assertTimeWindow(week1Day2.get(0).getTimeWindows().get(0), "xyvAcmEYAVAzCMfGhf187g", 
+                "win2", COMPLETED, "2022-03-03");
+        
+        List<EventStreamDay> week1Day3 = week1.getByDayEntries().get(3);
+        assertEquals(week1Day3.size(), 3);
+        assertDay(week1Day3.get(0), "2022-03-04", 0, false);
+        assertDay(week1Day3.get(1), "2022-03-04", 0, false);
+        assertDay(week1Day3.get(2), "2022-03-04", 0, false);
+        
+        List<EventStreamDay> week1Day4 = week1.getByDayEntries().get(4);
+        assertEquals(week1Day4.size(), 3);
+        assertDay(week1Day4.get(0), "2022-03-05", 0, false);
+        assertDay(week1Day4.get(1), "2022-03-05", 0, false);
+        assertDay(week1Day4.get(2), "2022-03-05", 0, false);
+        
+        List<EventStreamDay> week1Day5 = week1.getByDayEntries().get(5);
+        assertEquals(week1Day5.size(), 3);
+        assertDay(week1Day5.get(0), "2022-03-06", 0, false);
+        assertDay(week1Day5.get(1), "2022-03-06", 0, false);
+        assertDay(week1Day5.get(2), "2022-03-06", 0, false);
+        
+        List<EventStreamDay> week1Day6 = week1.getByDayEntries().get(6);
+        assertEquals(week1Day6.size(), 3);
+        assertDay(week1Day6.get(0), "2022-03-07", 0, false);
+        assertDay(week1Day6.get(1), "2022-03-07", 0, false);
+        assertDay(week1Day6.get(2), "2022-03-07", 0, false);
+    }        
+    
+    @Test
+    public void getNextActivity() throws Exception { 
+        List<StudyActivityEvent> events = createEvents();
+        
+        StudyActivityEvent event = new StudyActivityEvent.Builder()
+                .withEventId("custom:event1")
+                .withTimestamp(DateTime.parse("2022-05-01T16:23:15.999-08:00"))
+                .withObjectType(ActivityEventObjectType.CUSTOM)
+                .build();
+        events = BridgeUtils.addToList(events, event);
+        
+        AdherenceState state = createAdherenceState()
+                .withNow(DateTime.parse("2022-04-15T00:00:00.000-08:00"))
+                .withEvents(events).build();
+        StudyAdherenceReport report = INSTANCE.generate(state);
+        
+        assertEquals(report.getNextActivity().getSessionGuid(), "session5");
+        assertEquals(report.getNextActivity().getSessionName(), "Supplemental Survey");
+        assertEquals(report.getNextActivity().getWeekInStudy(), Integer.valueOf(9));
+        assertEquals(report.getNextActivity().getStartDate().toString(), "2022-05-01");
+        
+        // This is the day before (and in the same week) as the next activity, so nextActivity
+        // should be null in this case.
+        state = createAdherenceState().withNow(DateTime.parse("2022-04-30T00:00:00.000-08:00"))
+                .withEvents(events).build();
+        report = INSTANCE.generate(state);
+        assertNull(report.getNextActivity());
+    }    
+    
+    @Test
+    public void createWeekReport_carryOverDay() throws Exception {
+        // This date is in week 7, and there is no week 7. So we create that week
+        Schedule2 schedule = createSchedule();
+        schedule.setDuration(Period.parse("P8W"));
+        schedule.getSessions().get(0).getTimeWindows().get(0).setExpiration(null);
+        List<TimelineMetadata> meta = Scheduler.INSTANCE.calculateTimeline(schedule).getMetadata();
+        
+        AdherenceState.Builder builder = createAdherenceState();
+        builder.withMetadata(meta);
+        builder.withNow(DateTime.parse("2022-04-15T12:00:00.000-08:00"));
+        
+        StudyAdherenceReport report = INSTANCE.generate(builder.build());
+        
+        StudyReportWeek weekReport = report.getWeekReport();
+        
+        assertEquals(weekReport.getWeekInStudy(), 7);
+        assertEquals(weekReport.getStartDate(), LocalDate.parse("2022-04-12"));
+        assertEquals(weekReport.getAdherencePercent(), Integer.valueOf(0));
+        assertEquals(weekReport.getRows().size(), 1);
+        
+        WeeklyAdherenceReportRow row = weekReport.getRows().get(0);
+        assertEquals(row.getLabel(), "Initial Survey / Week 7"); // Notice: week 7, not week 1
+        assertEquals(row.getSearchableLabel(), ":Initial Survey:Week 7:"); // Notice: week 7, not week 1
+        assertEquals(row.getSessionGuid(), "initialSurveyGuid");
+        assertEquals(row.getStartEventId(), "timeline_retrieved");
+        assertEquals(row.getSessionName(), "Initial Survey");
+        assertEquals(row.getWeekInStudy(), Integer.valueOf(7));
+        
+        EventStreamDay carryOverDay = weekReport.getByDayEntries().get(0).get(0);
+        assertEquals(carryOverDay.getSessionGuid(), "initialSurveyGuid");
+        assertEquals(carryOverDay.getStartEventId(), "timeline_retrieved");
+        // note, this wasn't changed to the day 0 date, and it shouldn't be
+        assertEquals(carryOverDay.getStartDate(), LocalDate.parse("2022-03-02"));
+        assertFalse(carryOverDay.isToday());
+        
+        assertEquals(carryOverDay.getTimeWindows().size(), 1);
+        assertEquals(carryOverDay.getTimeWindows().get(0).getSessionInstanceGuid(), "pqVRM8cV-buumqQvUGwRsQ");
+        assertEquals(carryOverDay.getTimeWindows().get(0).getTimeWindowGuid(), "win1");
+        assertEquals(carryOverDay.getTimeWindows().get(0).getState(), SessionCompletionState.UNSTARTED);
+        assertEquals(carryOverDay.getTimeWindows().get(0).getEndDate(), LocalDate.parse("2022-04-25"));
+    }    
+    
+    @Test
+    public void createWeekReport_carryOverDayKeepsOriginalDayAndTodayFlag() throws Exception {
+        Schedule2 schedule = createSchedule();
+        schedule.setDuration(Period.parse("P8W"));
+        schedule.getSessions().get(0).getTimeWindows().get(0).setExpiration(null);
+        List<TimelineMetadata> meta = Scheduler.INSTANCE.calculateTimeline(schedule).getMetadata();
+        
+        AdherenceState.Builder builder = createAdherenceState();
+        builder.withMetadata(meta);
+        builder.withNow(DateTime.parse("2022-04-12T12:00:00.000-08:00"));
+        
+        StudyAdherenceReport report = INSTANCE.generate(builder.build());
+        
+        StudyReportWeek weekReport = report.getWeekReport();
+        
+        EventStreamDay carryOverDay = weekReport.getByDayEntries().get(0).get(0);
+        assertEquals(carryOverDay.getSessionGuid(), "initialSurveyGuid");
+        assertEquals(carryOverDay.getStartEventId(), "timeline_retrieved");
+        // note, this wasn't changed to the day 0 date, and it shouldn't be, but
+        // we do set the today flag for display purposes
+        assertEquals(carryOverDay.getStartDate(), LocalDate.parse("2022-03-02"));
+        assertTrue(carryOverDay.isToday());
+        
+        assertEquals(carryOverDay.getTimeWindows().size(), 1);
+        assertEquals(carryOverDay.getTimeWindows().get(0).getSessionInstanceGuid(), "pqVRM8cV-buumqQvUGwRsQ");
+        assertEquals(carryOverDay.getTimeWindows().get(0).getTimeWindowGuid(), "win1");
+        assertEquals(carryOverDay.getTimeWindows().get(0).getState(), SessionCompletionState.UNSTARTED);
+        assertEquals(carryOverDay.getTimeWindows().get(0).getEndDate(), LocalDate.parse("2022-04-25"));
+    }
+    
+    private void assertDay(EventStreamDay day, String date, int windowEntries, boolean isToday) {
+        assertEquals(day.getStartDate(), LocalDate.parse(date));
+        assertEquals(day.getTimeWindows().size(), windowEntries);
+        assertEquals(day.isToday(), isToday);
+    }
+    
+    private void assertTimeWindow(EventStreamWindow window, String sessionInstanceGuid, String timeWindowGuid,
+            SessionCompletionState state, String endDate) {
+        assertEquals(window.getSessionInstanceGuid(), sessionInstanceGuid);
+        assertEquals(window.getTimeWindowGuid(), timeWindowGuid);
+        assertEquals(window.getState(), state);
+        assertEquals(window.getEndDate(), LocalDate.parse(endDate));
+    }
+    
+    @Test
     public void rowsSortedByBurstIdAndThenLabel() throws Exception {
         StudyAdherenceReport report = createReport();
         
@@ -272,56 +944,6 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
         
         assertEquals(weeks.get(3).getByDayEntries().get(0).get(0).getSessionGuid(), "burstTappingGuid");
         assertEquals(weeks.get(3).getByDayEntries().get(3).get(1).getSessionGuid(), "finalSurveyGuid");
-    }
-    
-    @Test
-    public void studyStartDateBasedOnStudyStartEventId() throws Exception {
-        StudyAdherenceReport report = createReport();
-        
-        // This also verifies that the calculation of the start date of the first week
-        // is correct, as there was a bug in the implementation. It should be 3/1.
-        assertEquals(report.getDateRange().getStartDate().toString(), "2022-03-01");
-        assertEquals(report.getWeeks().iterator().next().getStartDate().toString(), "2022-03-01");
-    }
-    
-    @Test
-    public void studyStartDateBasedOnEarliestEvent() throws Exception { 
-        AdherenceState.Builder builder = createAdherenceState();
-        builder.withStudyStartEventId(null);
-        StudyAdherenceReport report = INSTANCE.generate(builder.build());
-        
-        assertEquals(report.getDateRange().getStartDate().toString(), "2022-03-01");
-    }
-    
-    @Test
-    public void emptyEventStreamReportGeneratesEmptyStudyAdherenceReport() throws Exception {
-        AdherenceState state = new AdherenceState.Builder()
-                .withNow(DateTime.parse("2022-03-01T00:00:00.000-08:00")).build();
-        StudyAdherenceReport report = INSTANCE.generate(state);
-        
-        // these fields are not set in the generator, they are set in the service.
-        // participant, testAccount, createdOn, timestamp, clientTimeZone
-        
-        assertEquals(report.getProgression(), ParticipantStudyProgress.NO_SCHEDULE);
-        assertEquals(report.getUnsetEventIds(), ImmutableSet.of());
-        assertEquals(report.getUnscheduledSessions(), ImmutableSet.of());
-        assertTrue(report.getWeeks().isEmpty());
-        assertNull(report.getCurrentWeek());
-        assertNull(report.getNextActivity());
-        assertTrue(report.getEventTimestamps().isEmpty());
-    }
-
-    @Test
-    public void eventStreamsWithNoEventsTransferredToUnused() throws Exception {
-        AdherenceState state = createAdherenceState().withEvents(null).build();
-        
-        StudyAdherenceReport report = INSTANCE.generate(state);
-        assertTrue(report.getWeeks().isEmpty());
-        assertTrue(report.getEventTimestamps().isEmpty());
-        assertEquals(report.getUnsetEventIds(), ImmutableSet.of("study_burst:Study Burst:02",
-                "study_burst:Study Burst:01", "study_burst:Study Burst:03", "custom:event1", "timeline_retrieved"));
-        assertEquals(report.getUnscheduledSessions(), ImmutableSet.of("Supplemental Survey", "Initial Survey",
-                "Baseline Tapping Test", "Study Burst Tapping Test", "Final Survey"));
     }
     
     @Test
@@ -436,171 +1058,223 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
     }
     
     @Test
-    public void participantStudyProgress_unstarted() throws Exception {
-        AdherenceState state = createAdherenceState()
-                .withNow(DateTime.parse("2020-01-01T00:00:00.000-08:00")).build();
-        StudyAdherenceReport report = INSTANCE.generate(state);
+    public void createWeekReport_withCurrentWeek() throws Exception {
+        StudyAdherenceReport report = createReport();
         
-        assertEquals(report.getProgression(), ParticipantStudyProgress.IN_PROGRESS);
+        StudyReportWeek currentWeek = report.getWeeks().get(2);
+        StudyReportWeek weekReport = report.getWeekReport();
+        
+        // This particular week report has not been adjusted for activities in prior weeks,
+        // so comparison is simple
+        assertEquals(weekReport.getWeekInStudy(), 3);
+        assertEquals(weekReport.getStartDate(), LocalDate.parse("2022-03-15"));
+        assertEquals(weekReport.getAdherencePercent(), Integer.valueOf(0));
+        assertEquals(weekReport.getSearchableLabels(), 
+                ImmutableSet.of(":Study Burst:Study Burst 2:Week 3:Study Burst Tapping Test:"));
+        assertEquals(weekReport.getRows(), currentWeek.getRows());
+        
+        assertTrue(weekReport.getByDayEntries().get(1).get(0).getTimeWindows().isEmpty());
+        assertTrue(weekReport.getByDayEntries().get(2).get(0).getTimeWindows().isEmpty());
+        assertTrue(weekReport.getByDayEntries().get(3).get(0).getTimeWindows().isEmpty());
+        assertTrue(weekReport.getByDayEntries().get(4).get(0).getTimeWindows().isEmpty());
+        assertTrue(weekReport.getByDayEntries().get(5).get(0).getTimeWindows().isEmpty());
+        assertTrue(weekReport.getByDayEntries().get(6).get(0).getTimeWindows().isEmpty());
+        assertEquals(weekReport.getByDayEntries().get(0).get(0).getSessionGuid(), "burstTappingGuid");
     }
     
     @Test
-    public void participantStudyProgress_inProgress() throws Exception {
+    public void createWeekReport_studyStartDate() throws Exception {
+        // This test is basically identical to createWeekReport_withCurrentWeek
+        // studyStartDate is selected in that test as well.
         StudyAdherenceReport report = createReport();
         
-        assertEquals(report.getProgression(), ParticipantStudyProgress.IN_PROGRESS);
-    }
-
-    @Test
-    public void participantStudyProgress_done() throws Exception {
-        AdherenceState state = createAdherenceState()
-                .withNow(DateTime.parse("2022-05-01T00:00:00.000-08:00")).build();
-        StudyAdherenceReport report = INSTANCE.generate(state);
-
-        assertEquals(report.getProgression(), ParticipantStudyProgress.DONE);
-    }
-
-    @Test
-    public void participantStudyProgress_noSchedule() throws Exception {
-        AdherenceState state = createAdherenceState()
-                .withMetadata(null).build();
-        StudyAdherenceReport report = INSTANCE.generate(state);
-
-        assertEquals(report.getProgression(), ParticipantStudyProgress.NO_SCHEDULE);
+        StudyReportWeek currentWeek = report.getWeeks().get(2);
+        StudyReportWeek weekReport = report.getWeekReport();
+        assertEquals(weekReport.getWeekInStudy(), currentWeek.getWeekInStudy());
+        assertEquals(weekReport.getStartDate(), currentWeek.getStartDate());
+        assertEquals(weekReport.getAdherencePercent(), currentWeek.getAdherencePercent());
+        assertEquals(weekReport.getSearchableLabels(), currentWeek.getSearchableLabels());
+        assertEquals(weekReport.getRows(), currentWeek.getRows());
     }
     
     @Test
-    public void dayHasNoUnnecessaryFieldsFilledOut() throws Exception {
-        StudyAdherenceReport report = createReport();
+    public void createWeekReport_noCurrentWeekNoStudyStartDate() throws Exception {
+        Schedule2 schedule = createSchedule();
+        schedule.setDuration(Period.parse("P8W"));
+        schedule.getSessions().get(0).getTimeWindows().get(0).setExpiration(null);
+        List<TimelineMetadata> meta = Scheduler.INSTANCE.calculateTimeline(schedule).getMetadata();
         
-        for (StudyReportWeek week : report.getWeeks()) {
-            for (List<EventStreamDay> days : week.getByDayEntries().values()) {
-                for (EventStreamDay oneDay : days) {
-                    assertNull(oneDay.getStudyBurstId());
-                    assertNull(oneDay.getStudyBurstNum());
-                    assertNull(oneDay.getSessionName());
-                    assertNull(oneDay.getWeek());
-                    assertNull(oneDay.getStartDay());
-                    for (EventStreamWindow window : oneDay.getTimeWindows()) {
-                        assertNull(window.getEndDay());
-                    }
-                }
-            }
+        AdherenceState.Builder builder = createAdherenceState();
+        builder.withStudyStartEventId(null);
+        builder.withEvents(ImmutableList.of()); // no “earliest event” to fall back on 
+        builder.withMetadata(meta);
+        builder.withNow(DateTime.parse("2022-04-15T12:00:00.000-08:00"));
+        
+        StudyAdherenceReport report = INSTANCE.generate(builder.build());
+        
+        // Lacking any relevant events, we just show "Week 1" with any relevant tasks. This should
+        // be reported as "unstarted" which is usually shown differently in UIs instead of this week one 
+        // information. We might choose to do something differently here.
+        StudyReportWeek weekReport = report.getWeekReport();
+        assertEquals(weekReport.getWeekInStudy(), 1);
+        assertEquals(weekReport.getStartDate(), LocalDate.parse("2022-04-15"));
+        assertTrue(weekReport.getByDayEntries().get(0).isEmpty());
+        assertTrue(weekReport.getByDayEntries().get(1).isEmpty());
+        assertTrue(weekReport.getByDayEntries().get(2).isEmpty());
+        assertTrue(weekReport.getByDayEntries().get(3).isEmpty());
+        assertTrue(weekReport.getByDayEntries().get(4).isEmpty());
+        assertTrue(weekReport.getByDayEntries().get(5).isEmpty());
+        assertTrue(weekReport.getByDayEntries().get(6).isEmpty());
+        assertTrue(weekReport.getRows().isEmpty());
+    }
+
+    @Test
+    public void createWeekReport_noCarryOverBecauseWindowsAreCompleted() throws Exception {
+        Schedule2 schedule = createSchedule();
+        schedule.setDuration(Period.parse("P8W"));
+        schedule.getSessions().get(0).getTimeWindows().get(0).setExpiration(null);
+        List<TimelineMetadata> meta = Scheduler.INSTANCE.calculateTimeline(schedule).getMetadata();
+        
+        AdherenceState.Builder builder = createAdherenceState();
+        builder.withMetadata(meta);
+        builder.withAdherenceRecords(createAdherenceRecords());
+        builder.withNow(DateTime.parse("2022-04-15T12:00:00.000-08:00"));
+        
+        StudyAdherenceReport report = INSTANCE.generate(builder.build());
+        
+        StudyReportWeek weekReport = report.getWeekReport();
+        assertTrue(weekReport.getByDayEntries().get(0).isEmpty());
+        assertTrue(weekReport.getByDayEntries().get(1).isEmpty());
+        assertTrue(weekReport.getByDayEntries().get(2).isEmpty());
+        assertTrue(weekReport.getByDayEntries().get(3).isEmpty());
+        assertTrue(weekReport.getByDayEntries().get(4).isEmpty());
+        assertTrue(weekReport.getByDayEntries().get(5).isEmpty());
+        assertTrue(weekReport.getByDayEntries().get(6).isEmpty());
+        assertTrue(weekReport.getRows().isEmpty());
+    }
+    
+    @Test
+    public void createWeekReport_carryOver() throws Exception {
+        // This date is in week 7, and there is no week 7. So we create that week
+        
+        Schedule2 schedule = createSchedule();
+        schedule.setDuration(Period.parse("P8W"));
+        schedule.getSessions().get(0).getTimeWindows().get(0).setExpiration(null);
+        List<TimelineMetadata> meta = Scheduler.INSTANCE.calculateTimeline(schedule).getMetadata();
+        
+        AdherenceState.Builder builder = createAdherenceState();
+        builder.withMetadata(meta);
+        builder.withNow(DateTime.parse("2022-04-15T12:00:00.000-08:00"));
+        
+        StudyAdherenceReport report = INSTANCE.generate(builder.build());
+        
+        StudyReportWeek weekReport = report.getWeekReport();
+        
+        assertEquals(weekReport.getWeekInStudy(), 7);
+        assertEquals(weekReport.getStartDate(), LocalDate.parse("2022-04-12"));
+        assertEquals(weekReport.getAdherencePercent(), Integer.valueOf(0));
+        assertEquals(weekReport.getRows().size(), 1);
+        
+        WeeklyAdherenceReportRow row = weekReport.getRows().get(0);
+        assertEquals(row.getLabel(), "Initial Survey / Week 7"); // Notice: week 7, not week 1
+        assertEquals(row.getSearchableLabel(), ":Initial Survey:Week 7:"); // Notice: week 7, not week 1
+        assertEquals(row.getSessionGuid(), "initialSurveyGuid");
+        assertEquals(row.getStartEventId(), "timeline_retrieved");
+        assertEquals(row.getSessionName(), "Initial Survey");
+        assertEquals(row.getWeekInStudy(), Integer.valueOf(7));
+        
+        assertTrue(weekReport.getByDayEntries().get(1).get(0).getTimeWindows().isEmpty());
+        assertTrue(weekReport.getByDayEntries().get(2).get(0).getTimeWindows().isEmpty());
+        assertTrue(weekReport.getByDayEntries().get(3).get(0).getTimeWindows().isEmpty());
+        assertTrue(weekReport.getByDayEntries().get(4).get(0).getTimeWindows().isEmpty());
+        assertTrue(weekReport.getByDayEntries().get(5).get(0).getTimeWindows().isEmpty());
+        assertTrue(weekReport.getByDayEntries().get(6).get(0).getTimeWindows().isEmpty());
+        
+        EventStreamDay carryOverDay = weekReport.getByDayEntries().get(0).get(0);
+        assertEquals(carryOverDay.getSessionGuid(), "initialSurveyGuid");
+        assertEquals(carryOverDay.getStartEventId(), "timeline_retrieved");
+        // note, this wasn't changed to the day 0 date, and it shouldn't be
+        assertEquals(carryOverDay.getStartDate(), LocalDate.parse("2022-03-02"));
+        
+        assertEquals(carryOverDay.getTimeWindows().size(), 1);
+        assertEquals(carryOverDay.getTimeWindows().get(0).getSessionInstanceGuid(), "pqVRM8cV-buumqQvUGwRsQ");
+        assertEquals(carryOverDay.getTimeWindows().get(0).getTimeWindowGuid(), "win1");
+        assertEquals(carryOverDay.getTimeWindows().get(0).getState(), SessionCompletionState.UNSTARTED);
+        assertEquals(carryOverDay.getTimeWindows().get(0).getEndDate(), LocalDate.parse("2022-04-25"));
+    }
+    
+    @Test
+    public void createWeekReport_adherencePercentCorrectWithCarryOver() throws Exception {
+        // Set this up in the future with all the adherence records, but remove the 
+        // initial survey adherence record (you have to do this so it is carried forward).
+        // This should change the adherence percent accordingly.
+        List<AdherenceRecord> records = createAdherenceRecords();
+
+        Schedule2 schedule = createSchedule();
+        schedule.setDuration(Period.parse("P8W"));
+        schedule.getSessions().get(0).getTimeWindows().get(0).setExpiration(null);
+        List<TimelineMetadata> meta = Scheduler.INSTANCE.calculateTimeline(schedule).getMetadata();
+        
+        AdherenceState.Builder builder = createAdherenceState();
+        builder.withMetadata(meta);
+        // Remove initial survey
+        builder.withAdherenceRecords(records.subList(1, records.size()));
+        
+        StudyAdherenceReport report = INSTANCE.generate(builder.build());
+        // If the initial survey is not done and not carried over (we remove the AR for it),
+        // adherence is 16%.
+        assertEquals(report.getAdherencePercent(), Integer.valueOf(16));
+    }
+    
+    @Test
+    public void createWeekReport_adherencePercentCorrectWithoutCarryOver() throws Exception {
+        // Set this up in the future with all the adherence records, but remove the 
+        // initial survey adherence record (you have to do this so it is carried forward).
+        // This should change the adherence percent accordingly.
+        List<AdherenceRecord> records = createAdherenceRecords();
+
+        Schedule2 schedule = createSchedule();
+        schedule.setDuration(Period.parse("P8W"));
+        schedule.getSessions().get(0).getTimeWindows().get(0).setExpiration(null);
+        List<TimelineMetadata> meta = Scheduler.INSTANCE.calculateTimeline(schedule).getMetadata();
+        
+        AdherenceState.Builder builder = createAdherenceState();
+        builder.withMetadata(meta);
+        // Remove initial survey
+        builder.withAdherenceRecords(records);
+        
+        StudyAdherenceReport report = INSTANCE.generate(builder.build());
+        // If the initial survey is declared as done by including the adherence recored for it,
+        // adherence is 33%.
+        assertEquals(report.getAdherencePercent(), Integer.valueOf(33));
+    }
+    
+    @Test
+    public void createWeekReport_unusedFieldsAreCleared() throws Exception {
+        LocalDate today = LocalDate.parse("2022-03-15");
+        
+        StudyAdherenceReport report = createReport();
+        for (StudyReportWeek oneWeek : report.getWeeks()) {
+            oneWeek.visitDays((day, i) -> {
+                assertNull(day.getStudyBurstId());
+                assertNull(day.getStudyBurstNum());
+                assertNull(day.getSessionName());
+                assertNull(day.getWeek());
+                assertEquals(day.isToday(), today.isEqual(day.getStartDate()));
+                assertNull(day.getStartDay());
+                day.getTimeWindows().forEach(win -> assertNull(win.getEndDay()));
+            });
         }
-    }
-
-    @Test
-    public void dateRangeIsCorrect() throws Exception {
-        StudyAdherenceReport report = createReport();
-        
-        assertEquals(report.getDateRange().getStartDate().toString(), "2022-03-01");
-        assertEquals(report.getDateRange().getEndDate().toString(), "2022-03-27");
-    }
-
-    @Test
-    public void currentWeekIsCorrect() throws Exception {
-        StudyAdherenceReport report = createReport();
-        assertSame(report.getCurrentWeek(), ImmutableList.copyOf(report.getWeeks()).get(2));
-    }
-    
-    @Test
-    public void eventTimestampsArePresent() throws Exception {
-        StudyAdherenceReport report = createReport();
-        
-        assertEquals(report.getEventTimestamps().get("study_burst:Study Burst:01").toString(), 
-                "2022-03-08T16:23:15.999-08:00");
-        assertEquals(report.getEventTimestamps().get("study_burst:Study Burst:02").toString(), 
-                "2022-03-15T16:23:15.999-08:00");
-        assertEquals(report.getEventTimestamps().get("study_burst:Study Burst:03").toString(), 
-                "2022-03-22T16:23:15.999-08:00");
-        assertEquals(report.getEventTimestamps().get("timeline_retrieved").toString(), 
-                "2022-03-01T16:23:15.999-08:00");
-    }
-    
-    @Test
-    public void week_correct() throws Exception {
-        AdherenceState state = createAdherenceState()
-                .withAdherenceRecords(createAdherenceRecords()).build();
-        StudyAdherenceReport report = INSTANCE.generate(state);
-        
-        StudyReportWeek week = report.getWeeks().iterator().next();
-        assertEquals(week.getSearchableLabels(),
-                ImmutableSet.of(":Initial Survey:Week 1:", ":Baseline Tapping Test:Week 1:"));
-        assertEquals(week.getWeekInStudy(), 1);
-        assertEquals(week.getStartDate().toString(), "2022-03-01");
-        assertEquals(week.getAdherencePercent(), Integer.valueOf(100));
-        assertEquals(week.getByDayEntries().get(1).get(1).getTimeWindows().get(0).getState(), COMPLETED);
-        assertEquals(week.getByDayEntries().get(2).get(0).getTimeWindows().get(0).getState(), COMPLETED);
-    }
-    
-    @Test
-    public void week_daysAddedToCorrectDayInWeek() throws Exception {
-        StudyAdherenceReport report = createReport();
-
-        List<StudyReportWeek> weeks = ImmutableList.copyOf(report.getWeeks());
-        // we just know this from calculating the report on paper:
-        assertFalse(hasActivities(weeks.get(0).getByDayEntries().get(0)));
-        assertTrue(hasActivities(weeks.get(0).getByDayEntries().get(1)));
-        assertTrue(hasActivities(weeks.get(0).getByDayEntries().get(2)));
-        assertFalse(hasActivities(weeks.get(0).getByDayEntries().get(3)));
-        assertFalse(hasActivities(weeks.get(0).getByDayEntries().get(4)));
-        assertFalse(hasActivities(weeks.get(0).getByDayEntries().get(5)));
-        assertFalse(hasActivities(weeks.get(0).getByDayEntries().get(6)));
-        
-        assertTrue(hasActivities(weeks.get(1).getByDayEntries().get(0)));
-        assertFalse(hasActivities(weeks.get(1).getByDayEntries().get(1)));
-        assertFalse(hasActivities(weeks.get(1).getByDayEntries().get(2)));
-        assertFalse(hasActivities(weeks.get(1).getByDayEntries().get(3)));
-        assertFalse(hasActivities(weeks.get(1).getByDayEntries().get(4)));
-        assertFalse(hasActivities(weeks.get(1).getByDayEntries().get(5)));
-        assertFalse(hasActivities(weeks.get(1).getByDayEntries().get(6)));
-        
-        assertTrue(hasActivities(weeks.get(2).getByDayEntries().get(0)));
-        assertFalse(hasActivities(weeks.get(2).getByDayEntries().get(1)));
-        assertFalse(hasActivities(weeks.get(2).getByDayEntries().get(2)));
-        assertFalse(hasActivities(weeks.get(2).getByDayEntries().get(3)));
-        assertFalse(hasActivities(weeks.get(2).getByDayEntries().get(4)));
-        assertFalse(hasActivities(weeks.get(2).getByDayEntries().get(5)));
-        assertFalse(hasActivities(weeks.get(2).getByDayEntries().get(6)));
-
-        assertTrue(hasActivities(weeks.get(3).getByDayEntries().get(0)));
-        assertFalse(hasActivities(weeks.get(3).getByDayEntries().get(1)));
-        assertFalse(hasActivities(weeks.get(3).getByDayEntries().get(2)));
-        assertTrue(hasActivities(weeks.get(3).getByDayEntries().get(3)));
-        assertFalse(hasActivities(weeks.get(3).getByDayEntries().get(4)));
-        assertFalse(hasActivities(weeks.get(3).getByDayEntries().get(5)));
-        assertFalse(hasActivities(weeks.get(3).getByDayEntries().get(6)));
-    }
-    
-    private boolean hasActivities(List<EventStreamDay> days) {
-        for (EventStreamDay oneDay : days) {
-            if (!oneDay.getTimeWindows().isEmpty()) {
-                return true;
-            }
-        }
-        return false;
-    }
-    
-    @Test
-    public void week_labelsAndRowsCorrect() throws Exception {
-        StudyAdherenceReport report = createReport();
-        
-        StudyReportWeek week = report.getWeeks().iterator().next();
-        WeeklyAdherenceReportRow row1 = week.getRows().get(0);
-        assertEquals(row1.getLabel(), "Baseline Tapping Test / Week 1");
-        assertEquals(row1.getSearchableLabel(), ":Baseline Tapping Test:Week 1:");
-        assertEquals(row1.getSessionGuid(), "baselineGuid");
-        assertEquals(row1.getStartEventId(), "timeline_retrieved");
-        assertEquals(row1.getSessionName(), "Baseline Tapping Test");
-        assertEquals(row1.getWeekInStudy(), Integer.valueOf(1));
-        
-        WeeklyAdherenceReportRow row2 = week.getRows().get(1);
-        assertEquals(row2.getLabel(), "Initial Survey / Week 1");
-        assertEquals(row2.getSearchableLabel(), ":Initial Survey:Week 1:");
-        assertEquals(row2.getSessionGuid(), "initialSurveyGuid");
-        assertEquals(row2.getStartEventId(), "timeline_retrieved");
-        assertEquals(row2.getSessionName(), "Initial Survey");
-        assertEquals(row2.getWeekInStudy(), Integer.valueOf(1));
+        StudyReportWeek oneWeek = report.getWeekReport();
+        oneWeek.visitDays((day, i) -> {
+            assertNull(day.getStudyBurstId());
+            assertNull(day.getStudyBurstNum());
+            assertNull(day.getSessionName());
+            assertNull(day.getWeek());
+            assertEquals(day.isToday(), today.isEqual(day.getStartDate()));
+            assertNull(day.getStartDay());
+            day.getTimeWindows().forEach(win -> assertNull(win.getEndDay()));
+        });
     }
     
     @Test
@@ -615,42 +1289,13 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
     }
     
     @Test
-    public void nextActivityIsCorrectlySelected() throws Exception {
-        List<StudyActivityEvent> events = createEvents();
-        
-        StudyActivityEvent event = new StudyActivityEvent.Builder()
-                .withEventId("custom:event1")
-                .withTimestamp(DateTime.parse("2022-05-01T16:23:15.999-08:00"))
-                .withObjectType(ActivityEventObjectType.CUSTOM)
-                .build();
-        events = BridgeUtils.addToList(events, event);
-        
-        AdherenceState state = createAdherenceState()
-                .withNow(DateTime.parse("2022-04-15T00:00:00.000-08:00"))
-                .withEvents(events).build();
-        StudyAdherenceReport report = StudyAdherenceReportGenerator.INSTANCE.generate(state);
-        
-        assertEquals(report.getNextActivity().getSessionGuid(), "session5");
-        assertEquals(report.getNextActivity().getSessionName(), "Supplemental Survey");
-        assertEquals(report.getNextActivity().getWeekInStudy(), Integer.valueOf(9));
-        assertEquals(report.getNextActivity().getStartDate().toString(), "2022-05-01");
-        
-        // This is the day before (and in the same week) as the next activity, so nextActivity
-        // should be null in this case.
-        state = createAdherenceState().withNow(DateTime.parse("2022-04-30T00:00:00.000-08:00"))
-                .withEvents(events).build();
-        report = StudyAdherenceReportGenerator.INSTANCE.generate(state);
-        assertNull(report.getNextActivity());
-    }
-    
-    @Test
     public void adherenceNotCalculatedForFutureWeeks() throws Exception {
         AdherenceState state = new AdherenceState.Builder()
                 .withStudyStartEventId("timeline_retrieved")
                 .withMetadata(createTimelineMetadata())
                 .withEvents(createEvents())
                 .withNow(DateTime.parse("2022-03-7T01:00:00.000-08:00")).build();
-        StudyAdherenceReport report = StudyAdherenceReportGenerator.INSTANCE.generate(state);
+        StudyAdherenceReport report = INSTANCE.generate(state);
         
         List<StudyReportWeek> weeks = ImmutableList.copyOf(report.getWeeks());
         assertEquals(weeks.get(0).getAdherencePercent(), Integer.valueOf(0));
