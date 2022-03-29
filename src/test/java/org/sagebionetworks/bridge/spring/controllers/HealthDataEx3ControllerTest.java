@@ -103,6 +103,8 @@ public class HealthDataEx3ControllerTest {
         assertGet(HealthDataEx3Controller.class, "getRecordsForUser");
         assertGet(HealthDataEx3Controller.class, "getRecordsForApp");
         assertGet(HealthDataEx3Controller.class, "getRecordsForStudy");
+        assertGet(HealthDataEx3Controller.class, "getRecordForSelf");
+        assertGet(HealthDataEx3Controller.class, "getRecordsForUserForSelf");
     }
 
     @Test
@@ -164,13 +166,13 @@ public class HealthDataEx3ControllerTest {
         HealthDataRecordEx3 record = HealthDataRecordEx3.create();
         record.setAppId(TestConstants.TEST_APP_ID);
         record.setId(RECORD_ID);
-        when(mockHealthDataEx3Service.getRecord(RECORD_ID)).thenReturn(Optional.of(record));
+        when(mockHealthDataEx3Service.getRecord(RECORD_ID, false)).thenReturn(Optional.of(record));
 
         // Execute and verify.
         HealthDataRecordEx3 result = controller.getRecord(TestConstants.TEST_APP_ID, RECORD_ID);
         assertSame(result, record);
 
-        verify(mockHealthDataEx3Service).getRecord(RECORD_ID);
+        verify(mockHealthDataEx3Service).getRecord(RECORD_ID, false);
         verify(mockMetrics).setRecordId(RECORD_ID);
     }
 
@@ -184,7 +186,7 @@ public class HealthDataEx3ControllerTest {
         HealthDataRecordEx3 record = HealthDataRecordEx3.create();
         record.setAppId("wrong-app");
         record.setId(RECORD_ID);
-        when(mockHealthDataEx3Service.getRecord(RECORD_ID)).thenReturn(Optional.of(record));
+        when(mockHealthDataEx3Service.getRecord(RECORD_ID, false)).thenReturn(Optional.of(record));
 
         // Execute.
         controller.getRecord(TestConstants.TEST_APP_ID, RECORD_ID);
@@ -197,7 +199,7 @@ public class HealthDataEx3ControllerTest {
         app.setIdentifier(TestConstants.TEST_APP_ID);
         when(mockAppService.getApp(TestConstants.TEST_APP_ID)).thenReturn(app);
 
-        when(mockHealthDataEx3Service.getRecord(RECORD_ID)).thenReturn(Optional.empty());
+        when(mockHealthDataEx3Service.getRecord(RECORD_ID, false)).thenReturn(Optional.empty());
 
         // Execute.
         controller.getRecord(TestConstants.TEST_APP_ID, RECORD_ID);
@@ -322,13 +324,13 @@ public class HealthDataEx3ControllerTest {
         record.setAppId(TestConstants.TEST_APP_ID);
         record.setId(RECORD_ID);
         record.setHealthCode(HEALTH_CODE);
-        when(mockHealthDataEx3Service.getRecord(RECORD_ID)).thenReturn(Optional.of(record));
+        when(mockHealthDataEx3Service.getRecord(RECORD_ID, false)).thenReturn(Optional.of(record));
 
         // Execute and verify.
-        HealthDataRecordEx3 result = controller.getRecordForSelf(RECORD_ID);
+        HealthDataRecordEx3 result = controller.getRecordForSelf(RECORD_ID, "false");
         assertSame(result, record);
 
-        verify(mockHealthDataEx3Service).getRecord(RECORD_ID);
+        verify(mockHealthDataEx3Service).getRecord(RECORD_ID, false);
         verify(mockMetrics).setRecordId(RECORD_ID);
     }
 
@@ -341,18 +343,18 @@ public class HealthDataEx3ControllerTest {
         record.setAppId("wrong-app");
         record.setId(RECORD_ID);
         record.setHealthCode(HEALTH_CODE);
-        when(mockHealthDataEx3Service.getRecord(RECORD_ID)).thenReturn(Optional.of(record));
+        when(mockHealthDataEx3Service.getRecord(RECORD_ID, false)).thenReturn(Optional.of(record));
 
         // Execute.
-        controller.getRecordForSelf(RECORD_ID);
+        controller.getRecordForSelf(RECORD_ID, "false");
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void getRecordForSelf_RecordNotFound() {
-        when(mockHealthDataEx3Service.getRecord(RECORD_ID)).thenReturn(Optional.empty());
+        when(mockHealthDataEx3Service.getRecord(RECORD_ID, false)).thenReturn(Optional.empty());
 
         // Execute.
-        controller.getRecordForSelf(RECORD_ID);
+        controller.getRecordForSelf(RECORD_ID, "false");
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -364,10 +366,10 @@ public class HealthDataEx3ControllerTest {
         record.setAppId(TEST_APP_ID);
         record.setId(RECORD_ID);
         record.setHealthCode("wrong-user");
-        when(mockHealthDataEx3Service.getRecord(RECORD_ID)).thenReturn(Optional.of(record));
+        when(mockHealthDataEx3Service.getRecord(RECORD_ID, false)).thenReturn(Optional.of(record));
 
         // Execute.
-        controller.getRecordForSelf(RECORD_ID);
+        controller.getRecordForSelf(RECORD_ID, "false");
     }
 
     // Tests of getRecordsForUserForSelf API.

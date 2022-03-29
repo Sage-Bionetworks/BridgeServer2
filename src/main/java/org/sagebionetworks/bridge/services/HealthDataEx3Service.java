@@ -1,15 +1,14 @@
 package org.sagebionetworks.bridge.services;
 
+import javax.annotation.Resource;
 import java.net.URL;
 import java.util.Date;
 import java.util.Optional;
 
 import com.amazonaws.HttpMethod;
 import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.Headers;
 import static com.amazonaws.HttpMethod.GET;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
-import com.amazonaws.services.s3.model.ObjectMetadata;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,6 +57,11 @@ public class HealthDataEx3Service {
         S3bucketName = config.getProperty(Exporter3Service.CONFIG_KEY_RAW_HEALTH_DATA_BUCKET);
     }
 
+    @Resource(name = "s3Client")
+    final void setS3client(AmazonS3 s3) {
+        this.s3Client = s3;
+    }
+
     /** Create or update health data record. Returns the created or updated record. */
     public HealthDataRecordEx3 createOrUpdateRecord(HealthDataRecordEx3 record) {
         if (record == null) {
@@ -101,14 +105,11 @@ public class HealthDataEx3Service {
         long expiration = DateTime.now().plusMinutes(EXPIRATION_IN_MINUTES).getMillis();
         record.setDownloadExpiration(expiration);
 
-        String S3Key = UploadUtil.getRawS3KeyForUpload(record.getAppId(),
+        S3Key = UploadUtil.getRawS3KeyForUpload(record.getAppId(), record.getStudyId(),
                 this.uploadService.getUpload(record.getId()), record);
 
         GeneratePresignedUrlRequest request = new GeneratePresignedUrlRequest(S3bucketName , S3Key, method);
-        request.setExpiration(new Date(expiration));
-        if (GET.equals(method)) {
-            request.addRequestParameter(Headers.SERVER_SIDE_ENCRYPTION, ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
-        }
+        request.setExpiration(new Date(record.getDownloadExpiration()));
 
         return s3Client.generatePresignedUrl(request);
     }

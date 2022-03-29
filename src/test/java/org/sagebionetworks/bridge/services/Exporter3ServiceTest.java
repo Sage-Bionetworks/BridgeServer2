@@ -491,7 +491,7 @@ public class Exporter3ServiceTest {
         HealthDataRecordEx3 existingRecord = HealthDataRecordEx3.create();
         existingRecord.setId(RECORD_ID);
         existingRecord.setVersion(1L);
-        when(mockHealthDataEx3Service.getRecord(RECORD_ID)).thenReturn(Optional.of(existingRecord));
+        when(mockHealthDataEx3Service.getRecord(RECORD_ID, false)).thenReturn(Optional.of(existingRecord));
 
         HealthDataRecordEx3 createdRecord = HealthDataRecordEx3.create();
         createdRecord.setId(RECORD_ID);

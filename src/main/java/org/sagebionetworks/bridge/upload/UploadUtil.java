@@ -761,10 +761,23 @@ public class UploadUtil {
         return sanitizedFieldMap;
     }
 
-    public static String getRawS3KeyForUpload(String appId, Upload upload, HealthDataRecordEx3 record) {
-        String filename = getFilenameForUpload(upload);
+    public static String getRawS3KeyForUpload(String appId, String studyId, Upload upload, HealthDataRecordEx3 record) {
+        StringBuilder builder = new StringBuilder();
+        builder.append(appId);
+        builder.append('/');
+        if (studyId != null) {
+            builder.append(studyId);
+            builder.append('/');
+        }
+
         String dateStr = getCalendarDateForRecord(record);
-        return appId + '/' + dateStr + '/' + filename;
+        builder.append(dateStr);
+        builder.append('/');
+
+        String filename = getFilenameForUpload(upload);
+        builder.append(filename);
+
+        return builder.toString();
     }
 
     private static String getFilenameForUpload(Upload upload) {
