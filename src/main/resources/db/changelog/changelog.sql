@@ -948,3 +948,8 @@ ADD COLUMN `exporter3Configuration` text COLLATE utf8_unicode_ci;
 
 ALTER TABLE `Substudies`
 ADD COLUMN `exporter3Enabled` tinyint(1) DEFAULT '0';
+
+-- changeset bridge:68
+
+ALTER TABLE `Accounts`
+ADD COLUMN `admin` tinyint(1);

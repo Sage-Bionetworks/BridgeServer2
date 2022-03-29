@@ -248,6 +248,13 @@ public class AccountService {
             Set<String> newDataGroups = addToSet(account.getDataGroups(), TEST_USER_GROUP);
             account.setDataGroups(newDataGroups);
         }
+        // If set to true, leave field to true. Otherwise, set it to true if this account is
+        // clearly an admin account. Eventually this will be set on certain API pathways to
+        // true, effectively tainting the account.
+        if (account.isAdmin() != Boolean.TRUE) {
+            account.setAdmin(!account.getRoles().isEmpty() || account.getOrgMembership() != null);    
+        }
+        
 
         // Create account. We don't verify studies because this is handled by validation
         accountDao.createAccount(app, account);
@@ -302,10 +309,17 @@ public class AccountService {
         account.setOrgMembership(persistedAccount.getOrgMembership());
         // Update modifiedOn.
         account.setModifiedOn(DateUtils.getCurrentDateTime());
+        
         // Only allow Admins to update notes
         if (!RequestContext.get().isAdministrator()) {
             account.setNote(persistedAccount.getNote());
         }
+        if (persistedAccount.isAdmin() == null) {
+            account.setAdmin(!account.getRoles().isEmpty() || account.getOrgMembership() != null);    
+        } else {
+            account.setAdmin(persistedAccount.isAdmin());    
+        }
+
         // Update. We don't verify studies because this is handled by validation
         accountDao.updateAccount(account);
         

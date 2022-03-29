@@ -89,6 +89,7 @@ public class HibernateAccount implements Account {
     private Set<Enrollment> enrollments;
     private String note;
     private String clientTimeZone;
+    private Boolean admin;
     
     /**
      * Constructor to load information for the AccountRef object. This avoids loading any of the 
@@ -557,5 +558,17 @@ public class HibernateAccount implements Account {
     @Override
     public void setClientTimeZone(String clientTimeZone) {
         this.clientTimeZone = clientTimeZone;
+    }
+    
+    /** Is this account an admin account? */
+    @Override
+    public Boolean isAdmin() {
+        return admin;
+    }
+    
+    /** @see #isAdmin */
+    @Override
+    public void setAdmin(Boolean admin) {
+        this.admin = admin;
     }
 }
