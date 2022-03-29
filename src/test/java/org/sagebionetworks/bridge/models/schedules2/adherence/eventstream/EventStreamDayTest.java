@@ -78,6 +78,49 @@ public class EventStreamDayTest {
         assertEquals(day.getTimeWindows().size(), 0);
     }
     
+    @Test
+    public void copy() {
+        EventStreamDay day = new EventStreamDay();
+        day.setLabel("Label");
+        day.setSessionGuid("sessionGuid");
+        day.setSessionName("sessionName");
+        day.setSessionSymbol("sessionSymbol");
+        day.setStartEventId("event1");
+        day.setStartDay(3);
+        day.setStartDate(LocalDate.parse("2021-10-01"));
+        day.setWeek(5);
+        day.setStudyBurstId("studyBurstId");
+        day.setStudyBurstNum(2);
+        day.addTimeWindow(createWindow("guid1"));
+        day.setTimeWindows(ImmutableList.of(createWindow("guid2"), createWindow("guid1")));
+        day.setToday(true);
+
+        EventStreamDay copy = day.copy();
+        assertEquals(copy.getLabel(), day.getLabel());
+        assertEquals(copy.getSessionGuid(), day.getSessionGuid());
+        assertEquals(copy.getSessionName(), day.getSessionName());
+        assertEquals(copy.getSessionSymbol(), day.getSessionSymbol());
+        assertEquals(copy.getStartEventId(), day.getStartEventId());
+        assertEquals(copy.getStartDay(), day.getStartDay());
+        assertEquals(copy.getStartDate(), day.getStartDate());
+        assertEquals(copy.getWeek(), day.getWeek());
+        assertEquals(copy.getStudyBurstId(), day.getStudyBurstId());
+        assertEquals(copy.getStudyBurstNum(), day.getStudyBurstNum());
+        assertEquals(copy.isToday(), day.isToday());
+        
+        assertEquals(copy.getTimeWindows().size(), day.getTimeWindows().size());
+        compareWindows(copy.getTimeWindows().get(0), day.getTimeWindows().get(0));
+        compareWindows(copy.getTimeWindows().get(1), day.getTimeWindows().get(1));
+    }
+    
+    private void compareWindows(EventStreamWindow win1, EventStreamWindow win2) {
+        assertEquals(win1.getTimeWindowGuid(), win2.getTimeWindowGuid());
+        assertEquals(win1.getState(), win2.getState());
+        assertEquals(win1.getSessionInstanceGuid(), win2.getSessionInstanceGuid());
+        assertEquals(win1.getEndDay(), win2.getEndDay());
+        assertEquals(win1.getEndDate(), win2.getEndDate());
+    }
+    
     private EventStreamWindow createWindow(String guid) {
         EventStreamWindow window = new EventStreamWindow();
         window.setTimeWindowGuid(guid);

@@ -9,10 +9,12 @@ import static org.sagebionetworks.bridge.DefaultAppBootstrapper.TEST_TASK_IDENTI
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.TestConstants.EMAIL;
+import static org.sagebionetworks.bridge.TestConstants.PASSWORD;
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.models.accounts.SharingScope.NO_SHARING;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 import java.util.List;
@@ -86,8 +88,9 @@ public class DefaultAppBootstrapperTest extends Mockito {
     }
     
     @Test
-    public void fullBootstrap() {
+    public void fullBootstrap_withPassword() {
         when(mockConfig.get("admin.email")).thenReturn(EMAIL);
+        when(mockConfig.get("admin.password")).thenReturn(PASSWORD);
         when(mockConfig.get("admin.synapse.user.id")).thenReturn(SYNAPSE_USER_ID);
         when(mockConfig.getEnvironment()).thenReturn(Environment.DEV);
         
@@ -144,6 +147,43 @@ public class DefaultAppBootstrapperTest extends Mockito {
         assertEquals(participantCaptor.getAllValues().size(), 3);
         for (StudyParticipant admin : participantCaptor.getAllValues()) {
             assertEquals(admin.getEmail(), EMAIL);
+            assertEquals(admin.getPassword(), PASSWORD);
+            assertEquals(admin.getSynapseUserId(), SYNAPSE_USER_ID);
+            assertEquals(admin.getDataGroups(), ImmutableSet.of(TEST_USER_GROUP));
+            assertEquals(admin.getSharingScope(), NO_SHARING);
+            assertEquals(admin.getRoles(), ImmutableSet.of(SUPERADMIN));
+        }
+    }
+    
+    // This is still ok and won't break anything, but 
+    @Test
+    public void fullBootstrap_noPassword() {
+        when(mockConfig.get("admin.email")).thenReturn(EMAIL);
+        when(mockConfig.get("admin.synapse.user.id")).thenReturn(SYNAPSE_USER_ID);
+        when(mockConfig.getEnvironment()).thenReturn(Environment.DEV);
+        
+        List<TableDescription> tables = ImmutableList.of(); 
+        when(mockAnnotationBasedTableCreator.getTables("org.sagebionetworks.bridge.dynamodb")).thenReturn(tables);
+        
+        when(mockAppService.getApp(any())).thenThrow(new EntityNotFoundException(App.class));
+        when(mockAppService.createApp(any())).thenAnswer((args) -> args.getArgument(0));
+        
+        when(mockAccountService.getAccount(any())).thenReturn(Optional.empty());
+        
+        // We don't care about the context
+        bootstrapper.onApplicationEvent(null);
+        
+        verify(mockUserAdminService).createUser(any(), participantCaptor.capture(),
+                eq(SubpopulationGuid.create(API_APP_ID)), eq(false), eq(false));
+        verify(mockUserAdminService).createUser(any(), participantCaptor.capture(),
+                eq(SubpopulationGuid.create(API_2_APP_ID)), eq(false), eq(false));
+        verify(mockUserAdminService).createUser(any(), participantCaptor.capture(),
+                eq(SubpopulationGuid.create(SHARED_APP_ID)), eq(false), eq(false));
+        
+        assertEquals(participantCaptor.getAllValues().size(), 3);
+        for (StudyParticipant admin : participantCaptor.getAllValues()) {
+            assertEquals(admin.getEmail(), EMAIL);
+            assertNull(admin.getPassword());
             assertEquals(admin.getSynapseUserId(), SYNAPSE_USER_ID);
             assertEquals(admin.getDataGroups(), ImmutableSet.of(TEST_USER_GROUP));
             assertEquals(admin.getSharingScope(), NO_SHARING);

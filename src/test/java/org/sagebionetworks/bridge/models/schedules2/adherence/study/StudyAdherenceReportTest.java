@@ -54,7 +54,7 @@ public class StudyAdherenceReportTest {
         report.setWeeks(ImmutableList.of(week));
         report.setEventTimestamps(ImmutableMap.of("event3", MODIFIED_ON));
         report.setUnscheduledSessions(ImmutableSet.of("session1", "session2"));
-        report.setCurrentWeek(week);
+        report.setWeekReport(week);
         report.setNextActivity(nextActivity);
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(report);

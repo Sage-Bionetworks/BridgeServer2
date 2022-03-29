@@ -100,16 +100,21 @@ public class DefaultAppBootstrapper implements ApplicationListener<ContextRefres
         // The integration bootstrap account should be ADMIN in production, and SUPERADMIN in other environments.
         // It should have the Synapse user ID of the synapse.user set for the integration tests.
         String adminEmail = bridgeConfig.get("admin.email");
+        String adminPassword = bridgeConfig.get("admin.password");
         String adminSynUserId = bridgeConfig.get("admin.synapse.user.id");
         Roles adminRole = (bridgeConfig.getEnvironment() == PROD) ? ADMIN : SUPERADMIN;
         boolean bootstrapUserConfigured = (adminEmail != null && adminSynUserId != null);
         
-        StudyParticipant admin = new StudyParticipant.Builder()
+        StudyParticipant.Builder builder = new StudyParticipant.Builder()
                 .withEmail(adminEmail)
                 .withSynapseUserId(adminSynUserId)
                 .withDataGroups(Sets.newHashSet(TEST_USER_GROUP))
                 .withSharingScope(NO_SHARING)
-                .withRoles(Sets.newHashSet(adminRole)).build();
+                .withRoles(Sets.newHashSet(adminRole));
+        if (adminPassword != null) {
+            builder.withPassword(adminPassword);
+        }
+        StudyParticipant admin = builder.build();
 
         App app = createApp(API_APP_ID, "Test App", provided -> {
             provided.setMinAgeOfConsent(18);
