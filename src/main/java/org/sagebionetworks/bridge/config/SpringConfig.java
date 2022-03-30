@@ -51,7 +51,6 @@ import org.hibernate.event.service.spi.EventListenerRegistry;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataDocumentation;
 import org.sagebionetworks.bridge.dynamodb.DynamoParticipantFile;
-import org.sagebionetworks.bridge.models.permissions.Permission;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.liquibase.LiquibaseDataSource;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -665,7 +664,6 @@ public class SpringConfig {
         metadataSources.addAnnotatedClass(StudyActivityEvent.class);
         metadataSources.addAnnotatedClass(Notification.class);
         metadataSources.addAnnotatedClass(WeeklyAdherenceReport.class);
-        metadataSources.addAnnotatedClass(Permission.class);
         
         SessionFactory factory = metadataSources.buildMetadata().buildSessionFactory();
         
