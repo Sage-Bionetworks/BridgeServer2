@@ -95,6 +95,8 @@ public class StudyServiceTest {
     
     @InjectMocks
     private StudyService service;
+
+    private Schedule2 schedule;
     
     @BeforeMethod
     public void before() {
@@ -102,9 +104,11 @@ public class StudyServiceTest {
         
         RequestContext.set(new RequestContext.Builder().withCallerOrgMembership(TEST_ORG_ID).build());
         
-        Schedule2 schedule = new Schedule2();
+        schedule = new Schedule2();
         schedule.setOwnerId(TEST_ORG_ID);
         when(mockScheduleService.getScheduleForStudy(any(), any())).thenReturn(Optional.of(schedule));
+        when(mockScheduleService.getSchedule(TEST_APP_ID, SCHEDULE_GUID)).thenReturn(schedule);
+        when(mockSponsorService.isStudySponsoredBy(TEST_STUDY_ID, TEST_ORG_ID)).thenReturn(true);
     }
     
     @AfterMethod
@@ -353,7 +357,6 @@ public class StudyServiceTest {
         existing.setScheduleGuid(SCHEDULE_GUID);
         when(mockStudyDao.getStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(existing);
         when(mockStudyDao.updateStudy(any())).thenReturn(VERSION_HOLDER);
-        when(mockScheduleService.getSchedule(TEST_APP_ID, SCHEDULE_GUID)).thenReturn(new Schedule2());
 
         Study study = Study.create();
         study.setAppId("wrongAppId");
@@ -388,7 +391,6 @@ public class StudyServiceTest {
         
         when(mockStudyDao.getStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(existing);
         when(mockStudyDao.updateStudy(any())).thenReturn(VERSION_HOLDER);
-        when(mockScheduleService.getSchedule(any(), any())).thenReturn(new Schedule2());
 
         Study study = Study.create();
         study.setAppId("wrongAppId");
@@ -416,7 +418,6 @@ public class StudyServiceTest {
         
         when(mockStudyDao.getStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(existing);
         when(mockStudyDao.updateStudy(any())).thenReturn(VERSION_HOLDER);
-        when(mockScheduleService.getSchedule(any(), any())).thenReturn(new Schedule2());
 
         Study study = Study.create();
         study.setAppId("wrongAppId");
@@ -519,7 +520,6 @@ public class StudyServiceTest {
         existing.setCustomEvents(events);
         existing.setStudyStartEventId("event1");
         when(mockStudyDao.getStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(existing);
-        when(mockScheduleService.getSchedule(TEST_APP_ID, SCHEDULE_GUID)).thenReturn(new Schedule2());
 
         // It doesn’t even matter what you’re submitting, it’ll fail
         Study study = Study.create();
@@ -700,10 +700,7 @@ public class StudyServiceTest {
         study.setIdentifier(TEST_STUDY_ID);
         study.setScheduleGuid(SCHEDULE_GUID);
         when(mockStudyDao.getStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(study);
-        
-        Schedule2 schedule = new Schedule2();
-        when(mockScheduleService.getSchedule(TEST_APP_ID, SCHEDULE_GUID)).thenReturn(schedule);
-        
+
         service.transitionToRecruitment(TEST_APP_ID, TEST_STUDY_ID);
         
         verify(mockStudyDao).updateStudy(study);
@@ -722,11 +719,9 @@ public class StudyServiceTest {
         study.setIdentifier(TEST_STUDY_ID);
         study.setScheduleGuid(SCHEDULE_GUID);
         when(mockStudyDao.getStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(study);
-        
-        Schedule2 schedule = new Schedule2();
+
         schedule.setPublished(true);
-        when(mockScheduleService.getSchedule(TEST_APP_ID, SCHEDULE_GUID)).thenReturn(schedule);
-        
+
         service.transitionToRecruitment(TEST_APP_ID, TEST_STUDY_ID);
         
         verify(mockStudyDao).updateStudy(study);
@@ -812,9 +807,6 @@ public class StudyServiceTest {
         study.setScheduleGuid(SCHEDULE_GUID);
         study.setIdentifier(TEST_STUDY_ID);
         when(mockStudyDao.getStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(study);
-        
-        Schedule2 schedule = new Schedule2();
-        when(mockScheduleService.getSchedule(TEST_APP_ID, SCHEDULE_GUID)).thenReturn(schedule);
 
         service.transitionToWithdrawn(TEST_APP_ID, TEST_STUDY_ID);
         
@@ -834,11 +826,9 @@ public class StudyServiceTest {
         study.setIdentifier(TEST_STUDY_ID);
         study.setScheduleGuid(SCHEDULE_GUID);
         when(mockStudyDao.getStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(study);
-        
-        Schedule2 schedule = new Schedule2();
+
         schedule.setPublished(true);
-        when(mockScheduleService.getSchedule(TEST_APP_ID, SCHEDULE_GUID)).thenReturn(schedule);
-        
+
         service.transitionToWithdrawn(TEST_APP_ID, TEST_STUDY_ID);
         
         verify(mockStudyDao).updateStudy(study);
@@ -956,13 +946,11 @@ public class StudyServiceTest {
         existing.setScheduleGuid(SCHEDULE_GUID);
         when(mockStudyDao.getStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(existing);
     
-        Schedule2 schedule = new Schedule2();
         Session session1 = new Session();
         session1.setStartEventIds(ImmutableList.of("aaa","bbb","custom:ccc"));
         Session session2 = new Session();
         session2.setStartEventIds(ImmutableList.of("ddd","custom:eee"));
         schedule.setSessions(ImmutableList.of(session1, session2));
-        when(mockScheduleService.getSchedule(TEST_APP_ID, SCHEDULE_GUID)).thenReturn(schedule);
 
         Set<String> eventIds = service.getCustomEventIdsFromSchedule(TEST_APP_ID, SCHEDULE_GUID);
 
@@ -979,10 +967,7 @@ public class StudyServiceTest {
         existing.setCreatedOn(DateTime.now());
         existing.setScheduleGuid(SCHEDULE_GUID);
         when(mockStudyDao.getStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(existing);
-    
-        Schedule2 schedule = new Schedule2();
-        when(mockScheduleService.getSchedule(TEST_APP_ID, SCHEDULE_GUID)).thenReturn(schedule);
-    
+
         Set<String> eventIds = service.getCustomEventIdsFromSchedule(TEST_APP_ID, SCHEDULE_GUID);
     
         Set<String> expectedSet = Sets.newHashSet();

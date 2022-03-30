@@ -34,6 +34,8 @@ import org.sagebionetworks.bridge.models.studies.Contact;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyCustomEvent;
 import org.sagebionetworks.bridge.services.Schedule2Service;
+import org.sagebionetworks.bridge.services.SponsorService;
+
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
@@ -75,17 +77,18 @@ public class StudyValidator implements Validator {
     static final String STUDY_START_EVENT_ID_FIELD = "studyStartEventId";
     static final String STUDY_TIME_ZONE_FIELD = "studyTimeZone";
 
-    static final String SCHEDULE_GUID_OWNER_ERROR_MSG = "is not owned by the caller’s organization";
+    static final String SCHEDULE_GUID_OWNER_ERROR_MSG = "is not owned by a study sponsor";
     static final String SCHEDULE_GUID_INVALID_MSG = "is not a valid schedule GUID";
 
     private final Set<String> protectedCustomEventIds;
     private final Schedule2Service scheduleService;
-    private final String orgId;
-    
-    public StudyValidator(Set<String> protectedCustomEventIds, Schedule2Service scheduleService, String orgId) {
+    private final SponsorService sponsorService;
+
+    public StudyValidator(Set<String> protectedCustomEventIds, Schedule2Service scheduleService,
+            SponsorService sponsorService) {
         this.protectedCustomEventIds = protectedCustomEventIds;
         this.scheduleService = scheduleService;
-        this.orgId = orgId;
+        this.sponsorService = sponsorService;
     }
 
     @Override
@@ -230,8 +233,8 @@ public class StudyValidator implements Validator {
                 Optional<Schedule2> opt = scheduleService.getScheduleForStudy(study.getAppId(), study);
                 if (!opt.isPresent()) {
                     errors.rejectValue(SCHEDULE_GUID_FIELD, SCHEDULE_GUID_INVALID_MSG);
-                } else if (!opt.get().getOwnerId().equals(orgId)) {
-                    errors.rejectValue(SCHEDULE_GUID_FIELD, SCHEDULE_GUID_OWNER_ERROR_MSG);    
+                } else if (!sponsorService.isStudySponsoredBy(study.getIdentifier(), opt.get().getOwnerId())) {
+                    errors.rejectValue(SCHEDULE_GUID_FIELD, SCHEDULE_GUID_OWNER_ERROR_MSG);
                 }
             } catch(UnauthorizedException e) {
                 // This can happen, though it's nearly impossible to trigger because permissions are lax
