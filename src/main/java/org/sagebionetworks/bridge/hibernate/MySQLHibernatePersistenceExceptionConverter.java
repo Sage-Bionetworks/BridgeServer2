@@ -32,6 +32,7 @@ public class MySQLHibernatePersistenceExceptionConverter implements PersistenceE
 
     static final String DEFAULT_CONSTRAINT_MSG = "Cannot update or delete this item because it is in use."; 
     static final String FK_CONSTRAINT_MSG = "This %s cannot be deleted or updated because it is referenced by %s.";
+    static final String MISSING_PARENT_INVALID_FK_CONSTRAINT_MSG = "This %s cannot be created or updated because the referenced %s does not exist.";
     static final String UNIQUE_CONSTRAINT_MSG = "Cannot update this %s because it has duplicate %s";
     static final String NON_UNIQUE_MSG = "Another %s has already used a value which must be unique: %s";
     static final String WRONG_VERSION_MSG = "%s has the wrong version number; it may have been saved in the background.";
@@ -56,6 +57,17 @@ public class MySQLHibernatePersistenceExceptionConverter implements PersistenceE
             .build();
     
     /**
+     * Foreign key missing parent constraints: the name of the constraint is used to inform the caller about an attempt
+     * to add a reference to a parent entity that does not exist.
+     */
+    private static final Map<String, String> FOREIGN_KEY_MISSING_PARENT_CONSTRAINTS = new ImmutableMap.Builder<String,String>()
+            .put("Permission-User-Constraint", "user account")
+            .put("Permission-Assessment-Constraint", "assessment")
+            .put("Permission-Organization-Constraint", "organization")
+            .put("Permission-Study-Constraint", "study")
+            .build();
+    
+    /**
      * Unique key constraints: the name of the constraint is used to inform the caller about the fields that are 
      * being duplicated.
      */
@@ -63,12 +75,13 @@ public class MySQLHibernatePersistenceExceptionConverter implements PersistenceE
             .put("PRIMARY", "primary keys")
             .put("TimeWindow-guid-sessionGuid-idx", "time window GUIDs")
             .put("Session-guid-scheduleGuid-idx", "session GUIDs")
+            .put("Permissions-UserId-AccessLevel-EntityType-EntityId-Index", "access level permission")
             .build();
 
     @Override
     public RuntimeException convert(PersistenceException exception, Object entity) {
         String name = (entity == null) ? "item" : getTypeName(entity.getClass());
-        
+
         if (exception instanceof OptimisticLockException) {
             return new ConcurrentModificationException(String.format(WRONG_VERSION_MSG, name));
         }
@@ -82,12 +95,14 @@ public class MySQLHibernatePersistenceExceptionConverter implements PersistenceE
         if (throwable instanceof java.sql.SQLIntegrityConstraintViolationException) {
             String rawMessage = throwable.getMessage();
             String displayMessage = DEFAULT_CONSTRAINT_MSG;
-            
             // SQLIntegrityConstraintViolation can contain different constraint violations, 
             // including foreign key and duplicate entry violations
             if (rawMessage.contains("Duplicate entry")) {
                 displayMessage = selectMsg(
                         rawMessage, UNIQUE_KEY_CONSTRAINTS, UNIQUE_CONSTRAINT_MSG, name, displayMessage);
+            } else if (rawMessage.contains("Cannot add or update a child row: a foreign key constraint fails")) {
+                displayMessage = selectMsg(
+                        rawMessage, FOREIGN_KEY_MISSING_PARENT_CONSTRAINTS, MISSING_PARENT_INVALID_FK_CONSTRAINT_MSG, name, displayMessage);
             } else if (rawMessage.contains("a foreign key constraint fails")) {
                 displayMessage = selectMsg(
                         rawMessage, FOREIGN_KEY_CONSTRAINTS, FK_CONSTRAINT_MSG, name, displayMessage);
