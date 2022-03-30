@@ -751,8 +751,7 @@ public class SpringConfig {
         Config config = bridgeConfig();
 
         SynapseClient synapseClient = new SynapseAdminClientImpl();
-        synapseClient.setUsername(config.get("synapse.user"));
-        synapseClient.setApiKey(config.get("synapse.api.key"));
+        synapseClient.setBearerAuthorizationToken(config.get("synapse.access.token"));
         setSynapseEndpoint(synapseClient, config);
         return synapseClient;
     }
@@ -762,8 +761,7 @@ public class SpringConfig {
         Config config = bridgeConfig();
 
         SynapseClient synapseClient = new SynapseAdminClientImpl();
-        synapseClient.setUsername(config.get("exporter.synapse.user"));
-        synapseClient.setApiKey(config.get("exporter.synapse.api.key"));
+        synapseClient.setBearerAuthorizationToken(config.get("exporter.synapse.access.token"));
         setSynapseEndpoint(synapseClient, config);
         return synapseClient;
     }
