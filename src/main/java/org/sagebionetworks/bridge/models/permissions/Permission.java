@@ -35,6 +35,13 @@ public final class Permission implements BridgeEntity {
     @Version
     private long version;
     
+    /*  These fields are set through the entity type and id setters.
+        They are a copy of entityId (based on the entityType) and persisted
+        as a foreign key. */
+    private String assessmentId;
+    private String organizationId;
+    private String studyId;
+    
     public String getGuid() {
         return guid;
     }
@@ -73,6 +80,9 @@ public final class Permission implements BridgeEntity {
     
     public void setEntityType(EntityType entityType) {
         this.entityType = entityType;
+        if (entityType != null && entityId != null) {
+            setForeignId();
+        }
     }
     
     public String getEntityId() {
@@ -81,6 +91,9 @@ public final class Permission implements BridgeEntity {
     
     public void setEntityId(String entityId) {
         this.entityId = entityId;
+        if (entityId != null && entityType != null) {
+            setForeignId();
+        }
     }
     
     public DateTime getCreatedOn() {
@@ -105,6 +118,16 @@ public final class Permission implements BridgeEntity {
     
     public void setVersion(long version) {
         this.version = version;
+    }
+    
+    private void setForeignId() {
+        if (EntityType.ASSESSMENT_TYPES.contains(entityType)) {
+            assessmentId = entityId;
+        } else if (EntityType.ORGANIZATION_TYPES.contains(entityType)) {
+            organizationId = entityId;
+        } else if (EntityType.STUDY_TYPES.contains(entityType)) {
+            studyId = entityId;
+        }
     }
     
     @Override

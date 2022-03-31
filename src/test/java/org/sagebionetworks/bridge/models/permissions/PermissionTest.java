@@ -18,7 +18,8 @@ public class PermissionTest {
     
     @Test
     public void equalsHashCode() {
-        EqualsVerifier.forClass(Permission.class).allFieldsShouldBeUsed().verify();
+        EqualsVerifier.forClass(Permission.class).allFieldsShouldBeUsedExcept("assessmentId",
+                "organizationId", "studyId").verify();
     }
     
     @Test

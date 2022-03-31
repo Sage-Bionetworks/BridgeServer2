@@ -3,12 +3,15 @@ package org.sagebionetworks.bridge.services;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.models.permissions.EntityType.ASSESSMENT;
 import static org.sagebionetworks.bridge.models.permissions.EntityType.ASSESSMENT_LIBRARY;
+import static org.sagebionetworks.bridge.models.permissions.EntityType.ASSESSMENT_TYPES;
 import static org.sagebionetworks.bridge.models.permissions.EntityType.MEMBERS;
 import static org.sagebionetworks.bridge.models.permissions.EntityType.ORGANIZATION;
+import static org.sagebionetworks.bridge.models.permissions.EntityType.ORGANIZATION_TYPES;
 import static org.sagebionetworks.bridge.models.permissions.EntityType.PARTICIPANTS;
 import static org.sagebionetworks.bridge.models.permissions.EntityType.SPONSORED_STUDIES;
 import static org.sagebionetworks.bridge.models.permissions.EntityType.STUDY;
 import static org.sagebionetworks.bridge.models.permissions.EntityType.STUDY_PI;
+import static org.sagebionetworks.bridge.models.permissions.EntityType.STUDY_TYPES;
 import static org.sagebionetworks.bridge.validators.PermissionValidator.INSTANCE;
 
 import com.google.common.collect.ImmutableSet;
@@ -184,13 +187,13 @@ public class PermissionService {
     
     private String getEntityName(String appId, EntityType entityType, String entityId) {
         String entityName = "";
-        if (orgTypes.contains(entityType)) {
+        if (ORGANIZATION_TYPES.contains(entityType)) {
             Organization organization = organizationService.getOrganization(appId, entityId);
             entityName = organization.getName();
-        } else if (studyTypes.contains(entityType)) {
+        } else if (STUDY_TYPES.contains(entityType)) {
             Study study = studyService.getStudy(appId, entityId, true);
             entityName = study.getName();
-        } else if (assessmentTypes.contains(entityType)) {
+        } else if (ASSESSMENT_TYPES.contains(entityType)) {
             Assessment assessment = assessmentService.getAssessmentByGuid(appId, null, entityId);
             entityName = assessment.getTitle();
         }
