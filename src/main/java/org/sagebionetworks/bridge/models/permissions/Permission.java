@@ -80,6 +80,7 @@ public final class Permission implements BridgeEntity {
     
     public void setEntityType(EntityType entityType) {
         this.entityType = entityType;
+        nullForeignIds();
         if (entityType != null && entityId != null) {
             setForeignId();
         }
@@ -91,6 +92,7 @@ public final class Permission implements BridgeEntity {
     
     public void setEntityId(String entityId) {
         this.entityId = entityId;
+        nullForeignIds();
         if (entityId != null && entityType != null) {
             setForeignId();
         }
@@ -120,6 +122,19 @@ public final class Permission implements BridgeEntity {
         this.version = version;
     }
     
+    // Protected getters for testing
+    protected String getAssessmentId() {
+        return assessmentId;
+    }
+    
+    protected String getOrganizationId() {
+        return organizationId;
+    }
+    
+    protected String getStudyId() {
+        return studyId;
+    }
+    
     private void setForeignId() {
         if (EntityType.ASSESSMENT_TYPES.contains(entityType)) {
             assessmentId = entityId;
@@ -128,6 +143,12 @@ public final class Permission implements BridgeEntity {
         } else if (EntityType.STUDY_TYPES.contains(entityType)) {
             studyId = entityId;
         }
+    }
+    
+    private void nullForeignIds() {
+        assessmentId = null;
+        organizationId = null;
+        studyId = null;
     }
     
     @Override
