@@ -197,6 +197,7 @@ public class StudyActivityEventService {
             cacheProvider.setObject(cacheKey, event.getCreatedOn());
         } else {
             failedEventIds.add(event.getEventId());
+            updateBursts = false;
         }
         if (updateBursts) {
             Study study = studyService.getStudy(event.getAppId(), event.getStudyId(), true);

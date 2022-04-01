@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
+import static java.lang.Boolean.FALSE;
+import static java.lang.Boolean.TRUE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
@@ -13,6 +15,7 @@ import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectTy
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CUSTOM;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ENROLLMENT;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.INSTALL_LINK_SENT;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.STUDY_BURST;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.TIMELINE_RETRIEVED;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventType.FINISHED;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.IMMUTABLE;
@@ -46,6 +49,7 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheKey;
@@ -59,6 +63,7 @@ import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
+import org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEventIdsMap;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
@@ -333,8 +338,9 @@ public class StudyActivityEventServiceTest extends Mockito {
         StudyActivityEvent event = makeBuilder().withObjectId(ENROLLMENT_FIELD)
                 .withTimestamp(ENROLLMENT_TS).withObjectType(ENROLLMENT).build();
 
-        // This covers all the events, even the study burst events below
-        when(mockDao.getRecentStudyActivityEvent(any(), any(), any())).thenReturn(PERSISTED_EVENT);
+        when(mockDao.getRecentStudyActivityEvent(TEST_USER_ID, TEST_STUDY_ID, "enrollment")).thenReturn(null);
+        when(mockDao.getRecentStudyActivityEvent(TEST_USER_ID, TEST_STUDY_ID, "study_burst:foo:01")).thenReturn(PERSISTED_EVENT);
+        when(mockDao.getRecentStudyActivityEvent(TEST_USER_ID, TEST_STUDY_ID, "study_burst:foo:02")).thenReturn(PERSISTED_EVENT);
         
         Study study = Study.create();
         study.setAppId(TEST_APP_ID);
@@ -344,7 +350,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         burst.setOriginEventId(ENROLLMENT_FIELD);
         burst.setIdentifier("foo");
         burst.setInterval(Period.parse("P1W"));
-        burst.setOccurrences(1);
+        burst.setOccurrences(2);
         burst.setUpdateType(IMMUTABLE);
 
         Schedule2 schedule = new Schedule2();
@@ -352,13 +358,13 @@ public class StudyActivityEventServiceTest extends Mockito {
         
         when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study))
                 .thenReturn(Optional.of(schedule));
+        
         try {
             service.publishEvent(event, true, true);
             fail("Should have thrown exception");
         } catch(BadRequestException e) {
-            assertTrue(e.getMessage().contains("Study event(s) failed to publish: enrollment, study_burst:foo:01."));
+            assertTrue(e.getMessage().contains("Study event(s) failed to publish: study_burst:foo:01, study_burst:foo:02"));
         }
-        verify(mockCacheProvider, never()).setObject(any(), any());
     }
     
     @Test
@@ -625,12 +631,12 @@ public class StudyActivityEventServiceTest extends Mockito {
     
     @Test
     public void publishEvent_eventMutableStudyBurstsMutable() {
-        // event immutable, study bursts mutable. Study bursts are updated, would update
-        // even if they existed.
+        // Event immutable, study bursts mutable. Study bursts are not updated because they 
+        // are presumed to have been created when the immutable event was first created.
         StudyActivityEvent event = makeBuilder().withObjectId(ENROLLMENT_FIELD)
                 .withTimestamp(ENROLLMENT_TS).withObjectType(ENROLLMENT).build();
         
-        // This time however, the event is not updated because it exists.
+        // The event is not updated because it exists.
         when(mockDao.getRecentStudyActivityEvent(any(), any(), eq(ENROLLMENT_FIELD)))
             .thenReturn(PERSISTED_EVENT);
         
@@ -654,19 +660,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         
         service.publishEvent(event, false, true);
         
-        verify(mockDao, times(3)).publishEvent(eventCaptor.capture());
-        
-        StudyActivityEvent sb1 = eventCaptor.getAllValues().get(0);
-        assertEquals(sb1.getEventId(), "study_burst:foo:01");
-        assertEquals(sb1.getTimestamp(), ENROLLMENT_TS.plusWeeks(1));
-        
-        StudyActivityEvent sb2 = eventCaptor.getAllValues().get(1);
-        assertEquals(sb2.getEventId(), "study_burst:foo:02");
-        assertEquals(sb2.getTimestamp(), ENROLLMENT_TS.plusWeeks(2));
-        
-        StudyActivityEvent sb3 = eventCaptor.getAllValues().get(2);
-        assertEquals(sb3.getEventId(), "study_burst:foo:03");
-        assertEquals(sb3.getTimestamp(), ENROLLMENT_TS.plusWeeks(3));
+        verify(mockDao, never()).publishEvent(eventCaptor.capture());
     }
     
     @Test
@@ -704,15 +698,77 @@ public class StudyActivityEventServiceTest extends Mockito {
         
         service.publishEvent(event, false, true);
         
-        verify(mockDao, times(1)).publishEvent(eventCaptor.capture());
+        // As per BRIDGE-3120 and MTB-496, nothing is updated, not even the missing study burst.
+        // The intention (we believe) was to remove the study burst, so it will stay removed.
+        verify(mockDao, never()).publishEvent(eventCaptor.capture());
+    }
+    
+    @DataProvider(name = "eventUpdates")
+    public Object[][] eventUpdates() {
+        return new Object[][] { 
+            { 2, MUTABLE, TRUE, MUTABLE, TRUE }, 
+            { 2, MUTABLE, TRUE, MUTABLE, FALSE },
+            { 1, MUTABLE, TRUE, IMMUTABLE, TRUE }, 
+            { 2, MUTABLE, TRUE, IMMUTABLE, FALSE },
+            { 2, MUTABLE, FALSE, MUTABLE, TRUE }, 
+            { 2, MUTABLE, FALSE, MUTABLE, FALSE },
+            { 1, MUTABLE, FALSE, IMMUTABLE, TRUE }, 
+            { 2, MUTABLE, FALSE, IMMUTABLE, FALSE },
+            { 0, IMMUTABLE, TRUE, MUTABLE, TRUE }, 
+            { 0, IMMUTABLE, TRUE, MUTABLE, FALSE },
+            { 0, IMMUTABLE, TRUE, IMMUTABLE, TRUE }, 
+            { 0, IMMUTABLE, TRUE, IMMUTABLE, FALSE },
+            { 2, IMMUTABLE, FALSE, MUTABLE, TRUE }, 
+            { 2, IMMUTABLE, FALSE, MUTABLE, FALSE },
+            { 1, IMMUTABLE, FALSE, IMMUTABLE, TRUE }, 
+            { 2, IMMUTABLE, FALSE, IMMUTABLE, FALSE }
+        };
+    }
+     
+    @Test(dataProvider = "eventUpdates")
+    public void publishEventTest(int count, ActivityEventUpdateType originEventType, boolean originPersisted,
+            ActivityEventUpdateType burstType, boolean burstPersisted) {
+
+        StudyActivityEvent event = makeBuilder().withObjectId("custom:event1")
+                .withTimestamp(ENROLLMENT_TS.plusDays(1)).withObjectType(CUSTOM)
+                .withUpdateType(originEventType).build();
         
-        // Only one is published because it was not persisted (in this case it was probably
-        // deleted). This is the effect of having mutable study bursts, and they do update after 
-        // the origin event updates. We may introduce behavior to break this linkage or to allow 
-        // the deletion of immutable events so mistakes can be recreated (BRIDGE-3120).
-        StudyActivityEvent sb2 = eventCaptor.getAllValues().get(0);
-        assertEquals(sb2.getEventId(), "study_burst:foo:02");
-        assertEquals(sb2.getTimestamp(), ENROLLMENT_TS.plusWeeks(2));
+        StudyActivityEvent persistedEvent = null;
+        if (originPersisted) {
+            persistedEvent = makeBuilder().withObjectId("custom:event1")
+                    .withTimestamp(ENROLLMENT_TS).withObjectType(CUSTOM)
+                    .withUpdateType(originEventType).build();
+        }
+        when(mockDao.getRecentStudyActivityEvent(TEST_USER_ID, TEST_STUDY_ID, "custom:event1"))
+            .thenReturn(persistedEvent);
+
+        Study study = Study.create();
+        study.setAppId(TEST_APP_ID);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+
+        StudyBurst burst = new StudyBurst();
+        burst.setOriginEventId("custom:event1");
+        burst.setIdentifier("foo");
+        burst.setInterval(Period.parse("P1W"));
+        burst.setOccurrences(1);
+        burst.setUpdateType(burstType);
+
+        Schedule2 schedule = new Schedule2();
+        schedule.setStudyBursts(ImmutableList.of(burst));
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study)).thenReturn(Optional.of(schedule));
+
+        StudyActivityEvent persistedBurst = null;
+        if (burstPersisted) {
+            persistedBurst = makeBuilder().withObjectId("study_burst:foo:01")
+                    .withTimestamp(ENROLLMENT_TS).withObjectType(STUDY_BURST)
+                    .withUpdateType(burstType).build();
+        }
+        when(mockDao.getRecentStudyActivityEvent(TEST_USER_ID, TEST_STUDY_ID, 
+                "study_burst:foo:01")).thenReturn(persistedBurst);
+        
+        service.publishEvent(event, false, true);
+        
+        verify(mockDao, times(count)).publishEvent(eventCaptor.capture());
     }
     
     @Test
@@ -751,7 +807,6 @@ public class StudyActivityEventServiceTest extends Mockito {
                 retValue.getItems(), CUSTOM);
         assertEquals(event.getTimestamp(), CREATED_ON);
         assertEquals(event.getRecordCount(), Integer.valueOf(4));
-        
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
