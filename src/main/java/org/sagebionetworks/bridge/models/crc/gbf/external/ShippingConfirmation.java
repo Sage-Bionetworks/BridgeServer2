@@ -71,8 +71,10 @@ public class ShippingConfirmation {
         @JacksonXmlProperty(isAttribute = true)
         public int ShippedQty;
     
+        @JacksonXmlProperty(isAttribute = true)
         public String TubeSerial;
     
+        @JacksonXmlProperty(isAttribute = true)
         public String ReturnTracking;
     
         public void setTubeSerial(String tubeSerial) {
