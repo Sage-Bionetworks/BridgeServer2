@@ -250,11 +250,10 @@ public class AccountService {
         }
         // If set to true, leave field to true. Otherwise, set it to true if this account is
         // clearly an admin account. Eventually this will be set on certain API pathways to
-        // true, effectively tainting the account.
+        // taint the account (mark it permanently as an admin).
         if (account.isAdmin() != Boolean.TRUE) {
             account.setAdmin(!account.getRoles().isEmpty() || account.getOrgMembership() != null);    
         }
-        
 
         // Create account. We don't verify studies because this is handled by validation
         accountDao.createAccount(app, account);
