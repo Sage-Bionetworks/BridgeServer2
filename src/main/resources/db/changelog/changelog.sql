@@ -960,7 +960,7 @@ CREATE TABLE IF NOT EXISTS `Permissions` (
   `entityId` varchar(255) NOT NULL,
   `createdOn` bigint(20) unsigned DEFAULT NULL,
   `modifiedOn` bigint(20) unsigned DEFAULT NULL,
-  `version` int(10) unsigned NOT NULL DEFAULT '0',
+  `version` bigint(10) unsigned NOT NULL DEFAULT 0,
   `assessmentId` varchar(255) DEFAULT NULL,
   `organizationId` varchar(255) DEFAULT NULL,
   `studyId` varchar(255) DEFAULT NULL,
