@@ -74,7 +74,7 @@ public class HibernatePermissionDao implements PermissionDao {
     public Permission updatePermission(String appId, Permission permission) {
         checkNotNull(appId);
         checkNotNull(permission);
-        // TODO: this should only update access level, so entity id should be safe
+        
         hibernateHelper.update(permission);
         
         return permission;
