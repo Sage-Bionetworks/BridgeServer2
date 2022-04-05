@@ -244,15 +244,10 @@ public class AccountService {
         account.setModifiedOn(timestamp);
         account.setPasswordModifiedOn(timestamp);
         account.setMigrationVersion(MIGRATION_VERSION);
+        account.setAdmin(!account.getRoles().isEmpty() || account.getOrgMembership() != null);
         if (CANNOT_ACCESS_PARTICIPANTS.check()) {
             Set<String> newDataGroups = addToSet(account.getDataGroups(), TEST_USER_GROUP);
             account.setDataGroups(newDataGroups);
-        }
-        // If set to true, leave field to true. Otherwise, set it to true if this account is
-        // clearly an admin account. Eventually this will be set on certain API pathways to
-        // taint the account (mark it permanently as an admin).
-        if (account.isAdmin() != Boolean.TRUE) {
-            account.setAdmin(!account.getRoles().isEmpty() || account.getOrgMembership() != null);    
         }
 
         // Create account. We don't verify studies because this is handled by validation
@@ -308,15 +303,11 @@ public class AccountService {
         account.setOrgMembership(persistedAccount.getOrgMembership());
         // Update modifiedOn.
         account.setModifiedOn(DateUtils.getCurrentDateTime());
+        account.setAdmin(persistedAccount.isAdmin());
         
         // Only allow Admins to update notes
         if (!RequestContext.get().isAdministrator()) {
             account.setNote(persistedAccount.getNote());
-        }
-        if (persistedAccount.isAdmin() == null) {
-            account.setAdmin(!account.getRoles().isEmpty() || account.getOrgMembership() != null);    
-        } else {
-            account.setAdmin(persistedAccount.isAdmin());    
         }
 
         // Update. We don't verify studies because this is handled by validation

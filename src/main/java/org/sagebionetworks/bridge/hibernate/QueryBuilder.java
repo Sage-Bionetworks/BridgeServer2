@@ -110,9 +110,9 @@ class QueryBuilder {
         public void adminOnlyRequired(Boolean isAdmin) {
             if (isAdmin != null) {
                 if (TRUE.equals(isAdmin)) {
-                    appendRequired("size(acct.roles) > 0");
+                    appendRequired("admin = 1");
                 } else {
-                    appendRequired("size(acct.roles) = 0");
+                    appendRequired("admin = 0");
                 }
             }
         }

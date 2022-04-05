@@ -952,4 +952,6 @@ ADD COLUMN `exporter3Enabled` tinyint(1) DEFAULT '0';
 -- changeset bridge:68
 
 ALTER TABLE `Accounts`
-ADD COLUMN `admin` tinyint(1);
+ADD COLUMN `admin` tinyint(1) DEFAULT '0';
+UPDATE Accounts as a JOIN AccountRoles as r ON a.id = r.accountId SET a.admin = 1;
+UPDATE Accounts as a SET a.admin = 1 WHERE a.orgMembership IS NOT NULL;

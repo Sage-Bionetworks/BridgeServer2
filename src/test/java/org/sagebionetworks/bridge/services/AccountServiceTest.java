@@ -64,7 +64,6 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.RequestContext;
-import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
@@ -1447,47 +1446,16 @@ public class AccountServiceTest extends Mockito {
         Account account = Account.create();
         account.setAppId(TEST_APP_ID);
         account.setId(TEST_USER_ID);
+        account.setAdmin(TRUE);
         
         Account persistedAccount = Account.create();
+        persistedAccount.setAdmin(FALSE);
         when(mockAccountDao.getAccount(AccountId.forId(TEST_APP_ID, TEST_USER_ID)))
             .thenReturn(Optional.of(persistedAccount));
         
         service.updateAccount(account);
         
         assertFalse(account.isAdmin());
-    }
-    
-    @Test
-    public void updateAccount_adminMarkedAsAdminFromOrgMembership( ) {
-        Account account = Account.create();
-        account.setAppId(TEST_APP_ID);
-        account.setId(TEST_USER_ID);
-        account.setOrgMembership(TEST_ORG_ID);
-        
-        Account persistedAccount = Account.create();
-        persistedAccount.setOrgMembership(TEST_ORG_ID);
-        when(mockAccountDao.getAccount(AccountId.forId(TEST_APP_ID, TEST_USER_ID)))
-            .thenReturn(Optional.of(persistedAccount));
-        
-        service.updateAccount(account);
-        
-        assertTrue(account.isAdmin());
-    }
-    
-    @Test
-    public void updateAccount_adminMarkedAsAdminFromOrgRoles( ) {
-        Account account = Account.create();
-        account.setAppId(TEST_APP_ID);
-        account.setId(TEST_USER_ID);
-        account.setRoles(ImmutableSet.of(ADMIN));
-        
-        Account persistedAccount = Account.create();
-        when(mockAccountDao.getAccount(AccountId.forId(TEST_APP_ID, TEST_USER_ID)))
-            .thenReturn(Optional.of(persistedAccount));
-        
-        service.updateAccount(account);
-        
-        assertTrue(account.isAdmin());
     }
     
     @Test

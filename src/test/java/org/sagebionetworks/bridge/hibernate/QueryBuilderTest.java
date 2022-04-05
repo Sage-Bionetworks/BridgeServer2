@@ -60,7 +60,7 @@ public class QueryBuilderTest {
     }
     
     @Test
-    public void whereClause_adminOnlyRequred() {
+    public void whereClause_adminOnlyRequired() {
         QueryBuilder builder = new QueryBuilder();
         WhereClauseBuilder where = builder.startWhere(AND);
         where.adminOnlyRequired(null);
@@ -69,12 +69,12 @@ public class QueryBuilderTest {
         builder = new QueryBuilder();
         where = builder.startWhere(AND);
         where.adminOnlyRequired(true);
-        assertEquals(builder.getQuery(), "WHERE size(acct.roles) > 0");
+        assertEquals(builder.getQuery(), "WHERE admin = 1");
 
         builder = new QueryBuilder();
         where = builder.startWhere(AND);
         where.adminOnlyRequired(false);
-        assertEquals(builder.getQuery(), "WHERE size(acct.roles) = 0");
+        assertEquals(builder.getQuery(), "WHERE admin = 0");
     }
     
     @Test
