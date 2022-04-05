@@ -4,7 +4,7 @@ import java.util.Objects;
 
 /**
  * A substantial amount of metadata is moved from being repeated in the EventStreamDay element
- * to a separate row metdata element, which helps in UI tools to lay out the report.
+ * to a separate row metadata element, which helps in UI tools to lay out the report.
  */
 public final class WeeklyAdherenceReportRow {
     private String label;
@@ -70,6 +70,19 @@ public final class WeeklyAdherenceReportRow {
     }
     public void setStudyBurstNum(Integer studyBurstNum) {
         this.studyBurstNum = studyBurstNum;
+    }
+    public WeeklyAdherenceReportRow copy() { 
+        WeeklyAdherenceReportRow copy = new WeeklyAdherenceReportRow();
+        copy.setLabel(label);
+        copy.setSearchableLabel(searchableLabel);
+        copy.setSessionGuid(sessionGuid);
+        copy.setStartEventId(startEventId);
+        copy.setSessionName(sessionName);
+        copy.setSessionSymbol(sessionSymbol);
+        copy.setWeekInStudy(weekInStudy);
+        copy.setStudyBurstId(studyBurstId);
+        copy.setStudyBurstNum(studyBurstNum);
+        return copy;
     }
     @Override
     public int hashCode() {

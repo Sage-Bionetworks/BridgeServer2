@@ -188,7 +188,7 @@ public class StudyService {
         String orgId = RequestContext.get().getCallerOrgMembership();
         
         StudyValidator validator = new StudyValidator(getCustomEventIdsFromSchedule(appId, study.getScheduleGuid()),
-                scheduleService, orgId);
+                scheduleService, sponsorService);
         Validate.entityThrowingException(validator, study);
         
         study.setVersion(null);
@@ -235,11 +235,9 @@ public class StudyService {
         study.setCreatedOn(existing.getCreatedOn());
         study.setModifiedOn(DateTime.now());
         study.setPhase(existing.getPhase());
-        
-        String orgId = RequestContext.get().getCallerOrgMembership();
-    
+
         StudyValidator validator = new StudyValidator(getCustomEventIdsFromSchedule(appId, study.getScheduleGuid()),
-                scheduleService, orgId);
+                scheduleService, sponsorService);
         Validate.entityThrowingException(validator, study);
         
         VersionHolder keys = studyDao.updateStudy(study);

@@ -52,5 +52,30 @@ public class WeeklyAdherenceReportRowTest {
         WeeklyAdherenceReportRow deser = BridgeObjectMapper.get().readValue(node.toString(), WeeklyAdherenceReportRow.class);
         assertEquals(deser, row);
     }
+    
+    @Test
+    public void copy() {
+        WeeklyAdherenceReportRow row = new WeeklyAdherenceReportRow();
+        row.setLabel("label");
+        row.setSearchableLabel("searchableLabel");
+        row.setSessionGuid("sessionGuid");
+        row.setStartEventId("eventId");
+        row.setSessionName("sessionName");
+        row.setSessionSymbol("sessionSymbol");
+        row.setWeekInStudy(2);
+        row.setStudyBurstId("studyBurstId");
+        row.setStudyBurstNum(4);
+        
+        WeeklyAdherenceReportRow copy = row.copy();
+        assertEquals(copy.getLabel(), row.getLabel());
+        assertEquals(copy.getSearchableLabel(), row.getSearchableLabel());
+        assertEquals(copy.getSessionGuid(), row.getSessionGuid());
+        assertEquals(copy.getStartEventId(), row.getStartEventId());
+        assertEquals(copy.getSessionName(), row.getSessionName());
+        assertEquals(copy.getSessionSymbol(), row.getSessionSymbol());
+        assertEquals(copy.getWeekInStudy(), row.getWeekInStudy());
+        assertEquals(copy.getStudyBurstId(), row.getStudyBurstId());
+        assertEquals(copy.getStudyBurstNum(), row.getStudyBurstNum());
+    }
 
 }

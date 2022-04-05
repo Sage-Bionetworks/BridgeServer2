@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.models.schedules2.adherence.study;
 
-import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -29,8 +29,8 @@ public class StudyAdherenceReport {
     private ParticipantStudyProgress progression;
     private Set<String> unsetEventIds;
     private Set<String> unscheduledSessions;
-    private Collection<StudyReportWeek> weeks;
-    private StudyReportWeek currentWeek;
+    private List<StudyReportWeek> weeks;
+    private StudyReportWeek weekReport;
     private NextActivity nextActivity;
     private Map<String, DateTime> eventTimestamps;
     
@@ -83,10 +83,10 @@ public class StudyAdherenceReport {
     public void setDateRange(DateRange dateRange) {
         this.dateRange = dateRange;
     }
-    public Collection<StudyReportWeek> getWeeks() {
+    public List<StudyReportWeek> getWeeks() {
         return weeks;
     }
-    public void setWeeks(Collection<StudyReportWeek> weeks) {
+    public void setWeeks(List<StudyReportWeek> weeks) {
         this.weeks = weeks;
     }
     public Map<String, DateTime> getEventTimestamps() {
@@ -102,11 +102,11 @@ public class StudyAdherenceReport {
         this.unscheduledSessions = unscheduledSessions;
     }
     @JsonIgnore
-    public StudyReportWeek getCurrentWeek() {
-        return currentWeek;
+    public StudyReportWeek getWeekReport() {
+        return weekReport;
     }
-    public void setCurrentWeek(StudyReportWeek currentWeek) {
-        this.currentWeek = currentWeek;
+    public void setWeekReport(StudyReportWeek weekReport) {
+        this.weekReport = weekReport;
     }
     public NextActivity getNextActivity() {
         return nextActivity;

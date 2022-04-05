@@ -9,7 +9,16 @@ import org.testng.annotations.Test;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+import nl.jqno.equalsverifier.EqualsVerifier;
+import nl.jqno.equalsverifier.Warning;
+
 public class EventStreamWindowTest {
+    
+    @Test
+    public void hashCodeEquals() {
+        EqualsVerifier.forClass(EventStreamWindow.class).allFieldsShouldBeUsed()
+            .suppress(Warning.NONFINAL_FIELDS).verify();
+    }
     
     @Test
     public void canSerialize() throws Exception { 

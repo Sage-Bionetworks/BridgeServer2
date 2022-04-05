@@ -105,6 +105,30 @@ public final class EventStreamDay {
     public void setLabel(String label) {
         this.label = label;
     }
+    public EventStreamDay copy() {
+        EventStreamDay newDay = new EventStreamDay();
+        newDay.setToday(today);
+        newDay.setSessionGuid(sessionGuid);
+        newDay.setSessionName(sessionName);
+        newDay.setSessionSymbol(sessionSymbol);
+        newDay.setStartEventId(startEventId);
+        newDay.setStartDay(startDay);
+        newDay.setStartDate(startDate);
+        newDay.setWeek(week);
+        newDay.setStudyBurstId(studyBurstId);
+        newDay.setStudyBurstNum(studyBurstNum);
+        newDay.setLabel(label);
+        for (EventStreamWindow win : getTimeWindows()) {
+            EventStreamWindow newWindow = new EventStreamWindow();
+            newWindow.setTimeWindowGuid(win.getTimeWindowGuid());
+            newWindow.setState(win.getState());
+            newWindow.setSessionInstanceGuid(win.getSessionInstanceGuid());
+            newWindow.setEndDay(win.getEndDay());
+            newWindow.setEndDate(win.getEndDate());
+            newDay.addTimeWindow(newWindow);
+        }
+        return newDay;
+    }
     @Override
     public int hashCode() {
         return Objects.hash(label, sessionGuid, startEventId, sessionName, sessionSymbol, startDate, startDay,

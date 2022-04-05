@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 import org.joda.time.DateTime;
@@ -81,5 +82,12 @@ public class EventStream {
     }
     public void setStudyBurstNum(Integer studyBurstNum) {
         this.studyBurstNum = studyBurstNum;
+    }
+    public void visitDays(BiConsumer<EventStreamDay, Integer> consumer) {
+        for (List<EventStreamDay> days : byDayEntries.values()) {
+            for (int i=0; i < days.size(); i++) {
+                consumer.accept(days.get(i), i);
+            }
+        }
     }
 }
