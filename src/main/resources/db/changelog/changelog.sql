@@ -951,6 +951,29 @@ ADD COLUMN `exporter3Enabled` tinyint(1) DEFAULT '0';
 
 -- changeset bridge:68
 
+CREATE TABLE IF NOT EXISTS `Permissions` (
+  `guid` varchar(60) NOT NULL,
+  `appId` varchar(255) NOT NULL,
+  `userId` varchar(255) NOT NULL,
+  `accessLevel` enum('LIST','READ', 'EDIT', 'DELETE', 'ADMIN') NOT NULL,
+  `entityType` enum('ASSESSMENT', 'ASSESSMENT_LIBRARY', 'MEMBERS', 'ORGANIZATION', 'PARTICIPANTS', 'SPONSORED_STUDIES', 'STUDY', 'STUDY_PI') NOT NULL,
+  `entityId` varchar(255) NOT NULL,
+  `createdOn` bigint(20) unsigned DEFAULT NULL,
+  `modifiedOn` bigint(20) unsigned DEFAULT NULL,
+  `version` int(10) unsigned NOT NULL DEFAULT '0',
+  `assessmentId` varchar(255) DEFAULT NULL,
+  `organizationId` varchar(255) DEFAULT NULL,
+  `studyId` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`guid`),
+  UNIQUE KEY `Permissions-UserId-AccessLevel-EntityType-EntityId-Index` (`userId`, `accessLevel`, `entityType`, `entityId`),
+  CONSTRAINT `Permission-User-Constraint` FOREIGN KEY (`userId`) REFERENCES `Accounts` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `Permission-Assessment-Constraint` FOREIGN KEY (`assessmentId`) REFERENCES Assessments(`guid`) ON DELETE CASCADE,
+  CONSTRAINT `Permission-Organization-Constraint` FOREIGN KEY (`appId`, `organizationId`) REFERENCES Organizations(`appId`, `identifier`) ON DELETE CASCADE,
+  CONSTRAINT `Permission-Study-Constraint` FOREIGN KEY (`studyId`, `appId`) REFERENCES Substudies(`id`, `studyId`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+-- changeset bridge:69
+
 ALTER TABLE `Accounts`
 ADD COLUMN `admin` tinyint(1) DEFAULT '0';
 UPDATE Accounts as a JOIN AccountRoles as r ON a.id = r.accountId SET a.admin = 1;
