@@ -163,6 +163,8 @@ public class ParticipantService {
     private TemplateService templateService;
     
     private SendMailService sendMailService;
+    
+    private AuthenticationService authenticationService;
 
     @Autowired
     public final void setAccountWorkflowService(AccountWorkflowService accountWorkflowService) {
@@ -258,6 +260,11 @@ public class ParticipantService {
     @Autowired
     final void setSendMailService(SendMailService sendMailService) {
         this.sendMailService = sendMailService;
+    }
+    
+    @Autowired
+    final void setAuthenticationService(AuthenticationService authenticationService) {
+        this.authenticationService = authenticationService;
     }
     
     // Accessor so we can mock the value
@@ -922,9 +929,9 @@ public class ParticipantService {
         Account account;
         // These throw exceptions for not found, disabled, and not yet verified.
         if (update.getSignIn().getReauthToken() != null) {
-            account = accountService.reauthenticate(app, update.getSignIn());
+            account = authenticationService.reauthenticate(app, update.getSignIn());
         } else {
-            account = accountService.authenticate(app, update.getSignIn());
+            account = authenticationService.authenticate(app, update.getSignIn());
         }
         // Verify the account matches the current caller
         if (!account.getId().equals(context.getUserId())) {

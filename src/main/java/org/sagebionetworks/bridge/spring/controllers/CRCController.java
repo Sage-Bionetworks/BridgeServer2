@@ -101,6 +101,7 @@ import org.sagebionetworks.bridge.models.crc.gbf.external.Order;
 import org.sagebionetworks.bridge.models.crc.gbf.external.ShippingConfirmations;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataSubmission;
 import org.sagebionetworks.bridge.models.reports.ReportData;
+import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.GBFOrderService;
 import org.sagebionetworks.bridge.services.HealthDataService;
 import org.sagebionetworks.bridge.services.ParticipantService;
@@ -173,6 +174,8 @@ public class CRCController extends BaseController {
     private HealthDataService healthDataService;
 
     private GBFOrderService gbfOrderService;
+    
+    private AuthenticationService authenticationService;
 
     @Autowired
     final void setParticipantService(ParticipantService participantService) {
@@ -193,7 +196,7 @@ public class CRCController extends BaseController {
     final void setGbfOrderService(GBFOrderService GBFOrderService) {
         this.gbfOrderService = GBFOrderService;
     }
-
+    
     DateTime getTimestamp() {
         return DateTime.now().withZone(DateTimeZone.UTC);
     }
@@ -741,7 +744,7 @@ public class CRCController extends BaseController {
 
         // Verify the password
         SignIn signIn = signInBuilder.build();
-        Account account = accountService.authenticate(app, signIn);
+        Account account = authenticationService.authenticate(app, signIn);
 
         // This method of verification sidesteps RequestContext initialization
         // through a session. Set up what is needed in the controller.

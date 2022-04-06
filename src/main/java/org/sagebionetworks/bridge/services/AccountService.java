@@ -130,37 +130,6 @@ public class AccountService {
     }
     
     /**
-     * Set the verified flag for the channel (email or phone) to true, and enable the account (if needed).
-     */
-    public void verifyChannel(AuthenticationService.ChannelType channelType, Account account) {
-        checkNotNull(channelType);
-        checkNotNull(account);
-        
-        // Do not modify the account if it is disabled (all email verification workflows are 
-        // user triggered, and disabled means that a user cannot use or change an account).
-        if (account.getStatus() == DISABLED) {
-            return;
-        }
-        
-        // Avoid updating on every sign in by examining object state first. We do update the status 
-        // flag so we can see the value in the database, but it is now derived in memory from other fields 
-        // of the account.
-        boolean shouldUpdateEmailVerified = (channelType == EMAIL && !TRUE.equals(account.getEmailVerified()));
-        boolean shouldUpdatePhoneVerified = (channelType == PHONE && !TRUE.equals(account.getPhoneVerified()));
-        
-        if (shouldUpdatePhoneVerified || shouldUpdateEmailVerified) {
-            if (shouldUpdateEmailVerified) {
-                account.setEmailVerified(TRUE);
-            }
-            if (shouldUpdatePhoneVerified) {
-                account.setPhoneVerified(TRUE);
-            }
-            account.setModifiedOn(DateUtils.getCurrentDateTime());
-            accountDao.updateAccount(account);    
-        }        
-    }
-    
-    /**
      * Call to change a password, possibly verifying the channel used to reset the password. The channel 
      * type (which is optional, and can be null) is the channel that has been verified through the act 
      * of successfully resetting the password (sometimes there is no channel that is verified). 
@@ -187,10 +156,7 @@ public class AccountService {
         accountDao.updateAccount(account);
     }
     
-    /**
-     * Authenticate a user with the supplied credentials, returning that user's account record
-     * if successful. 
-     */
+    /*
     public Account authenticate(App app, SignIn signIn) {
         checkNotNull(app);
         checkNotNull(signIn);
@@ -201,11 +167,6 @@ public class AccountService {
         return authenticateInternal(app, account, signIn);        
     }
 
-    /**
-     * Re-acquire a valid session using a special token passed back on an
-     * authenticate request. Allows the client to re-authenticate without prompting
-     * for a password.
-     */
     public Account reauthenticate(App app, SignIn signIn) {
         checkNotNull(app);
         checkNotNull(signIn);
@@ -219,6 +180,7 @@ public class AccountService {
             .orElseThrow(() -> new EntityNotFoundException(Account.class));
         return authenticateInternal(app, account, signIn);        
     }
+    */
     
     /**
      * This clears the user's reauthentication token.

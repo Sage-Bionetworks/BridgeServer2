@@ -270,6 +270,9 @@ public class ParticipantServiceTest extends Mockito {
     @Mock
     private SendMailService sendMailService;
     
+    @Mock
+    private AuthenticationService authenticationService;
+    
     @Captor
     ArgumentCaptor<StudyParticipant> participantCaptor;
     
@@ -1930,7 +1933,7 @@ public class ParticipantServiceTest extends Mockito {
         // Verifies email-based sign in, phone update, account update, and an updated 
         // participant is returned... the common happy path.
         mockHealthCodeAndAccountRetrieval();
-        when(accountService.authenticate(APP, EMAIL_PASSWORD_SIGN_IN)).thenReturn(account);
+        when(authenticationService.authenticate(APP, EMAIL_PASSWORD_SIGN_IN)).thenReturn(account);
         when(accountService.getAccount(any())).thenReturn(Optional.of(account));
         
         IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, null, PHONE, null);
@@ -1939,7 +1942,7 @@ public class ParticipantServiceTest extends Mockito {
         
         assertEquals(account.getPhone(), TestConstants.PHONE);
         assertEquals(account.getPhoneVerified(), Boolean.FALSE);
-        verify(accountService).authenticate(APP, EMAIL_PASSWORD_SIGN_IN);
+        verify(authenticationService).authenticate(APP, EMAIL_PASSWORD_SIGN_IN);
         verify(accountService).updateAccount(account);
         verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
         assertEquals(returned.getId(), PARTICIPANT.getId());
@@ -1950,7 +1953,7 @@ public class ParticipantServiceTest extends Mockito {
         // This flips the method of sign in to use a phone, and sends an email update. 
         // Also tests the common path of creating unverified email address with verification email sent
         mockAccountNoEmail();
-        when(accountService.authenticate(APP, PHONE_PASSWORD_SIGN_IN)).thenReturn(account);
+        when(authenticationService.authenticate(APP, PHONE_PASSWORD_SIGN_IN)).thenReturn(account);
         when(accountService.getAccount(any())).thenReturn(Optional.of(account));
         
         APP.setEmailVerificationEnabled(true);
@@ -1962,7 +1965,7 @@ public class ParticipantServiceTest extends Mockito {
         
         assertEquals(account.getEmail(), "email@email.com");
         assertEquals(account.getEmailVerified(), Boolean.FALSE);
-        verify(accountService).authenticate(APP, PHONE_PASSWORD_SIGN_IN);
+        verify(authenticationService).authenticate(APP, PHONE_PASSWORD_SIGN_IN);
         verify(accountService).updateAccount(account);
         verify(accountWorkflowService).sendEmailVerificationToken(APP, ID, "email@email.com");
         assertEquals(PARTICIPANT.getId(), returned.getId());
@@ -1989,20 +1992,20 @@ public class ParticipantServiceTest extends Mockito {
     @Test
     public void updateIdentifiersUsingReauthentication() {
         mockHealthCodeAndAccountRetrieval();
-        when(accountService.reauthenticate(APP, REAUTH_REQUEST)).thenReturn(account);
+        when(authenticationService.reauthenticate(APP, REAUTH_REQUEST)).thenReturn(account);
         when(accountService.getAccount(any())).thenReturn(Optional.of(account));
         
         IdentifierUpdate update = new IdentifierUpdate(REAUTH_REQUEST, null, TestConstants.PHONE, null);
         
         participantService.updateIdentifiers(APP, CONTEXT, update);
         
-        verify(accountService).reauthenticate(APP, REAUTH_REQUEST);
+        verify(authenticationService).reauthenticate(APP, REAUTH_REQUEST);
     }
 
     @Test
     public void updateIdentifiersCreatesVerifiedEmailWithoutVerification() {
         mockAccountNoEmail();
-        when(accountService.authenticate(APP, PHONE_PASSWORD_SIGN_IN)).thenReturn(account);
+        when(authenticationService.authenticate(APP, PHONE_PASSWORD_SIGN_IN)).thenReturn(account);
         
         APP.setEmailVerificationEnabled(false);
         APP.setAutoVerificationEmailSuppressed(false); // can be true or false, doesn't matter
@@ -2019,7 +2022,7 @@ public class ParticipantServiceTest extends Mockito {
     @Test
     public void updateIdentifiersCreatesUnverifiedEmailWithoutVerification() {
         mockAccountNoEmail();
-        when(accountService.authenticate(APP, PHONE_PASSWORD_SIGN_IN)).thenReturn(account);
+        when(authenticationService.authenticate(APP, PHONE_PASSWORD_SIGN_IN)).thenReturn(account);
         when(accountService.getAccount(any())).thenReturn(Optional.of(account));
         
         APP.setEmailVerificationEnabled(true);
@@ -2037,7 +2040,7 @@ public class ParticipantServiceTest extends Mockito {
     @Test
     public void updateIdentifiersAddsSynapseUserId() {
         mockAccountNoEmail();
-        when(accountService.authenticate(APP, EMAIL_PASSWORD_SIGN_IN)).thenReturn(account);
+        when(authenticationService.authenticate(APP, EMAIL_PASSWORD_SIGN_IN)).thenReturn(account);
         when(accountService.getAccount(any())).thenReturn(Optional.of(account));
         
         IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, EMAIL, null, SYNAPSE_USER_ID);
@@ -2050,7 +2053,7 @@ public class ParticipantServiceTest extends Mockito {
     public void updateIdentifiersAuthenticatingToAnotherAccountInvalid() {
         // This ID does not match the ID in the request's context, and that will fail
         account.setId("another-user-id");
-        when(accountService.authenticate(APP, PHONE_PASSWORD_SIGN_IN)).thenReturn(account);
+        when(authenticationService.authenticate(APP, PHONE_PASSWORD_SIGN_IN)).thenReturn(account);
         
         IdentifierUpdate update = new IdentifierUpdate(PHONE_PASSWORD_SIGN_IN, "email@email.com", null, null);
         
@@ -2069,7 +2072,7 @@ public class ParticipantServiceTest extends Mockito {
         account.setEmailVerified(TRUE);
         account.setPhoneVerified(TRUE);
         account.setSynapseUserId(SYNAPSE_USER_ID);
-        when(accountService.authenticate(APP, PHONE_PASSWORD_SIGN_IN)).thenReturn(account);
+        when(authenticationService.authenticate(APP, PHONE_PASSWORD_SIGN_IN)).thenReturn(account);
         
         // Now that an external ID addition will simply add another external ID, the 
         // test has been changed to submit an existing external ID.
@@ -2091,7 +2094,7 @@ public class ParticipantServiceTest extends Mockito {
     @Test
     public void updateIdentifiersDoesNotReassignExternalIdOnOtherUpdate() throws Exception {
         mockHealthCodeAndAccountRetrieval(null, null, EXTERNAL_ID);
-        when(accountService.authenticate(APP, EMAIL_PASSWORD_SIGN_IN)).thenReturn(account);
+        when(authenticationService.authenticate(APP, EMAIL_PASSWORD_SIGN_IN)).thenReturn(account);
         when(accountService.getAccount(any())).thenReturn(Optional.of(account));
         
         // Add phone

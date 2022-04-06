@@ -1,14 +1,21 @@
 package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.lang.Boolean.TRUE;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_PARTICIPANTS;
 import static org.sagebionetworks.bridge.BridgeUtils.getElement;
 import static org.sagebionetworks.bridge.Roles.ADMINISTRATIVE_ROLES;
 import static org.sagebionetworks.bridge.models.accounts.AccountSecretType.REAUTH;
+import static org.sagebionetworks.bridge.models.accounts.AccountStatus.DISABLED;
+import static org.sagebionetworks.bridge.models.accounts.AccountStatus.UNVERIFIED;
+import static org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM;
 import static org.sagebionetworks.bridge.services.AuthenticationService.ChannelType.EMAIL;
 import static org.sagebionetworks.bridge.services.AuthenticationService.ChannelType.PHONE;
 
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableMap;
@@ -17,7 +24,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 
 import org.apache.commons.lang3.StringUtils;
-
+import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.PasswordGenerator;
 import org.sagebionetworks.bridge.RequestContext;
@@ -25,6 +32,7 @@ import org.sagebionetworks.bridge.SecureTokenGenerator;
 import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
+import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.AccountSecretDao;
 import org.sagebionetworks.bridge.exceptions.AccountDisabledException;
 import org.sagebionetworks.bridge.exceptions.AuthenticationFailedException;
@@ -42,7 +50,9 @@ import org.sagebionetworks.bridge.models.accounts.Verification;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.oauth.OAuthAuthorizationToken;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
+import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
+import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
 import org.sagebionetworks.bridge.models.accounts.GeneratedPassword;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
@@ -65,6 +75,7 @@ public class AuthenticationService {
     private static final Logger LOG = LoggerFactory.getLogger(AuthenticationService.class);
     
     static final int SIGNIN_GRACE_PERIOD_SECONDS = 5*60; // 5 min
+    static final int ROTATIONS = 3;
 
     public enum ChannelType {
         EMAIL,
@@ -76,6 +87,7 @@ public class AuthenticationService {
     private ConsentService consentService;
     private AccountService accountService;
     private ParticipantService participantService;
+    private AccountDao accountDao;
     private AppService appService;
     private PasswordResetValidator passwordResetValidator;
     private AccountWorkflowService accountWorkflowService;
@@ -101,7 +113,6 @@ public class AuthenticationService {
     final void setAccountService(AccountService accountService) {
         this.accountService = accountService;
     }
-
     @Autowired
     final void setPasswordResetValidator(PasswordResetValidator validator) {
         this.passwordResetValidator = validator;
@@ -109,6 +120,10 @@ public class AuthenticationService {
     @Autowired
     final void setParticipantService(ParticipantService participantService) {
         this.participantService = participantService;
+    }
+    @Autowired
+    final void setAccountDao(AccountDao accountDao) {
+        this.accountDao = accountDao;
     }
     @Autowired
     final void setAppService(AppService appService) {
@@ -137,6 +152,10 @@ public class AuthenticationService {
     @Autowired
     final void setStudyService(StudyService studyService) {
         this.studyService = studyService;
+    }
+    
+    protected DateTime getModifiedOn() {
+        return DateUtils.getCurrentDateTime();
     }
     
     /**
@@ -187,7 +206,7 @@ public class AuthenticationService {
         checkNotNull(app);
         checkNotNull(context);
 
-        Account account = accountService.getAccount(context.getAccountId())
+        Account account = accountDao.getAccount(context.getAccountId())
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
 
         return getSessionFromAccount(app, context, account);
@@ -200,7 +219,10 @@ public class AuthenticationService {
         
         Validate.entityThrowingException(SignInValidator.PASSWORD_SIGNIN, signIn);
         
-        Account account = accountService.authenticate(app, signIn);
+        Account account = accountDao.getAccount(signIn.getAccountId())
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+        verifyPassword(account, signIn.getPassword());
+        checkStatusFlags(app, account, signIn);        
         
         clearSession(app.getIdentifier(), account);
         UserSession session = getSessionFromAccount(app, context, account);
@@ -208,7 +230,7 @@ public class AuthenticationService {
         // Do not call sessionUpdateService as we assume system is in sync with the session on sign in
         if (!session.doesConsent() && intentService.registerIntentToParticipate(app, account)) {
             AccountId accountId = AccountId.forId(app.getIdentifier(), account.getId());
-            account = accountService.getAccount(accountId)
+            account = accountDao.getAccount(accountId)
                     .orElseThrow(() -> new EntityNotFoundException(Account.class));
             session = getSessionFromAccount(app, context, account);
         }
@@ -220,12 +242,50 @@ public class AuthenticationService {
         return session;
     }
     
+    /**
+     * Authenticate a user with the supplied credentials, returning that user's account record
+     * if successful. 
+     */
+    public Account authenticate(App app, SignIn signIn) {
+        checkNotNull(app);
+        checkNotNull(signIn);
+        
+        Account account = accountDao.getAccount(signIn.getAccountId())
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+        verifyPassword(account, signIn.getPassword());
+        checkStatusFlags(app, account, signIn);
+        return account;
+    }
+
+    /**
+     * Re-acquire a valid session using a special token passed back on an
+     * authenticate request. Allows the client to re-authenticate without prompting
+     * for a password.
+     */
+    public Account reauthenticate(App app, SignIn signIn) {
+        checkNotNull(app);
+        checkNotNull(signIn);
+        
+        if (!TRUE.equals(app.isReauthenticationEnabled())) {
+            throw new UnauthorizedException("Reauthentication is not enabled for app: " + app.getName());    
+        }
+        Account account = accountDao.getAccount(signIn.getAccountId())
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+        accountSecretDao.verifySecret(REAUTH, account.getId(), signIn.getReauthToken(), ROTATIONS)
+            .orElseThrow(() -> new EntityNotFoundException(Account.class));
+        checkStatusFlags(app, account, signIn);
+        return account;
+    }
+
     public UserSession reauthenticate(App app, CriteriaContext context, SignIn signIn)
             throws EntityNotFoundException {
         checkNotNull(app);
         checkNotNull(context);
         checkNotNull(signIn);
         
+        if (!TRUE.equals(app.isReauthenticationEnabled())) {
+            throw new UnauthorizedException("Reauthentication is not enabled for app: " + app.getName());    
+        }
         Validate.entityThrowingException(SignInValidator.REAUTH_SIGNIN, signIn); 
 
         // Reauth token is a 21-character alphanumeric (upper, lower, numbers), generated by a SecureRandom. This is
@@ -239,7 +299,11 @@ public class AuthenticationService {
         int reauthHashMod = signIn.getReauthToken().hashCode() % 1000;
         LOG.debug("Reauth token hash-mod " + reauthHashMod + " submitted in request " + RequestContext.get().getId());
 
-        Account account = accountService.reauthenticate(app, signIn);
+        Account account = accountDao.getAccount(signIn.getAccountId())
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+        accountSecretDao.verifySecret(REAUTH, account.getId(), signIn.getReauthToken(), ROTATIONS)
+            .orElseThrow(() -> new EntityNotFoundException(Account.class));
+        checkStatusFlags(app, account, signIn);        
         
         UserSession session = getSessionFromAccount(app, context, account);
         // If session exists, preserve the session token. Reauthenticating before the session times out will not
@@ -261,9 +325,9 @@ public class AuthenticationService {
     public void signOut(final UserSession session) {
         if (session != null) {
             AccountId accountId = AccountId.forId(session.getAppId(), session.getId());
-            Account account = accountService.getAccount(accountId).orElse(null);
+            Account account = accountDao.getAccount(accountId).orElse(null);
             if (account != null) {
-                accountService.deleteReauthToken(account);
+                accountSecretDao.removeSecrets(REAUTH, account.getId());
                 // session does not have the reauth token so the reauthToken-->sessionToken Redis entry cannot be 
                 // removed, but once the reauth token is removed from the user table, the reauth token will no 
                 // longer work (and is short-lived in the cache).
@@ -283,7 +347,7 @@ public class AuthenticationService {
             // For apps that create accounts prior to calling sign up from the app (which happens), check and if 
             // the account with this external ID already exists, return quietly.
             AccountId accountId = AccountId.forExternalId(app.getIdentifier(), participant.getExternalId());
-            Account account = accountService.getAccount(accountId).orElse(null); 
+            Account account = accountDao.getAccount(accountId).orElse(null); 
             if (account != null) {
                 return new IdentifierHolder(account.getId());
             }
@@ -362,7 +426,8 @@ public class AuthenticationService {
 
         Validate.entityThrowingException(VerificationValidator.INSTANCE, verification);
         Account account = accountWorkflowService.verifyChannel(type, verification);
-        accountService.verifyChannel(type, account);
+
+        verifyChannel(type, account);
     }
     
     public void resendVerification(ChannelType type, AccountId accountId) {
@@ -391,7 +456,7 @@ public class AuthenticationService {
             LOG.info("Request reset password request for unregistered email in app '"+signIn.getAppId()+"'");
         }
     }
-
+    
     public void resetPassword(PasswordReset passwordReset) throws BridgeServiceException {
         checkNotNull(passwordReset);
 
@@ -408,7 +473,7 @@ public class AuthenticationService {
         }
 
         AccountId accountId = AccountId.forExternalId(app.getIdentifier(), externalId);
-        Account account = accountService.getAccount(accountId)
+        Account account = accountDao.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
                 
         Enrollment en = getElement(account.getEnrollments(), Enrollment::getExternalId, externalId)
@@ -417,7 +482,18 @@ public class AuthenticationService {
         CAN_EDIT_PARTICIPANTS.checkAndThrow(STUDY_ID, en.getStudyId());
 
         String password = generatePassword(app.getPasswordPolicy().getMinLength());
-        accountService.changePassword(account, null, password);
+        
+        PasswordAlgorithm passwordAlgorithm = DEFAULT_PASSWORD_ALGORITHM;
+        
+        String passwordHash = hashCredential(passwordAlgorithm, "password", password);
+
+        // Update
+        DateTime modifiedOn = getModifiedOn();
+        account.setModifiedOn(modifiedOn);
+        account.setPasswordAlgorithm(passwordAlgorithm);
+        account.setPasswordHash(passwordHash);
+        account.setPasswordModifiedOn(modifiedOn);
+        accountDao.updateAccount(account);
 
         // Return the password and the user ID in case the account was just created.
         return new GeneratedPassword(externalId, account.getId(), password);
@@ -440,14 +516,13 @@ public class AuthenticationService {
         }
 
         AccountId accountId = signIn.getAccountId();
-        Account account = accountService.getAccount(accountId)
+        Account account = accountDao.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
-
+        
         if (account.getStatus() == AccountStatus.DISABLED) {
             throw new AccountDisabledException();
         }
-        // Update account state before we create the session, so it's accurate...
-        accountService.verifyChannel(channelType, account);
+        verifyChannel(channelType, account);
 
         // Check if we have a cached session for this sign-in token.
         UserSession cachedSession = null;
@@ -470,7 +545,7 @@ public class AuthenticationService {
 
             // Check intent to participate.
             if (!session.doesConsent() && intentService.registerIntentToParticipate(app, account)) {
-                account = accountService.getAccount(accountId)
+                account = accountDao.getAccount(accountId)
                         .orElseThrow(() -> new EntityNotFoundException(Account.class));
                 session = getSessionFromAccount(app, context, account);
             }
@@ -491,6 +566,35 @@ public class AuthenticationService {
         }
         return session;
     }
+    
+    protected void verifyChannel(AuthenticationService.ChannelType channelType, Account account) {
+        checkNotNull(channelType);
+        checkNotNull(account);
+        
+        // Do not modify the account if it is disabled (all email verification workflows are 
+        // user triggered, and disabled means that a user cannot use or change an account).
+        if (account.getStatus() == DISABLED) {
+            return;
+        }
+        
+        // Avoid updating on every sign in by examining object state first. We do update the status 
+        // flag so we can see the value in the database, but it is now derived in memory from other fields 
+        // of the account.
+        boolean shouldUpdateEmailVerified = (channelType == EMAIL && !TRUE.equals(account.getEmailVerified()));
+        boolean shouldUpdatePhoneVerified = (channelType == PHONE && !TRUE.equals(account.getPhoneVerified()));
+        
+        if (shouldUpdatePhoneVerified || shouldUpdateEmailVerified) {
+            if (shouldUpdateEmailVerified) {
+                account.setEmailVerified(TRUE);
+            }
+            if (shouldUpdatePhoneVerified) {
+                account.setPhoneVerified(TRUE);
+            }
+            account.setModifiedOn(getModifiedOn());
+            accountDao.updateAccount(account);    
+        }        
+    }
+
 
     private static CacheKey getCacheKeyForChannelSignIn(ChannelType channelType, SignIn signIn) {
         if (channelType == EMAIL) {
@@ -563,7 +667,7 @@ public class AuthenticationService {
         if (accountId == null) {
             throw new EntityNotFoundException(Account.class);
         }
-        Account account = accountService.getAccount(accountId)
+        Account account = accountDao.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
         
         if (account.getRoles().isEmpty()) {
@@ -586,7 +690,7 @@ public class AuthenticationService {
     // reauthentication tokens. Call this after successfully authenticating, but before creating a session which 
     // also includes creating a new (valid) reauth token.
     private void clearSession(String appId, Account account) {
-        accountService.deleteReauthToken(account);
+        accountSecretDao.removeSecrets(REAUTH, account.getId());
         cacheProvider.removeSessionByUserId(account.getId());
     }
 
@@ -601,6 +705,48 @@ public class AuthenticationService {
                 .withUserStudyIds(session.getParticipant().getStudyIds())
                 .withUserId(session.getId())
                 .build();
+    }
+    
+    protected String hashCredential(PasswordAlgorithm algorithm, String type, String value) {
+        try {
+            return algorithm.generateHash(value);
+        } catch (InvalidKeyException | InvalidKeySpecException | NoSuchAlgorithmException ex) {
+            throw new BridgeServiceException("Error creating "+type+": " + ex.getMessage(), ex);
+        }
+    }    
+
+    protected void checkStatusFlags(App app, Account account, SignIn signIn) {
+        // Auth successful, you can now leak further information about the account through other exceptions.
+        // For email/phone sign ins, the specific credential must have been verified (unless we've disabled
+        // email verification for older apps that didn't have full external ID support).
+        if (account.getStatus() == UNVERIFIED && app.isEmailVerificationEnabled()) {
+            throw new UnauthorizedException("Email or phone number have not been verified");
+        } else if (account.getStatus() == DISABLED) {
+            throw new AccountDisabledException();
+        } else if (app.isVerifyChannelOnSignInEnabled()) {
+            if (signIn.getPhone() != null && !TRUE.equals(account.getPhoneVerified())) {
+                throw new UnauthorizedException("Phone number has not been verified");
+            } else if (app.isEmailVerificationEnabled() && 
+                    signIn.getEmail() != null && !TRUE.equals(account.getEmailVerified())) {
+                throw new UnauthorizedException("Email has not been verified");
+            }
+        }
+    }
+    
+    protected void verifyPassword(Account account, String plaintext) {
+        // Verify password
+        if (account.getPasswordAlgorithm() == null || StringUtils.isBlank(account.getPasswordHash())) {
+            LOG.warn("Account " + account.getId() + " is enabled but has no password.");
+            throw new EntityNotFoundException(Account.class);
+        }
+        try {
+            if (!account.getPasswordAlgorithm().checkHash(account.getPasswordHash(), plaintext)) {
+                // To prevent enumeration attacks, if the credential doesn't match, throw 404 account not found.
+                throw new EntityNotFoundException(Account.class);
+            }
+        } catch (InvalidKeyException | InvalidKeySpecException | NoSuchAlgorithmException ex) {
+            throw new BridgeServiceException("Error validating password: " + ex.getMessage(), ex);
+        }        
     }
     
     protected String getGuid() {
