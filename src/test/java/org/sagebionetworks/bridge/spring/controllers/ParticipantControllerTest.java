@@ -105,6 +105,7 @@ import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
@@ -136,6 +137,7 @@ import org.sagebionetworks.bridge.services.RequestInfoService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
 import org.sagebionetworks.bridge.services.SponsorService;
 import org.sagebionetworks.bridge.services.AccountService;
+import org.sagebionetworks.bridge.services.AccountWorkflowService;
 import org.sagebionetworks.bridge.services.AppService;
 import org.sagebionetworks.bridge.services.UserAdminService;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
@@ -193,6 +195,9 @@ public class ParticipantControllerTest extends Mockito {
 
     @Mock
     AuthenticationService mockAuthService;
+    
+    @Mock
+    AccountWorkflowService accountWorkflowService;
 
     @Mock
     CacheProvider mockCacheProvider;
@@ -535,9 +540,8 @@ public class ParticipantControllerTest extends Mockito {
         StatusMessage result = controller.signOut(TEST_USER_ID, false);
         assertEquals(result.getMessage(), "User signed out.");
 
-        verify(mockParticipantService).signUserOut(app, TEST_USER_ID, false);
+        verify(mockAuthService).signUserOut(app, TEST_USER_ID, false);
     }
-
     
     @Test
     public void updateParticipant() throws Exception {
@@ -955,7 +959,8 @@ public class ParticipantControllerTest extends Mockito {
         StatusMessage result = controller.requestResetPassword(TEST_USER_ID);
         assertEquals(result.getMessage(), "Request to reset password sent to user.");
 
-        verify(mockParticipantService).requestResetPassword(app, TEST_USER_ID);
+        AccountId accountId = AccountId.forId(TEST_APP_ID, TEST_USER_ID);
+        verify(accountWorkflowService).requestResetPassword(app, true, accountId);
     }
 
     @Test(expectedExceptions = UnauthorizedException.class)
@@ -1071,7 +1076,7 @@ public class ParticipantControllerTest extends Mockito {
         StatusMessage result = controller.resendEmailVerification(TEST_USER_ID);
         assertEquals(result.getMessage(), "Email verification request has been resent to user.");
 
-        verify(mockParticipantService).resendVerification(app, ChannelType.EMAIL, TEST_USER_ID);
+        verify(accountWorkflowService).resendVerification(TEST_APP_ID, ChannelType.EMAIL, TEST_USER_ID);
     }
 
     @Test
@@ -1079,7 +1084,7 @@ public class ParticipantControllerTest extends Mockito {
         StatusMessage result = controller.resendPhoneVerification(TEST_USER_ID);
         assertEquals(result.getMessage(), "Phone verification request has been resent to user.");
 
-        verify(mockParticipantService).resendVerification(app, ChannelType.PHONE, TEST_USER_ID);
+        verify(accountWorkflowService).resendVerification(TEST_APP_ID, ChannelType.PHONE, TEST_USER_ID);
     }
 
     @Test

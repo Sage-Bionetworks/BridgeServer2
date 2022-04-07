@@ -101,7 +101,6 @@ import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 import org.sagebionetworks.bridge.models.upload.UploadView;
-import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 import org.sagebionetworks.bridge.services.email.EmailType;
 import org.sagebionetworks.bridge.sms.SmsMessageProvider;
@@ -167,53 +166,53 @@ public class ParticipantService {
     private AuthenticationService authenticationService;
 
     @Autowired
-    public final void setAccountWorkflowService(AccountWorkflowService accountWorkflowService) {
+    final void setAccountWorkflowService(AccountWorkflowService accountWorkflowService) {
         this.accountWorkflowService = accountWorkflowService;
     }
     
     @Autowired
-    final void setAccountService(AccountService accountService) {
+    void setAccountService(AccountService accountService) {
         this.accountService = accountService;
     }
 
     /** SMS Service, used to send text messages to participants. */
     @Autowired
-    public void setSmsService(SmsService smsService) {
+    void setSmsService(SmsService smsService) {
         this.smsService = smsService;
     }
 
     @Autowired
-    final void setSubpopulationService(SubpopulationService subpopService) {
+    void setSubpopulationService(SubpopulationService subpopService) {
         this.subpopService = subpopService;
     }
 
     @Autowired
-    final void setUserConsent(ConsentService consentService) {
+    void setUserConsent(ConsentService consentService) {
         this.consentService = consentService;
     }
 
     @Autowired
-    final void setCacheProvider(CacheProvider cacheProvider) {
+    void setCacheProvider(CacheProvider cacheProvider) {
         this.cacheProvider = cacheProvider;
     }
 
     @Autowired
-    final void setScheduledActivityDao(ScheduledActivityDao activityDao) {
+    void setScheduledActivityDao(ScheduledActivityDao activityDao) {
         this.activityDao = activityDao;
     }
 
     @Autowired
-    final void setUploadService(UploadService uploadService) {
+    void setUploadService(UploadService uploadService) {
         this.uploadService = uploadService;
     }
 
     @Autowired
-    final void setNotificationsService(NotificationsService notificationsService) {
+    void setNotificationsService(NotificationsService notificationsService) {
         this.notificationsService = notificationsService;
     }
 
     @Autowired
-    final void setScheduledActivityService(ScheduledActivityService scheduledActivityService) {
+    void setScheduledActivityService(ScheduledActivityService scheduledActivityService) {
         this.scheduledActivityService = scheduledActivityService;
     }
 
@@ -466,20 +465,6 @@ public class ParticipantService {
         return account.getCreatedOn();
     }
 
-    public void signUserOut(App app, String userId, boolean deleteReauthToken) {
-        checkNotNull(app);
-        checkArgument(isNotBlank(userId));
-
-        AccountId accountId = AccountId.forId(app.getIdentifier(), userId);
-        Account account = getAccountThrowingException(accountId);
-
-        if (deleteReauthToken) {
-            accountService.deleteReauthToken(account);
-        }
-        
-        cacheProvider.removeSessionByUserId(account.getId());
-    }
-
     /**
      * Create a study participant. A password must be provided, even if it is added on behalf of a user before
      * triggering a reset password request.
@@ -665,16 +650,6 @@ public class ParticipantService {
                 request.getEventKey(), request.getTimestamp());
     }
     
-    public void requestResetPassword(App app, String userId) {
-        checkNotNull(app);
-        checkArgument(isNotBlank(userId));
-
-        // Don't throw an exception here, you'd be exposing that an email/phone number is in the system.
-        AccountId accountId = AccountId.forId(app.getIdentifier(), userId);
-
-        accountWorkflowService.requestResetPassword(app, true, accountId);
-    }
-
     public ForwardCursorPagedResourceList<ScheduledActivity> getActivityHistory(App app, String userId,
             String activityGuid, DateTime scheduledOnStart, DateTime scheduledOnEnd, String offsetKey, int pageSize) {
         checkNotNull(app);
@@ -704,28 +679,6 @@ public class ParticipantService {
         Account account = getAccountThrowingException(app.getIdentifier(), userId);
 
         activityDao.deleteActivitiesForUser(account.getHealthCode());
-    }
-
-    public void resendVerification(App app, ChannelType type, String userId) {
-        checkNotNull(app);
-        checkArgument(isNotBlank(userId));
-
-        StudyParticipant participant = getParticipant(app, userId, false);
-        if (type == ChannelType.EMAIL) {
-            if (participant.getEmail() == null) {
-                throw new BadRequestException("Email address has not been set.");
-            }
-            AccountId accountId = AccountId.forEmail(app.getIdentifier(), participant.getEmail());
-            accountWorkflowService.resendVerificationToken(type, accountId);
-        } else if (type == ChannelType.PHONE) {
-            if (participant.getPhone() == null) {
-                throw new BadRequestException("Phone number has not been set.");
-            }
-            AccountId accountId = AccountId.forPhone(app.getIdentifier(), participant.getPhone());
-            accountWorkflowService.resendVerificationToken(type, accountId);
-        } else {
-            throw new UnsupportedOperationException("Channel type not implemented");
-        }
     }
 
     public void withdrawFromApp(App app, String userId, Withdrawal withdrawal, long withdrewOn) {

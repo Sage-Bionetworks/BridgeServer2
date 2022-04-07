@@ -23,16 +23,11 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_NOTE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_CLIENT_TIME_ZONE;
 import static org.sagebionetworks.bridge.dao.AccountDao.MIGRATION_VERSION;
 import static org.sagebionetworks.bridge.models.AccountSummarySearch.EMPTY_SEARCH;
-import static org.sagebionetworks.bridge.models.accounts.AccountSecretType.REAUTH;
-import static org.sagebionetworks.bridge.models.accounts.AccountStatus.DISABLED;
-import static org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.UNVERIFIED;
 import static org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM;
 import static org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm.STORMPATH_HMAC_SHA_256;
-import static org.sagebionetworks.bridge.services.AccountService.ROTATIONS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
@@ -67,7 +62,6 @@ import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.AccountSecretDao;
-import org.sagebionetworks.bridge.exceptions.AccountDisabledException;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
@@ -77,24 +71,17 @@ import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountSecret;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
-import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
 import org.sagebionetworks.bridge.models.accounts.Phone;
-import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
-import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 
 public class AccountServiceTest extends Mockito {
 
     private static final AccountId ACCOUNT_ID = AccountId.forId(TEST_APP_ID, TEST_USER_ID);
     private static final AccountId ACCOUNT_ID_WITH_EMAIL = AccountId.forEmail(TEST_APP_ID, EMAIL);
-    private static final SignIn SIGN_IN = new SignIn.Builder().withAppId(TEST_APP_ID).withEmail(EMAIL)
-            .withReauthToken("reauthToken").build();
-    private static final AccountId ACCOUNT_ID_WITH_PHONE = AccountId.forPhone(TEST_APP_ID, PHONE);
     private static final DateTime MOCK_DATETIME = DateTime.parse("2017-05-19T14:45:27.593Z");
     private static final String DUMMY_PASSWORD = "Aa!Aa!Aa!Aa!1";
-    private static final String REAUTH_TOKEN = "reauth-token";
     private static final Phone OTHER_PHONE = new Phone("+12065881469", "US");
     private static final String OTHER_EMAIL = "other-email@example.com";
     private static final String OTHER_USER_ID = "other-user-id";
@@ -104,11 +91,6 @@ public class AccountServiceTest extends Mockito {
     private static final String STUDY_B = "studyB";
     private static final Set<Enrollment> ACCOUNT_ENROLLMENTS = ImmutableSet
             .of(Enrollment.create(TEST_APP_ID, STUDY_A, TEST_USER_ID));
-    
-    private static final SignIn PASSWORD_SIGNIN = new SignIn.Builder().withAppId(TEST_APP_ID).withEmail(EMAIL)
-            .withPassword(DUMMY_PASSWORD).build();
-    private static final SignIn REAUTH_SIGNIN = new SignIn.Builder().withAppId(TEST_APP_ID).withEmail(EMAIL)
-            .withReauthToken(REAUTH_TOKEN).build();
 
     @Mock
     AccountDao mockAccountDao;
@@ -198,15 +180,6 @@ public class AccountServiceTest extends Mockito {
             "Account does not have a Synapse user")
     public void getAppIdsForUser_BlankSynapseUserId() {
         service.getAppIdsForUser("   ");
-    }
-
-    @Test
-    public void changePassword() throws Exception {
-        Account account = mockGetAccountById(ACCOUNT_ID, false);
-        account.setStatus(UNVERIFIED);
-        
-        service.changePassword(account, ChannelType.PHONE, "asdf");
-        verify(mockAccountDao).updateAccount(account);
     }
 
     @Test
@@ -557,74 +530,6 @@ public class AccountServiceTest extends Mockito {
         verify(mockAccountDao).getAccount(ACCOUNT_ID);
     }
     
-    @Test
-    public void changePasswordSuccess() throws Exception {
-        // Set up test account
-        Account account = Account.create();
-        account.setAppId(TEST_APP_ID);
-        account.setId(TEST_USER_ID);
-        account.setEmail(EMAIL);
-        account.setStatus(UNVERIFIED);
-
-        // execute and verify
-        service.changePassword(account, ChannelType.EMAIL, DUMMY_PASSWORD);
-        verify(mockAccountDao).updateAccount(accountCaptor.capture());
-
-        Account updatedAccount = accountCaptor.getValue();
-        assertEquals(updatedAccount.getId(), TEST_USER_ID);
-        assertEquals(updatedAccount.getModifiedOn().getMillis(), MOCK_DATETIME.getMillis());
-        assertEquals(updatedAccount.getPasswordAlgorithm(), PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM);
-        assertEquals(updatedAccount.getPasswordModifiedOn().getMillis(), MOCK_DATETIME.getMillis());
-        assertTrue(updatedAccount.getEmailVerified());
-        assertNull(updatedAccount.getPhoneVerified());
-        assertEquals(updatedAccount.getStatus(), ENABLED);
-
-        // validate password hash
-        assertTrue(DEFAULT_PASSWORD_ALGORITHM.checkHash(updatedAccount.getPasswordHash(), DUMMY_PASSWORD));
-    }
-
-    @Test
-    public void changePasswordForPhone() throws Exception {
-        // Set up test account
-        Account account = Account.create();
-        account.setAppId(TEST_APP_ID);
-        account.setId(TEST_USER_ID);
-        account.setPhone(PHONE);
-        account.setStatus(UNVERIFIED);
-
-        // execute and verify
-        service.changePassword(account, ChannelType.PHONE, DUMMY_PASSWORD);
-        verify(mockAccountDao).updateAccount(accountCaptor.capture());
-
-        // Simpler than changePasswordSuccess() test as we're only verifying phone is verified
-        Account updatedAccount = accountCaptor.getValue();
-        assertNull(updatedAccount.getEmailVerified());
-        assertTrue(updatedAccount.getPhoneVerified());
-        assertEquals(updatedAccount.getStatus(), ENABLED);
-    }
-    
-    @Test
-    public void changePasswordForExternalId() {
-        Enrollment en = Enrollment.create(TEST_APP_ID, STUDY_A, TEST_USER_ID);
-        en.setExternalId("anExternalId");
-        
-        // Set up test account
-        Account account = Account.create();
-        account.setAppId(TEST_APP_ID);
-        account.setId(TEST_USER_ID);
-        account.setStatus(UNVERIFIED);
-        account.getEnrollments().add(en);
-
-        // execute and verify
-        service.changePassword(account, null, DUMMY_PASSWORD);
-        verify(mockAccountDao).updateAccount(accountCaptor.capture());
-
-        // Simpler than changePasswordSuccess() test as we're only verifying phone is verified
-        Account updatedAccount = accountCaptor.getValue();
-        assertNull(updatedAccount.getEmailVerified());
-        assertNull(updatedAccount.getPhoneVerified());
-        assertEquals(updatedAccount.getStatus(), ENABLED);
-    }
     
     @Test
     public void getByEmail() throws Exception {

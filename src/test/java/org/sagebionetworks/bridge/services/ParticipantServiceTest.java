@@ -119,7 +119,6 @@ import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.templates.TemplateRevision;
-import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 import org.sagebionetworks.bridge.services.email.EmailType;
 import org.sagebionetworks.bridge.sms.SmsMessageProvider;
@@ -1215,47 +1214,6 @@ public class ParticipantServiceTest extends Mockito {
         assertEquals(result, CREATED_ON_DATETIME);
     }
 
-    @Test(expectedExceptions = EntityNotFoundException.class)
-    public void signOutUserWhoDoesNotExist() {
-        participantService.signUserOut(APP, ID, true);
-    }
-
-    @Test
-    public void signOutUser() {
-        // Need to look this up by email, not account ID
-        AccountId accountId = AccountId.forId(APP.getIdentifier(), ID);
-        
-        // Setup
-        when(accountService.getAccount(accountId)).thenReturn(Optional.of(account));
-        account.setId(ID);
-
-        // Execute
-        participantService.signUserOut(APP, ID, false);
-
-        // Verify
-        verify(accountService).getAccount(accountId);
-        verify(accountService, never()).deleteReauthToken(any());
-        verify(cacheProvider).removeSessionByUserId(ID);
-    }
-
-    @Test
-    public void signOutUserDeleteReauthToken() {
-        // Need to look this up by email, not account ID
-        AccountId accountId = AccountId.forId(APP.getIdentifier(), ID);
-        
-        // Setup
-        when(accountService.getAccount(accountId)).thenReturn(Optional.of(account));
-        account.setId(ID);
-
-        // Execute
-        participantService.signUserOut(APP, ID, true);
-
-        // Verify
-        verify(accountService).getAccount(accountId);
-        verify(accountService).deleteReauthToken(account);
-        verify(cacheProvider).removeSessionByUserId(ID);
-    }
-
     @Test
     public void updateParticipantWithExternalIdValidationAddingId() {
         RequestContext.set(new RequestContext.Builder().withCallerRoles(RESEARCH_CALLER_ROLES).build());
@@ -1703,22 +1661,6 @@ public class ParticipantServiceTest extends Mockito {
     }
 
     @Test
-    public void requestResetPassword() {
-        mockHealthCodeAndAccountRetrieval();
-        
-        participantService.requestResetPassword(APP, ID);
-        
-        verify(accountWorkflowService).requestResetPassword(APP, true, ACCOUNT_ID);
-    }
-    
-    @Test
-    public void requestResetPasswordNoAccountIsSilent() {
-        participantService.requestResetPassword(APP, ID);
-        
-        verifyNoMoreInteractions(accountService);
-    }
-    
-    @Test
     public void canGetActivityHistoryV2WithAllValues() {
         mockHealthCodeAndAccountRetrieval();
         
@@ -1756,58 +1698,6 @@ public class ParticipantServiceTest extends Mockito {
         participantService.deleteActivities(APP, ID);
     }
     
-    @Test
-    public void resendEmailVerification() {
-        mockHealthCodeAndAccountRetrieval();
-        
-        participantService.resendVerification(APP, ChannelType.EMAIL, ID);
-        
-        verify(accountWorkflowService).resendVerificationToken(eq(ChannelType.EMAIL), accountIdCaptor.capture());
-        
-        AccountId accountId = accountIdCaptor.getValue();
-        assertEquals(accountId.getAppId(), APP.getIdentifier());
-        assertEquals(accountId.getEmail(), EMAIL);
-    }
-    
-    @Test
-    public void resendPhoneVerification() {
-        mockHealthCodeAndAccountRetrieval(null, PHONE, null);
-        
-        participantService.resendVerification(APP, ChannelType.PHONE, ID);
-        
-        verify(accountWorkflowService).resendVerificationToken(eq(ChannelType.PHONE), accountIdCaptor.capture());
-        
-        AccountId accountId = accountIdCaptor.getValue();
-        assertEquals(accountId.getAppId(), APP.getIdentifier());
-        assertEquals(accountId.getPhone(), PHONE);
-    }
-    
-    @Test(expectedExceptions = UnsupportedOperationException.class)
-    public void resendVerificationUnsupportedOperationException() {
-        mockHealthCodeAndAccountRetrieval();
-        
-        // Use null so we don't have to create a dummy unsupported channel type
-        participantService.resendVerification(APP, null, ID);
-    }
-
-    @Test(expectedExceptions = BadRequestException.class,
-            expectedExceptionsMessageRegExp = "Email address has not been set.")
-    public void resendEmailVerificationWhenEmailNull() {
-        mockHealthCodeAndAccountRetrieval();
-        account.setEmail(null);
-        
-        participantService.resendVerification(APP, ChannelType.EMAIL, ID);    
-    }
-
-    @Test(expectedExceptions = BadRequestException.class,
-            expectedExceptionsMessageRegExp = "Phone number has not been set.")
-    public void resendPhoneVerificationWhenEmailNull() {
-        mockHealthCodeAndAccountRetrieval();
-        account.setPhone(null);
-        
-        participantService.resendVerification(APP, ChannelType.PHONE, ID);    
-    }
-
     @Test
     public void resendConsentAgreement() {
         mockHealthCodeAndAccountRetrieval();

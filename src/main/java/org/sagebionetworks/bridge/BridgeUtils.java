@@ -18,7 +18,10 @@ import static org.springframework.util.StringUtils.commaDelimitedListToSet;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLEncoder;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
@@ -60,6 +63,7 @@ import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.Tuple;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEventIdsMap;
@@ -119,6 +123,14 @@ public class BridgeUtils {
     private static final StudyAssociations NO_ASSOCIATIONS = new StudyAssociations(ImmutableSet.of(),
             ImmutableMap.of());
     
+    public static String hashCredential(PasswordAlgorithm algorithm, String type, String value) {
+        try {
+            return algorithm.generateHash(value);
+        } catch (InvalidKeyException | InvalidKeySpecException | NoSuchAlgorithmException ex) {
+            throw new BridgeServiceException("Error creating "+type+": " + ex.getMessage(), ex);
+        }
+    }    
+
     public static boolean hasValidIdentifier(Account account) {
         Phone phone = account.getPhone();
         String email = account.getEmail();

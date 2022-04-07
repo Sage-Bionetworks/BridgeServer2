@@ -69,8 +69,6 @@ public class SimpleScheduleStrategyTest extends Mockito {
     
     @Test
     public void validates() {
-        SchedulePlan plan = new DynamoSchedulePlan();
-        
         Set<String> taskIdentifiers = Sets.newHashSet("taskIdentifierA");
         
         SimpleScheduleStrategy strategy = new SimpleScheduleStrategy();

@@ -1,7 +1,9 @@
 package org.sagebionetworks.bridge.services;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.Boolean.TRUE;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_PARTICIPANTS;
 import static org.sagebionetworks.bridge.BridgeUtils.getElement;
@@ -55,6 +57,7 @@ import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
 import org.sagebionetworks.bridge.models.accounts.GeneratedPassword;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
+import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -68,12 +71,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.validation.Validator;
 
 @Component("authenticationService")
 public class AuthenticationService {
     private static final Logger LOG = LoggerFactory.getLogger(AuthenticationService.class);
     
+    static final String PASSWORD_RESET_TOKEN_EXPIRED = "Password reset token has expired (or already been used).";
     static final int SIGNIN_GRACE_PERIOD_SECONDS = 5*60; // 5 min
     static final int ROTATIONS = 3;
 
@@ -154,22 +157,24 @@ public class AuthenticationService {
         this.studyService = studyService;
     }
     
+    // Provided to override in tests
     protected DateTime getModifiedOn() {
         return DateUtils.getCurrentDateTime();
     }
     
-    /**
-     * Sign in using a phone number and a token that was sent to that phone number via SMS. 
-     */
-    public UserSession phoneSignIn(CriteriaContext context, final SignIn signIn) {
-        return channelSignIn(ChannelType.PHONE, context, signIn, SignInValidator.PHONE_SIGNIN);
+    // Provided to override in tests
+    protected String getGuid() {
+        return BridgeUtils.generateGuid();
     }
     
-    /**
-     * Sign in using an email address and a token that was supplied via a message to that email address. 
-     */
-    public UserSession emailSignIn(CriteriaContext context, final SignIn signIn) {
-        return channelSignIn(ChannelType.EMAIL, context, signIn, SignInValidator.EMAIL_SIGNIN);
+    // Provided to override in tests
+    protected String generateReauthToken() {
+        return SecureTokenGenerator.INSTANCE.nextToken();
+    }
+    
+    // Provided to override in tests
+    protected String generatePassword(int policyLength) {
+        return PasswordGenerator.INSTANCE.nextPassword(Math.max(32, policyLength));
     }
     
     /**
@@ -321,19 +326,37 @@ public class AuthenticationService {
         }
         return session;
     }
+    
+    public void signUserOut(App app, String userId, boolean deleteReauthToken) {
+        checkNotNull(app);
+        checkArgument(isNotBlank(userId));
+
+        AccountId accountId = AccountId.forId(app.getIdentifier(), userId);
+        Account account = accountDao.getAccount(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+
+        if (deleteReauthToken) {
+            deleteReauthToken(account.getId());
+        }
+        cacheProvider.removeSessionByUserId(account.getId());
+    }
 
     public void signOut(final UserSession session) {
         if (session != null) {
             AccountId accountId = AccountId.forId(session.getAppId(), session.getId());
             Account account = accountDao.getAccount(accountId).orElse(null);
             if (account != null) {
-                accountSecretDao.removeSecrets(REAUTH, account.getId());
+                deleteReauthToken(account.getId());
                 // session does not have the reauth token so the reauthToken-->sessionToken Redis entry cannot be 
                 // removed, but once the reauth token is removed from the user table, the reauth token will no 
                 // longer work (and is short-lived in the cache).
                 cacheProvider.removeSession(session);
             }
         } 
+    }
+    
+    public void deleteReauthToken(String userId) {
+        accountSecretDao.removeSecrets(REAUTH, userId);
     }
 
     public IdentifierHolder signUp(App app, StudyParticipant participant) {
@@ -457,12 +480,71 @@ public class AuthenticationService {
         }
     }
     
-    public void resetPassword(PasswordReset passwordReset) throws BridgeServiceException {
+    /**
+     * Use a supplied password reset token to change the password on an account. If the supplied 
+     * token is not valid, this method throws an exception. If the token is valid but the account 
+     * does not exist, an exception is also thrown (this would be unusual).
+     */
+    public void resetPassword(PasswordReset passwordReset) {
         checkNotNull(passwordReset);
 
         Validate.entityThrowingException(passwordResetValidator, passwordReset);
+
+        // This pathway is unusual as the token may have been sent via email or phone, so test for both.
+        CacheKey emailCacheKey = CacheKey.passwordResetForEmail(passwordReset.getSptoken(), passwordReset.getAppId());
+        CacheKey phoneCacheKey = CacheKey.passwordResetForPhone(passwordReset.getSptoken(), passwordReset.getAppId());
         
-        accountWorkflowService.resetPassword(passwordReset);
+        String email = cacheProvider.getObject(emailCacheKey, String.class);
+        Phone phone = cacheProvider.getObject(phoneCacheKey, Phone.class);
+        if (email == null && phone == null) {
+            throw new BadRequestException(PASSWORD_RESET_TOKEN_EXPIRED);
+        }
+        cacheProvider.removeObject(emailCacheKey);
+        cacheProvider.removeObject(phoneCacheKey);
+        
+        App app = appService.getApp(passwordReset.getAppId());
+        ChannelType channelType = null;
+        AccountId accountId = null;
+        if (email != null) {
+            accountId = AccountId.forEmail(app.getIdentifier(), email);
+            channelType = ChannelType.EMAIL;
+        } else if (phone != null) {
+            accountId = AccountId.forPhone(app.getIdentifier(), phone);
+            channelType = ChannelType.PHONE;
+        } else {
+            throw new BridgeServiceException("Could not reset password");
+        }
+        Account account = accountService.getAccount(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+        
+        changePassword(account, channelType, passwordReset.getPassword());
+    }
+
+    /**
+     * Call to change a password, possibly verifying the channel used to reset the password. The channel 
+     * type (which is optional, and can be null) is the channel that has been verified through the act 
+     * of successfully resetting the password (sometimes there is no channel that is verified). 
+     */
+    protected void changePassword(Account account, ChannelType channelType, String newPassword) {
+        checkNotNull(account);
+        
+        PasswordAlgorithm passwordAlgorithm = DEFAULT_PASSWORD_ALGORITHM;
+        
+        String passwordHash = BridgeUtils.hashCredential(passwordAlgorithm, "password", newPassword);
+
+        // Update
+        DateTime modifiedOn = getModifiedOn();
+        account.setModifiedOn(modifiedOn);
+        account.setPasswordAlgorithm(passwordAlgorithm);
+        account.setPasswordHash(passwordHash);
+        account.setPasswordModifiedOn(modifiedOn);
+        // One of these (the channel used to reset the password) is also verified by resetting the password.
+        if (channelType == EMAIL) {
+            account.setEmailVerified(true);    
+        } else if (channelType == PHONE) {
+            account.setPhoneVerified(true);    
+        }
+        accountDao.updateAccount(account);
     }
     
     public GeneratedPassword generatePassword(App app, String externalId) {
@@ -485,7 +567,7 @@ public class AuthenticationService {
         
         PasswordAlgorithm passwordAlgorithm = DEFAULT_PASSWORD_ALGORITHM;
         
-        String passwordHash = hashCredential(passwordAlgorithm, "password", password);
+        String passwordHash = BridgeUtils.hashCredential(passwordAlgorithm, "password", password);
 
         // Update
         DateTime modifiedOn = getModifiedOn();
@@ -499,14 +581,12 @@ public class AuthenticationService {
         return new GeneratedPassword(externalId, account.getId(), password);
     }
     
-    public String generatePassword(int policyLength) {
-        return PasswordGenerator.INSTANCE.nextPassword(Math.max(32, policyLength));
-    }
-    
-    private UserSession channelSignIn(ChannelType channelType, CriteriaContext context, SignIn signIn,
-            Validator validator) {
-        Validate.entityThrowingException(validator, signIn);
-
+    public UserSession channelSignIn(ChannelType channelType, CriteriaContext context, SignIn signIn) {
+        if (channelType == ChannelType.EMAIL) {
+            Validate.entityThrowingException(SignInValidator.EMAIL_SIGNIN, signIn);    
+        } else if (channelType == ChannelType.PHONE) {
+            Validate.entityThrowingException(SignInValidator.PHONE_SIGNIN, signIn);
+        }
         // Verify sign-in token.
         CacheKey cacheKey = getCacheKeyForChannelSignIn(channelType, signIn);
         String storedToken = cacheProvider.getObject(cacheKey, String.class);
@@ -610,7 +690,7 @@ public class AuthenticationService {
      * Constructs a session based on the user's account, participant, and request context. This is called by sign-in
      * APIs, which creates the session. Package-scoped for unit tests.
      */
-    public UserSession getSessionFromAccount(App app, CriteriaContext context, Account account) {
+    protected UserSession getSessionFromAccount(App app, CriteriaContext context, Account account) {
         StudyParticipant participant = participantService.getParticipant(app, account, false);
 
         // If the user does not have a language persisted yet, now that we have a session, we can retrieve it 
@@ -653,11 +733,6 @@ public class AuthenticationService {
         return session;
     }
     
-    // Provided to override in tests
-    protected String generateReauthToken() {
-        return SecureTokenGenerator.INSTANCE.nextToken();
-    }
-    
     public UserSession oauthSignIn(CriteriaContext context, OAuthAuthorizationToken authToken) {
         AccountId accountId = oauthProviderService.oauthSignIn(authToken);
         
@@ -684,13 +759,13 @@ public class AuthenticationService {
         
         return session;        
     }
-    
+
     // As per https://sagebionetworks.jira.com/browse/BRIDGE-2127, signing in should invalidate any old sessions
     // (old session tokens should not be usable to retrieve the session) and we are deleting all outstanding 
     // reauthentication tokens. Call this after successfully authenticating, but before creating a session which 
     // also includes creating a new (valid) reauth token.
     private void clearSession(String appId, Account account) {
-        accountSecretDao.removeSecrets(REAUTH, account.getId());
+        deleteReauthToken(account.getId());
         cacheProvider.removeSessionByUserId(account.getId());
     }
 
@@ -707,14 +782,6 @@ public class AuthenticationService {
                 .build();
     }
     
-    protected String hashCredential(PasswordAlgorithm algorithm, String type, String value) {
-        try {
-            return algorithm.generateHash(value);
-        } catch (InvalidKeyException | InvalidKeySpecException | NoSuchAlgorithmException ex) {
-            throw new BridgeServiceException("Error creating "+type+": " + ex.getMessage(), ex);
-        }
-    }    
-
     protected void checkStatusFlags(App app, Account account, SignIn signIn) {
         // Auth successful, you can now leak further information about the account through other exceptions.
         // For email/phone sign ins, the specific credential must have been verified (unless we've disabled
@@ -747,9 +814,5 @@ public class AuthenticationService {
         } catch (InvalidKeyException | InvalidKeySpecException | NoSuchAlgorithmException ex) {
             throw new BridgeServiceException("Error validating password: " + ex.getMessage(), ex);
         }        
-    }
-    
-    protected String getGuid() {
-        return BridgeUtils.generateGuid();
     }
 }

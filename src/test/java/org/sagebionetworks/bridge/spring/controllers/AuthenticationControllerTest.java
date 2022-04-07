@@ -279,12 +279,12 @@ public class AuthenticationControllerTest extends Mockito {
         
         userSession.setAuthenticated(true);
         app.setIdentifier(TEST_APP_ID);
-        doReturn(userSession).when(mockAuthService).emailSignIn(any(CriteriaContext.class), any(SignIn.class));
+        doReturn(userSession).when(mockAuthService).channelSignIn(eq(ChannelType.EMAIL), any(CriteriaContext.class), any(SignIn.class));
         
         JsonNode node = controller.emailSignIn();
         assertTrue(node.get("authenticated").booleanValue());
      
-        verify(mockAuthService).emailSignIn(any(CriteriaContext.class), signInCaptor.capture());
+        verify(mockAuthService).channelSignIn(eq(ChannelType.EMAIL), any(), signInCaptor.capture());
 
         SignIn captured = signInCaptor.getValue();
         assertEquals(captured.getEmail(), TEST_EMAIL);
@@ -305,7 +305,7 @@ public class AuthenticationControllerTest extends Mockito {
     public void failedEmailSignInStillLogsStudyId() throws Exception {
         // Set up test.
         TestUtils.mockRequestBody(mockRequest, EMAIL_SIGN_IN_REQUEST);
-        when(mockAuthService.emailSignIn(any(), any())).thenThrow(EntityNotFoundException.class);
+        when(mockAuthService.channelSignIn(any(), any(), any())).thenThrow(EntityNotFoundException.class);
 
         // Execute.
         try {
@@ -1047,7 +1047,7 @@ public class AuthenticationControllerTest extends Mockito {
     public void phoneSignIn() throws Exception {
         mockRequestBody(mockRequest, PHONE_SIGN_IN);
         
-        when(mockAuthService.phoneSignIn(any(), any())).thenReturn(userSession);
+        when(mockAuthService.channelSignIn(any(), any(), any())).thenReturn(userSession);
         
         JsonNode result = controller.phoneSignIn();
         
@@ -1055,7 +1055,7 @@ public class AuthenticationControllerTest extends Mockito {
         assertEquals(TEST_SESSION_TOKEN, result.get("sessionToken").textValue());
         assertEquals("UserSessionInfo", result.get("type").textValue());
         
-        verify(mockAuthService).phoneSignIn(contextCaptor.capture(), signInCaptor.capture());
+        verify(mockAuthService).channelSignIn(eq(ChannelType.PHONE), contextCaptor.capture(), signInCaptor.capture());
         
         CriteriaContext context = contextCaptor.getValue();
         assertEquals(TEST_APP_ID, context.getAppId());
@@ -1092,7 +1092,7 @@ public class AuthenticationControllerTest extends Mockito {
     public void failedPhoneSignInStillLogsStudyId() throws Exception {
         // Set up test.
         mockRequestBody(mockRequest, PHONE_SIGN_IN);
-        when(mockAuthService.phoneSignIn(any(), any())).thenThrow(EntityNotFoundException.class);
+        when(mockAuthService.channelSignIn(any(), any(), any())).thenThrow(EntityNotFoundException.class);
 
         // Execute.
         try {
@@ -1178,7 +1178,7 @@ public class AuthenticationControllerTest extends Mockito {
     @Test
     public void unconsentedEmailSignInSetsMetrics() throws Exception {
         mockRequestBody(mockRequest, EMAIL_SIGN_IN_REQUEST);
-        when(mockAuthService.emailSignIn(any(), any())).thenThrow(new ConsentRequiredException(userSession));
+        when(mockAuthService.channelSignIn(any(), any(), any())).thenThrow(new ConsentRequiredException(userSession));
         
         try {
             controller.emailSignIn();
@@ -1191,7 +1191,7 @@ public class AuthenticationControllerTest extends Mockito {
     @Test
     public void unconsentedPhoneSignInSetsMetrics() throws Exception {
         mockRequestBody(mockRequest, PHONE_SIGN_IN_REQUEST);
-        when(mockAuthService.phoneSignIn(any(), any())).thenThrow(new ConsentRequiredException(userSession));
+        when(mockAuthService.channelSignIn(any(), any(), any())).thenThrow(new ConsentRequiredException(userSession));
         
         try {
             controller.phoneSignIn();
@@ -1251,14 +1251,14 @@ public class AuthenticationControllerTest extends Mockito {
 
         UserSession session = new UserSession();
         session.setSessionToken("new-session-token");
-        when(mockAuthService.getSessionFromAccount(eq(newApp), any(), eq(account))).thenReturn(session);
+        when(mockAuthService.getSession(eq(newApp), any())).thenReturn(session);
         
         JsonNode node = controller.changeApp();
         assertEquals(node.get("sessionToken").textValue(), "new-session-token");
 
         InOrder inOrder = Mockito.inOrder(mockAuthService, mockCacheProvider);
         inOrder.verify(mockAuthService).signOut(userSession);
-        inOrder.verify(mockAuthService).getSessionFromAccount(eq(newApp), any(), eq(account));
+        inOrder.verify(mockAuthService).getSession(eq(newApp), any());
         inOrder.verify(mockCacheProvider).setUserSession(session);
         assertTrue(session.isSynapseAuthenticated());
     }
@@ -1337,7 +1337,7 @@ public class AuthenticationControllerTest extends Mockito {
         verify(mockSessionUpdateService).updateApp(userSession, newApp.getIdentifier());
         
         verify(mockAuthService, never()).signOut(any());
-        verify(mockAuthService, never()).getSessionFromAccount(any(), any(), any());
+        verify(mockAuthService, never()).getSession(any(), any());
         verify(mockCacheProvider, never()).setUserSession(any());
     }
     

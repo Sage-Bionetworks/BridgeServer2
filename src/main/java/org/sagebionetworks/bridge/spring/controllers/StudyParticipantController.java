@@ -87,6 +87,7 @@ import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.UserAdminService;
 import org.sagebionetworks.bridge.spring.util.EtagSupport;
 import org.sagebionetworks.bridge.spring.util.EtagCacheKey;
+import org.sagebionetworks.bridge.services.AccountWorkflowService;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.services.EnrollmentService;
 
@@ -128,6 +129,8 @@ public class StudyParticipantController extends BaseController {
 
     private ReportService reportService;
     
+    private AccountWorkflowService accountWorkflowService;
+    
     @Autowired
     final void setParticipantService(ParticipantService participantService) {
         this.participantService = participantService;
@@ -161,6 +164,11 @@ public class StudyParticipantController extends BaseController {
     @Autowired
     final void setReportService(ReportService reportService) {
         this.reportService = reportService;
+    }
+    
+    @Autowired
+    final void setAccountWorkflowService(AccountWorkflowService accountWorkflowService) {
+        this.accountWorkflowService = accountWorkflowService;
     }
     
     DateTime getDateTime() {
@@ -428,7 +436,7 @@ public class StudyParticipantController extends BaseController {
         CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
         
         App app = appService.getApp(session.getAppId());
-        participantService.signUserOut(app, account.getId(), deleteReauthToken);
+        authenticationService.signUserOut(app, account.getId(), deleteReauthToken);
 
         return SIGN_OUT_MSG;
     }
@@ -436,12 +444,13 @@ public class StudyParticipantController extends BaseController {
     @PostMapping("/v5/studies/{studyId}/participants/{userId}/requestResetPassword")
     public StatusMessage requestResetPassword(@PathVariable String studyId, @PathVariable String userId) {
         UserSession session = getAdministrativeSession();
-        Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
+        getValidAccountInStudy(session.getAppId(), studyId, userId);
 
         CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
         
         App app = appService.getApp(session.getAppId());
-        participantService.requestResetPassword(app, account.getId());
+        AccountId accountId = AccountId.forId(session.getAppId(), userId);
+        accountWorkflowService.requestResetPassword(app, true, accountId);
         
         return RESET_PWD_MSG;
     }
@@ -453,8 +462,7 @@ public class StudyParticipantController extends BaseController {
 
         CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
         
-        App app = appService.getApp(session.getAppId());
-        participantService.resendVerification(app, ChannelType.EMAIL, account.getId());
+        accountWorkflowService.resendVerification(session.getAppId(), ChannelType.EMAIL, account.getId());
         
         return EMAIL_VERIFY_MSG;
     }
@@ -466,8 +474,7 @@ public class StudyParticipantController extends BaseController {
 
         CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
         
-        App app = appService.getApp(session.getAppId());
-        participantService.resendVerification(app, ChannelType.PHONE, account.getId());
+        accountWorkflowService.resendVerification(session.getAppId(), ChannelType.PHONE, account.getId());
         
         return PHONE_VERIFY_MSG;
     }

@@ -81,7 +81,7 @@ public class TestConstants {
 
     public static final String APPLICATION_JSON = "application/json";
     public static final String EMAIL = "email@email.com";
-    public static final String PASSWORD = "password";
+    public static final String PASSWORD = "P@ssw0rd!";
     public static final String SESSION_TOKEN = "sessionToken";
 
     public static final String ATTACHMENT_BUCKET = BridgeConfigFactory.getConfig().getProperty("attachment.bucket");

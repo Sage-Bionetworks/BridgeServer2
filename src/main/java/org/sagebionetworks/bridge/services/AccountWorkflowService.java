@@ -40,7 +40,6 @@ import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.Verification;
 import org.sagebionetworks.bridge.models.accounts.VerificationData;
 import org.sagebionetworks.bridge.models.apps.App;
-import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.templates.TemplateRevision;
@@ -61,7 +60,6 @@ public class AccountWorkflowService {
     private static final String BASE_URL = BridgeConfigFactory.getConfig().get("webservices.url");
     static final String CONFIG_KEY_CHANNEL_THROTTLE_MAX_REQUESTS = "channel.throttle.max.requests";
     static final String CONFIG_KEY_CHANNEL_THROTTLE_TIMEOUT_SECONDS = "channel.throttle.timeout.seconds";
-    static final String PASSWORD_RESET_TOKEN_EXPIRED = "Password reset token has expired (or already been used).";
     static final String VERIFY_TOKEN_EXPIRED = "This verification token is no longer valid.";
     static final String ALREADY_VERIFIED = "That %s has already been verified.";
     
@@ -239,6 +237,28 @@ public class AccountWorkflowService {
                 .withExpirationPeriod(PHONE_VERIFICATION_EXPIRATION_PERIOD, VERIFY_OR_RESET_EXPIRE_IN_SECONDS)
                 .withPhone(phone).build();
         smsService.sendSmsMessage(userId, provider);
+    }
+
+    public void resendVerification(String appId, ChannelType type, String userId) {
+        checkNotNull(appId);
+        checkArgument(isNotBlank(userId));
+
+        AccountId accountId = AccountId.forId(appId, userId);
+        Account account = accountService.getAccount(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+        if (type == ChannelType.EMAIL) {
+            if (account.getEmail() == null) {
+                throw new BadRequestException("Email address has not been set.");
+            }
+            resendVerificationToken(type, accountId);
+        } else if (type == ChannelType.PHONE) {
+            if (account.getPhone() == null) {
+                throw new BadRequestException("Phone number has not been set.");
+            }
+            resendVerificationToken(type, accountId);
+        } else {
+            throw new UnsupportedOperationException("Channel type not implemented");
+        }
     }
         
     /**
@@ -429,44 +449,6 @@ public class AccountWorkflowService {
         smsService.sendSmsMessage(account.getId(), builder.build());
     }
 
-    /**
-     * Use a supplied password reset token to change the password on an account. If the supplied 
-     * token is not valid, this method throws an exception. If the token is valid but the account 
-     * does not exist, an exception is also thrown (this would be unusual).
-     */
-    public void resetPassword(PasswordReset passwordReset) {
-        checkNotNull(passwordReset);
-        
-        // This pathway is unusual as the token may have been sent via email or phone, so test for both.
-        CacheKey emailCacheKey = CacheKey.passwordResetForEmail(passwordReset.getSptoken(), passwordReset.getAppId());
-        CacheKey phoneCacheKey = CacheKey.passwordResetForPhone(passwordReset.getSptoken(), passwordReset.getAppId());
-        
-        String email = cacheProvider.getObject(emailCacheKey, String.class);
-        Phone phone = cacheProvider.getObject(phoneCacheKey, Phone.class);
-        if (email == null && phone == null) {
-            throw new BadRequestException(PASSWORD_RESET_TOKEN_EXPIRED);
-        }
-        cacheProvider.removeObject(emailCacheKey);
-        cacheProvider.removeObject(phoneCacheKey);
-        
-        App app = appService.getApp(passwordReset.getAppId());
-        ChannelType channelType = null;
-        AccountId accountId = null;
-        if (email != null) {
-            accountId = AccountId.forEmail(app.getIdentifier(), email);
-            channelType = ChannelType.EMAIL;
-        } else if (phone != null) {
-            accountId = AccountId.forPhone(app.getIdentifier(), phone);
-            channelType = ChannelType.PHONE;
-        } else {
-            throw new BridgeServiceException("Could not reset password");
-        }
-        Account account = accountService.getAccount(accountId)
-                .orElseThrow(() -> new EntityNotFoundException(Account.class));
-        
-        accountService.changePassword(account, channelType, passwordReset.getPassword());
-    }
-    
     /**
      * Request a token to be sent via SMS to the user, that can be used to start a session on the Bridge server.
      * Returns the userId, or null if the user doesn't exist.

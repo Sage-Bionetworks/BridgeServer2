@@ -11,11 +11,13 @@ import static org.sagebionetworks.bridge.TestConstants.ACCOUNT_ID_WITH_HEALTHCOD
 import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
+import static org.sagebionetworks.bridge.TestConstants.PASSWORD;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
+import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
 import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
 import static org.sagebionetworks.bridge.models.accounts.AccountSecretType.REAUTH;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.DISABLED;
@@ -23,7 +25,6 @@ import static org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.UNVERIFIED;
 import static org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM;
 import static org.sagebionetworks.bridge.models.apps.PasswordPolicy.DEFAULT_PASSWORD_POLICY;
-import static org.sagebionetworks.bridge.services.AccountService.ROTATIONS;
 import static org.sagebionetworks.bridge.services.AuthenticationService.ROTATIONS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -41,7 +42,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -90,6 +90,7 @@ import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.GeneratedPassword;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
+import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -107,34 +108,34 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 public class AuthenticationServiceTest extends Mockito {
-    private static final Set<String> DATA_GROUP_SET = ImmutableSet.of("group1", "group2");
     private static final String IP_ADDRESS = "ip-address";
     private static final List<String> LANGUAGES = ImmutableList.of("es","de");
     private static final String SESSION_TOKEN = "SESSION_TOKEN";
     private static final String SUPPORT_EMAIL = "support@support.com";
-    private static final String RECIPIENT_EMAIL = "email@email.com";
     private static final String TOKEN = "ABC-DEF";
     private static final String TOKEN_UNFORMATTED = "ABCDEF";
     private static final String REAUTH_TOKEN = "GHI-JKL";
-    private static final String PASSWORD = "Password~!1";
+    
     private static final SignIn SIGN_IN_REQUEST_WITH_EMAIL = new SignIn.Builder().withAppId(TEST_APP_ID)
-            .withEmail(RECIPIENT_EMAIL).build();
-    private static final SignIn SIGN_IN_WITH_EMAIL = new SignIn.Builder().withAppId(TEST_APP_ID).withEmail(RECIPIENT_EMAIL)
-            .withToken(TOKEN).build();
+            .withEmail(EMAIL).build();
     private static final SignIn SIGN_IN_WITH_PHONE = new SignIn.Builder().withAppId(TEST_APP_ID)
             .withPhone(TestConstants.PHONE).withToken(TOKEN).build();
+    private static final SignIn SIGN_IN_WITH_EMAIL = new SignIn.Builder().withAppId(TEST_APP_ID).withEmail(EMAIL)
+            .withToken(TOKEN).build();
 
-    private static final SignIn EMAIL_PASSWORD_SIGN_IN = new SignIn.Builder().withAppId(TEST_APP_ID).withEmail(RECIPIENT_EMAIL)
+    private static final SignIn EMAIL_PASSWORD_SIGN_IN = new SignIn.Builder().withAppId(TEST_APP_ID).withEmail(EMAIL)
             .withPassword(PASSWORD).build();
     private static final SignIn PHONE_PASSWORD_SIGN_IN = new SignIn.Builder().withAppId(TEST_APP_ID)
             .withPhone(TestConstants.PHONE).withPassword(PASSWORD).build();
-    private static final SignIn REAUTH_REQUEST = new SignIn.Builder().withAppId(TEST_APP_ID).withEmail(RECIPIENT_EMAIL)
-            .withReauthToken(TOKEN).build();
-
+    private static final SignIn REAUTH_SIGNIN = new SignIn.Builder().withAppId(TEST_APP_ID).withEmail(EMAIL)
+            .withReauthToken(REAUTH_TOKEN).build();
+    
     private static final CacheKey CACHE_KEY_EMAIL_SIGNIN = CacheKey.emailSignInRequest(SIGN_IN_WITH_EMAIL);
     private static final CacheKey CACHE_KEY_PHONE_SIGNIN = CacheKey.phoneSignInRequest(SIGN_IN_WITH_PHONE);
     private static final CacheKey CACHE_KEY_SIGNIN_TO_SESSION = CacheKey.channelSignInToSessionToken(
             TOKEN_UNFORMATTED);
+    private static final CacheKey PASSWORD_RESET_FOR_EMAIL = CacheKey.passwordResetForEmail(TOKEN, TEST_APP_ID);
+    private static final CacheKey PASSWORD_RESET_FOR_PHONE = CacheKey.passwordResetForPhone(TOKEN, TEST_APP_ID);
 
     private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create("ABC");
     private static final ConsentStatus CONSENTED_STATUS = new ConsentStatus.Builder().withName("Name")
@@ -151,9 +152,14 @@ public class AuthenticationServiceTest extends Mockito {
     private static final String EXTERNAL_ID = "ext-id";
 
     private static final StudyParticipant PARTICIPANT_WITH_ATTRIBUTES = new StudyParticipant.Builder().withId(TEST_USER_ID)
-            .withHealthCode(HEALTH_CODE).withDataGroups(DATA_GROUP_SET).withStudyIds(TestConstants.USER_STUDY_IDS)
+            .withHealthCode(HEALTH_CODE).withDataGroups(USER_DATA_GROUPS).withStudyIds(TestConstants.USER_STUDY_IDS)
             .withLanguages(LANGUAGES).build();
+    
+    private static final AccountId ACCOUNT_ID_WITH_EMAIL = AccountId.forEmail(TEST_APP_ID, EMAIL);
+    private static final AccountId ACCOUNT_ID_WITH_PHONE = AccountId.forPhone(TEST_APP_ID, PHONE);
 
+    private static final String STUDY_A = "studyA";
+    
     @Mock
     private CacheProvider cacheProvider;
     @Mock
@@ -183,11 +189,17 @@ public class AuthenticationServiceTest extends Mockito {
     @Mock 
     private StudyService studyService;
     @Mock
+    private AccountSecret mockSecret;
+    @Mock
+    private Account mockAccount;
+    @Mock
     private ActivityEventService activityEventService;
     @Captor
     private ArgumentCaptor<UserSession> sessionCaptor;
     @Captor
     private ArgumentCaptor<StudyParticipant> participantCaptor;
+    @Captor
+    private ArgumentCaptor<Account> accountCaptor;
     @Captor
     private ArgumentCaptor<AccountId> accountIdCaptor;
     @Captor
@@ -276,7 +288,7 @@ public class AuthenticationServiceTest extends Mockito {
         CriteriaContext updatedContext = contextCaptor.getValue();
         assertEquals(updatedContext.getHealthCode(), HEALTH_CODE);
         assertEquals(updatedContext.getLanguages(), LANGUAGES);
-        assertEquals(updatedContext.getUserDataGroups(), DATA_GROUP_SET);
+        assertEquals(updatedContext.getUserDataGroups(), USER_DATA_GROUPS);
         assertEquals(updatedContext.getUserStudyIds(), TestConstants.USER_STUDY_IDS);
         assertEquals(updatedContext.getUserId(), TEST_USER_ID);
         
@@ -358,7 +370,7 @@ public class AuthenticationServiceTest extends Mockito {
         CriteriaContext updatedContext = contextCaptor.getValue();
         assertEquals(updatedContext.getHealthCode(), HEALTH_CODE);
         assertEquals(updatedContext.getLanguages(), LANGUAGES);
-        assertEquals(updatedContext.getUserDataGroups(), DATA_GROUP_SET);
+        assertEquals(updatedContext.getUserDataGroups(), USER_DATA_GROUPS);
         assertEquals(updatedContext.getUserStudyIds(), TestConstants.USER_STUDY_IDS);
         assertEquals(updatedContext.getUserId(), TEST_USER_ID);
         
@@ -480,7 +492,7 @@ public class AuthenticationServiceTest extends Mockito {
     public void signOutNoSessionToken() {
         service.signOut(null);
         
-        verify(accountService, never()).deleteReauthToken(any());
+        verify(accountSecretDao, never()).removeSecrets(any(), any());
         verify(cacheProvider, never()).removeSession(any());
     }
     
@@ -494,8 +506,8 @@ public class AuthenticationServiceTest extends Mockito {
         when(accountService.getAccount(any())).thenReturn(Optional.empty());
         
         service.signOut(session);
-        
-        verify(accountService, never()).deleteReauthToken(any());
+
+        verify(accountSecretDao, never()).removeSecrets(any(), any());
         verify(cacheProvider, never()).removeSession(any());
     }
 
@@ -508,7 +520,7 @@ public class AuthenticationServiceTest extends Mockito {
         doReturn(PARTICIPANT).when(participantService).getParticipant(app, account, false);
         doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
 
-        UserSession retSession = service.emailSignIn(CONTEXT, SIGN_IN_WITH_EMAIL);
+        UserSession retSession = service.channelSignIn(ChannelType.EMAIL, CONTEXT, SIGN_IN_WITH_EMAIL);
 
         assertNotNull(retSession);
         assertEquals(retSession.getReauthToken(), REAUTH_TOKEN);
@@ -539,7 +551,7 @@ public class AuthenticationServiceTest extends Mockito {
         doReturn(PARTICIPANT).when(participantService).getParticipant(app, account, false);
         doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
 
-        UserSession retSession = service.emailSignIn(CONTEXT, SIGN_IN_WITH_EMAIL);
+        UserSession retSession = service.channelSignIn(ChannelType.EMAIL, CONTEXT, SIGN_IN_WITH_EMAIL);
 
         assertNotNull(retSession);
         assertEquals(retSession.getReauthToken(), REAUTH_TOKEN);
@@ -571,7 +583,7 @@ public class AuthenticationServiceTest extends Mockito {
         doReturn(PARTICIPANT).when(participantService).getParticipant(app, account, false);
         doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
 
-        UserSession retSession = service.emailSignIn(CONTEXT, SIGN_IN_WITH_EMAIL);
+        UserSession retSession = service.channelSignIn(ChannelType.EMAIL, CONTEXT, SIGN_IN_WITH_EMAIL);
         assertNotNull(retSession);
 
         InOrder inOrder = Mockito.inOrder(cacheProvider, accountDao);
@@ -590,19 +602,19 @@ public class AuthenticationServiceTest extends Mockito {
     public void emailSignInNoAccount() {
         when(cacheProvider.getObject(CACHE_KEY_EMAIL_SIGNIN, String.class)).thenReturn(TOKEN_UNFORMATTED);
         when(accountService.getAccount(any())).thenReturn(Optional.empty());
-        service.emailSignIn(CONTEXT, SIGN_IN_WITH_EMAIL);
+        service.channelSignIn(ChannelType.EMAIL, CONTEXT, SIGN_IN_WITH_EMAIL);
     }
 
     @Test(expectedExceptions = AuthenticationFailedException.class)
     public void emailSignIn_NoCachedToken() {
         when(cacheProvider.getObject(CACHE_KEY_EMAIL_SIGNIN, String.class)).thenReturn(null);
-        service.emailSignIn(CONTEXT, SIGN_IN_WITH_EMAIL);
+        service.channelSignIn(ChannelType.EMAIL, CONTEXT, SIGN_IN_WITH_EMAIL);
     }
 
     @Test(expectedExceptions = AuthenticationFailedException.class)
     public void emailSignIn_WrongToken() {
         when(cacheProvider.getObject(CACHE_KEY_EMAIL_SIGNIN, String.class)).thenReturn("badtoken");
-        service.emailSignIn(CONTEXT, SIGN_IN_WITH_EMAIL);
+        service.channelSignIn(ChannelType.EMAIL, CONTEXT, SIGN_IN_WITH_EMAIL);
     }
 
     @Test(expectedExceptions = AuthenticationFailedException.class)
@@ -611,12 +623,12 @@ public class AuthenticationServiceTest extends Mockito {
 
         SignIn wrongEmailSignIn = new SignIn.Builder().withAppId(TEST_APP_ID).withEmail("wrong-email@email.com")
                 .withToken(TOKEN).build();
-        service.emailSignIn(CONTEXT, wrongEmailSignIn);
+        service.channelSignIn(ChannelType.EMAIL, CONTEXT, wrongEmailSignIn);
     }
 
     @Test(expectedExceptions = InvalidEntityException.class)
     public void emailSignInInvalidEntity() {
-        service.emailSignIn(CONTEXT, SIGN_IN_REQUEST_WITH_EMAIL);
+        service.channelSignIn(ChannelType.EMAIL, CONTEXT, SIGN_IN_REQUEST_WITH_EMAIL);
     }
 
     @Test(expectedExceptions = AccountDisabledException.class)
@@ -626,7 +638,7 @@ public class AuthenticationServiceTest extends Mockito {
         when(cacheProvider.getObject(CACHE_KEY_EMAIL_SIGNIN, String.class)).thenReturn(TOKEN_UNFORMATTED);
         doReturn(Optional.of(account)).when(accountDao).getAccount(SIGN_IN_WITH_EMAIL.getAccountId());
 
-        service.emailSignIn(CONTEXT, SIGN_IN_WITH_EMAIL);
+        service.channelSignIn(ChannelType.EMAIL, CONTEXT, SIGN_IN_WITH_EMAIL);
     }
 
     @Test
@@ -640,7 +652,7 @@ public class AuthenticationServiceTest extends Mockito {
         doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
 
         try {
-            service.emailSignIn(CONTEXT, SIGN_IN_WITH_EMAIL);
+            service.channelSignIn(ChannelType.EMAIL, CONTEXT, SIGN_IN_WITH_EMAIL);
             fail("Should have thrown exception");
         } catch(ConsentRequiredException e) {
             verify(cacheProvider).setUserSession(e.getUserSession());
@@ -659,7 +671,7 @@ public class AuthenticationServiceTest extends Mockito {
         doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
 
         // Does not throw a consent required exception because the participant is an admin.
-        UserSession retrieved = service.emailSignIn(CONTEXT, SIGN_IN_WITH_EMAIL);
+        UserSession retrieved = service.channelSignIn(ChannelType.EMAIL, CONTEXT, SIGN_IN_WITH_EMAIL);
         assertEquals(retrieved.getConsentStatuses(), UNCONSENTED_STATUS_MAP);
     }
 
@@ -670,22 +682,22 @@ public class AuthenticationServiceTest extends Mockito {
         
         doReturn(REAUTH_TOKEN).when(service).generateReauthToken();
 
-        StudyParticipant participant = new StudyParticipant.Builder().withId(TEST_USER_ID).withEmail(RECIPIENT_EMAIL).build();
+        StudyParticipant participant = new StudyParticipant.Builder().withId(TEST_USER_ID).withEmail(EMAIL).build();
         doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
         
         doReturn(Optional.of(account)).when(accountDao).getAccount(any());
         doReturn(Optional.of(AccountSecret.create())).when(accountSecretDao)
-            .verifySecret(REAUTH, TEST_USER_ID, REAUTH_REQUEST.getReauthToken(), ROTATIONS);
+            .verifySecret(REAUTH, TEST_USER_ID, REAUTH_SIGNIN.getReauthToken(), ROTATIONS);
         doReturn(participant).when(participantService).getParticipant(app, account, false);
         
-        UserSession session = service.reauthenticate(app, CONTEXT, REAUTH_REQUEST);
-        assertEquals(session.getParticipant().getEmail(), RECIPIENT_EMAIL);
+        UserSession session = service.reauthenticate(app, CONTEXT, REAUTH_SIGNIN);
+        assertEquals(session.getParticipant().getEmail(), EMAIL);
         assertEquals(session.getReauthToken(), REAUTH_TOKEN);
         
         verify(cacheProvider).setUserSession(sessionCaptor.capture());
         
         UserSession captured = sessionCaptor.getValue();
-        assertEquals(captured.getParticipant().getEmail(), RECIPIENT_EMAIL);
+        assertEquals(captured.getParticipant().getEmail(), EMAIL);
         assertEquals(captured.getReauthToken(), REAUTH_TOKEN);
         
         verify(accountSecretDao).createSecret(REAUTH, TEST_USER_ID, REAUTH_TOKEN);
@@ -695,14 +707,14 @@ public class AuthenticationServiceTest extends Mockito {
     public void reauthenticateThrowsConsentRequiredException() {
         app.setReauthenticationEnabled(true);
 
-        StudyParticipant participant = new StudyParticipant.Builder().withId(TEST_USER_ID).withEmail(RECIPIENT_EMAIL).build();
+        StudyParticipant participant = new StudyParticipant.Builder().withId(TEST_USER_ID).withEmail(EMAIL).build();
         doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
         doReturn(Optional.of(account)).when(accountDao).getAccount(any());
         doReturn(Optional.of(AccountSecret.create())).when(accountSecretDao)
-            .verifySecret(REAUTH, TEST_USER_ID, REAUTH_REQUEST.getReauthToken(), ROTATIONS);
+            .verifySecret(REAUTH, TEST_USER_ID, REAUTH_SIGNIN.getReauthToken(), ROTATIONS);
         doReturn(participant).when(participantService).getParticipant(app, account, false);
         
-        service.reauthenticate(app, CONTEXT, REAUTH_REQUEST);
+        service.reauthenticate(app, CONTEXT, REAUTH_SIGNIN);
     }
     
     @Test
@@ -710,16 +722,16 @@ public class AuthenticationServiceTest extends Mockito {
         app.setReauthenticationEnabled(true);
 
         StudyParticipant participant = new StudyParticipant.Builder().withId(TEST_USER_ID)
-                .withRoles(ImmutableSet.of(Roles.DEVELOPER)).withEmail(RECIPIENT_EMAIL).build();
+                .withRoles(ImmutableSet.of(Roles.DEVELOPER)).withEmail(EMAIL).build();
         doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
         
         doReturn(Optional.of(account)).when(accountDao).getAccount(any());
         doReturn(Optional.of(AccountSecret.create())).when(accountSecretDao)
-            .verifySecret(REAUTH, TEST_USER_ID, REAUTH_REQUEST.getReauthToken(), ROTATIONS);
+            .verifySecret(REAUTH, TEST_USER_ID, REAUTH_SIGNIN.getReauthToken(), ROTATIONS);
 
         doReturn(participant).when(participantService).getParticipant(app, account, false);
         
-        service.reauthenticate(app, CONTEXT, REAUTH_REQUEST);
+        service.reauthenticate(app, CONTEXT, REAUTH_SIGNIN);
     }
     
     @Test
@@ -731,16 +743,16 @@ public class AuthenticationServiceTest extends Mockito {
         existing.setInternalSessionToken("existingInternalToken");
         doReturn(existing).when(cacheProvider).getUserSessionByUserId(TEST_USER_ID);
 
-        StudyParticipant participant = new StudyParticipant.Builder().withId(TEST_USER_ID).withEmail(RECIPIENT_EMAIL).build();
+        StudyParticipant participant = new StudyParticipant.Builder().withId(TEST_USER_ID).withEmail(EMAIL).build();
         doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
         
         doReturn(Optional.of(account)).when(accountDao).getAccount(any());
         doReturn(Optional.of(AccountSecret.create())).when(accountSecretDao)
-            .verifySecret(REAUTH, TEST_USER_ID, REAUTH_REQUEST.getReauthToken(), ROTATIONS);
+            .verifySecret(REAUTH, TEST_USER_ID, REAUTH_SIGNIN.getReauthToken(), ROTATIONS);
         
         doReturn(participant).when(participantService).getParticipant(app, account, false);
         
-        UserSession session = service.reauthenticate(app, CONTEXT, REAUTH_REQUEST);
+        UserSession session = service.reauthenticate(app, CONTEXT, REAUTH_SIGNIN);
         assertEquals(session.getSessionToken(), "existingToken");
         assertEquals(session.getInternalSessionToken(), "existingInternalToken");
     }
@@ -761,13 +773,13 @@ public class AuthenticationServiceTest extends Mockito {
         
         doReturn(Optional.of(account)).when(accountDao).getAccount(any());
         doReturn(Optional.of(AccountSecret.create())).when(accountSecretDao)
-            .verifySecret(AccountSecretType.REAUTH, TEST_USER_ID, REAUTH_REQUEST.getReauthToken(), ROTATIONS);
+            .verifySecret(AccountSecretType.REAUTH, TEST_USER_ID, REAUTH_SIGNIN.getReauthToken(), ROTATIONS);
         
         doReturn(participant).when(participantService).getParticipant(app, account, false);
         doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
         
         try {
-            service.reauthenticate(app, CONTEXT, REAUTH_REQUEST);
+            service.reauthenticate(app, CONTEXT, REAUTH_SIGNIN);
             fail("Should have thrown exception");
         } catch(ConsentRequiredException e) {
             assertEquals(e.getUserSession().getConsentStatuses(), UNCONSENTED_STATUS_MAP);
@@ -777,13 +789,13 @@ public class AuthenticationServiceTest extends Mockito {
     @Test(expectedExceptions = InvalidEntityException.class)
     public void requestResetInvalid() {
         SignIn signIn = new SignIn.Builder().withAppId(TEST_APP_ID).withPhone(TestConstants.PHONE)
-                .withEmail(RECIPIENT_EMAIL).build();
+                .withEmail(EMAIL).build();
         service.requestResetPassword(app, false, signIn);
     }
     
     @Test
     public void requestResetPassword() {
-        SignIn signIn = new SignIn.Builder().withAppId(TEST_APP_ID).withEmail(RECIPIENT_EMAIL).build();
+        SignIn signIn = new SignIn.Builder().withAppId(TEST_APP_ID).withEmail(EMAIL).build();
         
         service.requestResetPassword(app, false, signIn);
         
@@ -793,14 +805,14 @@ public class AuthenticationServiceTest extends Mockito {
     @Test
     public void signUpWithEmailOK() {
         app.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
-        StudyParticipant participant = new StudyParticipant.Builder().withEmail(RECIPIENT_EMAIL).withPassword(PASSWORD)
+        StudyParticipant participant = new StudyParticipant.Builder().withEmail(EMAIL).withPassword(PASSWORD)
                 .build();
         
         service.signUp(app, participant);
         
         verify(participantService).createParticipant(eq(app), participantCaptor.capture(), eq(true));
         StudyParticipant captured = participantCaptor.getValue();
-        assertEquals(captured.getEmail(), RECIPIENT_EMAIL);
+        assertEquals(captured.getEmail(), EMAIL);
         assertEquals(captured.getPassword(), PASSWORD);
     }
 
@@ -821,7 +833,7 @@ public class AuthenticationServiceTest extends Mockito {
     @Test
     public void signUpExistingAccount() {
         app.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
-        StudyParticipant participant = new StudyParticipant.Builder().withEmail(RECIPIENT_EMAIL).withPassword(PASSWORD)
+        StudyParticipant participant = new StudyParticipant.Builder().withEmail(EMAIL).withPassword(PASSWORD)
                 .build();
         doThrow(new EntityAlreadyExistsException(Account.class, "userId", "user-id")).when(participantService)
                 .createParticipant(app, participant, true);
@@ -875,8 +887,8 @@ public class AuthenticationServiceTest extends Mockito {
         account.setId(TEST_USER_ID);
 
         // Put some stuff in participant to verify session is initialized
-        StudyParticipant participant = new StudyParticipant.Builder().withDataGroups(DATA_GROUP_SET)
-                .withEmail(RECIPIENT_EMAIL).withHealthCode(HEALTH_CODE).withId(TEST_USER_ID).withLanguages(LANGUAGES)
+        StudyParticipant participant = new StudyParticipant.Builder().withDataGroups(USER_DATA_GROUPS)
+                .withEmail(EMAIL).withHealthCode(HEALTH_CODE).withId(TEST_USER_ID).withLanguages(LANGUAGES)
                 .withFirstName("Test").withLastName("Tester").withPhone(TestConstants.PHONE).build();
         doReturn(participant).when(participantService).getParticipant(app, account, false);
         when(cacheProvider.getObject(CACHE_KEY_PHONE_SIGNIN, String.class)).thenReturn(TOKEN_UNFORMATTED);
@@ -884,9 +896,9 @@ public class AuthenticationServiceTest extends Mockito {
         doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
 
         // Execute and validate.
-        UserSession session = service.phoneSignIn(CONTEXT, SIGN_IN_WITH_PHONE);
+        UserSession session = service.channelSignIn(ChannelType.PHONE, CONTEXT, SIGN_IN_WITH_PHONE);
 
-        assertEquals(session.getParticipant().getEmail(), RECIPIENT_EMAIL);
+        assertEquals(session.getParticipant().getEmail(), EMAIL);
         assertEquals(session.getParticipant().getFirstName(), "Test");
         assertEquals(session.getParticipant().getLastName(), "Tester");
         assertFalse(session.isSynapseAuthenticated());
@@ -915,7 +927,7 @@ public class AuthenticationServiceTest extends Mockito {
         // Execute and validate. Just verify that it succeeds and doesn't throw. Details are tested in above tests.
         SignIn signIn = new SignIn.Builder().withAppId(TEST_APP_ID).withPhone(TestConstants.PHONE).withToken("ABC DEF")
                 .build();
-        service.phoneSignIn(CONTEXT, signIn);
+        service.channelSignIn(ChannelType.PHONE, CONTEXT, signIn);
     }
 
     @Test
@@ -930,26 +942,26 @@ public class AuthenticationServiceTest extends Mockito {
         // Execute and validate. Just verify that it succeeds and doesn't throw. Details are tested in above tests.
         SignIn signIn = new SignIn.Builder().withAppId(TEST_APP_ID).withPhone(TestConstants.PHONE)
                 .withToken(TOKEN_UNFORMATTED).build();
-        service.phoneSignIn(CONTEXT, signIn);
+        service.channelSignIn(ChannelType.PHONE, CONTEXT, signIn);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void phoneSignInNoAccount() {
         when(cacheProvider.getObject(CACHE_KEY_PHONE_SIGNIN, String.class)).thenReturn(TOKEN_UNFORMATTED);
         when(accountService.getAccount(any())).thenReturn(Optional.empty());
-        service.phoneSignIn(CONTEXT, SIGN_IN_WITH_PHONE);
+        service.channelSignIn(ChannelType.PHONE, CONTEXT, SIGN_IN_WITH_PHONE);
     }
 
     @Test(expectedExceptions = AuthenticationFailedException.class)
     public void phoneSignIn_NoCachedToken() {
         when(cacheProvider.getObject(CACHE_KEY_PHONE_SIGNIN, String.class)).thenReturn(null);
-        service.phoneSignIn(CONTEXT, SIGN_IN_WITH_PHONE);
+        service.channelSignIn(ChannelType.PHONE, CONTEXT, SIGN_IN_WITH_PHONE);
     }
 
     @Test(expectedExceptions = AuthenticationFailedException.class)
     public void phoneSignIn_WrongToken() {
         when(cacheProvider.getObject(CACHE_KEY_PHONE_SIGNIN, String.class)).thenReturn("badtoken");
-        service.phoneSignIn(CONTEXT, SIGN_IN_WITH_PHONE);
+        service.channelSignIn(ChannelType.PHONE, CONTEXT, SIGN_IN_WITH_PHONE);
     }
 
     @Test(expectedExceptions = AuthenticationFailedException.class)
@@ -958,21 +970,21 @@ public class AuthenticationServiceTest extends Mockito {
 
         SignIn wrongPhoneSignIn = new SignIn.Builder().withAppId(TEST_APP_ID)
                 .withPhone(new Phone("4082588569", "US")).withToken(TOKEN).build();
-        service.phoneSignIn(CONTEXT, wrongPhoneSignIn);
+        service.channelSignIn(ChannelType.PHONE, CONTEXT, wrongPhoneSignIn);
     }
 
     @Test
     public void phoneSignInThrowsConsentRequired() {
         // Put some stuff in participant to verify session is initialized
         StudyParticipant participant = new StudyParticipant.Builder().withId(TEST_USER_ID)
-                .withEmail(RECIPIENT_EMAIL).withFirstName("Test").withLastName("Tester").build();
+                .withEmail(EMAIL).withFirstName("Test").withLastName("Tester").build();
         doReturn(participant).when(participantService).getParticipant(app, account, false);
         when(cacheProvider.getObject(CACHE_KEY_PHONE_SIGNIN, String.class)).thenReturn(TOKEN_UNFORMATTED);
         doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
         doReturn(Optional.of(account)).when(accountDao).getAccount(SIGN_IN_WITH_PHONE.getAccountId());
 
         try {
-            service.phoneSignIn(CONTEXT, SIGN_IN_WITH_PHONE);
+            service.channelSignIn(ChannelType.PHONE, CONTEXT, SIGN_IN_WITH_PHONE);
             fail("Should have thrown exception");
         } catch(ConsentRequiredException e) {
             verify(cacheProvider).setUserSession(e.getUserSession());
@@ -1042,13 +1054,13 @@ public class AuthenticationServiceTest extends Mockito {
 
     @Test
     public void resendEmailVerification() {
-        AccountId accountId = AccountId.forEmail(TEST_APP_ID, RECIPIENT_EMAIL);
+        AccountId accountId = AccountId.forEmail(TEST_APP_ID, EMAIL);
         service.resendVerification(ChannelType.EMAIL, accountId);
         
         verify(accountWorkflowService).resendVerificationToken(eq(ChannelType.EMAIL), accountIdCaptor.capture());
         
         assertEquals(accountIdCaptor.getValue().getAppId(), TEST_APP_ID);
-        assertEquals(accountIdCaptor.getValue().getEmail(), RECIPIENT_EMAIL);
+        assertEquals(accountIdCaptor.getValue().getEmail(), EMAIL);
     }
 
     @Test
@@ -1104,7 +1116,86 @@ public class AuthenticationServiceTest extends Mockito {
             // expected exception
         }
         verify(participantService, never()).createParticipant(any(), any(), anyBoolean());
-        verify(accountService, never()).changePassword(any(), any(), any());
+    }
+    
+    @Test
+    public void changePassword() throws Exception {
+        Account account = mockGetAccountById(ACCOUNT_ID, false);
+        account.setStatus(UNVERIFIED);
+        
+        service.changePassword(account, ChannelType.PHONE, "asdf");
+        verify(accountDao).updateAccount(account);
+    }
+
+    @Test
+    public void changePasswordSuccess() throws Exception {
+        when(passwordResetValidator.supports(any())).thenReturn(true);
+
+        // Set up test account
+        Account account = Account.create();
+        account.setAppId(TEST_APP_ID);
+        account.setId(TEST_USER_ID);
+        account.setEmail(EMAIL);
+        account.setStatus(UNVERIFIED);
+
+        // execute and verify
+        service.changePassword(account, ChannelType.EMAIL, PASSWORD);
+        verify(accountDao).updateAccount(accountCaptor.capture());
+
+        Account updatedAccount = accountCaptor.getValue();
+        assertEquals(updatedAccount.getId(), TEST_USER_ID);
+        assertEquals(updatedAccount.getModifiedOn(), MODIFIED_ON);
+        assertEquals(updatedAccount.getPasswordAlgorithm(), PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM);
+        assertEquals(updatedAccount.getPasswordModifiedOn(), MODIFIED_ON);
+        assertTrue(updatedAccount.getEmailVerified());
+        assertNull(updatedAccount.getPhoneVerified());
+        assertEquals(updatedAccount.getStatus(), ENABLED);
+
+        // validate password hash
+        assertTrue(DEFAULT_PASSWORD_ALGORITHM.checkHash(updatedAccount.getPasswordHash(), PASSWORD));
+    }
+
+    @Test
+    public void changePasswordForPhone() throws Exception {
+        // Set up test account
+        Account account = Account.create();
+        account.setAppId(TEST_APP_ID);
+        account.setId(TEST_USER_ID);
+        account.setPhone(PHONE);
+        account.setStatus(UNVERIFIED);
+
+        // execute and verify
+        service.changePassword(account, ChannelType.PHONE, PASSWORD);
+        verify(accountDao).updateAccount(accountCaptor.capture());
+
+        // Simpler than changePasswordSuccess() test as we're only verifying phone is verified
+        Account updatedAccount = accountCaptor.getValue();
+        assertNull(updatedAccount.getEmailVerified());
+        assertTrue(updatedAccount.getPhoneVerified());
+        assertEquals(updatedAccount.getStatus(), ENABLED);
+    }
+    
+    @Test
+    public void changePasswordForExternalId() {
+        Enrollment en = Enrollment.create(TEST_APP_ID, STUDY_A, TEST_USER_ID);
+        en.setExternalId("anExternalId");
+        
+        // Set up test account
+        Account account = Account.create();
+        account.setAppId(TEST_APP_ID);
+        account.setId(TEST_USER_ID);
+        account.setStatus(UNVERIFIED);
+        account.getEnrollments().add(en);
+
+        // execute and verify
+        service.changePassword(account, null, PASSWORD);
+        verify(accountDao).updateAccount(accountCaptor.capture());
+
+        // Simpler than changePasswordSuccess() test as we're only verifying phone is verified
+        Account updatedAccount = accountCaptor.getValue();
+        assertNull(updatedAccount.getEmailVerified());
+        assertNull(updatedAccount.getPhoneVerified());
+        assertEquals(updatedAccount.getStatus(), ENABLED);
     }
 
     @Test
@@ -1120,7 +1211,6 @@ public class AuthenticationServiceTest extends Mockito {
             // expected exception
         }
         verify(participantService, never()).createParticipant(any(), any(), anyBoolean());
-        verify(accountService, never()).changePassword(any(), any(), any());
     }
     
     @Test
@@ -1262,7 +1352,7 @@ public class AuthenticationServiceTest extends Mockito {
         // This would normally throw except that the intentService reports consents were updated
         when(intentService.registerIntentToParticipate(app, account)).thenReturn(true);
 
-        service.emailSignIn(CONTEXT, SIGN_IN_WITH_EMAIL);
+        service.channelSignIn(ChannelType.EMAIL, CONTEXT, SIGN_IN_WITH_EMAIL);
     }
 
     @SuppressWarnings("unchecked")
@@ -1285,7 +1375,7 @@ public class AuthenticationServiceTest extends Mockito {
         // This would normally throw except that the intentService reports consents were updated
         when(intentService.registerIntentToParticipate(app, account)).thenReturn(true);
 
-        service.phoneSignIn(CONTEXT, SIGN_IN_WITH_PHONE);
+        service.channelSignIn(ChannelType.PHONE, CONTEXT, SIGN_IN_WITH_PHONE);
     }
 
     @Test
@@ -1310,7 +1400,7 @@ public class AuthenticationServiceTest extends Mockito {
         when(participantService.getParticipant(app, account, false)).thenReturn(PARTICIPANT);
         when(consentService.getConsentStatuses(any(), eq(account))).thenReturn(CONSENTED_STATUS_MAP);
 
-        service.emailSignIn(CONTEXT, SIGN_IN_WITH_EMAIL);
+        service.channelSignIn(ChannelType.EMAIL, CONTEXT, SIGN_IN_WITH_EMAIL);
 
         verify(intentService, never()).registerIntentToParticipate(app, account);
     }
@@ -1322,7 +1412,7 @@ public class AuthenticationServiceTest extends Mockito {
         when(participantService.getParticipant(app, account, false)).thenReturn(PARTICIPANT);
         when(consentService.getConsentStatuses(any(), eq(account))).thenReturn(CONSENTED_STATUS_MAP);
 
-        service.phoneSignIn(CONTEXT, SIGN_IN_WITH_PHONE);
+        service.channelSignIn(ChannelType.PHONE, CONTEXT, SIGN_IN_WITH_PHONE);
 
         verify(intentService, never()).registerIntentToParticipate(app, account);
     }
@@ -1469,17 +1559,6 @@ public class AuthenticationServiceTest extends Mockito {
             .when(accountWorkflowService).requestResetPassword(any(), anyBoolean(), any());
         
         service.requestResetPassword(app, true, EMAIL_PASSWORD_SIGN_IN);
-    }
-    
-    @Test
-    public void resetPassword() {
-        PasswordResetValidator validator = new PasswordResetValidator();
-        validator.setAppService(appService);
-        service.setPasswordResetValidator(validator);
-        
-        PasswordReset reset = new PasswordReset(PASSWORD, TOKEN, TEST_APP_ID);
-        service.resetPassword(reset);
-        verify(accountWorkflowService).resetPassword(reset);
     }
     
     @Test(expectedExceptions = InvalidEntityException.class)
@@ -1822,12 +1901,12 @@ public class AuthenticationServiceTest extends Mockito {
    public void authenticate() throws Exception {
        App app = App.create();
        Account account = mockGetAccountById(ACCOUNT_ID, false);
-       when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_EMAIL)).thenReturn(Optional.of(account));
+       when(accountDao.getAccount(ACCOUNT_ID_WITH_EMAIL)).thenReturn(Optional.of(account));
        doNothing().when(service).verifyPassword(any(), any());
 
-       Account returnVal = service.authenticate(app, SIGN_IN);
+       Account returnVal = service.authenticate(app, EMAIL_PASSWORD_SIGN_IN);
        assertEquals(returnVal, account);
-       verify(mockAccountDao).getAccount(ACCOUNT_ID_WITH_EMAIL);
+       verify(accountDao).getAccount(ACCOUNT_ID_WITH_EMAIL);
    }
 
    @Test
@@ -1836,23 +1915,21 @@ public class AuthenticationServiceTest extends Mockito {
        app.setReauthenticationEnabled(true);
        
        Account account = mockGetAccountById(ACCOUNT_ID_WITH_EMAIL, false);
-       when(mockAccountSecretDao.verifySecret(REAUTH, TEST_USER_ID, "reauthToken", ROTATIONS))
+       when(accountSecretDao.verifySecret(REAUTH, TEST_USER_ID, REAUTH_TOKEN, ROTATIONS))
                .thenReturn(Optional.of(mockSecret));
 
-       Account returnVal = service.reauthenticate(app, SIGN_IN);
+       Account returnVal = service.reauthenticate(app, REAUTH_SIGNIN);
        assertEquals(returnVal, account);
-       verify(mockAccountDao).getAccount(ACCOUNT_ID_WITH_EMAIL);
+       verify(accountDao).getAccount(ACCOUNT_ID_WITH_EMAIL);
    }
-
-
 
    @Test
    public void authenticateSuccessWithHealthCode() throws Exception {
-       mockGetAccountById(PASSWORD_SIGNIN.getAccountId(), true);
+       mockGetAccountById(EMAIL_PASSWORD_SIGN_IN.getAccountId(), true);
 
        App app = App.create();
 
-       Account account = service.authenticate(app, PASSWORD_SIGNIN);
+       Account account = service.authenticate(app, EMAIL_PASSWORD_SIGN_IN);
        assertEquals(account.getId(), TEST_USER_ID);
        assertEquals(account.getAppId(), TEST_APP_ID);
        assertEquals(account.getEmail(), EMAIL);
@@ -1870,22 +1947,22 @@ public class AuthenticationServiceTest extends Mockito {
 
        mockGetAccountById(ACCOUNT_ID_WITH_EMAIL, true);
 
-       Account account = service.authenticate(app, PASSWORD_SIGNIN);
+       Account account = service.authenticate(app, EMAIL_PASSWORD_SIGN_IN);
        // not incremented by reauthentication
        assertEquals(account.getVersion(), 1);
 
        // No reauthentication token rotation occurs
-       verify(mockAccountDao, never()).updateAccount(any());
+       verify(accountDao, never()).updateAccount(any());
        assertNull(account.getReauthToken());
    }
 
    @Test(expectedExceptions = EntityNotFoundException.class)
    public void authenticateAccountNotFound() throws Exception {
-       when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_EMAIL)).thenReturn(Optional.empty());
+       when(accountDao.getAccount(ACCOUNT_ID_WITH_EMAIL)).thenReturn(Optional.empty());
 
        App app = App.create();
 
-       service.authenticate(app, PASSWORD_SIGNIN);
+       service.authenticate(app, EMAIL_PASSWORD_SIGN_IN);
    }
 
    @Test(expectedExceptions = UnauthorizedException.class)
@@ -1897,7 +1974,7 @@ public class AuthenticationServiceTest extends Mockito {
        App app = App.create();
        app.setEmailVerificationEnabled(true);
 
-       service.authenticate(app, PASSWORD_SIGNIN);
+       service.authenticate(app, EMAIL_PASSWORD_SIGN_IN);
    }
    
    @Test
@@ -1909,7 +1986,7 @@ public class AuthenticationServiceTest extends Mockito {
        App app = App.create();
        app.setEmailVerificationEnabled(false);
 
-       service.authenticate(app, PASSWORD_SIGNIN);
+       service.authenticate(app, EMAIL_PASSWORD_SIGN_IN);
    }
 
    @Test(expectedExceptions = AccountDisabledException.class)
@@ -1919,7 +1996,7 @@ public class AuthenticationServiceTest extends Mockito {
 
        App app = App.create();
 
-       service.authenticate(app, PASSWORD_SIGNIN);
+       service.authenticate(app, EMAIL_PASSWORD_SIGN_IN);
    }
 
    @Test(expectedExceptions = EntityNotFoundException.class)
@@ -1928,7 +2005,7 @@ public class AuthenticationServiceTest extends Mockito {
 
        App app = App.create();
 
-       service.authenticate(app, PASSWORD_SIGNIN);
+       service.authenticate(app, EMAIL_PASSWORD_SIGN_IN);
    }
 
    // branch coverage
@@ -1939,7 +2016,7 @@ public class AuthenticationServiceTest extends Mockito {
 
        App app = App.create();
 
-       service.authenticate(app, PASSWORD_SIGNIN);
+       service.authenticate(app, EMAIL_PASSWORD_SIGN_IN);
    }
 
    @Test(expectedExceptions = EntityNotFoundException.class)
@@ -1957,7 +2034,7 @@ public class AuthenticationServiceTest extends Mockito {
        mockGetAccountById(ACCOUNT_ID_WITH_EMAIL, false);
 
        AccountSecret secret = AccountSecret.create();
-       when(mockAccountSecretDao.verifySecret(REAUTH, TEST_USER_ID, REAUTH_TOKEN, ROTATIONS))
+       when(accountSecretDao.verifySecret(REAUTH, TEST_USER_ID, REAUTH_TOKEN, ROTATIONS))
                .thenReturn(Optional.of(secret));
 
        App app = App.create();
@@ -1970,12 +2047,12 @@ public class AuthenticationServiceTest extends Mockito {
        // Version has not been incremented by an update
        assertEquals(account.getVersion(), 1);
 
-       verify(mockAccountDao).getAccount(ACCOUNT_ID_WITH_EMAIL);
-       verify(mockAccountDao, never()).createAccount(any(), any());
-       verify(mockAccountDao, never()).updateAccount(any());
+       verify(accountDao).getAccount(ACCOUNT_ID_WITH_EMAIL);
+       verify(accountDao, never()).createAccount(any(), any());
+       verify(accountDao, never()).updateAccount(any());
 
        // verify token verification
-       verify(mockAccountSecretDao).verifySecret(REAUTH, TEST_USER_ID, REAUTH_TOKEN, 3);
+       verify(accountSecretDao).verifySecret(REAUTH, TEST_USER_ID, REAUTH_TOKEN, 3);
    }
 
    @Test
@@ -1989,8 +2066,8 @@ public class AuthenticationServiceTest extends Mockito {
        } catch (UnauthorizedException e) {
            // expected exception
        }
-       verify(mockAccountDao, never()).getAccount(any());
-       verify(mockAccountDao, never()).updateAccount(any());
+       verify(accountDao, never()).getAccount(any());
+       verify(accountDao, never()).updateAccount(any());
    }
 
    // branch coverage
@@ -2005,13 +2082,13 @@ public class AuthenticationServiceTest extends Mockito {
        } catch (UnauthorizedException e) {
            // expected exception
        }
-       verify(mockAccountDao, never()).getAccount(any());
-       verify(mockAccountDao, never()).updateAccount(any());
+       verify(accountDao, never()).getAccount(any());
+       verify(accountDao, never()).updateAccount(any());
    }
 
    @Test(expectedExceptions = EntityNotFoundException.class)
    public void reauthenticateAccountNotFound() throws Exception {
-       when(mockAccountDao.getAccount(REAUTH_SIGNIN.getAccountId())).thenReturn(Optional.empty());
+       when(accountDao.getAccount(REAUTH_SIGNIN.getAccountId())).thenReturn(Optional.empty());
 
        App app = App.create();
        app.setReauthenticationEnabled(true);
@@ -2025,7 +2102,7 @@ public class AuthenticationServiceTest extends Mockito {
        persistedAccount.setEmailVerified(false);
 
        AccountSecret secret = AccountSecret.create();
-       when(mockAccountSecretDao.verifySecret(REAUTH, TEST_USER_ID, REAUTH_TOKEN, ROTATIONS))
+       when(accountSecretDao.verifySecret(REAUTH, TEST_USER_ID, REAUTH_TOKEN, ROTATIONS))
                .thenReturn(Optional.of(secret));
 
        App app = App.create();
@@ -2041,7 +2118,7 @@ public class AuthenticationServiceTest extends Mockito {
        persistedAccount.setEmailVerified(false);
 
        AccountSecret secret = AccountSecret.create();
-       when(mockAccountSecretDao.verifySecret(REAUTH, TEST_USER_ID, REAUTH_TOKEN, ROTATIONS))
+       when(accountSecretDao.verifySecret(REAUTH, TEST_USER_ID, REAUTH_TOKEN, ROTATIONS))
                .thenReturn(Optional.of(secret));
 
        App app = App.create();
@@ -2057,7 +2134,7 @@ public class AuthenticationServiceTest extends Mockito {
        persistedAccount.setStatus(DISABLED);
 
        AccountSecret secret = AccountSecret.create();
-       when(mockAccountSecretDao.verifySecret(REAUTH, TEST_USER_ID, REAUTH_TOKEN, ROTATIONS))
+       when(accountSecretDao.verifySecret(REAUTH, TEST_USER_ID, REAUTH_TOKEN, ROTATIONS))
                .thenReturn(Optional.of(secret));
 
        App app = App.create();
@@ -2113,7 +2190,7 @@ public class AuthenticationServiceTest extends Mockito {
        app.setVerifyChannelOnSignInEnabled(true);
        app.setEmailVerificationEnabled(true);
 
-       service.authenticate(app, PASSWORD_SIGNIN);
+       service.authenticate(app, EMAIL_PASSWORD_SIGN_IN);
    }
 
    @Test(expectedExceptions = UnauthorizedException.class)
@@ -2127,38 +2204,38 @@ public class AuthenticationServiceTest extends Mockito {
 
        // execute and verify - Verify just ID, app, and email, and health code mapping is enough.
        SignIn phoneSignIn = new SignIn.Builder().withAppId(TEST_APP_ID).withPhone(PHONE)
-               .withPassword(DUMMY_PASSWORD).build();
+               .withPassword(PASSWORD).build();
        service.authenticate(app, phoneSignIn);
    }
    
    @Test
    public void authenticateAccountEmailUnverifiedWithoutEmailVerificationOK() throws Exception {
        // mock hibernate 
-       Account persistedAccount = mockGetAccountById(PASSWORD_SIGNIN.getAccountId(), true); 
+       Account persistedAccount = mockGetAccountById(EMAIL_PASSWORD_SIGN_IN.getAccountId(), true); 
        persistedAccount.setEmailVerified(false);
 
        App app = App.create();
        app.setEmailVerificationEnabled(false);
 
-       service.authenticate(app, PASSWORD_SIGNIN); 
+       service.authenticate(app, EMAIL_PASSWORD_SIGN_IN); 
    }
 
    @Test
    public void authenticateAccountUnverifiedEmailSucceedsForLegacy() throws Exception {
        // mock hibernate 
-       Account persistedAccount = mockGetAccountById(PASSWORD_SIGNIN.getAccountId(), true); 
+       Account persistedAccount = mockGetAccountById(EMAIL_PASSWORD_SIGN_IN.getAccountId(), true); 
        persistedAccount.setEmailVerified(false);
 
        App app = App.create();
        app.setVerifyChannelOnSignInEnabled(false);
 
-       service.authenticate(app, PASSWORD_SIGNIN);
+       service.authenticate(app, EMAIL_PASSWORD_SIGN_IN);
    }
    
    @Test
    public void authenticateAccountUnverifiedPhoneSucceedsForLegacy() throws Exception {
        SignIn phoneSignIn = new SignIn.Builder().withAppId(TEST_APP_ID).withPhone(PHONE)
-               .withPassword(DUMMY_PASSWORD).build();
+               .withPassword(PASSWORD).build();
 
        // mock hibernate
        Account persistedAccount = mockGetAccountById(phoneSignIn.getAccountId(), true);
@@ -2169,5 +2246,113 @@ public class AuthenticationServiceTest extends Mockito {
 
        // execute and verify - Verify just ID, app, and email, and health code mapping is enough. 
        service.authenticate(app, phoneSignIn);
+   }
+   
+   @Test
+   public void resetPasswordWithEmail() {
+       when(cacheProvider.getObject(PASSWORD_RESET_FOR_EMAIL, String.class)).thenReturn(EMAIL);
+       when(appService.getApp(TEST_APP_ID)).thenReturn(app);
+       when(accountService.getAccount(ACCOUNT_ID_WITH_EMAIL)).thenReturn(Optional.of(mockAccount));
+       when(passwordResetValidator.supports(any())).thenReturn(true);
+
+       PasswordReset passwordReset = new PasswordReset("newPassword", TOKEN, TEST_APP_ID);
+       service.resetPassword(passwordReset);
+       
+       verify(cacheProvider).getObject(PASSWORD_RESET_FOR_EMAIL, String.class);
+       verify(cacheProvider).removeObject(PASSWORD_RESET_FOR_EMAIL);
+       verify(service).changePassword(mockAccount, ChannelType.EMAIL, "newPassword");
+   }
+   
+   @Test
+   public void resetPasswordWithPhone() {
+       when(cacheProvider.getObject(PASSWORD_RESET_FOR_PHONE, Phone.class)).thenReturn(TestConstants.PHONE);
+       when(appService.getApp(TEST_APP_ID)).thenReturn(app);
+       when(accountService.getAccount(ACCOUNT_ID_WITH_PHONE)).thenReturn(Optional.of(mockAccount));
+       when(passwordResetValidator.supports(any())).thenReturn(true);
+
+       PasswordReset passwordReset = new PasswordReset("newPassword", TOKEN, TEST_APP_ID);
+       service.resetPassword(passwordReset);
+       
+       verify(cacheProvider).getObject(PASSWORD_RESET_FOR_PHONE, Phone.class);
+       verify(cacheProvider).removeObject(PASSWORD_RESET_FOR_PHONE);
+       verify(service).changePassword(mockAccount, ChannelType.PHONE, "newPassword");
+   }
+   
+   @Test
+   public void resetPasswordInvalidSptokenThrowsException() {
+       when(cacheProvider.getObject(PASSWORD_RESET_FOR_EMAIL, String.class)).thenReturn(null);
+       when(passwordResetValidator.supports(any())).thenReturn(true);
+       
+       PasswordReset passwordReset = new PasswordReset("newPassword", TOKEN, TEST_APP_ID);
+       try {
+           service.resetPassword(passwordReset);
+           fail("Should have thrown exception");
+       } catch(BadRequestException e) {
+           assertEquals(e.getMessage(), "Password reset token has expired (or already been used).");
+       }
+       verify(cacheProvider).getObject(PASSWORD_RESET_FOR_EMAIL, String.class);
+       verify(cacheProvider, never()).removeObject(any());
+       verify(service, never()).changePassword(any(), any(ChannelType.class), any());
+   }
+   
+   @Test
+   public void resetPasswordInvalidAccount() {
+       when(cacheProvider.getObject(PASSWORD_RESET_FOR_EMAIL, String.class)).thenReturn(EMAIL);
+       when(appService.getApp(TEST_APP_ID)).thenReturn(app);
+       when(accountService.getAccount(ACCOUNT_ID_WITH_EMAIL)).thenReturn(Optional.empty());
+       when(passwordResetValidator.supports(any())).thenReturn(true);
+
+       PasswordReset passwordReset = new PasswordReset("newPassword", TOKEN, TEST_APP_ID);
+       
+       try {
+           service.resetPassword(passwordReset);
+           fail("Should have thrown an exception");
+       } catch(EntityNotFoundException e) {
+           // expected exception
+       }
+       verify(cacheProvider).getObject(PASSWORD_RESET_FOR_EMAIL, String.class);
+       verify(cacheProvider).removeObject(PASSWORD_RESET_FOR_EMAIL);
+       verify(service, never()).changePassword(any(), any(ChannelType.class), any());
+   }
+   
+   @Test(expectedExceptions = EntityNotFoundException.class)
+   public void signOutUserWhoDoesNotExist() {
+       service.signUserOut(app, TEST_USER_ID, true);
+   }
+
+   @Test
+   public void signOutUser() {
+       // Need to look this up by email, not account ID
+       AccountId accountId = AccountId.forId(TEST_APP_ID, TEST_USER_ID);
+       
+       // Setup
+       when(accountDao.getAccount(accountId)).thenReturn(Optional.of(account));
+       account.setId(TEST_USER_ID);
+
+       // Execute
+       service.signUserOut(app, TEST_USER_ID, false);
+
+       // Verify
+       verify(accountDao).getAccount(accountId);
+       verify(service, never()).deleteReauthToken(any());
+       verify(cacheProvider).removeSessionByUserId(TEST_USER_ID);
+   }
+
+   @Test
+   public void signOutUserDeleteReauthToken() {
+       // Need to look this up by email, not account ID
+       AccountId accountId = AccountId.forId(TEST_APP_ID, TEST_USER_ID);
+       
+       // Setup
+       when(accountDao.getAccount(accountId)).thenReturn(Optional.of(account));
+       account.setId(TEST_USER_ID);
+
+       // Execute
+       service.signUserOut(app, TEST_USER_ID, true);
+
+       // Verify
+       verify(accountDao).getAccount(accountId);
+       verify(service).deleteReauthToken(TEST_USER_ID);
+       verify(cacheProvider).removeSessionByUserId(TEST_USER_ID);
    }
 }
