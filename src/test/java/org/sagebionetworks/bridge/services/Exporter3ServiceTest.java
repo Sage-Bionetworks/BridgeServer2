@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.services;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -67,9 +68,11 @@ import org.sagebionetworks.bridge.synapse.SynapseHelper;
 public class Exporter3ServiceTest {
 
     private static final String APP_NAME = "Test App";
+    private static final long ADMIN_SYNAPSE_ID = 555L;
     private static final long BRIDGE_ADMIN_TEAM_ID = 1111L;
     private static final long BRIDGE_STAFF_TEAM_ID = 2222L;
     private static final long DATA_ACCESS_TEAM_ID = 3333L;
+    private static final long DOWNSTREAM_ETL_SYNAPSE_ID = 3888L;
     private static final long EXPORTER_SYNAPSE_ID = 4444L;
     private static final String EXPORTER_SYNAPSE_USER = "unit-test-user";
     private static final String NAME_SCOPING_TOKEN = "dummy-token";
@@ -86,8 +89,12 @@ public class Exporter3ServiceTest {
 
     private static final String EXPECTED_PROJECT_NAME = APP_NAME + " Project " + NAME_SCOPING_TOKEN;
     private static final String EXPECTED_TEAM_NAME = APP_NAME + " Access Team " + NAME_SCOPING_TOKEN;
-    private static final Set<Long> ADMIN_PRINCIPAL_ID_SET = ImmutableSet.of(EXPORTER_SYNAPSE_ID, BRIDGE_ADMIN_TEAM_ID);
-    private static final Set<Long> READ_ONLY_PRINCIPAL_ID_SET = ImmutableSet.of(BRIDGE_STAFF_TEAM_ID,
+    private static final Set<Long> DATA_ADMIN_ID_SET = ImmutableSet.of(EXPORTER_SYNAPSE_ID, BRIDGE_ADMIN_TEAM_ID);
+    private static final Set<Long> DATA_READ_ONLY_ID_SET = ImmutableSet.of(BRIDGE_STAFF_TEAM_ID, DATA_ACCESS_TEAM_ID,
+            DOWNSTREAM_ETL_SYNAPSE_ID);
+    private static final Set<Long> PROJECT_ADMIN_ID_SET = ImmutableSet.of(EXPORTER_SYNAPSE_ID, BRIDGE_ADMIN_TEAM_ID,
+            ADMIN_SYNAPSE_ID, DOWNSTREAM_ETL_SYNAPSE_ID);
+    private static final Set<Long> PROJECT_READ_ONLY_ID_SET = ImmutableSet.of(BRIDGE_STAFF_TEAM_ID,
             DATA_ACCESS_TEAM_ID);
 
     private App app;
@@ -126,18 +133,7 @@ public class Exporter3ServiceTest {
         MockitoAnnotations.initMocks(this);
 
         // Mock config. This is done separately because we need to set mock config params.
-        BridgeConfig mockConfig = mock(BridgeConfig.class);
-        when(mockConfig.getInt(Exporter3Service.CONFIG_KEY_TEAM_BRIDGE_ADMIN)).thenReturn((int) BRIDGE_ADMIN_TEAM_ID);
-        when(mockConfig.getInt(Exporter3Service.CONFIG_KEY_TEAM_BRIDGE_STAFF)).thenReturn((int) BRIDGE_STAFF_TEAM_ID);
-        when(mockConfig.getInt(Exporter3Service.CONFIG_KEY_EXPORTER_SYNAPSE_ID)).thenReturn((int) EXPORTER_SYNAPSE_ID);
-        when(mockConfig.getProperty(Exporter3Service.CONFIG_KEY_EXPORTER_SYNAPSE_USER))
-                .thenReturn(EXPORTER_SYNAPSE_USER);
-        when(mockConfig.getProperty(Exporter3Service.CONFIG_KEY_RAW_HEALTH_DATA_BUCKET))
-                .thenReturn(RAW_HEALTH_DATA_BUCKET);
-        when(mockConfig.getProperty(Exporter3Service.CONFIG_KEY_SYNAPSE_TRACKING_VIEW))
-                .thenReturn(SYNAPSE_TRACKING_VIEW_ID);
-        when(mockConfig.getProperty(BridgeConstants.CONFIG_KEY_WORKER_SQS_URL)).thenReturn(WORKER_QUEUE_URL);
-        exporter3Service.setConfig(mockConfig);
+        exporter3Service.setConfig(mockConfig());
 
         // Spy getNameScopingToken to make it easier to test.
         doReturn(NAME_SCOPING_TOKEN).when(exporter3Service).getNameScopingToken();
@@ -177,6 +173,44 @@ public class Exporter3ServiceTest {
 
         Exporter3Configuration ex3ConfigToCreate = appToUpdate.getExporter3Configuration();
         assertEquals(ex3ConfigToCreate, returnedEx3Config);
+    }
+
+    // Branch coverage for when admin.synapse.id and downstream.etl.synapse.id aren't specified. Long-term, we want to
+    // make sure all envs have these configs set up, so this test will eventually go away.
+    @Test
+    public void initExporter3_NoOptionalConfigs() throws Exception {
+        // Re-write BridgeConfig to not include those configs.
+        BridgeConfig mockConfig = mockConfig();
+        when(mockConfig.get(Exporter3Service.CONFIG_KEY_ADMIN_SYNAPSE_ID)).thenReturn(null);
+        when(mockConfig.get(Exporter3Service.CONFIG_KEY_DOWNSTREAM_ETL_SYNAPSE_ID)).thenReturn(null);
+        exporter3Service.setConfig(mockConfig);
+
+        // App has no exporter3config.
+        app.setExporter3Configuration(null);
+        app.setExporter3Enabled(false);
+
+        mockSynapseResourceCreation();
+
+        // Execute.
+        exporter3Service.initExporter3(TestConstants.TEST_APP_ID);
+
+        // Just verify the things that are different.
+        // Verify that we didn't add the admin as a manager to the team.
+        verify(mockSynapseHelper, never()).inviteToTeam(anyLong(), anyLong(), anyBoolean());
+
+        // Verify project ACLs.
+        verify(mockSynapseHelper).createAclWithRetry(PROJECT_ID, ImmutableSet.of(EXPORTER_SYNAPSE_ID, BRIDGE_ADMIN_TEAM_ID),
+                ImmutableSet.of(BRIDGE_STAFF_TEAM_ID, DATA_ACCESS_TEAM_ID));
+
+        // Verify created participant version table.
+        verify(mockSynapseHelper).createTableWithColumnsAndAcls(Exporter3Service.PARTICIPANT_VERSION_COLUMN_MODELS,
+                ImmutableSet.of(BRIDGE_STAFF_TEAM_ID, DATA_ACCESS_TEAM_ID),
+                ImmutableSet.of(EXPORTER_SYNAPSE_ID, BRIDGE_ADMIN_TEAM_ID), PROJECT_ID,
+                Exporter3Service.TABLE_NAME_PARTICIPANT_VERSIONS);
+
+        // Verify folder ACLs.
+        verify(mockSynapseHelper).createAclWithRetry(RAW_FOLDER_ID, ImmutableSet.of(EXPORTER_SYNAPSE_ID, BRIDGE_ADMIN_TEAM_ID),
+                ImmutableSet.of(BRIDGE_STAFF_TEAM_ID, DATA_ACCESS_TEAM_ID));
     }
 
     @Test
@@ -304,6 +338,25 @@ public class Exporter3ServiceTest {
         verify(mockAppService, never()).updateApp(any(), anyBoolean());
     }
 
+    private static BridgeConfig mockConfig() {
+        BridgeConfig mockConfig = mock(BridgeConfig.class);
+        when(mockConfig.get(Exporter3Service.CONFIG_KEY_ADMIN_SYNAPSE_ID))
+                .thenReturn(String.valueOf(ADMIN_SYNAPSE_ID));
+        when(mockConfig.getInt(Exporter3Service.CONFIG_KEY_TEAM_BRIDGE_ADMIN)).thenReturn((int) BRIDGE_ADMIN_TEAM_ID);
+        when(mockConfig.getInt(Exporter3Service.CONFIG_KEY_TEAM_BRIDGE_STAFF)).thenReturn((int) BRIDGE_STAFF_TEAM_ID);
+        when(mockConfig.get(Exporter3Service.CONFIG_KEY_DOWNSTREAM_ETL_SYNAPSE_ID))
+                .thenReturn(String.valueOf(DOWNSTREAM_ETL_SYNAPSE_ID));
+        when(mockConfig.getInt(Exporter3Service.CONFIG_KEY_EXPORTER_SYNAPSE_ID)).thenReturn((int) EXPORTER_SYNAPSE_ID);
+        when(mockConfig.getProperty(Exporter3Service.CONFIG_KEY_EXPORTER_SYNAPSE_USER))
+                .thenReturn(EXPORTER_SYNAPSE_USER);
+        when(mockConfig.getProperty(Exporter3Service.CONFIG_KEY_RAW_HEALTH_DATA_BUCKET))
+                .thenReturn(RAW_HEALTH_DATA_BUCKET);
+        when(mockConfig.getProperty(Exporter3Service.CONFIG_KEY_SYNAPSE_TRACKING_VIEW))
+                .thenReturn(SYNAPSE_TRACKING_VIEW_ID);
+        when(mockConfig.getProperty(BridgeConstants.CONFIG_KEY_WORKER_SQS_URL)).thenReturn(WORKER_QUEUE_URL);
+        return mockConfig;
+    }
+
     private void mockSynapseResourceCreation() throws Exception {
         Team createdTeam = new Team();
         createdTeam.setId(String.valueOf(DATA_ACCESS_TEAM_ID));
@@ -348,6 +401,8 @@ public class Exporter3ServiceTest {
         Team teamToCreate = teamToCreateCaptor.getValue();
         assertEquals(teamToCreate.getName(), EXPECTED_TEAM_NAME);
 
+        verify(mockSynapseHelper).inviteToTeam(DATA_ACCESS_TEAM_ID, ADMIN_SYNAPSE_ID, true);
+
         // Verify created project. Note that we call this method again later, which is why we verify it twice now.
         ArgumentCaptor<Entity> entitiesToCreateCaptor = ArgumentCaptor.forClass(Project.class);
         verify(mockSynapseHelper, times(2)).createEntityWithRetry(entitiesToCreateCaptor
@@ -358,7 +413,7 @@ public class Exporter3ServiceTest {
         assertEquals(projectToCreate.getName(), EXPECTED_PROJECT_NAME);
 
         // Verify project ACLs.
-        verify(mockSynapseHelper).createAclWithRetry(PROJECT_ID, ADMIN_PRINCIPAL_ID_SET, READ_ONLY_PRINCIPAL_ID_SET);
+        verify(mockSynapseHelper).createAclWithRetry(PROJECT_ID, PROJECT_ADMIN_ID_SET, PROJECT_READ_ONLY_ID_SET);
 
         // Verify project added to tracking view. For whatever reason, view scope IDs don't include the "syn" prefix.
         ArgumentCaptor<EntityView> viewToUpdateCaptor = ArgumentCaptor.forClass(EntityView.class);
@@ -369,7 +424,7 @@ public class Exporter3ServiceTest {
 
         // Verify created participant version table.
         verify(mockSynapseHelper).createTableWithColumnsAndAcls(Exporter3Service.PARTICIPANT_VERSION_COLUMN_MODELS,
-                READ_ONLY_PRINCIPAL_ID_SET, ADMIN_PRINCIPAL_ID_SET, PROJECT_ID,
+                DATA_READ_ONLY_ID_SET, DATA_ADMIN_ID_SET, PROJECT_ID,
                 Exporter3Service.TABLE_NAME_PARTICIPANT_VERSIONS);
 
         // Verify created folder.
@@ -378,8 +433,7 @@ public class Exporter3ServiceTest {
         assertEquals(folderToCreate.getParentId(), PROJECT_ID);
 
         // Verify folder ACLs.
-        verify(mockSynapseHelper).createAclWithRetry(RAW_FOLDER_ID, ADMIN_PRINCIPAL_ID_SET,
-                READ_ONLY_PRINCIPAL_ID_SET);
+        verify(mockSynapseHelper).createAclWithRetry(RAW_FOLDER_ID, DATA_ADMIN_ID_SET, DATA_READ_ONLY_ID_SET);
 
         // Verify we write to S3 for the storage location.
         verify(mockS3Helper).writeLinesToS3(RAW_HEALTH_DATA_BUCKET, s3BaseKey + "/owner.txt",

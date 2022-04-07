@@ -12,9 +12,9 @@
         <apache.http.version>4.5.13</apache.http.version>
         <aws.version>1.11.944</aws.version>
         <hibernate.version>5.4.27.Final</hibernate.version>
-        <jackson.version>2.10.0</jackson.version>
+        <jackson.version>2.12.6</jackson.version>
         <java.version>1.8</java.version>
-        <logback.version>1.2.3</logback.version>
+        <logback.version>1.2.11</logback.version>
         <log4j.version>2.17.1</log4j.version>
         <!-- NOTE: this is not the version of Spring Boot, declared below -->
         <spring.version>5.1.8.RELEASE</spring.version>
@@ -35,7 +35,7 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>2.10.0.pr1</version>
+            <version>2.12.6.1</version>
         </dependency>
         <dependency>
             <groupId>com.google.guava</groupId>
@@ -55,7 +55,7 @@
         <dependency>
             <groupId>org.sagebionetworks</groupId>
             <artifactId>bridge-base</artifactId>
-            <version>2.7.33</version>
+            <version>2.7.34</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>

@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -64,6 +65,8 @@ public class Exporter3Service {
     private static final Logger LOG = LoggerFactory.getLogger(Exporter3Service.class);
 
     // Package-scoped to be available in unit tests.
+    static final String CONFIG_KEY_ADMIN_SYNAPSE_ID = "admin.synapse.id";
+    static final String CONFIG_KEY_DOWNSTREAM_ETL_SYNAPSE_ID = "downstream.etl.synapse.id";
     static final String CONFIG_KEY_EXPORTER_SYNAPSE_ID = "exporter.synapse.id";
     static final String CONFIG_KEY_EXPORTER_SYNAPSE_USER = "exporter.synapse.user";
     static final String CONFIG_KEY_RAW_HEALTH_DATA_BUCKET = "health.data.bucket.raw";
@@ -149,6 +152,8 @@ public class Exporter3Service {
     // Config attributes.
     private Long bridgeAdminTeamId;
     private Long bridgeStaffTeamId;
+    private Long adminSynapseId;
+    private Long downstreamEtlSynapseId;
     private Long exporterSynapseId;
     private String exporterSynapseUser;
     private String rawHealthDataBucket;
@@ -173,6 +178,20 @@ public class Exporter3Service {
         rawHealthDataBucket = config.getProperty(CONFIG_KEY_RAW_HEALTH_DATA_BUCKET);
         synapseTrackingViewId = config.getProperty(CONFIG_KEY_SYNAPSE_TRACKING_VIEW);
         workerQueueUrl = config.getProperty(BridgeConstants.CONFIG_KEY_WORKER_SQS_URL);
+
+        String adminSynapseIdStr = config.get(CONFIG_KEY_ADMIN_SYNAPSE_ID);
+        if (StringUtils.isNotBlank(adminSynapseIdStr)) {
+            adminSynapseId = Long.valueOf(adminSynapseIdStr);
+        } else {
+            adminSynapseId = null;
+        }
+
+        String downstreamEtlSynapseIdStr = config.get(CONFIG_KEY_DOWNSTREAM_ETL_SYNAPSE_ID);
+        if (StringUtils.isNotBlank(downstreamEtlSynapseIdStr)) {
+            downstreamEtlSynapseId = Long.valueOf(downstreamEtlSynapseIdStr);
+        } else {
+            downstreamEtlSynapseId = null;
+        }
     }
 
     @Autowired
@@ -316,11 +335,37 @@ public class Exporter3Service {
             dataAccessTeamId = Long.parseLong(team.getId());
             LOG.info("Created Synapse team " + dataAccessTeamId);
 
+            // As a temporary measure, add the admin ID as a manager of this team. This will allow us to manage
+            // permissions manually until we have a solution for https://sagebionetworks.jira.com/browse/BRIDGE-3154
+            if (adminSynapseId != null) {
+                synapseHelper.inviteToTeam(dataAccessTeamId, adminSynapseId, true);
+            }
+
             ex3Config.setDataAccessTeamId(dataAccessTeamId);
             isModified = true;
         }
-        Set<Long> adminPrincipalIds = ImmutableSet.of(exporterSynapseId, bridgeAdminTeamId);
-        Set<Long> readOnlyPrincipalIds = ImmutableSet.of(bridgeStaffTeamId, dataAccessTeamId);
+
+        Set<Long> dataAdminIds = ImmutableSet.of(exporterSynapseId, bridgeAdminTeamId);
+
+        Set<Long> dataReadOnlyIds = new HashSet<>();
+        dataReadOnlyIds.add(bridgeStaffTeamId);
+        dataReadOnlyIds.add(dataAccessTeamId);
+
+        Set<Long> projectAdminIds = new HashSet<>();
+        projectAdminIds.add(exporterSynapseId);
+        projectAdminIds.add(bridgeAdminTeamId);
+
+        Set<Long> projectReadOnlyIds = ImmutableSet.of(bridgeStaffTeamId, dataAccessTeamId);
+
+        // Note: At the moment, we are not able to create additional accounts in Synapse Dev. Some environments might
+        // not have these accounts set up yet, so we need to be able to handle these configs not present.
+        if (adminSynapseId != null) {
+            projectAdminIds.add(adminSynapseId);
+        }
+        if (downstreamEtlSynapseId != null) {
+            dataReadOnlyIds.add(downstreamEtlSynapseId);
+            projectAdminIds.add(downstreamEtlSynapseId);
+        }
 
         // Create project.
         String projectId = ex3Config.getProjectId();
@@ -332,7 +377,7 @@ public class Exporter3Service {
             LOG.info("Created Synapse project " + projectId);
 
             // Create ACLs for project.
-            synapseHelper.createAclWithRetry(projectId, adminPrincipalIds, readOnlyPrincipalIds);
+            synapseHelper.createAclWithRetry(projectId, projectAdminIds, projectReadOnlyIds);
 
             ex3Config.setProjectId(projectId);
             isModified = true;
@@ -357,7 +402,7 @@ public class Exporter3Service {
         String participantVersionTableId = ex3Config.getParticipantVersionTableId();
         if (participantVersionTableId == null) {
             participantVersionTableId = synapseHelper.createTableWithColumnsAndAcls(PARTICIPANT_VERSION_COLUMN_MODELS,
-                    readOnlyPrincipalIds, adminPrincipalIds, projectId, TABLE_NAME_PARTICIPANT_VERSIONS);
+                    dataReadOnlyIds, dataAdminIds, projectId, TABLE_NAME_PARTICIPANT_VERSIONS);
             LOG.info("Created Synapse table " + participantVersionTableId);
 
             ex3Config.setParticipantVersionTableId(participantVersionTableId);
@@ -376,7 +421,7 @@ public class Exporter3Service {
 
             // Create ACLs for folder. This is a separate ACL because we don't want to allow people to modify the
             // raw data.
-            synapseHelper.createAclWithRetry(rawDataFolderId, adminPrincipalIds, readOnlyPrincipalIds);
+            synapseHelper.createAclWithRetry(rawDataFolderId, dataAdminIds, dataReadOnlyIds);
 
             ex3Config.setRawDataFolderId(rawDataFolderId);
             isModified = true;

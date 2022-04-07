@@ -127,6 +127,7 @@ import org.sagebionetworks.bridge.models.assessments.config.HibernateAssessmentC
 import org.sagebionetworks.bridge.models.files.FileMetadata;
 import org.sagebionetworks.bridge.models.files.FileRevision;
 import org.sagebionetworks.bridge.models.organizations.HibernateOrganization;
+import org.sagebionetworks.bridge.models.permissions.Permission;
 import org.sagebionetworks.bridge.models.schedules2.Notification;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.schedules2.Session;
@@ -664,6 +665,7 @@ public class SpringConfig {
         metadataSources.addAnnotatedClass(StudyActivityEvent.class);
         metadataSources.addAnnotatedClass(Notification.class);
         metadataSources.addAnnotatedClass(WeeklyAdherenceReport.class);
+        metadataSources.addAnnotatedClass(Permission.class);
         
         SessionFactory factory = metadataSources.buildMetadata().buildSessionFactory();
         
@@ -749,8 +751,7 @@ public class SpringConfig {
         Config config = bridgeConfig();
 
         SynapseClient synapseClient = new SynapseAdminClientImpl();
-        synapseClient.setUsername(config.get("synapse.user"));
-        synapseClient.setApiKey(config.get("synapse.api.key"));
+        synapseClient.setBearerAuthorizationToken(config.get("synapse.access.token"));
         setSynapseEndpoint(synapseClient, config);
         return synapseClient;
     }
@@ -760,8 +761,7 @@ public class SpringConfig {
         Config config = bridgeConfig();
 
         SynapseClient synapseClient = new SynapseAdminClientImpl();
-        synapseClient.setUsername(config.get("exporter.synapse.user"));
-        synapseClient.setApiKey(config.get("exporter.synapse.api.key"));
+        synapseClient.setBearerAuthorizationToken(config.get("exporter.synapse.access.token"));
         setSynapseEndpoint(synapseClient, config);
         return synapseClient;
     }
