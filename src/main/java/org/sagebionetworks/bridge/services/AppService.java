@@ -66,6 +66,7 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.GuidVersionHolder;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.apps.App;
@@ -131,6 +132,7 @@ public class AppService {
     private AccountService accountService;
     private AssessmentService assessmentService;
     private AssessmentResourceService assessmentResourceService;
+    private AccountWorkflowService accountWorkflowService;
 
     // Not defaults, if you wish to change these, change in source. Not configurable per app
     private String appEmailVerificationTemplate;
@@ -244,6 +246,10 @@ public class AppService {
     final void setAssessmentResourceService(AssessmentResourceService assessmentResourceService) {
         this.assessmentResourceService = assessmentResourceService;
     }
+    @Autowired
+    final void setAccountWorkflowService(AccountWorkflowService accountWorkflowService) {
+        this.accountWorkflowService = accountWorkflowService; 
+    }
     
     public App getApp(String identifier, boolean includeDeleted) {
         checkArgument(isNotBlank(identifier));
@@ -292,7 +298,8 @@ public class AppService {
         for (StudyParticipant user: appAndUsers.getUsers()) {
             IdentifierHolder identifierHolder = participantService.createParticipant(app, user, false);
             // send resetting password email as well
-            participantService.requestResetPassword(app, identifierHolder.getIdentifier());
+            AccountId accountId = AccountId.forId(app.getIdentifier(), identifierHolder.getIdentifier());
+            accountWorkflowService.requestResetPassword(app, true, accountId);
         }
         
         // Add admins and users to the Synapse project and access teams. All IDs have been validated.

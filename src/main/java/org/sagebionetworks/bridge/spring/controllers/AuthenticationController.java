@@ -8,6 +8,8 @@ import static org.sagebionetworks.bridge.BridgeConstants.APP_ACCESS_EXCEPTION_MS
 import static org.sagebionetworks.bridge.BridgeConstants.APP_ID_PROPERTY;
 import static org.sagebionetworks.bridge.BridgeConstants.STUDY_PROPERTY;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
+import static org.sagebionetworks.bridge.services.AuthenticationService.ChannelType.EMAIL;
+import static org.sagebionetworks.bridge.services.AuthenticationService.ChannelType.PHONE;
 
 import javax.servlet.http.Cookie;
 
@@ -40,7 +42,6 @@ import org.sagebionetworks.bridge.models.accounts.Verification;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.oauth.OAuthAuthorizationToken;
 import org.sagebionetworks.bridge.services.AccountWorkflowService;
-import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 
 @CrossOrigin
 @RestController
@@ -90,7 +91,7 @@ public class AuthenticationController extends BaseController {
 
         UserSession session = null;
         try {
-            session = authenticationService.emailSignIn(context, signInRequest);
+            session = authenticationService.channelSignIn(EMAIL, context, signInRequest);
         } catch (ConsentRequiredException e) {
             session = e.getUserSession();
             throw e;
@@ -131,7 +132,7 @@ public class AuthenticationController extends BaseController {
 
         UserSession session = null;
         try {
-            session = authenticationService.phoneSignIn(context, signInRequest);
+            session = authenticationService.channelSignIn(PHONE, context, signInRequest);
         } catch (ConsentRequiredException e) {
             session = e.getUserSession();
             throw e;
@@ -255,7 +256,7 @@ public class AuthenticationController extends BaseController {
     public StatusMessage verifyEmail() {
         Verification verification = parseJson(Verification.class);
 
-        authenticationService.verifyChannel(ChannelType.EMAIL, verification);
+        authenticationService.verifyChannel(EMAIL, verification);
         
         return new StatusMessage("Email address verified.");
     }
@@ -266,7 +267,10 @@ public class AuthenticationController extends BaseController {
         AccountId accountId = parseJson(AccountId.class);
         getAppOrThrowException(accountId.getUnguardedAccountId().getAppId());
         
-        authenticationService.resendVerification(ChannelType.EMAIL, accountId);
+        Account account = accountService.getAccount(accountId).orElse(null);
+        if (account != null) {
+            accountWorkflowService.resendVerification(EMAIL, account.getAppId(), account.getId());    
+        }
         return new StatusMessage(EMAIL_VERIFY_REQUEST_MSG);
     }
 
@@ -274,7 +278,7 @@ public class AuthenticationController extends BaseController {
     public StatusMessage verifyPhone() {
         Verification verification = parseJson(Verification.class);
 
-        authenticationService.verifyChannel(ChannelType.PHONE, verification);
+        authenticationService.verifyChannel(PHONE, verification);
         
         return new StatusMessage("Phone number verified.");
     }
@@ -286,8 +290,11 @@ public class AuthenticationController extends BaseController {
         
         // Must be here to get the correct exception if app property is missing
         getAppOrThrowException(accountId.getUnguardedAccountId().getAppId());
-        
-        authenticationService.resendVerification(ChannelType.PHONE, accountId);
+
+        Account account = accountService.getAccount(accountId).orElse(null);
+        if (account != null) {
+            accountWorkflowService.resendVerification(PHONE, account.getAppId(), account.getId());    
+        }
         return new StatusMessage(PHONE_VERIFY_REQUEST_MSG);
     }
 
@@ -299,7 +306,7 @@ public class AuthenticationController extends BaseController {
         App app = appService.getApp(signIn.getAppId());
         verifySupportedVersionOrThrowException(app);
         
-        authenticationService.requestResetPassword(app, false, signIn);
+        accountWorkflowService.requestResetPassword(app, false, signIn);
         
         // Email is chosen over phone number, so if email was provided, respond as if we used it.
         if (signIn.getEmail() != null) {
@@ -361,12 +368,7 @@ public class AuthenticationController extends BaseController {
         // In this one case, the caller’s ID changes during an authenticated request.
         RequestContext.set(RequestContext.get().toBuilder().withCallerUserId(userId).build());
 
-        // It should be impossible to get an exception here as we just checked the account...
-        AccountId accountId = AccountId.forId(targetAppId, userId);
-        Account account = accountService.getAccount(accountId)
-              .orElseThrow(() -> new UnauthorizedException(APP_ACCESS_EXCEPTION_MSG));
-        
-        UserSession newSession = authenticationService.getSessionFromAccount(targetApp, context, account);
+        UserSession newSession = authenticationService.getSession(targetApp, context);
         // This must be maintained for non superadmin users, as it is lost when the full session
         // is recreated.
         newSession.setSynapseAuthenticated(true);

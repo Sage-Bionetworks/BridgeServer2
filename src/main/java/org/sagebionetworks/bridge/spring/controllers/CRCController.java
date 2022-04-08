@@ -193,7 +193,7 @@ public class CRCController extends BaseController {
     final void setGbfOrderService(GBFOrderService GBFOrderService) {
         this.gbfOrderService = GBFOrderService;
     }
-
+    
     DateTime getTimestamp() {
         return DateTime.now().withZone(DateTimeZone.UTC);
     }
@@ -741,7 +741,8 @@ public class CRCController extends BaseController {
 
         // Verify the password
         SignIn signIn = signInBuilder.build();
-        Account account = accountService.authenticate(app, signIn);
+        System.out.println("authenticationService: " + authenticationService);
+        Account account = authenticationService.authenticate(app, signIn);
 
         // This method of verification sidesteps RequestContext initialization
         // through a session. Set up what is needed in the controller.

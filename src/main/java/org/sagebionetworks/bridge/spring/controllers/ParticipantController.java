@@ -81,6 +81,7 @@ import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.upload.UploadView;
 import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.services.UserAdminService;
+import org.sagebionetworks.bridge.services.AccountWorkflowService;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.services.EnrollmentService;
 
@@ -97,6 +98,8 @@ public class ParticipantController extends BaseController {
     
     private EnrollmentService enrollmentService;
     
+    private AccountWorkflowService accountWorkflowService;
+    
     @Autowired
     final void setParticipantService(ParticipantService participantService) {
         this.participantService = participantService;
@@ -110,6 +113,11 @@ public class ParticipantController extends BaseController {
     @Autowired
     final void setEnrollmentService(EnrollmentService enrollmentService) {
         this.enrollmentService = enrollmentService;
+    }
+    
+    @Autowired
+    final void setAccountWorkflowService(AccountWorkflowService accountWorkflowService) {
+        this.accountWorkflowService = accountWorkflowService; 
     }
     
     /** Researcher API to allow backfill of SMS notification registrations. */
@@ -266,7 +274,7 @@ public class ParticipantController extends BaseController {
 
         CriteriaContext context = getCriteriaContext(session);
         
-        StudyParticipant participant = participantService.updateIdentifiers(app, context, update);
+        StudyParticipant participant = authenticationService.updateIdentifiers(app, context, update);
         sessionUpdateService.updateParticipant(session, context, participant);
         
         return UserSessionInfo.toJSON(session);
@@ -436,7 +444,7 @@ public class ParticipantController extends BaseController {
         CAN_EDIT_PARTICIPANTS.checkAndThrow(USER_ID, userId);
         App app = appService.getApp(session.getAppId());
 
-        participantService.signUserOut(app, userId, deleteReauthToken);
+        authenticationService.signUserOut(app, userId, deleteReauthToken);
 
         return new StatusMessage("User signed out.");
     }
@@ -447,7 +455,8 @@ public class ParticipantController extends BaseController {
         CAN_EDIT_PARTICIPANTS.checkAndThrow(USER_ID, userId);
         App app = appService.getApp(session.getAppId());
 
-        participantService.requestResetPassword(app, userId);
+        AccountId accountId = AccountId.forId(session.getAppId(), userId);
+        accountWorkflowService.requestResetPassword(app, true, accountId);
         
         return new StatusMessage("Request to reset password sent to user.");
     }
@@ -494,9 +503,8 @@ public class ParticipantController extends BaseController {
     public StatusMessage resendEmailVerification(@PathVariable String userId) {
         UserSession session = getAdministrativeSession();
         CAN_EDIT_PARTICIPANTS.checkAndThrow(USER_ID, userId);
-        App app = appService.getApp(session.getAppId());
 
-        participantService.resendVerification(app, ChannelType.EMAIL, userId);
+        accountWorkflowService.resendVerification(ChannelType.EMAIL, session.getAppId(), userId);
         
         return new StatusMessage("Email verification request has been resent to user.");
     }
@@ -505,9 +513,8 @@ public class ParticipantController extends BaseController {
     public StatusMessage resendPhoneVerification(@PathVariable String userId) {
         UserSession session = getAdministrativeSession();
         CAN_EDIT_PARTICIPANTS.checkAndThrow(USER_ID, userId);
-        App app = appService.getApp(session.getAppId());
 
-        participantService.resendVerification(app, ChannelType.PHONE, userId);
+        accountWorkflowService.resendVerification(ChannelType.PHONE, session.getAppId(), userId);
         
         return new StatusMessage("Phone verification request has been resent to user.");
     }

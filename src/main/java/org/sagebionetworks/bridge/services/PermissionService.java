@@ -1,20 +1,11 @@
 package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.sagebionetworks.bridge.models.permissions.EntityType.ASSESSMENT;
-import static org.sagebionetworks.bridge.models.permissions.EntityType.ASSESSMENT_LIBRARY;
 import static org.sagebionetworks.bridge.models.permissions.EntityType.ASSESSMENT_TYPES;
-import static org.sagebionetworks.bridge.models.permissions.EntityType.MEMBERS;
-import static org.sagebionetworks.bridge.models.permissions.EntityType.ORGANIZATION;
 import static org.sagebionetworks.bridge.models.permissions.EntityType.ORGANIZATION_TYPES;
-import static org.sagebionetworks.bridge.models.permissions.EntityType.PARTICIPANTS;
-import static org.sagebionetworks.bridge.models.permissions.EntityType.SPONSORED_STUDIES;
-import static org.sagebionetworks.bridge.models.permissions.EntityType.STUDY;
-import static org.sagebionetworks.bridge.models.permissions.EntityType.STUDY_PI;
 import static org.sagebionetworks.bridge.models.permissions.EntityType.STUDY_TYPES;
 import static org.sagebionetworks.bridge.validators.PermissionValidator.INSTANCE;
 
-import com.google.common.collect.ImmutableSet;
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.PermissionDao;
@@ -35,14 +26,9 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 @Component
 public class PermissionService {
-    
-    private final Set<EntityType> orgTypes = ImmutableSet.of(ASSESSMENT_LIBRARY, MEMBERS, ORGANIZATION, SPONSORED_STUDIES);
-    private final Set<EntityType> studyTypes = ImmutableSet.of(PARTICIPANTS, STUDY, STUDY_PI);
-    private final Set<EntityType> assessmentTypes = ImmutableSet.of(ASSESSMENT);
     
     private PermissionDao permissionDao;
     

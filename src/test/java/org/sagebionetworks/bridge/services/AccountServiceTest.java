@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.services;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
-import static org.joda.time.DateTimeZone.UTC;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.BridgeUtils.getElement;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
@@ -24,16 +23,11 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_NOTE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_CLIENT_TIME_ZONE;
 import static org.sagebionetworks.bridge.dao.AccountDao.MIGRATION_VERSION;
 import static org.sagebionetworks.bridge.models.AccountSummarySearch.EMPTY_SEARCH;
-import static org.sagebionetworks.bridge.models.accounts.AccountSecretType.REAUTH;
-import static org.sagebionetworks.bridge.models.accounts.AccountStatus.DISABLED;
-import static org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.UNVERIFIED;
 import static org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM;
 import static org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm.STORMPATH_HMAC_SHA_256;
-import static org.sagebionetworks.bridge.services.AccountService.ROTATIONS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
@@ -68,7 +62,6 @@ import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.AccountSecretDao;
-import org.sagebionetworks.bridge.exceptions.AccountDisabledException;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
@@ -78,24 +71,17 @@ import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountSecret;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
-import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
 import org.sagebionetworks.bridge.models.accounts.Phone;
-import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
-import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 
 public class AccountServiceTest extends Mockito {
 
     private static final AccountId ACCOUNT_ID = AccountId.forId(TEST_APP_ID, TEST_USER_ID);
     private static final AccountId ACCOUNT_ID_WITH_EMAIL = AccountId.forEmail(TEST_APP_ID, EMAIL);
-    private static final SignIn SIGN_IN = new SignIn.Builder().withAppId(TEST_APP_ID).withEmail(EMAIL)
-            .withReauthToken("reauthToken").build();
-    private static final AccountId ACCOUNT_ID_WITH_PHONE = AccountId.forPhone(TEST_APP_ID, PHONE);
     private static final DateTime MOCK_DATETIME = DateTime.parse("2017-05-19T14:45:27.593Z");
     private static final String DUMMY_PASSWORD = "Aa!Aa!Aa!Aa!1";
-    private static final String REAUTH_TOKEN = "reauth-token";
     private static final Phone OTHER_PHONE = new Phone("+12065881469", "US");
     private static final String OTHER_EMAIL = "other-email@example.com";
     private static final String OTHER_USER_ID = "other-user-id";
@@ -105,11 +91,6 @@ public class AccountServiceTest extends Mockito {
     private static final String STUDY_B = "studyB";
     private static final Set<Enrollment> ACCOUNT_ENROLLMENTS = ImmutableSet
             .of(Enrollment.create(TEST_APP_ID, STUDY_A, TEST_USER_ID));
-    
-    private static final SignIn PASSWORD_SIGNIN = new SignIn.Builder().withAppId(TEST_APP_ID).withEmail(EMAIL)
-            .withPassword(DUMMY_PASSWORD).build();
-    private static final SignIn REAUTH_SIGNIN = new SignIn.Builder().withAppId(TEST_APP_ID).withEmail(EMAIL)
-            .withReauthToken(REAUTH_TOKEN).build();
 
     @Mock
     AccountDao mockAccountDao;
@@ -199,60 +180,6 @@ public class AccountServiceTest extends Mockito {
             "Account does not have a Synapse user")
     public void getAppIdsForUser_BlankSynapseUserId() {
         service.getAppIdsForUser("   ");
-    }
-
-    @Test
-    public void verifyChannel() throws Exception {
-        Account account = mockGetAccountById(ACCOUNT_ID, false);
-        account.setEmailVerified(false);
-        
-        service.verifyChannel(ChannelType.EMAIL, account);
-        verify(mockAccountDao).updateAccount(account);
-    }
-
-    @Test
-    public void changePassword() throws Exception {
-        Account account = mockGetAccountById(ACCOUNT_ID, false);
-        account.setStatus(UNVERIFIED);
-        
-        service.changePassword(account, ChannelType.PHONE, "asdf");
-        verify(mockAccountDao).updateAccount(account);
-    }
-
-    @Test
-    public void authenticate() throws Exception {
-        App app = App.create();
-        Account account = mockGetAccountById(ACCOUNT_ID, false);
-        when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_EMAIL)).thenReturn(Optional.of(account));
-        doNothing().when(service).verifyPassword(any(), any());
-
-        Account returnVal = service.authenticate(app, SIGN_IN);
-        assertEquals(returnVal, account);
-        verify(mockAccountDao).getAccount(ACCOUNT_ID_WITH_EMAIL);
-    }
-
-    @Test
-    public void reauthenticate() throws Exception {
-        App app = App.create();
-        app.setReauthenticationEnabled(true);
-        
-        Account account = mockGetAccountById(ACCOUNT_ID_WITH_EMAIL, false);
-        when(mockAccountSecretDao.verifySecret(REAUTH, TEST_USER_ID, "reauthToken", ROTATIONS))
-                .thenReturn(Optional.of(mockSecret));
-
-        Account returnVal = service.reauthenticate(app, SIGN_IN);
-        assertEquals(returnVal, account);
-        verify(mockAccountDao).getAccount(ACCOUNT_ID_WITH_EMAIL);
-    }
-
-    @Test
-    public void deleteReauthToken() throws Exception {
-        Account account = Account.create();
-        account.setId(TEST_USER_ID);
-
-        service.deleteReauthToken(account);
-        
-        verify(mockAccountSecretDao).removeSecrets(REAUTH, TEST_USER_ID);
     }
 
     @Test
@@ -603,418 +530,7 @@ public class AccountServiceTest extends Mockito {
         verify(mockAccountDao).getAccount(ACCOUNT_ID);
     }
     
-    @Test
-    public void verifyEmailUsingToken() {
-        Account account = Account.create();
-        account.setAppId(TEST_APP_ID);
-        account.setId(TEST_USER_ID);
-        account.setEmail(EMAIL);
-        account.setStatus(UNVERIFIED);
-        account.setEmailVerified(FALSE);
-
-        service.verifyChannel(ChannelType.EMAIL, account);
-
-        verify(mockAccountDao).updateAccount(account);
-        assertEquals(account.getStatus(), ENABLED);
-        assertEquals(account.getEmailVerified(), TRUE);
-        // modifiedOn is stored as a long, which loses the time zone of the original time stamp.
-        assertEquals(account.getModifiedOn().toString(), MOCK_DATETIME.withZone(UTC).toString());
-        assertEquals(account.getStatus(), ENABLED);
-        assertEquals(account.getEmailVerified(), TRUE);
-    }
-
-    @Test
-    public void verifyEmailUsingAccountNoChangeNecessary() {
-        Account account = Account.create();
-        account.setId(TEST_USER_ID);
-        account.setStatus(ENABLED);
-        account.setEmailVerified(TRUE);
-
-        service.verifyChannel(ChannelType.EMAIL, account);
-        
-        verify(mockAccountDao, never()).updateAccount(any());
-    }
-
-    @Test
-    public void verifyEmailWithDisabledAccountMakesNoChanges() {
-        Account account = Account.create();
-        account.setStatus(DISABLED);
-
-        service.verifyChannel(ChannelType.EMAIL, account);
-        
-        verify(mockAccountDao, never()).updateAccount(any());
-        assertEquals(account.getStatus(), DISABLED);
-    }
-
-    @Test
-    public void verifyPhoneUsingToken() {
-        Account account = Account.create();
-        account.setAppId(TEST_APP_ID);
-        account.setId(TEST_USER_ID);
-        account.setPhone(PHONE);
-        account.setStatus(UNVERIFIED);
-        account.setPhoneVerified(FALSE);
-
-        service.verifyChannel(ChannelType.PHONE, account);
-
-        verify(mockAccountDao).updateAccount(account);
-        assertEquals(account.getStatus(), ENABLED);
-        assertEquals(account.getPhoneVerified(), TRUE);
-        // modifiedOn is stored as a long, which loses the time zone of the original time stamp.
-        assertEquals(account.getModifiedOn().toString(), MOCK_DATETIME.withZone(UTC).toString());
-        assertEquals(account.getStatus(), ENABLED);
-        assertEquals(account.getPhoneVerified(), TRUE);
-        verify(mockAccountDao).updateAccount(account);
-    }
-
-    @Test
-    public void verifyPhoneUsingAccountNoChangeNecessary() {
-        Account account = Account.create();
-        account.setId(TEST_USER_ID);
-        account.setStatus(ENABLED);
-        account.setPhoneVerified(TRUE);
-
-        service.verifyChannel(ChannelType.PHONE, account);
-        verify(mockAccountDao, never()).updateAccount(any());
-    }
-
-    @Test
-    public void verifyPhoneWithDisabledAccountMakesNoChanges() {
-        Account account = Account.create();
-        account.setStatus(DISABLED);
-
-        service.verifyChannel(ChannelType.PHONE, account);
-        verify(mockAccountDao, never()).updateAccount(any());
-        assertEquals(account.getStatus(), DISABLED);
-    }
-
-    @Test
-    public void changePasswordSuccess() throws Exception {
-        // Set up test account
-        Account account = Account.create();
-        account.setAppId(TEST_APP_ID);
-        account.setId(TEST_USER_ID);
-        account.setEmail(EMAIL);
-        account.setStatus(UNVERIFIED);
-
-        // execute and verify
-        service.changePassword(account, ChannelType.EMAIL, DUMMY_PASSWORD);
-        verify(mockAccountDao).updateAccount(accountCaptor.capture());
-
-        Account updatedAccount = accountCaptor.getValue();
-        assertEquals(updatedAccount.getId(), TEST_USER_ID);
-        assertEquals(updatedAccount.getModifiedOn().getMillis(), MOCK_DATETIME.getMillis());
-        assertEquals(updatedAccount.getPasswordAlgorithm(), PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM);
-        assertEquals(updatedAccount.getPasswordModifiedOn().getMillis(), MOCK_DATETIME.getMillis());
-        assertTrue(updatedAccount.getEmailVerified());
-        assertNull(updatedAccount.getPhoneVerified());
-        assertEquals(updatedAccount.getStatus(), ENABLED);
-
-        // validate password hash
-        assertTrue(DEFAULT_PASSWORD_ALGORITHM.checkHash(updatedAccount.getPasswordHash(), DUMMY_PASSWORD));
-    }
-
-    @Test
-    public void changePasswordForPhone() throws Exception {
-        // Set up test account
-        Account account = Account.create();
-        account.setAppId(TEST_APP_ID);
-        account.setId(TEST_USER_ID);
-        account.setPhone(PHONE);
-        account.setStatus(UNVERIFIED);
-
-        // execute and verify
-        service.changePassword(account, ChannelType.PHONE, DUMMY_PASSWORD);
-        verify(mockAccountDao).updateAccount(accountCaptor.capture());
-
-        // Simpler than changePasswordSuccess() test as we're only verifying phone is verified
-        Account updatedAccount = accountCaptor.getValue();
-        assertNull(updatedAccount.getEmailVerified());
-        assertTrue(updatedAccount.getPhoneVerified());
-        assertEquals(updatedAccount.getStatus(), ENABLED);
-    }
     
-    @Test
-    public void changePasswordForExternalId() {
-        Enrollment en = Enrollment.create(TEST_APP_ID, STUDY_A, TEST_USER_ID);
-        en.setExternalId("anExternalId");
-        
-        // Set up test account
-        Account account = Account.create();
-        account.setAppId(TEST_APP_ID);
-        account.setId(TEST_USER_ID);
-        account.setStatus(UNVERIFIED);
-        account.getEnrollments().add(en);
-
-        // execute and verify
-        service.changePassword(account, null, DUMMY_PASSWORD);
-        verify(mockAccountDao).updateAccount(accountCaptor.capture());
-
-        // Simpler than changePasswordSuccess() test as we're only verifying phone is verified
-        Account updatedAccount = accountCaptor.getValue();
-        assertNull(updatedAccount.getEmailVerified());
-        assertNull(updatedAccount.getPhoneVerified());
-        assertEquals(updatedAccount.getStatus(), ENABLED);
-    }
-
-    @Test
-    public void authenticateSuccessWithHealthCode() throws Exception {
-        mockGetAccountById(PASSWORD_SIGNIN.getAccountId(), true);
-
-        App app = App.create();
-
-        Account account = service.authenticate(app, PASSWORD_SIGNIN);
-        assertEquals(account.getId(), TEST_USER_ID);
-        assertEquals(account.getAppId(), TEST_APP_ID);
-        assertEquals(account.getEmail(), EMAIL);
-        assertEquals(account.getHealthCode(), HEALTH_CODE);
-        assertEquals(account.getVersion(), 1); // version not incremented by update
-    }
-
-    // This test is just a negative test to verify that the reauth token is not being rotated...
-    // regardless of how app.reauthenticationEnabled is set, it will succeed because we don't
-    // touch the reauth token
-    @Test
-    public void authenticateSuccessNoReauthentication() throws Exception {
-        App app = App.create();
-        app.setReauthenticationEnabled(false);
-
-        mockGetAccountById(ACCOUNT_ID_WITH_EMAIL, true);
-
-        Account account = service.authenticate(app, PASSWORD_SIGNIN);
-        // not incremented by reauthentication
-        assertEquals(account.getVersion(), 1);
-
-        // No reauthentication token rotation occurs
-        verify(mockAccountDao, never()).updateAccount(any());
-        assertNull(account.getReauthToken());
-    }
-
-    @Test(expectedExceptions = EntityNotFoundException.class)
-    public void authenticateAccountNotFound() throws Exception {
-        when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_EMAIL)).thenReturn(Optional.empty());
-
-        App app = App.create();
-
-        service.authenticate(app, PASSWORD_SIGNIN);
-    }
-
-    @Test(expectedExceptions = UnauthorizedException.class)
-    public void authenticateAccountUnverified() throws Exception {
-        // mock hibernate
-        Account persistedAccount = mockGetAccountById(ACCOUNT_ID_WITH_EMAIL, true);
-        persistedAccount.setEmailVerified(false);
-
-        App app = App.create();
-        app.setEmailVerificationEnabled(true);
-
-        service.authenticate(app, PASSWORD_SIGNIN);
-    }
-    
-    @Test
-    public void authenticateAccountUnverifiedNoEmailVerification() throws Exception {
-        // mock hibernate
-        Account persistedAccount = mockGetAccountById(ACCOUNT_ID_WITH_EMAIL, true);
-        persistedAccount.setEmailVerified(false);
-
-        App app = App.create();
-        app.setEmailVerificationEnabled(false);
-
-        service.authenticate(app, PASSWORD_SIGNIN);
-    }
-
-    @Test(expectedExceptions = AccountDisabledException.class)
-    public void authenticateAccountDisabled() throws Exception {
-        Account persistedAccount = mockGetAccountById(ACCOUNT_ID_WITH_EMAIL, true);
-        persistedAccount.setStatus(DISABLED);
-
-        App app = App.create();
-
-        service.authenticate(app, PASSWORD_SIGNIN);
-    }
-
-    @Test(expectedExceptions = EntityNotFoundException.class)
-    public void authenticateAccountHasNoPassword() throws Exception {
-        mockGetAccountById(ACCOUNT_ID_WITH_EMAIL, false);
-
-        App app = App.create();
-
-        service.authenticate(app, PASSWORD_SIGNIN);
-    }
-
-    // branch coverage
-    @Test(expectedExceptions = EntityNotFoundException.class)
-    public void authenticateAccountHasPasswordAlgorithmNoHash() throws Exception {
-        Account persistedAccount = mockGetAccountById(ACCOUNT_ID_WITH_EMAIL, false);
-        persistedAccount.setPasswordAlgorithm(DEFAULT_PASSWORD_ALGORITHM);
-
-        App app = App.create();
-
-        service.authenticate(app, PASSWORD_SIGNIN);
-    }
-
-    @Test(expectedExceptions = EntityNotFoundException.class)
-    public void authenticateBadPassword() throws Exception {
-        mockGetAccountById(ACCOUNT_ID_WITH_EMAIL, true);
-
-        App app = App.create();
-
-        service.authenticate(app, new SignIn.Builder().withAppId(TEST_APP_ID).withEmail(EMAIL)
-                .withPassword("wrong password").build());
-    }
-
-    @Test
-    public void reauthenticateSuccess() throws Exception {
-        mockGetAccountById(ACCOUNT_ID_WITH_EMAIL, false);
-
-        AccountSecret secret = AccountSecret.create();
-        when(mockAccountSecretDao.verifySecret(REAUTH, TEST_USER_ID, REAUTH_TOKEN, ROTATIONS))
-                .thenReturn(Optional.of(secret));
-
-        App app = App.create();
-        app.setReauthenticationEnabled(true);
-
-        Account account = service.reauthenticate(app, REAUTH_SIGNIN);
-        assertEquals(account.getId(), TEST_USER_ID);
-        assertEquals(account.getAppId(), TEST_APP_ID);
-        assertEquals(account.getEmail(), EMAIL);
-        // Version has not been incremented by an update
-        assertEquals(account.getVersion(), 1);
-
-        verify(mockAccountDao).getAccount(ACCOUNT_ID_WITH_EMAIL);
-        verify(mockAccountDao, never()).createAccount(any(), any());
-        verify(mockAccountDao, never()).updateAccount(any());
-
-        // verify token verification
-        verify(mockAccountSecretDao).verifySecret(REAUTH, TEST_USER_ID, REAUTH_TOKEN, 3);
-    }
-
-    @Test
-    public void reauthenticationDisabled() throws Exception {
-        App app = App.create();
-        app.setReauthenticationEnabled(false);
-
-        try {
-            service.reauthenticate(app, REAUTH_SIGNIN);
-            fail("Should have thrown exception");
-        } catch (UnauthorizedException e) {
-            // expected exception
-        }
-        verify(mockAccountDao, never()).getAccount(any());
-        verify(mockAccountDao, never()).updateAccount(any());
-    }
-
-    // branch coverage
-    @Test
-    public void reauthenticationFlagNull() {
-        App app = App.create();
-        app.setReauthenticationEnabled(null);
-
-        try {
-            service.reauthenticate(app, REAUTH_SIGNIN);
-            fail("Should have thrown exception");
-        } catch (UnauthorizedException e) {
-            // expected exception
-        }
-        verify(mockAccountDao, never()).getAccount(any());
-        verify(mockAccountDao, never()).updateAccount(any());
-    }
-
-    @Test(expectedExceptions = EntityNotFoundException.class)
-    public void reauthenticateAccountNotFound() throws Exception {
-        when(mockAccountDao.getAccount(REAUTH_SIGNIN.getAccountId())).thenReturn(Optional.empty());
-
-        App app = App.create();
-        app.setReauthenticationEnabled(true);
-
-        service.reauthenticate(app, REAUTH_SIGNIN);
-    }
-
-    @Test(expectedExceptions = UnauthorizedException.class)
-    public void reauthenticateAccountUnverified() throws Exception {
-        Account persistedAccount = mockGetAccountById(REAUTH_SIGNIN.getAccountId(), false);
-        persistedAccount.setEmailVerified(false);
-
-        AccountSecret secret = AccountSecret.create();
-        when(mockAccountSecretDao.verifySecret(REAUTH, TEST_USER_ID, REAUTH_TOKEN, ROTATIONS))
-                .thenReturn(Optional.of(secret));
-
-        App app = App.create();
-        app.setReauthenticationEnabled(true);
-        app.setEmailVerificationEnabled(true);
-
-        service.reauthenticate(app, REAUTH_SIGNIN);
-    }
-    
-    @Test
-    public void reauthenticateAccountUnverifiedNoEmailVerification() throws Exception {
-        Account persistedAccount = mockGetAccountById(REAUTH_SIGNIN.getAccountId(), false);
-        persistedAccount.setEmailVerified(false);
-
-        AccountSecret secret = AccountSecret.create();
-        when(mockAccountSecretDao.verifySecret(REAUTH, TEST_USER_ID, REAUTH_TOKEN, ROTATIONS))
-                .thenReturn(Optional.of(secret));
-
-        App app = App.create();
-        app.setReauthenticationEnabled(true);
-        app.setEmailVerificationEnabled(false);
-
-        service.reauthenticate(app, REAUTH_SIGNIN);
-    }
-
-    @Test(expectedExceptions = AccountDisabledException.class)
-    public void reauthenticateAccountDisabled() throws Exception {
-        Account persistedAccount = mockGetAccountById(REAUTH_SIGNIN.getAccountId(), false);
-        persistedAccount.setStatus(DISABLED);
-
-        AccountSecret secret = AccountSecret.create();
-        when(mockAccountSecretDao.verifySecret(REAUTH, TEST_USER_ID, REAUTH_TOKEN, ROTATIONS))
-                .thenReturn(Optional.of(secret));
-
-        App app = App.create();
-        app.setReauthenticationEnabled(true);
-
-        service.reauthenticate(app, REAUTH_SIGNIN);
-    }
-
-    @Test(expectedExceptions = EntityNotFoundException.class)
-    public void reauthenticateAccountHasNoReauthToken() throws Exception {
-        Account persistedAccount = mockGetAccountById(REAUTH_SIGNIN.getAccountId(), false);
-        persistedAccount.setStatus(DISABLED);
-
-        // it has no record in the secrets table
-
-        App app = App.create();
-        app.setReauthenticationEnabled(true);
-
-        service.reauthenticate(app, REAUTH_SIGNIN);
-    }
-
-    // This throws ENFE if password fails, so this just verifies a negative case (account status
-    // doesn't change outcome of test)
-    @Test(expectedExceptions = EntityNotFoundException.class)
-    public void failedSignInOfDisabledAccountDoesNotIndicateAccountExists() throws Exception {
-        Account persistedAccount = mockGetAccountById(ACCOUNT_ID, false);
-        persistedAccount.setStatus(DISABLED);
-
-        App app = App.create();
-
-        SignIn signIn = new SignIn.Builder().withAppId(TEST_APP_ID).withEmail(EMAIL)
-                .withPassword("bad password").build();
-        service.authenticate(app, signIn);
-    }
-
-    @Test(expectedExceptions = EntityNotFoundException.class)
-    public void reauthenticateBadReauthToken() throws Exception {
-        mockGetAccountById(ACCOUNT_ID, false);
-
-        App app = App.create();
-        app.setReauthenticationEnabled(true);
-
-        service.reauthenticate(app, new SignIn.Builder().withAppId(TEST_APP_ID).withEmail(EMAIL)
-                .withReauthToken("wrong reauth token").build());
-    }
-
     @Test
     public void getByEmail() throws Exception {
         Account persistedAccount = mockGetAccountById(ACCOUNT_ID_WITH_EMAIL, false);
@@ -1231,73 +747,6 @@ public class AccountServiceTest extends Mockito {
         // These values were loaded, have not been changed, and were persisted as is.
         Account captured = accountCaptor.getValue();
         assertEquals(captured.getOrgMembership(), TEST_ORG_ID);
-    }
-
-    @Test(expectedExceptions = UnauthorizedException.class)
-    public void authenticateAccountUnverifiedEmailFails() throws Exception {
-        Account persistedAccount = mockGetAccountById(ACCOUNT_ID_WITH_EMAIL, true);
-        persistedAccount.setEmailVerified(false);
-
-        App app = App.create();
-        app.setVerifyChannelOnSignInEnabled(true);
-        app.setEmailVerificationEnabled(true);
-
-        service.authenticate(app, PASSWORD_SIGNIN);
-    }
-
-    @Test(expectedExceptions = UnauthorizedException.class)
-    public void authenticateAccountUnverifiedPhoneFails() throws Exception {
-        // mock hibernate
-        Account persistedAccount = mockGetAccountById(ACCOUNT_ID_WITH_PHONE, true);
-        persistedAccount.setPhoneVerified(null);
-
-        App app = App.create();
-        app.setVerifyChannelOnSignInEnabled(true);
-
-        // execute and verify - Verify just ID, app, and email, and health code mapping is enough.
-        SignIn phoneSignIn = new SignIn.Builder().withAppId(TEST_APP_ID).withPhone(PHONE)
-                .withPassword(DUMMY_PASSWORD).build();
-        service.authenticate(app, phoneSignIn);
-    }
-    
-    @Test
-    public void authenticateAccountEmailUnverifiedWithoutEmailVerificationOK() throws Exception {
-        // mock hibernate 
-        Account persistedAccount = mockGetAccountById(PASSWORD_SIGNIN.getAccountId(), true); 
-        persistedAccount.setEmailVerified(false);
-
-        App app = App.create();
-        app.setEmailVerificationEnabled(false);
-
-        service.authenticate(app, PASSWORD_SIGNIN); 
-    }
-
-    @Test
-    public void authenticateAccountUnverifiedEmailSucceedsForLegacy() throws Exception {
-        // mock hibernate 
-        Account persistedAccount = mockGetAccountById(PASSWORD_SIGNIN.getAccountId(), true); 
-        persistedAccount.setEmailVerified(false);
-
-        App app = App.create();
-        app.setVerifyChannelOnSignInEnabled(false);
-
-        service.authenticate(app, PASSWORD_SIGNIN);
-    }
-    
-    @Test
-    public void authenticateAccountUnverifiedPhoneSucceedsForLegacy() throws Exception {
-        SignIn phoneSignIn = new SignIn.Builder().withAppId(TEST_APP_ID).withPhone(PHONE)
-                .withPassword(DUMMY_PASSWORD).build();
-
-        // mock hibernate
-        Account persistedAccount = mockGetAccountById(phoneSignIn.getAccountId(), true);
-        persistedAccount.setPhoneVerified(null);
-        
-        App app = App.create();
-        app.setVerifyChannelOnSignInEnabled(false);
-
-        // execute and verify - Verify just ID, app, and email, and health code mapping is enough. 
-        service.authenticate(app, phoneSignIn);
     }
 
     // The editAccountFailsAcrossStudies test was removed because editAccount no longer enforces 

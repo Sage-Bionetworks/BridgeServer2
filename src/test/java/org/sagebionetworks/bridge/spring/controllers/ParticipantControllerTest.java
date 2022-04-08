@@ -105,6 +105,7 @@ import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
@@ -136,6 +137,7 @@ import org.sagebionetworks.bridge.services.RequestInfoService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
 import org.sagebionetworks.bridge.services.SponsorService;
 import org.sagebionetworks.bridge.services.AccountService;
+import org.sagebionetworks.bridge.services.AccountWorkflowService;
 import org.sagebionetworks.bridge.services.AppService;
 import org.sagebionetworks.bridge.services.UserAdminService;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
@@ -184,6 +186,9 @@ public class ParticipantControllerTest extends Mockito {
 
     @Mock
     ParticipantService mockParticipantService;
+    
+    @Mock
+    AuthenticationService mockAuthenticationService;
 
     @Mock
     AppService mockAppService;
@@ -192,7 +197,7 @@ public class ParticipantControllerTest extends Mockito {
     AccountService mockAccountService;
 
     @Mock
-    AuthenticationService mockAuthService;
+    AccountWorkflowService accountWorkflowService;
 
     @Mock
     CacheProvider mockCacheProvider;
@@ -535,9 +540,8 @@ public class ParticipantControllerTest extends Mockito {
         StatusMessage result = controller.signOut(TEST_USER_ID, false);
         assertEquals(result.getMessage(), "User signed out.");
 
-        verify(mockParticipantService).signUserOut(app, TEST_USER_ID, false);
+        verify(mockAuthenticationService).signUserOut(app, TEST_USER_ID, false);
     }
-
     
     @Test
     public void updateParticipant() throws Exception {
@@ -955,7 +959,8 @@ public class ParticipantControllerTest extends Mockito {
         StatusMessage result = controller.requestResetPassword(TEST_USER_ID);
         assertEquals(result.getMessage(), "Request to reset password sent to user.");
 
-        verify(mockParticipantService).requestResetPassword(app, TEST_USER_ID);
+        AccountId accountId = AccountId.forId(TEST_APP_ID, TEST_USER_ID);
+        verify(accountWorkflowService).requestResetPassword(app, true, accountId);
     }
 
     @Test(expectedExceptions = UnauthorizedException.class)
@@ -1071,7 +1076,7 @@ public class ParticipantControllerTest extends Mockito {
         StatusMessage result = controller.resendEmailVerification(TEST_USER_ID);
         assertEquals(result.getMessage(), "Email verification request has been resent to user.");
 
-        verify(mockParticipantService).resendVerification(app, ChannelType.EMAIL, TEST_USER_ID);
+        verify(accountWorkflowService).resendVerification(ChannelType.EMAIL, TEST_APP_ID, TEST_USER_ID);
     }
 
     @Test
@@ -1079,7 +1084,7 @@ public class ParticipantControllerTest extends Mockito {
         StatusMessage result = controller.resendPhoneVerification(TEST_USER_ID);
         assertEquals(result.getMessage(), "Phone verification request has been resent to user.");
 
-        verify(mockParticipantService).resendVerification(app, ChannelType.PHONE, TEST_USER_ID);
+        verify(accountWorkflowService).resendVerification(ChannelType.PHONE, TEST_APP_ID, TEST_USER_ID);
     }
 
     @Test
@@ -1329,13 +1334,13 @@ public class ParticipantControllerTest extends Mockito {
     public void updateIdentifiersWithPhone() throws Exception {
         mockRequestBody(mockRequest, PHONE_UPDATE);
 
-        when(mockParticipantService.updateIdentifiers(eq(app), any(), any())).thenReturn(participant);
+        when(mockAuthenticationService.updateIdentifiers(eq(app), any(), any())).thenReturn(participant);
 
         JsonNode result = controller.updateIdentifiers();
 
         assertEquals(result.get("id").textValue(), TEST_USER_ID);
 
-        verify(mockParticipantService).updateIdentifiers(eq(app), contextCaptor.capture(),
+        verify(mockAuthenticationService).updateIdentifiers(eq(app), contextCaptor.capture(),
                 identifierUpdateCaptor.capture());
         verify(mockCacheProvider).setUserSession(sessionCaptor.capture());
         assertEquals(sessionCaptor.getValue().getId(), participant.getId());
@@ -1351,13 +1356,13 @@ public class ParticipantControllerTest extends Mockito {
     public void updateIdentifiersWithEmail() throws Exception {
         mockRequestBody(mockRequest, EMAIL_UPDATE);
 
-        when(mockParticipantService.updateIdentifiers(eq(app), any(), any())).thenReturn(participant);
+        when(mockAuthenticationService.updateIdentifiers(eq(app), any(), any())).thenReturn(participant);
 
         JsonNode result = controller.updateIdentifiers();
 
         assertEquals(result.get("id").textValue(), TEST_USER_ID);
 
-        verify(mockParticipantService).updateIdentifiers(eq(app), contextCaptor.capture(),
+        verify(mockAuthenticationService).updateIdentifiers(eq(app), contextCaptor.capture(),
                 identifierUpdateCaptor.capture());
 
         IdentifierUpdate update = identifierUpdateCaptor.getValue();
@@ -1371,13 +1376,13 @@ public class ParticipantControllerTest extends Mockito {
     public void updateIdentifiersWithSynapseUserId() throws Exception {
         mockRequestBody(mockRequest, SYNAPSE_ID_UPDATE);
 
-        when(mockParticipantService.updateIdentifiers(eq(app), any(), any())).thenReturn(participant);
+        when(mockAuthenticationService.updateIdentifiers(eq(app), any(), any())).thenReturn(participant);
 
         JsonNode result = controller.updateIdentifiers();
 
         assertEquals(result.get("id").textValue(), TEST_USER_ID);
 
-        verify(mockParticipantService).updateIdentifiers(eq(app), contextCaptor.capture(),
+        verify(mockAuthenticationService).updateIdentifiers(eq(app), contextCaptor.capture(),
                 identifierUpdateCaptor.capture());
 
         IdentifierUpdate update = identifierUpdateCaptor.getValue();
