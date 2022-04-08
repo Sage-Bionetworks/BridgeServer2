@@ -6,10 +6,12 @@ import static org.sagebionetworks.bridge.BridgeConstants.NOT_SYNAPSE_AUTHENTICAT
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
+import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.REQUIRED_SIGNED_CURRENT;
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_CONTEXT;
+import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertPost;
@@ -279,12 +281,12 @@ public class AuthenticationControllerTest extends Mockito {
         
         userSession.setAuthenticated(true);
         app.setIdentifier(TEST_APP_ID);
-        doReturn(userSession).when(mockAuthService).emailSignIn(any(CriteriaContext.class), any(SignIn.class));
+        doReturn(userSession).when(mockAuthService).channelSignIn(eq(ChannelType.EMAIL), any(CriteriaContext.class), any(SignIn.class));
         
         JsonNode node = controller.emailSignIn();
         assertTrue(node.get("authenticated").booleanValue());
      
-        verify(mockAuthService).emailSignIn(any(CriteriaContext.class), signInCaptor.capture());
+        verify(mockAuthService).channelSignIn(eq(ChannelType.EMAIL), any(), signInCaptor.capture());
 
         SignIn captured = signInCaptor.getValue();
         assertEquals(captured.getEmail(), TEST_EMAIL);
@@ -305,7 +307,7 @@ public class AuthenticationControllerTest extends Mockito {
     public void failedEmailSignInStillLogsStudyId() throws Exception {
         // Set up test.
         TestUtils.mockRequestBody(mockRequest, EMAIL_SIGN_IN_REQUEST);
-        when(mockAuthService.emailSignIn(any(), any())).thenThrow(EntityNotFoundException.class);
+        when(mockAuthService.channelSignIn(any(), any(), any())).thenThrow(EntityNotFoundException.class);
 
         // Execute.
         try {
@@ -812,12 +814,33 @@ public class AuthenticationControllerTest extends Mockito {
         mockSignInWithEmailPayload();
         app.getMinSupportedAppVersions().put(OperatingSystem.IOS, 0);
         
+        Account account = Account.create();
+        account.setAppId(TEST_APP_ID);
+        account.setId(TEST_USER_ID);
+        
+        AccountId accountId = AccountId.forEmail(TEST_APP_ID, TEST_EMAIL);
+        when(mockAccountService.getAccount(accountId)).thenReturn(Optional.of(account));
+        
         controller.resendEmailVerification();
         
-        verify(mockAuthService).resendVerification(eq(ChannelType.EMAIL), accountIdCaptor.capture());
-        AccountId deser = accountIdCaptor.getValue();
-        assertEquals(TEST_APP_ID, deser.getAppId());
-        assertEquals(TEST_EMAIL, deser.getEmail());
+        verify(mockWorkflowService).resendVerification(ChannelType.EMAIL, TEST_APP_ID, TEST_USER_ID);
+    }
+    
+    @Test
+    public void resendPhoneVerificationWorks() throws Exception {
+        mockSignInWithPhonePayload();
+        app.getMinSupportedAppVersions().put(OperatingSystem.IOS, 0);
+        
+        Account account = Account.create();
+        account.setAppId(TEST_APP_ID);
+        account.setId(TEST_USER_ID);
+        
+        AccountId accountId = AccountId.forPhone(TEST_APP_ID, PHONE);
+        when(mockAccountService.getAccount(accountId)).thenReturn(Optional.of(account));
+        
+        controller.resendPhoneVerification();
+        
+        verify(mockWorkflowService).resendVerification(ChannelType.PHONE, TEST_APP_ID, TEST_USER_ID);
     }
     
     @Test(expectedExceptions = UnsupportedVersionException.class)
@@ -833,19 +856,6 @@ public class AuthenticationControllerTest extends Mockito {
         String json = TestUtils.createJson("{'email':'email@email.com'}");
         mockRequestBody(mockRequest, BridgeObjectMapper.get().readTree(json));
         controller.resendEmailVerification();
-    }
-    
-    @Test
-    public void resendPhoneVerificationWorks() throws Exception {
-        mockSignInWithPhonePayload();
-        app.getMinSupportedAppVersions().put(OperatingSystem.IOS, 0);
-        
-        controller.resendPhoneVerification();
-        
-        verify(mockAuthService).resendVerification(eq(ChannelType.PHONE), accountIdCaptor.capture());
-        AccountId deser = accountIdCaptor.getValue();
-        assertEquals(TEST_APP_ID, deser.getAppId());
-        assertEquals(TestConstants.PHONE, deser.getPhone());
     }
     
     @Test(expectedExceptions = UnsupportedVersionException.class)
@@ -908,7 +918,7 @@ public class AuthenticationControllerTest extends Mockito {
         StatusMessage message = controller.requestResetPassword();
         assertEquals(message.getMessage(), AuthenticationController.EMAIL_RESET_PWD_MSG);
         
-        verify(mockAuthService).requestResetPassword(eq(app), eq(false), signInCaptor.capture());
+        verify(mockWorkflowService).requestResetPassword(eq(app), eq(false), signInCaptor.capture());
         SignIn deser = signInCaptor.getValue();
         assertEquals(TEST_APP_ID, deser.getAppId());
         assertEquals(TEST_EMAIL, deser.getEmail());
@@ -922,7 +932,7 @@ public class AuthenticationControllerTest extends Mockito {
         StatusMessage message = controller.requestResetPassword();
         assertEquals(message.getMessage(), AuthenticationController.PHONE_RESET_PWD_MSG);
         
-        verify(mockAuthService).requestResetPassword(eq(app), eq(false), signInCaptor.capture());
+        verify(mockWorkflowService).requestResetPassword(eq(app), eq(false), signInCaptor.capture());
         SignIn deser = signInCaptor.getValue();
         assertEquals(TEST_APP_ID, deser.getAppId());
         assertEquals(TestConstants.PHONE.getNumber(), deser.getPhone().getNumber());
@@ -1047,7 +1057,7 @@ public class AuthenticationControllerTest extends Mockito {
     public void phoneSignIn() throws Exception {
         mockRequestBody(mockRequest, PHONE_SIGN_IN);
         
-        when(mockAuthService.phoneSignIn(any(), any())).thenReturn(userSession);
+        when(mockAuthService.channelSignIn(any(), any(), any())).thenReturn(userSession);
         
         JsonNode result = controller.phoneSignIn();
         
@@ -1055,7 +1065,7 @@ public class AuthenticationControllerTest extends Mockito {
         assertEquals(TEST_SESSION_TOKEN, result.get("sessionToken").textValue());
         assertEquals("UserSessionInfo", result.get("type").textValue());
         
-        verify(mockAuthService).phoneSignIn(contextCaptor.capture(), signInCaptor.capture());
+        verify(mockAuthService).channelSignIn(eq(ChannelType.PHONE), contextCaptor.capture(), signInCaptor.capture());
         
         CriteriaContext context = contextCaptor.getValue();
         assertEquals(TEST_APP_ID, context.getAppId());
@@ -1092,7 +1102,7 @@ public class AuthenticationControllerTest extends Mockito {
     public void failedPhoneSignInStillLogsStudyId() throws Exception {
         // Set up test.
         mockRequestBody(mockRequest, PHONE_SIGN_IN);
-        when(mockAuthService.phoneSignIn(any(), any())).thenThrow(EntityNotFoundException.class);
+        when(mockAuthService.channelSignIn(any(), any(), any())).thenThrow(EntityNotFoundException.class);
 
         // Execute.
         try {
@@ -1178,7 +1188,7 @@ public class AuthenticationControllerTest extends Mockito {
     @Test
     public void unconsentedEmailSignInSetsMetrics() throws Exception {
         mockRequestBody(mockRequest, EMAIL_SIGN_IN_REQUEST);
-        when(mockAuthService.emailSignIn(any(), any())).thenThrow(new ConsentRequiredException(userSession));
+        when(mockAuthService.channelSignIn(any(), any(), any())).thenThrow(new ConsentRequiredException(userSession));
         
         try {
             controller.emailSignIn();
@@ -1191,7 +1201,7 @@ public class AuthenticationControllerTest extends Mockito {
     @Test
     public void unconsentedPhoneSignInSetsMetrics() throws Exception {
         mockRequestBody(mockRequest, PHONE_SIGN_IN_REQUEST);
-        when(mockAuthService.phoneSignIn(any(), any())).thenThrow(new ConsentRequiredException(userSession));
+        when(mockAuthService.channelSignIn(any(), any(), any())).thenThrow(new ConsentRequiredException(userSession));
         
         try {
             controller.phoneSignIn();
@@ -1251,14 +1261,14 @@ public class AuthenticationControllerTest extends Mockito {
 
         UserSession session = new UserSession();
         session.setSessionToken("new-session-token");
-        when(mockAuthService.getSessionFromAccount(eq(newApp), any(), eq(account))).thenReturn(session);
+        when(mockAuthService.getSession(eq(newApp), any())).thenReturn(session);
         
         JsonNode node = controller.changeApp();
         assertEquals(node.get("sessionToken").textValue(), "new-session-token");
 
         InOrder inOrder = Mockito.inOrder(mockAuthService, mockCacheProvider);
         inOrder.verify(mockAuthService).signOut(userSession);
-        inOrder.verify(mockAuthService).getSessionFromAccount(eq(newApp), any(), eq(account));
+        inOrder.verify(mockAuthService).getSession(eq(newApp), any());
         inOrder.verify(mockCacheProvider).setUserSession(session);
         assertTrue(session.isSynapseAuthenticated());
     }
@@ -1337,7 +1347,7 @@ public class AuthenticationControllerTest extends Mockito {
         verify(mockSessionUpdateService).updateApp(userSession, newApp.getIdentifier());
         
         verify(mockAuthService, never()).signOut(any());
-        verify(mockAuthService, never()).getSessionFromAccount(any(), any(), any());
+        verify(mockAuthService, never()).getSession(any(), any());
         verify(mockCacheProvider, never()).setUserSession(any());
     }
     
@@ -1391,7 +1401,7 @@ public class AuthenticationControllerTest extends Mockito {
     }
 
     private void mockSignInWithPhonePayload() throws Exception {
-        SignIn signIn = new SignIn.Builder().withAppId(TEST_APP_ID).withPhone(TestConstants.PHONE).build();
+        SignIn signIn = new SignIn.Builder().withAppId(TEST_APP_ID).withPhone(PHONE).build();
         
         mockRequestBody(mockRequest, signIn);
     }

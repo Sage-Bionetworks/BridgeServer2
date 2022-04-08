@@ -113,8 +113,10 @@ import org.sagebionetworks.bridge.models.studies.StudyCustomEvent;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.upload.UploadView;
 import org.sagebionetworks.bridge.services.AccountService;
+import org.sagebionetworks.bridge.services.AccountWorkflowService;
 import org.sagebionetworks.bridge.services.AdherenceService;
 import org.sagebionetworks.bridge.services.AppService;
+import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.services.EnrollmentService;
 import org.sagebionetworks.bridge.services.ParticipantService;
@@ -155,6 +157,12 @@ public class StudyParticipantControllerTest extends Mockito {
     
     @Mock
     AdherenceService mockAdherenceService;
+    
+    @Mock
+    AccountWorkflowService mockAccountWorkflowService;
+    
+    @Mock
+    AuthenticationService mockAuthenticationService;
     
     @Mock
     CacheProvider mockCacheProvider;
@@ -925,7 +933,7 @@ public class StudyParticipantControllerTest extends Mockito {
         StatusMessage retValue = controller.signOut(TEST_STUDY_ID, TEST_USER_ID, true);
         assertEquals(retValue.getMessage(), "User signed out.");
         
-        verify(mockParticipantService).signUserOut(app, TEST_USER_ID, true);
+        verify(mockAuthenticationService).signUserOut(app, TEST_USER_ID, true);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -950,7 +958,7 @@ public class StudyParticipantControllerTest extends Mockito {
         StatusMessage retValue = controller.signOut(TEST_STUDY_ID, TEST_USER_ID, false);
         assertEquals(retValue.getMessage(), "User signed out.");
         
-        verify(mockParticipantService).signUserOut(app, TEST_USER_ID, false);
+        verify(mockAuthenticationService).signUserOut(app, TEST_USER_ID, false);
     }
     
     @Test
@@ -964,7 +972,8 @@ public class StudyParticipantControllerTest extends Mockito {
         StatusMessage retValue = controller.requestResetPassword(TEST_STUDY_ID, TEST_USER_ID);
         assertEquals(retValue.getMessage(), "Request to reset password sent to user.");
         
-        verify(mockParticipantService).requestResetPassword(app, TEST_USER_ID);
+        AccountId accountId = AccountId.forId(TEST_APP_ID, TEST_USER_ID);
+        verify(mockAccountWorkflowService).requestResetPassword(app, true, accountId);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -988,7 +997,7 @@ public class StudyParticipantControllerTest extends Mockito {
         
         controller.resendEmailVerification(TEST_STUDY_ID, TEST_USER_ID);
         
-        verify(mockParticipantService).resendVerification(app, ChannelType.EMAIL, TEST_USER_ID);
+        verify(mockAccountWorkflowService).resendVerification(ChannelType.EMAIL, TEST_APP_ID, TEST_USER_ID);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -1012,7 +1021,7 @@ public class StudyParticipantControllerTest extends Mockito {
         
         controller.resendPhoneVerification(TEST_STUDY_ID, TEST_USER_ID);
         
-        verify(mockParticipantService).resendVerification(app, ChannelType.PHONE, TEST_USER_ID);
+        verify(mockAccountWorkflowService).resendVerification(ChannelType.PHONE, TEST_APP_ID, TEST_USER_ID);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)

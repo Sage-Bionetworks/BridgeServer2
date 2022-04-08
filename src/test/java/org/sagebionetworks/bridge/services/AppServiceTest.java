@@ -80,6 +80,7 @@ import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.GuidVersionHolder;
 import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.apps.App;
@@ -166,6 +167,8 @@ public class AppServiceTest extends Mockito {
     AssessmentResourceService mockAssessmentResourceService;
     @Mock
     Schedule2Service mockScheduleService;
+    @Mock
+    AccountWorkflowService mockAccountWorkflowService;
 
     @Captor
     ArgumentCaptor<Project> projectCaptor;
@@ -956,7 +959,9 @@ public class AppServiceTest extends Mockito {
         // verify
         verify(mockParticipantService).createParticipant(app, mockUser1, false);
         verify(mockParticipantService).createParticipant(app, mockUser2, false);
-        verify(mockParticipantService, times(2)).requestResetPassword(app, mockIdentifierHolder.getIdentifier());
+        
+        AccountId accountId = AccountId.forId(TEST_APP_ID, TEST_IDENTIFIER);
+        verify(mockAccountWorkflowService, times(2)).requestResetPassword(app, true, accountId);
         
         verify(mockStudyService).createStudy(eq(TEST_APP_ID), studyCaptor.capture(), eq(false));
         

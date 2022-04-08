@@ -3,10 +3,12 @@ package org.sagebionetworks.bridge.services;
 import static java.lang.Boolean.TRUE;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.TestConstants.ACCOUNT_ID;
+import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
-import static org.sagebionetworks.bridge.TestUtils.createJson;
 import static org.sagebionetworks.bridge.models.apps.MimeType.TEXT;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_ACCOUNT_EXISTS;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_RESET_PASSWORD;
@@ -21,7 +23,6 @@ import static org.sagebionetworks.bridge.services.AccountWorkflowService.CONFIG_
 import static org.sagebionetworks.bridge.services.AccountWorkflowService.SIGNIN_EXPIRE_IN_SECONDS;
 import static org.sagebionetworks.bridge.services.AccountWorkflowService.VERIFY_CACHE_IN_SECONDS;
 import static org.sagebionetworks.bridge.services.AccountWorkflowService.VERIFY_OR_RESET_EXPIRE_IN_SECONDS;
-import static org.sagebionetworks.bridge.services.AccountWorkflowService.VERIFY_TOKEN_EXPIRED;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
@@ -30,9 +31,11 @@ import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import javax.mail.internet.MimeBodyPart;
 
@@ -50,7 +53,6 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestConstants;
-import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
@@ -63,12 +65,11 @@ import org.sagebionetworks.bridge.models.ThrottleRequestType;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
-import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
-import org.sagebionetworks.bridge.models.accounts.Verification;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.MimeType;
+import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 import org.sagebionetworks.bridge.models.templates.TemplateType;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
@@ -88,7 +89,6 @@ public class AccountWorkflowServiceTest extends Mockito {
     private static final String TOKEN = "ABCDEF";
     private static final String PHONE_TOKEN = "012345";
     
-    private static final AccountId ACCOUNT_ID_WITH_ID = AccountId.forId(TEST_APP_ID, USER_ID);
     private static final AccountId ACCOUNT_ID_WITH_EMAIL = AccountId.forEmail(TEST_APP_ID, EMAIL);
     private static final AccountId ACCOUNT_ID_WITH_PHONE = AccountId.forPhone(TEST_APP_ID, TestConstants.PHONE);
     private static final SignIn SIGN_IN_REQUEST_WITH_PHONE = new SignIn.Builder().withAppId(TEST_APP_ID)
@@ -458,170 +458,6 @@ public class AccountWorkflowServiceTest extends Mockito {
         service.resendVerificationToken(ChannelType.PHONE, ACCOUNT_ID_WITH_PHONE);
     }
     
-    @Test
-    public void verifyEmail() {
-        when(service.getDateTimeInMillis()).thenReturn(TIMESTAMP.getMillis());
-        when(mockCacheProvider.getObject(SPTOKEN_CACHE_KEY, String.class)).thenReturn(
-            createJson("{'appId':'"+TEST_APP_ID+"','type':'email','userId':'userId',"+
-                    "'expiresOn':"+ TIMESTAMP.getMillis()+"}"));
-        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
-        when(mockAccountService.getAccount(ACCOUNT_ID_WITH_ID)).thenReturn(Optional.of(mockAccount));
-        when(mockAccount.getId()).thenReturn("accountId");
-        
-        Verification verification = new Verification(SPTOKEN);
-        
-        Account account = service.verifyChannel(ChannelType.EMAIL, verification);
-        assertEquals(account.getId(), "accountId");
-        verify(mockCacheProvider).getObject(SPTOKEN_CACHE_KEY, String.class);
-    }
-    
-    @Test(expectedExceptions = BadRequestException.class, 
-            expectedExceptionsMessageRegExp=VERIFY_TOKEN_EXPIRED)
-    public void verifyWithoutCreatedFailsCorrectly() {
-        // This is a dumb test, but prior to the introduction of the expiresOn value, the verification 
-        // object's TTL is the timeout value for the link working... the cache returns null and 
-        // the correct error is thrown.
-        service.verifyChannel(ChannelType.EMAIL, new Verification(SPTOKEN));
-    }
-    
-    // This almost seems logically impossible, but maybe if an admin deleted an account
-    // and an email was hanging out there...
-    @Test(expectedExceptions = EntityNotFoundException.class, 
-            expectedExceptionsMessageRegExp = ".*Account not found.*")
-    public void verifyNoAccount() {
-        when(service.getDateTimeInMillis()).thenReturn(TIMESTAMP.getMillis());
-        when(mockCacheProvider.getObject(SPTOKEN_CACHE_KEY, String.class)).thenReturn(
-                createJson("{'appId':'" + TEST_APP_ID + "','type':'email','userId':'userId','expiresOn':"
-                        + TIMESTAMP.getMillis() + "}"));
-        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
-        
-        Verification verification = new Verification(SPTOKEN);
-        service.verifyChannel(ChannelType.EMAIL, verification);
-    }
-    
-    @Test(expectedExceptions = BadRequestException.class, 
-            expectedExceptionsMessageRegExp=VERIFY_TOKEN_EXPIRED)
-    public void verifyWithMismatchedChannel() {
-        when(service.getDateTimeInMillis()).thenReturn(TIMESTAMP.getMillis());
-        when(mockCacheProvider.getObject(SPTOKEN_CACHE_KEY, String.class)).thenReturn(
-                createJson("{'appId':'" + TEST_APP_ID + "','type':'email','userId':'userId','expiresOn':"
-                        + TIMESTAMP.getMillis() + "}"));
-        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
-        
-        Verification verification = new Verification(SPTOKEN);
-        // Should be email but was called through the phone API
-        service.verifyChannel(ChannelType.PHONE, verification);
-    }    
-    
-    @Test(expectedExceptions = BadRequestException.class, 
-            expectedExceptionsMessageRegExp=VERIFY_TOKEN_EXPIRED)
-    public void verifyEmailExpired() {
-        when(service.getDateTimeInMillis()).thenReturn(TIMESTAMP.getMillis()+1);
-        when(mockCacheProvider.getObject(SPTOKEN_CACHE_KEY, String.class)).thenReturn(
-                createJson("{'appId':'" + TEST_APP_ID + "','type':'email','userId':'userId','expiresOn':"
-                        + TIMESTAMP.getMillis() + "}"));
-        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
-        when(mockAccountService.getAccount(ACCOUNT_ID_WITH_ID)).thenReturn(Optional.of(mockAccount));
-        
-        Verification verification = new Verification(SPTOKEN);
-        service.verifyChannel(ChannelType.EMAIL, verification);
-    }
-    
-    @Test(expectedExceptions = BadRequestException.class, 
-            expectedExceptionsMessageRegExp=".*That email address has already been verified.*")
-    public void verifyEmailAlreadyVerified() {
-        when(service.getDateTimeInMillis()).thenReturn(TIMESTAMP.getMillis()+1);
-        when(mockCacheProvider.getObject(SPTOKEN_CACHE_KEY, String.class)).thenReturn(
-            createJson("{'appId':'"+TEST_APP_ID+"','type':'email','userId':'userId','expiresOn':"+
-                    TIMESTAMP.getMillis()+"}"));
-        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
-        when(mockAccountService.getAccount(ACCOUNT_ID_WITH_ID)).thenReturn(Optional.of(mockAccount));
-        when(mockAccount.getId()).thenReturn("accountId");
-        when(mockAccount.getEmailVerified()).thenReturn(TRUE);
-        
-        Verification verification = new Verification(SPTOKEN);
-        service.verifyChannel(ChannelType.EMAIL, verification);        
-    }
-    
-    @Test(expectedExceptions = BadRequestException.class, 
-            expectedExceptionsMessageRegExp=VERIFY_TOKEN_EXPIRED)
-    public void verifyEmailBadSptokenThrowsException() {
-        when(mockCacheProvider.getObject(SPTOKEN_CACHE_KEY, String.class)).thenReturn(null);
-        
-        Verification verification = new Verification(SPTOKEN);
-        service.verifyChannel(ChannelType.EMAIL, verification);
-    }
-    
-    @Test
-    public void verifyPhone() {
-        when(service.getDateTimeInMillis()).thenReturn(TIMESTAMP.getMillis());
-        when(mockCacheProvider.getObject(SPTOKEN_CACHE_KEY, String.class)).thenReturn(
-                TestUtils.createJson("{'appId':'"+TEST_APP_ID+"','type':'phone','userId':'userId','expiresOn':"+
-                        TIMESTAMP.getMillis()+"}"));
-        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
-        when(mockAccountService.getAccount(ACCOUNT_ID_WITH_ID)).thenReturn(Optional.of(mockAccount));
-        when(mockAccount.getId()).thenReturn("accountId");
-        
-        Verification verification = new Verification(SPTOKEN);
-        Account account = service.verifyChannel(ChannelType.PHONE, verification);
-        
-        assertEquals(account.getId(), "accountId");
-        verify(mockCacheProvider).getObject(SPTOKEN_CACHE_KEY, String.class);
-    }
-    
-    @Test(expectedExceptions = BadRequestException.class,
-            expectedExceptionsMessageRegExp=".*That phone number has already been verified.*")
-    public void verifyPhoneAlreadyVerified() {
-        when(service.getDateTimeInMillis()).thenReturn(TIMESTAMP.getMillis());
-        when(mockCacheProvider.getObject(SPTOKEN_CACHE_KEY, String.class)).thenReturn(
-                TestUtils.createJson("{'appId':'"+TEST_APP_ID+"','type':'phone','userId':'userId','expiresOn':"+
-                        TIMESTAMP.getMillis()+"}"));
-        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
-        when(mockAccountService.getAccount(ACCOUNT_ID_WITH_ID)).thenReturn(Optional.of(mockAccount));
-        when(mockAccount.getId()).thenReturn("accountId");
-        when(mockAccount.getPhoneVerified()).thenReturn(TRUE);
-        
-        Verification verification = new Verification(SPTOKEN);
-        service.verifyChannel(ChannelType.PHONE, verification);
-    }
-    
-    @Test(expectedExceptions = BadRequestException.class, 
-            expectedExceptionsMessageRegExp=VERIFY_TOKEN_EXPIRED)
-    public void verifyPhoneExpired() {
-        when(service.getDateTimeInMillis()).thenReturn(TIMESTAMP.getMillis()+1);
-        when(mockCacheProvider.getObject(SPTOKEN_CACHE_KEY, String.class)).thenReturn(
-                TestUtils.createJson("{'appId':'"+TEST_APP_ID+"','type':'phone','userId':'userId','expiresOn':"+
-                        TIMESTAMP.getMillis()+"}"));
-        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
-        when(mockAccountService.getAccount(ACCOUNT_ID_WITH_ID)).thenReturn(Optional.of(mockAccount));
-        
-        Verification verification = new Verification(SPTOKEN);
-        service.verifyChannel(ChannelType.PHONE, verification);
-    }
-    
-    @Test(expectedExceptions = BadRequestException.class, 
-            expectedExceptionsMessageRegExp=VERIFY_TOKEN_EXPIRED)
-    public void verifyEmailViaPhoneFails() {
-        when(mockCacheProvider.getObject(SPTOKEN_CACHE_KEY, String.class)).thenReturn(
-                TestUtils.createJson("{'appId':'"+TEST_APP_ID+"','type':'email','userId':'userId'}"));
-        
-        Verification verification = new Verification(SPTOKEN);
-        service.verifyChannel(ChannelType.PHONE, verification);
-        
-        verifyNoMoreInteractions(mockCacheProvider);
-    }
-    
-    @Test(expectedExceptions = BadRequestException.class, 
-            expectedExceptionsMessageRegExp=VERIFY_TOKEN_EXPIRED)
-    public void verifyPhoneViaEmailFails() {
-        when(mockCacheProvider.getObject(SPTOKEN_CACHE_KEY, String.class)).thenReturn(
-                TestUtils.createJson("{'appId':'"+TEST_APP_ID+"','type':'phone','userId':'userId'}"));
-        
-        Verification verification = new Verification(SPTOKEN);
-        service.verifyChannel(ChannelType.EMAIL, verification);
-        
-        verifyNoMoreInteractions(mockCacheProvider);
-    }
     
     @Test
     public void notifyAccountExistsForEmail() throws Exception {
@@ -1092,69 +928,6 @@ public class AccountWorkflowServiceTest extends Mockito {
     }
     
     @Test
-    public void resetPasswordWithEmail() {
-        when(mockCacheProvider.getObject(PASSWORD_RESET_FOR_EMAIL, String.class)).thenReturn(EMAIL);
-        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
-        when(mockAccountService.getAccount(ACCOUNT_ID_WITH_EMAIL)).thenReturn(Optional.of(mockAccount));
-
-        PasswordReset passwordReset = new PasswordReset("newPassword", SPTOKEN, TEST_APP_ID);
-        service.resetPassword(passwordReset);
-        
-        verify(mockCacheProvider).getObject(PASSWORD_RESET_FOR_EMAIL, String.class);
-        verify(mockCacheProvider).removeObject(PASSWORD_RESET_FOR_EMAIL);
-        verify(mockAccountService).changePassword(mockAccount, ChannelType.EMAIL, "newPassword");
-    }
-    
-    @Test
-    public void resetPasswordWithPhone() {
-        when(mockCacheProvider.getObject(PASSWORD_RESET_FOR_PHONE, Phone.class)).thenReturn(TestConstants.PHONE);
-        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
-        when(mockAccountService.getAccount(ACCOUNT_ID_WITH_PHONE)).thenReturn(Optional.of(mockAccount));
-
-        PasswordReset passwordReset = new PasswordReset("newPassword", SPTOKEN, TEST_APP_ID);
-        service.resetPassword(passwordReset);
-        
-        verify(mockCacheProvider).getObject(PASSWORD_RESET_FOR_PHONE, Phone.class);
-        verify(mockCacheProvider).removeObject(PASSWORD_RESET_FOR_PHONE);
-        verify(mockAccountService).changePassword(mockAccount, ChannelType.PHONE, "newPassword");
-    }
-    
-    @Test
-    public void resetPasswordInvalidSptokenThrowsException() {
-        when(mockCacheProvider.getObject(PASSWORD_RESET_FOR_EMAIL, String.class)).thenReturn(null);
-
-        PasswordReset passwordReset = new PasswordReset("newPassword", SPTOKEN, TEST_APP_ID);
-        try {
-            service.resetPassword(passwordReset);
-            fail("Should have thrown exception");
-        } catch(BadRequestException e) {
-            assertEquals(e.getMessage(), "Password reset token has expired (or already been used).");
-        }
-        verify(mockCacheProvider).getObject(PASSWORD_RESET_FOR_EMAIL, String.class);
-        verify(mockCacheProvider, never()).removeObject(any());
-        verify(mockAccountService, never()).changePassword(any(), any(ChannelType.class), any());
-    }
-    
-    @Test
-    public void resetPasswordInvalidAccount() {
-        when(mockCacheProvider.getObject(PASSWORD_RESET_FOR_EMAIL, String.class)).thenReturn(EMAIL);
-        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
-        when(mockAccountService.getAccount(ACCOUNT_ID_WITH_EMAIL)).thenReturn(Optional.empty());
-
-        PasswordReset passwordReset = new PasswordReset("newPassword", SPTOKEN, TEST_APP_ID);
-        
-        try {
-            service.resetPassword(passwordReset);
-            fail("Should have thrown an exception");
-        } catch(EntityNotFoundException e) {
-            // expected exception
-        }
-        verify(mockCacheProvider).getObject(PASSWORD_RESET_FOR_EMAIL, String.class);
-        verify(mockCacheProvider).removeObject(PASSWORD_RESET_FOR_EMAIL);
-        verify(mockAccountService, never()).changePassword(any(), any(ChannelType.class), any());
-    }
-    
-    @Test
     public void requestEmailSignIn() throws Exception {
         // Mock.
         app.setEmailSignInEnabled(true);
@@ -1375,4 +1148,109 @@ public class AccountWorkflowServiceTest extends Mockito {
         verify(mockSmsService, times(2)).sendSmsMessage(any(), any());
     }
 
+    @Test
+    public void resendEmailVerification() {
+        Account account = mockHealthCodeAndAccountRetrieval();
+        account.setEmailVerified(false);
+        
+        service.resendVerification(ChannelType.EMAIL, TEST_APP_ID, TEST_USER_ID);
+        
+        AccountId accountId = AccountId.forId(TEST_APP_ID, TEST_USER_ID);
+        verify(service).resendVerificationToken(ChannelType.EMAIL, accountId);
+    }
+    
+    @Test
+    public void resendPhoneVerification() {
+        mockHealthCodeAndAccountRetrieval(null, PHONE, null);
+        
+        service.resendVerification(ChannelType.PHONE, TEST_APP_ID, TEST_USER_ID);
+        
+        AccountId accountId = AccountId.forId(TEST_APP_ID, TEST_USER_ID);
+        verify(service).resendVerificationToken(ChannelType.PHONE, accountId);
+    }
+    
+    @Test(expectedExceptions = UnsupportedOperationException.class)
+    public void resendVerificationUnsupportedOperationException() {
+        mockHealthCodeAndAccountRetrieval();
+        
+        // Use null so we don't have to create a dummy unsupported channel type
+        service.resendVerification(null, TEST_APP_ID, TEST_USER_ID);
+    }
+
+    @Test(expectedExceptions = BadRequestException.class,
+            expectedExceptionsMessageRegExp = "Email address has not been set.")
+    public void resendEmailVerificationWhenEmailNull() {
+        Account account = mockHealthCodeAndAccountRetrieval();
+        account.setEmail(null);
+        
+        service.resendVerification(ChannelType.EMAIL, TEST_APP_ID, TEST_USER_ID);
+    }
+
+    @Test(expectedExceptions = BadRequestException.class,
+            expectedExceptionsMessageRegExp = "Phone number has not been set.")
+    public void resendPhoneVerificationWhenEmailNull() {
+        Account account = mockHealthCodeAndAccountRetrieval();
+        account.setPhone(null);
+        
+        service.resendVerification(ChannelType.PHONE, TEST_APP_ID, TEST_USER_ID);
+    }
+    
+    @Test
+    public void resendEmailVerificationNoAccount() {
+        AccountId accountId = AccountId.forEmail(TEST_APP_ID, TestConstants.EMAIL);
+        
+        // Does not throw an EntityNotFoundException to hide this information from API uses
+        doThrow(new EntityNotFoundException(Account.class))
+            .when(service).resendVerificationToken(ChannelType.EMAIL, accountId);
+        
+        service.resendVerification(ChannelType.EMAIL, TEST_APP_ID, TEST_USER_ID);
+    }
+    
+    @Test(expectedExceptions = InvalidEntityException.class)
+    public void requestResetInvalid() {
+        SignIn signIn = new SignIn.Builder().withAppId(TEST_APP_ID).withPhone(TestConstants.PHONE)
+                .withEmail(EMAIL).build();
+        service.requestResetPassword(app, false, signIn);
+    }
+    
+    @Test
+    public void requestResetPassword() {
+        SignIn signIn = new SignIn.Builder().withAppId(TEST_APP_ID).withEmail(EMAIL).build();
+        
+        service.requestResetPassword(app, false, signIn);
+        
+        verify(service).requestResetPassword(app, false, signIn.getAccountId());
+    }
+    
+    @Test
+    public void requestResetPasswordNoAccount() {
+        // should not throw this EntityNotFoundException
+        doThrow(new EntityNotFoundException(Account.class))
+            .when(service).requestResetPassword(app, true, SIGN_IN_WITH_EMAIL.getAccountId());
+        
+        service.requestResetPassword(app, true, SIGN_IN_WITH_EMAIL);
+    }
+    
+    private Account mockHealthCodeAndAccountRetrieval() {
+        return mockHealthCodeAndAccountRetrieval(EMAIL, null, null);
+    }
+    
+    private Account mockHealthCodeAndAccountRetrieval(String email, Phone phone, String externalId) {
+        Account account = Account.create();
+        account.setId(TEST_USER_ID);
+        account.setHealthCode(HEALTH_CODE);
+        account.setEmail(email);
+        account.setEmailVerified(TRUE);
+        account.setPhone(phone);
+        Set<Enrollment> enrollments = new HashSet<>();
+        if (externalId != null) {
+            Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, externalId);
+            enrollments.add(enrollment);
+        }
+        account.setEnrollments(enrollments);
+        account.setAppId(TEST_APP_ID);
+        when(mockAccountService.getAccount(any())).thenReturn(Optional.of(account));
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
+        return account;
+    }
 }

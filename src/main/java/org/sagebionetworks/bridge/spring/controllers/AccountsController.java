@@ -42,6 +42,7 @@ import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.services.UserAdminService;
+import org.sagebionetworks.bridge.services.AccountWorkflowService;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 
 /**
@@ -67,6 +68,8 @@ public class AccountsController extends BaseController  {
     
     private UserAdminService userAdminService;
     
+    private AccountWorkflowService accountWorkflowService;
+    
     @Autowired
     final void setParticipantService(ParticipantService participantService) {
         this.participantService = participantService;
@@ -75,6 +78,11 @@ public class AccountsController extends BaseController  {
     @Autowired
     final void setUserAdminService(UserAdminService userAdminService) {
         this.userAdminService = userAdminService;
+    }
+    
+    @Autowired
+    final void setAccountWorkflowService(AccountWorkflowService accountWorkflowService) {
+        this.accountWorkflowService = accountWorkflowService;
     }
     
     @PostMapping("/v1/accounts")
@@ -164,7 +172,9 @@ public class AccountsController extends BaseController  {
         verifyOrgAdminIsActingOnOrgMember(session, userId);
 
         App app = appService.getApp(session.getAppId());
-        participantService.requestResetPassword(app, userId);
+        
+        AccountId accountId = AccountId.forId(app.getIdentifier(), userId);
+        accountWorkflowService.requestResetPassword(app, true, accountId);
         
         return RESET_PWD_MSG;
     }
@@ -176,8 +186,7 @@ public class AccountsController extends BaseController  {
         
         verifyOrgAdminIsActingOnOrgMember(session, userId);
 
-        App app = appService.getApp(session.getAppId());
-        participantService.resendVerification(app, ChannelType.EMAIL, userId);
+        accountWorkflowService.resendVerification(ChannelType.EMAIL, session.getAppId(), userId);
         
         return EMAIL_VERIFY_MSG;
     }
@@ -189,8 +198,7 @@ public class AccountsController extends BaseController  {
         
         verifyOrgAdminIsActingOnOrgMember(session, userId);
 
-        App app = appService.getApp(session.getAppId());
-        participantService.resendVerification(app, ChannelType.PHONE, userId);
+        accountWorkflowService.resendVerification(ChannelType.PHONE, session.getAppId(), userId);
         
         return PHONE_VERIFY_MSG;
     }
@@ -204,7 +212,7 @@ public class AccountsController extends BaseController  {
 
         CriteriaContext context = getCriteriaContext(session);
         
-        StudyParticipant participant = participantService.updateIdentifiers(app, context, update);
+        StudyParticipant participant = authenticationService.updateIdentifiers(app, context, update);
         sessionUpdateService.updateParticipant(session, context, participant);
         
         return UserSessionInfo.toJSON(session);
@@ -218,7 +226,7 @@ public class AccountsController extends BaseController  {
         verifyOrgAdminIsActingOnOrgMember(session, userId);
 
         App app = appService.getApp(session.getAppId());
-        participantService.signUserOut(app, userId, deleteReauthToken);
+        authenticationService.signUserOut(app, userId, deleteReauthToken);
 
         return SIGN_OUT_MSG;
     }

@@ -94,11 +94,9 @@ import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
-import org.sagebionetworks.bridge.models.accounts.IdentifierUpdate;
 import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
-import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
@@ -119,7 +117,6 @@ import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.templates.TemplateRevision;
-import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 import org.sagebionetworks.bridge.services.email.EmailType;
 import org.sagebionetworks.bridge.sms.SmsMessageProvider;
@@ -196,12 +193,6 @@ public class ParticipantServiceTest extends Mockito {
     private static final DateTime END_DATE = START_DATE.plusDays(1);
     private static final CriteriaContext CONTEXT = new CriteriaContext.Builder()
             .withUserId(ID).withAppId(TEST_APP_ID).build();
-    private static final SignIn EMAIL_PASSWORD_SIGN_IN = new SignIn.Builder().withAppId(TEST_APP_ID).withEmail(EMAIL)
-            .withPassword(PASSWORD).build();
-    private static final SignIn PHONE_PASSWORD_SIGN_IN = new SignIn.Builder().withAppId(TEST_APP_ID)
-            .withPhone(TestConstants.PHONE).withPassword(PASSWORD).build();
-    private static final SignIn REAUTH_REQUEST = new SignIn.Builder().withAppId(TEST_APP_ID).withEmail(EMAIL)
-            .withReauthToken("ASDF").build();
     
     @Spy
     @InjectMocks
@@ -269,6 +260,9 @@ public class ParticipantServiceTest extends Mockito {
     
     @Mock
     private SendMailService sendMailService;
+    
+    @Mock
+    private AuthenticationService authenticationService;
     
     @Captor
     ArgumentCaptor<StudyParticipant> participantCaptor;
@@ -342,12 +336,6 @@ public class ParticipantServiceTest extends Mockito {
         when(participantService.generateGUID()).thenReturn(ID);
         when(accountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
         when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
-    }
-    
-    private void mockAccountNoEmail() {
-        account.setId(ID);
-        account.setHealthCode(HEALTH_CODE);
-        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
     }
     
     @Test
@@ -1212,47 +1200,6 @@ public class ParticipantServiceTest extends Mockito {
         assertEquals(result, CREATED_ON_DATETIME);
     }
 
-    @Test(expectedExceptions = EntityNotFoundException.class)
-    public void signOutUserWhoDoesNotExist() {
-        participantService.signUserOut(APP, ID, true);
-    }
-
-    @Test
-    public void signOutUser() {
-        // Need to look this up by email, not account ID
-        AccountId accountId = AccountId.forId(APP.getIdentifier(), ID);
-        
-        // Setup
-        when(accountService.getAccount(accountId)).thenReturn(Optional.of(account));
-        account.setId(ID);
-
-        // Execute
-        participantService.signUserOut(APP, ID, false);
-
-        // Verify
-        verify(accountService).getAccount(accountId);
-        verify(accountService, never()).deleteReauthToken(any());
-        verify(cacheProvider).removeSessionByUserId(ID);
-    }
-
-    @Test
-    public void signOutUserDeleteReauthToken() {
-        // Need to look this up by email, not account ID
-        AccountId accountId = AccountId.forId(APP.getIdentifier(), ID);
-        
-        // Setup
-        when(accountService.getAccount(accountId)).thenReturn(Optional.of(account));
-        account.setId(ID);
-
-        // Execute
-        participantService.signUserOut(APP, ID, true);
-
-        // Verify
-        verify(accountService).getAccount(accountId);
-        verify(accountService).deleteReauthToken(account);
-        verify(cacheProvider).removeSessionByUserId(ID);
-    }
-
     @Test
     public void updateParticipantWithExternalIdValidationAddingId() {
         RequestContext.set(new RequestContext.Builder().withCallerRoles(RESEARCH_CALLER_ROLES).build());
@@ -1700,22 +1647,6 @@ public class ParticipantServiceTest extends Mockito {
     }
 
     @Test
-    public void requestResetPassword() {
-        mockHealthCodeAndAccountRetrieval();
-        
-        participantService.requestResetPassword(APP, ID);
-        
-        verify(accountWorkflowService).requestResetPassword(APP, true, ACCOUNT_ID);
-    }
-    
-    @Test
-    public void requestResetPasswordNoAccountIsSilent() {
-        participantService.requestResetPassword(APP, ID);
-        
-        verifyNoMoreInteractions(accountService);
-    }
-    
-    @Test
     public void canGetActivityHistoryV2WithAllValues() {
         mockHealthCodeAndAccountRetrieval();
         
@@ -1753,58 +1684,6 @@ public class ParticipantServiceTest extends Mockito {
         participantService.deleteActivities(APP, ID);
     }
     
-    @Test
-    public void resendEmailVerification() {
-        mockHealthCodeAndAccountRetrieval();
-        
-        participantService.resendVerification(APP, ChannelType.EMAIL, ID);
-        
-        verify(accountWorkflowService).resendVerificationToken(eq(ChannelType.EMAIL), accountIdCaptor.capture());
-        
-        AccountId accountId = accountIdCaptor.getValue();
-        assertEquals(accountId.getAppId(), APP.getIdentifier());
-        assertEquals(accountId.getEmail(), EMAIL);
-    }
-    
-    @Test
-    public void resendPhoneVerification() {
-        mockHealthCodeAndAccountRetrieval(null, PHONE, null);
-        
-        participantService.resendVerification(APP, ChannelType.PHONE, ID);
-        
-        verify(accountWorkflowService).resendVerificationToken(eq(ChannelType.PHONE), accountIdCaptor.capture());
-        
-        AccountId accountId = accountIdCaptor.getValue();
-        assertEquals(accountId.getAppId(), APP.getIdentifier());
-        assertEquals(accountId.getPhone(), PHONE);
-    }
-    
-    @Test(expectedExceptions = UnsupportedOperationException.class)
-    public void resendVerificationUnsupportedOperationException() {
-        mockHealthCodeAndAccountRetrieval();
-        
-        // Use null so we don't have to create a dummy unsupported channel type
-        participantService.resendVerification(APP, null, ID);
-    }
-
-    @Test(expectedExceptions = BadRequestException.class,
-            expectedExceptionsMessageRegExp = "Email address has not been set.")
-    public void resendEmailVerificationWhenEmailNull() {
-        mockHealthCodeAndAccountRetrieval();
-        account.setEmail(null);
-        
-        participantService.resendVerification(APP, ChannelType.EMAIL, ID);    
-    }
-
-    @Test(expectedExceptions = BadRequestException.class,
-            expectedExceptionsMessageRegExp = "Phone number has not been set.")
-    public void resendPhoneVerificationWhenEmailNull() {
-        mockHealthCodeAndAccountRetrieval();
-        account.setPhone(null);
-        
-        participantService.resendVerification(APP, ChannelType.PHONE, ID);    
-    }
-
     @Test
     public void resendConsentAgreement() {
         mockHealthCodeAndAccountRetrieval();
@@ -1923,185 +1802,6 @@ public class ParticipantServiceTest extends Mockito {
         when(accountService.getPagedAccountSummaries(TEST_APP_ID, EMPTY_SEARCH)).thenReturn(accountSummaries);
         
         participantService.createParticipant(APP, PARTICIPANT, false);
-    }
-    
-    @Test
-    public void updateIdentifiersEmailSignInUpdatePhone() {
-        // Verifies email-based sign in, phone update, account update, and an updated 
-        // participant is returned... the common happy path.
-        mockHealthCodeAndAccountRetrieval();
-        when(accountService.authenticate(APP, EMAIL_PASSWORD_SIGN_IN)).thenReturn(account);
-        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
-        
-        IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, null, PHONE, null);
-        
-        StudyParticipant returned = participantService.updateIdentifiers(APP, CONTEXT, update);
-        
-        assertEquals(account.getPhone(), TestConstants.PHONE);
-        assertEquals(account.getPhoneVerified(), Boolean.FALSE);
-        verify(accountService).authenticate(APP, EMAIL_PASSWORD_SIGN_IN);
-        verify(accountService).updateAccount(account);
-        verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
-        assertEquals(returned.getId(), PARTICIPANT.getId());
-    }
-
-    @Test
-    public void updateIdentifiersPhoneSignInUpdateEmail() {
-        // This flips the method of sign in to use a phone, and sends an email update. 
-        // Also tests the common path of creating unverified email address with verification email sent
-        mockAccountNoEmail();
-        when(accountService.authenticate(APP, PHONE_PASSWORD_SIGN_IN)).thenReturn(account);
-        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
-        
-        APP.setEmailVerificationEnabled(true);
-        APP.setAutoVerificationEmailSuppressed(false);
-        
-        IdentifierUpdate update = new IdentifierUpdate(PHONE_PASSWORD_SIGN_IN, "email@email.com", null, null);
-        
-        StudyParticipant returned = participantService.updateIdentifiers(APP, CONTEXT, update);
-        
-        assertEquals(account.getEmail(), "email@email.com");
-        assertEquals(account.getEmailVerified(), Boolean.FALSE);
-        verify(accountService).authenticate(APP, PHONE_PASSWORD_SIGN_IN);
-        verify(accountService).updateAccount(account);
-        verify(accountWorkflowService).sendEmailVerificationToken(APP, ID, "email@email.com");
-        assertEquals(PARTICIPANT.getId(), returned.getId());
-    }
-    
-    @Test(expectedExceptions = InvalidEntityException.class)
-    public void updateIdentifiersValidates() {
-        IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, null, null, null);
-        participantService.updateIdentifiers(APP, CONTEXT, update);
-    }
-    
-    @Test(expectedExceptions = InvalidEntityException.class)
-    public void updateIdentifiersValidatesWithBlankEmail() {
-        IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, "", null, null);
-        participantService.updateIdentifiers(APP, CONTEXT, update);
-    }
-    
-    @Test(expectedExceptions = InvalidEntityException.class)
-    public void updateIdentifiersValidatesWithInvalidPhone() {
-        IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, null, new Phone("US", "1231231234"), null);
-        participantService.updateIdentifiers(APP, CONTEXT, update);
-    }
-    
-    @Test
-    public void updateIdentifiersUsingReauthentication() {
-        mockHealthCodeAndAccountRetrieval();
-        when(accountService.reauthenticate(APP, REAUTH_REQUEST)).thenReturn(account);
-        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
-        
-        IdentifierUpdate update = new IdentifierUpdate(REAUTH_REQUEST, null, TestConstants.PHONE, null);
-        
-        participantService.updateIdentifiers(APP, CONTEXT, update);
-        
-        verify(accountService).reauthenticate(APP, REAUTH_REQUEST);
-    }
-
-    @Test
-    public void updateIdentifiersCreatesVerifiedEmailWithoutVerification() {
-        mockAccountNoEmail();
-        when(accountService.authenticate(APP, PHONE_PASSWORD_SIGN_IN)).thenReturn(account);
-        
-        APP.setEmailVerificationEnabled(false);
-        APP.setAutoVerificationEmailSuppressed(false); // can be true or false, doesn't matter
-        
-        IdentifierUpdate update = new IdentifierUpdate(PHONE_PASSWORD_SIGN_IN, "email@email.com", null, null);
-
-        participantService.updateIdentifiers(APP, CONTEXT, update);
-        
-        assertEquals(account.getEmail(), "email@email.com");
-        assertEquals(account.getEmailVerified(), Boolean.TRUE);
-        verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
-    }
-    
-    @Test
-    public void updateIdentifiersCreatesUnverifiedEmailWithoutVerification() {
-        mockAccountNoEmail();
-        when(accountService.authenticate(APP, PHONE_PASSWORD_SIGN_IN)).thenReturn(account);
-        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
-        
-        APP.setEmailVerificationEnabled(true);
-        APP.setAutoVerificationEmailSuppressed(true);
-        
-        IdentifierUpdate update = new IdentifierUpdate(PHONE_PASSWORD_SIGN_IN, EMAIL, null, null);
-        
-        participantService.updateIdentifiers(APP, CONTEXT, update);
-        
-        assertEquals(account.getEmail(), EMAIL);
-        assertEquals(account.getEmailVerified(), Boolean.FALSE);
-        verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
-    }
-    
-    @Test
-    public void updateIdentifiersAddsSynapseUserId() {
-        mockAccountNoEmail();
-        when(accountService.authenticate(APP, EMAIL_PASSWORD_SIGN_IN)).thenReturn(account);
-        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
-        
-        IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, EMAIL, null, SYNAPSE_USER_ID);
-        participantService.updateIdentifiers(APP, CONTEXT, update);
-        
-        assertEquals(account.getSynapseUserId(), SYNAPSE_USER_ID);
-    }
-
-    @Test
-    public void updateIdentifiersAuthenticatingToAnotherAccountInvalid() {
-        // This ID does not match the ID in the request's context, and that will fail
-        account.setId("another-user-id");
-        when(accountService.authenticate(APP, PHONE_PASSWORD_SIGN_IN)).thenReturn(account);
-        
-        IdentifierUpdate update = new IdentifierUpdate(PHONE_PASSWORD_SIGN_IN, "email@email.com", null, null);
-        
-        try {
-            participantService.updateIdentifiers(APP, CONTEXT, update);
-            fail("Should have thrown exception");
-        } catch(EntityNotFoundException e) {
-            verify(accountService, never()).updateAccount(any());
-            verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
-        }
-    }
-
-    @Test
-    public void updateIdentifiersDoNotOverwriteExistingIdentifiers() {
-        mockHealthCodeAndAccountRetrieval(EMAIL, PHONE, EXTERNAL_ID);
-        account.setEmailVerified(TRUE);
-        account.setPhoneVerified(TRUE);
-        account.setSynapseUserId(SYNAPSE_USER_ID);
-        when(accountService.authenticate(APP, PHONE_PASSWORD_SIGN_IN)).thenReturn(account);
-        
-        // Now that an external ID addition will simply add another external ID, the 
-        // test has been changed to submit an existing external ID.
-        IdentifierUpdate update = new IdentifierUpdate(PHONE_PASSWORD_SIGN_IN, "updated@email.com",
-                new Phone("4082588569", "US"), "88888");
-        
-        participantService.updateIdentifiers(APP, CONTEXT, update);
-        
-        // None of these have changed.
-        assertEquals(account.getEmail(), EMAIL);
-        assertEquals(account.getEmailVerified(), TRUE);
-        assertEquals(account.getPhone(), PHONE);
-        assertEquals(account.getPhoneVerified(), TRUE);
-        assertEquals(account.getSynapseUserId(), SYNAPSE_USER_ID);
-        verify(accountService, never()).updateAccount(any());
-        verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
-    }
-    
-    @Test
-    public void updateIdentifiersDoesNotReassignExternalIdOnOtherUpdate() throws Exception {
-        mockHealthCodeAndAccountRetrieval(null, null, EXTERNAL_ID);
-        when(accountService.authenticate(APP, EMAIL_PASSWORD_SIGN_IN)).thenReturn(account);
-        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
-        
-        // Add phone
-        IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, null, new Phone("4082588569", "US"),
-                null);
-        participantService.updateIdentifiers(APP, CONTEXT, update);
-        
-        // externalIdService not called
-        verify(accountService).updateAccount(any());
-        verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
     }
     
     @Test(expectedExceptions = InvalidEntityException.class)
