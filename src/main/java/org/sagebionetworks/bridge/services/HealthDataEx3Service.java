@@ -39,7 +39,6 @@ public class HealthDataEx3Service {
     private HealthDataEx3Dao healthDataEx3Dao;
     private UploadService uploadService;
     private String S3bucketName;
-    private String S3Key;
     private AmazonS3 s3Client;
 
     @Autowired
@@ -87,10 +86,9 @@ public class HealthDataEx3Service {
             throw new BadRequestException("ID must be specified");
         }
 
-        Optional<HealthDataRecordEx3> record = Optional.ofNullable(healthDataEx3Dao.getRecord(id))
-                .orElseThrow(() -> new EntityNotFoundException(HealthDataRecordEx3.class));
+        Optional<HealthDataRecordEx3> record = healthDataEx3Dao.getRecord(id);
 
-        if (download) {
+        if (record != null && download) {
             record.get().setDownloadUrl(generatePresignedUrl(record.get(), GET).toExternalForm());
         }
         return record;
@@ -105,7 +103,7 @@ public class HealthDataEx3Service {
         long expiration = DateTime.now().plusMinutes(EXPIRATION_IN_MINUTES).getMillis();
         record.setDownloadExpiration(expiration);
 
-        S3Key = UploadUtil.getRawS3KeyForUpload(record.getAppId(), record.getStudyId(),
+        String S3Key = UploadUtil.getRawS3KeyForUpload(record.getAppId(),
                 this.uploadService.getUpload(record.getId()), record);
 
         GeneratePresignedUrlRequest request = new GeneratePresignedUrlRequest(S3bucketName , S3Key, method);

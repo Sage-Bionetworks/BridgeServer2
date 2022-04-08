@@ -21,6 +21,7 @@ import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -45,7 +46,7 @@ public class HealthDataEx3ServiceTest {
     private static final String STUDY_ID = "test-study";
     private static final String RECORD_BUCKET = "record-bucket";
     private static final String FILE_NAME = "file-name";
-    private static final String S3KEY = "test-app/test-study/2015-01-26/test-record-file-name";
+    private static final String S3KEY = "test-app/2015-01-26/test-record-file-name";
     private static final int EXPIRATION_IN_MINUTES = 60;
 
     @Mock
@@ -80,6 +81,11 @@ public class HealthDataEx3ServiceTest {
         });
 
         DateTimeUtils.setCurrentMillisFixed(TestConstants.TIMESTAMP.getMillis());
+    }
+
+    @AfterMethod
+    public void after() {
+        DateTimeUtils.setCurrentMillisSystem();
     }
 
     @Test
@@ -148,7 +154,6 @@ public class HealthDataEx3ServiceTest {
         assertEquals(result.getId(), RECORD_ID);
         assertEquals(result.getAppId(), TestConstants.TEST_APP_ID);
         assertEquals(result.getHealthCode(), TestConstants.HEALTH_CODE);
-        assertEquals(result.getStudyId(), TestConstants.TEST_STUDY_ID);
         assertEquals(result.getCreatedOn(), new Long(TestConstants.CREATED_ON.getMillis()));
         assertEquals(result.getDownloadExpiration(), DateTime.now().plusMinutes(EXPIRATION_IN_MINUTES).getMillis());
 
@@ -354,7 +359,6 @@ public class HealthDataEx3ServiceTest {
         record.setAppId(TestConstants.TEST_APP_ID);
         record.setHealthCode(TestConstants.HEALTH_CODE);
         record.setCreatedOn(TestConstants.CREATED_ON.getMillis());
-        record.setStudyId(TestConstants.TEST_STUDY_ID);
         record.setId(RECORD_ID);
         return record;
     }

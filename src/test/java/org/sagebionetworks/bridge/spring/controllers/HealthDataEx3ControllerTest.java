@@ -316,7 +316,7 @@ public class HealthDataEx3ControllerTest {
 
     // Tests of getRecordForSelf API.
     @Test
-    public void getRecordForSelf_Success() {
+    public void getRecordForSelf_downloadFalseSuccess() {
         when(mockDeveloperTestAccountSession.getAppId()).thenReturn(TestConstants.TEST_APP_ID);
         when(mockDeveloperTestAccountSession.getHealthCode()).thenReturn(TestConstants.HEALTH_CODE);
 
@@ -328,6 +328,44 @@ public class HealthDataEx3ControllerTest {
 
         // Execute and verify.
         HealthDataRecordEx3 result = controller.getRecordForSelf(RECORD_ID, "false");
+        assertSame(result, record);
+
+        verify(mockHealthDataEx3Service).getRecord(RECORD_ID, false);
+        verify(mockMetrics).setRecordId(RECORD_ID);
+    }
+
+    @Test
+    public void getRecordForSelf_downloadTrueSuccess() {
+        when(mockDeveloperTestAccountSession.getAppId()).thenReturn(TestConstants.TEST_APP_ID);
+        when(mockDeveloperTestAccountSession.getHealthCode()).thenReturn(TestConstants.HEALTH_CODE);
+
+        HealthDataRecordEx3 record = HealthDataRecordEx3.create();
+        record.setAppId(TestConstants.TEST_APP_ID);
+        record.setId(RECORD_ID);
+        record.setHealthCode(HEALTH_CODE);
+        when(mockHealthDataEx3Service.getRecord(RECORD_ID, true)).thenReturn(Optional.of(record));
+
+        // Execute and verify.
+        HealthDataRecordEx3 result = controller.getRecordForSelf(RECORD_ID, "true");
+        assertSame(result, record);
+
+        verify(mockHealthDataEx3Service).getRecord(RECORD_ID, true);
+        verify(mockMetrics).setRecordId(RECORD_ID);
+    }
+
+    @Test
+    public void getRecordForSelf_downloadNullSuccess() {
+        when(mockDeveloperTestAccountSession.getAppId()).thenReturn(TestConstants.TEST_APP_ID);
+        when(mockDeveloperTestAccountSession.getHealthCode()).thenReturn(TestConstants.HEALTH_CODE);
+
+        HealthDataRecordEx3 record = HealthDataRecordEx3.create();
+        record.setAppId(TestConstants.TEST_APP_ID);
+        record.setId(RECORD_ID);
+        record.setHealthCode(HEALTH_CODE);
+        when(mockHealthDataEx3Service.getRecord(RECORD_ID, false)).thenReturn(Optional.of(record));
+
+        // Execute and verify.
+        HealthDataRecordEx3 result = controller.getRecordForSelf(RECORD_ID, null);
         assertSame(result, record);
 
         verify(mockHealthDataEx3Service).getRecord(RECORD_ID, false);

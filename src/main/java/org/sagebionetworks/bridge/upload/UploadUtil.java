@@ -30,6 +30,7 @@ import org.joda.time.Period;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.time.DateUtils;
@@ -80,7 +81,6 @@ public class UploadUtil {
 
     // Misc constants
     private static final int DEFAULT_MAX_LENGTH = 100;
-    public static final DateTimeZone LOCAL_TIME_ZONE = DateTimeZone.forID("America/Los_Angeles");
 
     // Field def for survey schemas, which contains a key-value pair of all survey answers.
     public static final UploadFieldDefinition ANSWERS_FIELD_DEF = new UploadFieldDefinition.Builder()
@@ -761,14 +761,10 @@ public class UploadUtil {
         return sanitizedFieldMap;
     }
 
-    public static String getRawS3KeyForUpload(String appId, String studyId, Upload upload, HealthDataRecordEx3 record) {
+    public static String getRawS3KeyForUpload(String appId, Upload upload, HealthDataRecordEx3 record) {
         StringBuilder builder = new StringBuilder();
         builder.append(appId);
         builder.append('/');
-        if (studyId != null) {
-            builder.append(studyId);
-            builder.append('/');
-        }
 
         String dateStr = getCalendarDateForRecord(record);
         builder.append(dateStr);
@@ -785,7 +781,7 @@ public class UploadUtil {
     }
 
     private static String getCalendarDateForRecord(HealthDataRecordEx3 record) {
-        LocalDate localDate = new DateTime(record.getCreatedOn()).withZone(LOCAL_TIME_ZONE).toLocalDate();
+        LocalDate localDate = new DateTime(record.getCreatedOn()).withZone(BridgeConstants.LOCAL_TIME_ZONE).toLocalDate();
         return localDate.toString();
     }
 }
