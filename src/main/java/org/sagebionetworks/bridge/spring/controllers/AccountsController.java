@@ -186,7 +186,7 @@ public class AccountsController extends BaseController  {
         
         verifyOrgAdminIsActingOnOrgMember(session, userId);
 
-        accountWorkflowService.resendVerification(session.getAppId(), ChannelType.EMAIL, userId);
+        accountWorkflowService.resendVerification(ChannelType.EMAIL, session.getAppId(), userId);
         
         return EMAIL_VERIFY_MSG;
     }
@@ -198,7 +198,7 @@ public class AccountsController extends BaseController  {
         
         verifyOrgAdminIsActingOnOrgMember(session, userId);
 
-        accountWorkflowService.resendVerification(session.getAppId(), ChannelType.PHONE, userId);
+        accountWorkflowService.resendVerification(ChannelType.PHONE, session.getAppId(), userId);
         
         return PHONE_VERIFY_MSG;
     }
@@ -212,7 +212,7 @@ public class AccountsController extends BaseController  {
 
         CriteriaContext context = getCriteriaContext(session);
         
-        StudyParticipant participant = participantService.updateIdentifiers(app, context, update);
+        StudyParticipant participant = authenticationService.updateIdentifiers(app, context, update);
         sessionUpdateService.updateParticipant(session, context, participant);
         
         return UserSessionInfo.toJSON(session);

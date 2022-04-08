@@ -274,7 +274,7 @@ public class ParticipantController extends BaseController {
 
         CriteriaContext context = getCriteriaContext(session);
         
-        StudyParticipant participant = participantService.updateIdentifiers(app, context, update);
+        StudyParticipant participant = authenticationService.updateIdentifiers(app, context, update);
         sessionUpdateService.updateParticipant(session, context, participant);
         
         return UserSessionInfo.toJSON(session);
@@ -504,7 +504,7 @@ public class ParticipantController extends BaseController {
         UserSession session = getAdministrativeSession();
         CAN_EDIT_PARTICIPANTS.checkAndThrow(USER_ID, userId);
 
-        accountWorkflowService.resendVerification(session.getAppId(), ChannelType.EMAIL, userId);
+        accountWorkflowService.resendVerification(ChannelType.EMAIL, session.getAppId(), userId);
         
         return new StatusMessage("Email verification request has been resent to user.");
     }
@@ -514,7 +514,7 @@ public class ParticipantController extends BaseController {
         UserSession session = getAdministrativeSession();
         CAN_EDIT_PARTICIPANTS.checkAndThrow(USER_ID, userId);
 
-        accountWorkflowService.resendVerification(session.getAppId(), ChannelType.PHONE, userId);
+        accountWorkflowService.resendVerification(ChannelType.PHONE, session.getAppId(), userId);
         
         return new StatusMessage("Phone verification request has been resent to user.");
     }

@@ -374,7 +374,7 @@ public class AccountsControllerTest extends Mockito {
         
         controller.resendEmailVerification(TEST_USER_ID);
         
-        verify(mockAccountWorkflowService).resendVerification(TEST_APP_ID, ChannelType.EMAIL, TEST_USER_ID);
+        verify(mockAccountWorkflowService).resendVerification(ChannelType.EMAIL, TEST_APP_ID, TEST_USER_ID);
     }
     
     @Test
@@ -390,7 +390,7 @@ public class AccountsControllerTest extends Mockito {
         
         controller.resendPhoneVerification(TEST_USER_ID);
         
-        verify(mockAccountWorkflowService).resendVerification(TEST_APP_ID, ChannelType.PHONE, TEST_USER_ID);        
+        verify(mockAccountWorkflowService).resendVerification(ChannelType.PHONE, TEST_APP_ID, TEST_USER_ID);        
     }
     
     @Test
@@ -507,13 +507,13 @@ public class AccountsControllerTest extends Mockito {
                 .withStudyIds(CALLER_STUDIES)
                 .withId(TEST_USER_ID).build();
 
-        when(mockParticipantService.updateIdentifiers(eq(app), any(), any())).thenReturn(participant);
+        when(mockAuthenticationService.updateIdentifiers(eq(app), any(), any())).thenReturn(participant);
 
         JsonNode result = controller.updateIdentifiers();
 
         assertEquals(result.get("id").textValue(), TEST_USER_ID);
 
-        verify(mockParticipantService).updateIdentifiers(eq(app), contextCaptor.capture(),
+        verify(mockAuthenticationService).updateIdentifiers(eq(app), contextCaptor.capture(),
                 identifierUpdateCaptor.capture());
         verify(mockCacheProvider).setUserSession(sessionCaptor.capture());
         assertEquals(sessionCaptor.getValue().getId(), participant.getId());
@@ -534,13 +534,13 @@ public class AccountsControllerTest extends Mockito {
         StudyParticipant participant = new StudyParticipant.Builder().withRoles(CALLER_ROLES).withStudyIds(CALLER_STUDIES)
                 .withId(TEST_USER_ID).build();
         
-        when(mockParticipantService.updateIdentifiers(eq(app), any(), any())).thenReturn(participant);
+        when(mockAuthenticationService.updateIdentifiers(eq(app), any(), any())).thenReturn(participant);
 
         JsonNode result = controller.updateIdentifiers();
 
         assertEquals(result.get("id").textValue(), TEST_USER_ID);
 
-        verify(mockParticipantService).updateIdentifiers(eq(app), contextCaptor.capture(),
+        verify(mockAuthenticationService).updateIdentifiers(eq(app), contextCaptor.capture(),
                 identifierUpdateCaptor.capture());
 
         IdentifierUpdate update = identifierUpdateCaptor.getValue();
@@ -559,13 +559,13 @@ public class AccountsControllerTest extends Mockito {
         StudyParticipant participant = new StudyParticipant.Builder().withRoles(CALLER_ROLES).withStudyIds(CALLER_STUDIES)
                 .withId(TEST_USER_ID).build();
         
-        when(mockParticipantService.updateIdentifiers(eq(app), any(), any())).thenReturn(participant);
+        when(mockAuthenticationService.updateIdentifiers(eq(app), any(), any())).thenReturn(participant);
 
         JsonNode result = controller.updateIdentifiers();
 
         assertEquals(result.get("id").textValue(), TEST_USER_ID);
 
-        verify(mockParticipantService).updateIdentifiers(eq(app), contextCaptor.capture(),
+        verify(mockAuthenticationService).updateIdentifiers(eq(app), contextCaptor.capture(),
                 identifierUpdateCaptor.capture());
 
         IdentifierUpdate update = identifierUpdateCaptor.getValue();

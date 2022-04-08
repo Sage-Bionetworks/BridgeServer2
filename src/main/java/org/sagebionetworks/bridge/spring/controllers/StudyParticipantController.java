@@ -462,7 +462,7 @@ public class StudyParticipantController extends BaseController {
 
         CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
         
-        accountWorkflowService.resendVerification(session.getAppId(), ChannelType.EMAIL, account.getId());
+        accountWorkflowService.resendVerification(ChannelType.EMAIL, session.getAppId(), account.getId());
         
         return EMAIL_VERIFY_MSG;
     }
@@ -474,7 +474,7 @@ public class StudyParticipantController extends BaseController {
 
         CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
         
-        accountWorkflowService.resendVerification(session.getAppId(), ChannelType.PHONE, account.getId());
+        accountWorkflowService.resendVerification(ChannelType.PHONE, session.getAppId(), account.getId());
         
         return PHONE_VERIFY_MSG;
     }

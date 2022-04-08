@@ -26,7 +26,6 @@ import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectTy
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ENROLLMENT;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_APP_INSTALL_LINK;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.SMS_APP_INSTALL_LINK;
-import static org.sagebionetworks.bridge.validators.IdentifierUpdateValidator.INSTANCE;
 
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -59,7 +58,6 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.BridgeUtils.StudyAssociations;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.Roles;
-import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.ScheduledActivityDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
@@ -78,7 +76,6 @@ import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
-import org.sagebionetworks.bridge.models.accounts.IdentifierUpdate;
 import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -132,8 +129,6 @@ public class ParticipantService {
     private SubpopulationService subpopService;
 
     private ConsentService consentService;
-
-    private CacheProvider cacheProvider;
     
     private RequestInfoService requestInfoService;
 
@@ -162,8 +157,6 @@ public class ParticipantService {
     private TemplateService templateService;
     
     private SendMailService sendMailService;
-    
-    private AuthenticationService authenticationService;
 
     @Autowired
     final void setAccountWorkflowService(AccountWorkflowService accountWorkflowService) {
@@ -189,11 +182,6 @@ public class ParticipantService {
     @Autowired
     void setUserConsent(ConsentService consentService) {
         this.consentService = consentService;
-    }
-
-    @Autowired
-    void setCacheProvider(CacheProvider cacheProvider) {
-        this.cacheProvider = cacheProvider;
     }
 
     @Autowired
@@ -259,11 +247,6 @@ public class ParticipantService {
     @Autowired
     final void setSendMailService(SendMailService sendMailService) {
         this.sendMailService = sendMailService;
-    }
-    
-    @Autowired
-    final void setAuthenticationService(AuthenticationService authenticationService) {
-        this.authenticationService = authenticationService;
     }
     
     // Accessor so we can mock the value
@@ -865,59 +848,6 @@ public class ParticipantService {
         Account account = getAccountThrowingException(app.getIdentifier(), userId);
         
         return activityEventService.getActivityEventList(app.getIdentifier(), studyId, account.getHealthCode());
-    }
-    
-    /**
-     * This method is only executed on the authenticated caller, not on behalf of any other person.
-     */
-    public StudyParticipant updateIdentifiers(App app, CriteriaContext context, IdentifierUpdate update) {
-        checkNotNull(app);
-        checkNotNull(context);
-        checkNotNull(update);
-        
-        // Validate
-        Validate.entityThrowingException(INSTANCE, update);
-        
-        // Sign in
-        Account account;
-        // These throw exceptions for not found, disabled, and not yet verified.
-        if (update.getSignIn().getReauthToken() != null) {
-            account = authenticationService.reauthenticate(app, update.getSignIn());
-        } else {
-            account = authenticationService.authenticate(app, update.getSignIn());
-        }
-        // Verify the account matches the current caller
-        if (!account.getId().equals(context.getUserId())) {
-            throw new EntityNotFoundException(Account.class);
-        }
-        
-        boolean sendEmailVerification = false;
-        boolean accountUpdated = false;
-        if (update.getPhoneUpdate() != null && account.getPhone() == null) {
-            account.setPhone(update.getPhoneUpdate());
-            account.setPhoneVerified(false);
-            accountUpdated = true;
-        }
-        if (update.getEmailUpdate() != null && account.getEmail() == null) {
-            account.setEmail(update.getEmailUpdate());
-            account.setEmailVerified( !app.isEmailVerificationEnabled() );
-            sendEmailVerification = true;
-            accountUpdated = true;
-        }
-        if (update.getSynapseUserIdUpdate() != null && account.getSynapseUserId() == null) {
-            account.setSynapseUserId(update.getSynapseUserIdUpdate());
-            accountUpdated = true;
-        }
-        if (accountUpdated) {
-            accountService.updateAccount(account);
-        }
-        if (sendEmailVerification && 
-            app.isEmailVerificationEnabled() && 
-            !app.isAutoVerificationEmailSuppressed()) {
-            accountWorkflowService.sendEmailVerificationToken(app, account.getId(), account.getEmail());
-        }
-        // return updated StudyParticipant to update and return session
-        return getParticipant(app, account.getId(), false);
     }
 
     public void requestParticipantRoster(App app, String userId, ParticipantRosterRequest request) throws JsonProcessingException {

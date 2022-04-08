@@ -997,7 +997,7 @@ public class StudyParticipantControllerTest extends Mockito {
         
         controller.resendEmailVerification(TEST_STUDY_ID, TEST_USER_ID);
         
-        verify(mockAccountWorkflowService).resendVerification(TEST_APP_ID, ChannelType.EMAIL, TEST_USER_ID);
+        verify(mockAccountWorkflowService).resendVerification(ChannelType.EMAIL, TEST_APP_ID, TEST_USER_ID);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -1021,7 +1021,7 @@ public class StudyParticipantControllerTest extends Mockito {
         
         controller.resendPhoneVerification(TEST_STUDY_ID, TEST_USER_ID);
         
-        verify(mockAccountWorkflowService).resendVerification(TEST_APP_ID, ChannelType.PHONE, TEST_USER_ID);
+        verify(mockAccountWorkflowService).resendVerification(ChannelType.PHONE, TEST_APP_ID, TEST_USER_ID);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)

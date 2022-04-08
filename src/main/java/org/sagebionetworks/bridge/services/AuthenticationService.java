@@ -14,7 +14,9 @@ import static org.sagebionetworks.bridge.models.accounts.AccountStatus.UNVERIFIE
 import static org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM;
 import static org.sagebionetworks.bridge.services.AuthenticationService.ChannelType.EMAIL;
 import static org.sagebionetworks.bridge.services.AuthenticationService.ChannelType.PHONE;
+import static org.sagebionetworks.bridge.validators.IdentifierUpdateValidator.INSTANCE;
 
+import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
@@ -44,16 +46,18 @@ import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.Verification;
+import org.sagebionetworks.bridge.models.accounts.VerificationData;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.oauth.OAuthAuthorizationToken;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
-import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
+import org.sagebionetworks.bridge.models.accounts.IdentifierUpdate;
 import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
 import org.sagebionetworks.bridge.models.accounts.GeneratedPassword;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
@@ -61,7 +65,6 @@ import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.validators.AccountIdValidator;
 import org.sagebionetworks.bridge.validators.VerificationValidator;
 import org.sagebionetworks.bridge.validators.PasswordResetValidator;
 import org.sagebionetworks.bridge.validators.SignInValidator;
@@ -76,6 +79,8 @@ import org.springframework.stereotype.Component;
 public class AuthenticationService {
     private static final Logger LOG = LoggerFactory.getLogger(AuthenticationService.class);
     
+    static final String VERIFY_TOKEN_EXPIRED = "This verification token is no longer valid.";
+    static final String ALREADY_VERIFIED = "That %s has already been verified.";
     static final String PASSWORD_RESET_TOKEN_EXPIRED = "Password reset token has expired (or already been used).";
     static final int SIGNIN_GRACE_PERIOD_SECONDS = 5*60; // 5 min
     static final int ROTATIONS = 3;
@@ -159,7 +164,11 @@ public class AuthenticationService {
     
     // Provided to override in tests
     protected DateTime getModifiedOn() {
-        return DateUtils.getCurrentDateTime();
+        return DateTime.now();
+    }
+    
+    protected DateTime getDateTime() {
+        return DateTime.now();
     }
     
     // Provided to override in tests
@@ -448,36 +457,24 @@ public class AuthenticationService {
         checkNotNull(verification);
 
         Validate.entityThrowingException(VerificationValidator.INSTANCE, verification);
-        Account account = accountWorkflowService.verifyChannel(type, verification);
-
-        verifyChannel(type, account);
-    }
-    
-    public void resendVerification(ChannelType type, AccountId accountId) {
-        checkNotNull(accountId);
-
-        Validate.entityThrowingException(AccountIdValidator.getInstance(type), accountId);
-        try {
-            accountWorkflowService.resendVerificationToken(type, accountId);    
-        } catch(EntityNotFoundException e) {
-            // Suppress this. Otherwise it reveals if the account does not exist
-            LOG.info("Resend " + type.name() + " verification for unregistered email in app '"
-                    + accountId.getAppId() + "'");
-        }
-    }
-    
-    public void requestResetPassword(App app, boolean isAppAdmin, SignIn signIn) throws BridgeServiceException {
-        checkNotNull(app);
-        checkNotNull(signIn);
         
-        // validate the data in signIn, then convert it to an account ID which we know will be valid.
-        Validate.entityThrowingException(SignInValidator.REQUEST_RESET_PASSWORD, signIn);
-        try {
-            accountWorkflowService.requestResetPassword(app, isAppAdmin, signIn.getAccountId());    
-        } catch(EntityNotFoundException e) {
-            // Suppress this. Otherwise it reveals if the account does not exist
-            LOG.info("Request reset password request for unregistered email in app '"+signIn.getAppId()+"'");
+        VerificationData data = restoreVerification(verification.getSptoken());
+        if (data == null || data.getType() != type) {
+            throw new BadRequestException(VERIFY_TOKEN_EXPIRED);
         }
+        App app = appService.getApp(data.getAppId());
+        Account account = accountService.getAccount(AccountId.forId(app.getIdentifier(), data.getUserId()))
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+        
+        if (type == ChannelType.EMAIL && TRUE.equals(account.getEmailVerified())) {
+            throw new BadRequestException(String.format(ALREADY_VERIFIED, "email address"));
+        } else if (type == ChannelType.PHONE && TRUE.equals(account.getPhoneVerified())) {
+            throw new BadRequestException(String.format(ALREADY_VERIFIED, "phone number"));
+        }
+        if (data.getExpiresOn() < getDateTime().getMillis()) {
+            throw new BadRequestException(VERIFY_TOKEN_EXPIRED);
+        }
+        verifyChannel(type, account);
     }
     
     /**
@@ -490,6 +487,9 @@ public class AuthenticationService {
 
         Validate.entityThrowingException(passwordResetValidator, passwordReset);
 
+        // verify it exists
+        App app = appService.getApp(passwordReset.getAppId());
+        
         // This pathway is unusual as the token may have been sent via email or phone, so test for both.
         CacheKey emailCacheKey = CacheKey.passwordResetForEmail(passwordReset.getSptoken(), passwordReset.getAppId());
         CacheKey phoneCacheKey = CacheKey.passwordResetForPhone(passwordReset.getSptoken(), passwordReset.getAppId());
@@ -502,7 +502,6 @@ public class AuthenticationService {
         cacheProvider.removeObject(emailCacheKey);
         cacheProvider.removeObject(phoneCacheKey);
         
-        App app = appService.getApp(passwordReset.getAppId());
         ChannelType channelType = null;
         AccountId accountId = null;
         if (email != null) {
@@ -514,12 +513,28 @@ public class AuthenticationService {
         } else {
             throw new BridgeServiceException("Could not reset password");
         }
-        Account account = accountService.getAccount(accountId)
+        Account account = accountDao.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
         
         changePassword(account, channelType, passwordReset.getPassword());
     }
-
+    
+    private VerificationData restoreVerification(String sptoken) {
+        checkArgument(isNotBlank(sptoken));
+                 
+        CacheKey cacheKey = CacheKey.verificationToken(sptoken);
+        String json = cacheProvider.getObject(cacheKey, String.class);
+        if (json != null) {
+            try {
+                // Do not remove. Even when expired we want to map back to an account
+                return BridgeObjectMapper.get().readValue(json, VerificationData.class);
+            } catch (IOException e) {
+                throw new BridgeServiceException(e);
+            }
+        }
+        return null;
+    }    
+    
     /**
      * Call to change a password, possibly verifying the channel used to reset the password. The channel 
      * type (which is optional, and can be null) is the channel that has been verified through the act 
@@ -758,6 +773,59 @@ public class AuthenticationService {
         cacheProvider.setUserSession(session);
         
         return session;        
+    }
+    
+    /**
+     * This method is only executed on the authenticated caller, not on behalf of any other person.
+     */
+    public StudyParticipant updateIdentifiers(App app, CriteriaContext context, IdentifierUpdate update) {
+        checkNotNull(app);
+        checkNotNull(context);
+        checkNotNull(update);
+        
+        // Validate
+        Validate.entityThrowingException(INSTANCE, update);
+        
+        // Sign in
+        Account account;
+        // These throw exceptions for not found, disabled, and not yet verified.
+        if (update.getSignIn().getReauthToken() != null) {
+            account = reauthenticate(app, update.getSignIn());
+        } else {
+            account = authenticate(app, update.getSignIn());
+        }
+        // Verify the account matches the current caller
+        if (!account.getId().equals(context.getUserId())) {
+            throw new EntityNotFoundException(Account.class);
+        }
+        
+        boolean sendEmailVerification = false;
+        boolean accountUpdated = false;
+        if (update.getPhoneUpdate() != null && account.getPhone() == null) {
+            account.setPhone(update.getPhoneUpdate());
+            account.setPhoneVerified(false);
+            accountUpdated = true;
+        }
+        if (update.getEmailUpdate() != null && account.getEmail() == null) {
+            account.setEmail(update.getEmailUpdate());
+            account.setEmailVerified( !app.isEmailVerificationEnabled() );
+            sendEmailVerification = true;
+            accountUpdated = true;
+        }
+        if (update.getSynapseUserIdUpdate() != null && account.getSynapseUserId() == null) {
+            account.setSynapseUserId(update.getSynapseUserIdUpdate());
+            accountUpdated = true;
+        }
+        if (accountUpdated) {
+            accountService.updateAccount(account);
+        }
+        if (sendEmailVerification && 
+            app.isEmailVerificationEnabled() && 
+            !app.isAutoVerificationEmailSuppressed()) {
+            accountWorkflowService.sendEmailVerificationToken(app, account.getId(), account.getEmail());
+        }
+        // return updated StudyParticipant to update and return session
+        return participantService.getParticipant(app, account.getId(), false);
     }
 
     // As per https://sagebionetworks.jira.com/browse/BRIDGE-2127, signing in should invalidate any old sessions

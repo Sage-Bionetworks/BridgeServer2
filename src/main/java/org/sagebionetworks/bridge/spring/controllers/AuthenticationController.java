@@ -267,7 +267,10 @@ public class AuthenticationController extends BaseController {
         AccountId accountId = parseJson(AccountId.class);
         getAppOrThrowException(accountId.getUnguardedAccountId().getAppId());
         
-        authenticationService.resendVerification(EMAIL, accountId);
+        Account account = accountService.getAccount(accountId).orElse(null);
+        if (account != null) {
+            accountWorkflowService.resendVerification(EMAIL, account.getAppId(), account.getId());    
+        }
         return new StatusMessage(EMAIL_VERIFY_REQUEST_MSG);
     }
 
@@ -287,8 +290,11 @@ public class AuthenticationController extends BaseController {
         
         // Must be here to get the correct exception if app property is missing
         getAppOrThrowException(accountId.getUnguardedAccountId().getAppId());
-        
-        authenticationService.resendVerification(PHONE, accountId);
+
+        Account account = accountService.getAccount(accountId).orElse(null);
+        if (account != null) {
+            accountWorkflowService.resendVerification(PHONE, account.getAppId(), account.getId());    
+        }
         return new StatusMessage(PHONE_VERIFY_REQUEST_MSG);
     }
 
@@ -300,7 +306,7 @@ public class AuthenticationController extends BaseController {
         App app = appService.getApp(signIn.getAppId());
         verifySupportedVersionOrThrowException(app);
         
-        authenticationService.requestResetPassword(app, false, signIn);
+        accountWorkflowService.requestResetPassword(app, false, signIn);
         
         // Email is chosen over phone number, so if email was provided, respond as if we used it.
         if (signIn.getEmail() != null) {
