@@ -303,7 +303,7 @@ public class AccountService {
         account.setOrgMembership(persistedAccount.getOrgMembership());
         // Update modifiedOn.
         account.setModifiedOn(DateUtils.getCurrentDateTime());
-        account.setAdmin(persistedAccount.isAdmin());
+        account.setAdmin(!account.getRoles().isEmpty() || account.getOrgMembership() != null);
         
         // Only allow Admins to update notes
         if (!RequestContext.get().isAdministrator()) {

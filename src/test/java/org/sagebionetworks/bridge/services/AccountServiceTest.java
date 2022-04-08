@@ -1459,27 +1459,11 @@ public class AccountServiceTest extends Mockito {
     }
     
     @Test
-    public void updateAccount_cannotClearTrueValue() {
+    public void updateAccount_adminSet() {
         Account account = Account.create();
         account.setAppId(TEST_APP_ID);
         account.setId(TEST_USER_ID);
-        
-        Account persistedAccount = Account.create();
-        persistedAccount.setAdmin(TRUE);
-        when(mockAccountDao.getAccount(AccountId.forId(TEST_APP_ID, TEST_USER_ID)))
-            .thenReturn(Optional.of(persistedAccount));
-        
-        service.updateAccount(account);
-        
-        assertTrue(account.isAdmin());
-    }
-
-    @Test
-    public void updateAccount_cannotClearFalseValue() {
-        Account account = Account.create();
-        account.setAppId(TEST_APP_ID);
-        account.setId(TEST_USER_ID);
-        account.setOrgMembership(TEST_ORG_ID);
+        account.setRoles(ImmutableSet.of(DEVELOPER));
         
         Account persistedAccount = Account.create();
         persistedAccount.setAdmin(FALSE);
@@ -1488,9 +1472,9 @@ public class AccountServiceTest extends Mockito {
         
         service.updateAccount(account);
         
-        assertEquals(account.isAdmin(), FALSE);
+        assertTrue(account.isAdmin());
     }
-    
+
     private Account mockGetAccountById(AccountId accountId, boolean generatePasswordHash) throws Exception {
         Account account = Account.create();
         account.setAppId(TEST_APP_ID);
