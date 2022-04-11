@@ -488,7 +488,7 @@ public class UploadUtilTest {
                 "foo bar",
                 "foo-bar_baz.qwerty asdf",
                 "select",
-                "whervre",
+                "where",
                 "time",
                 "true",
                 "false",

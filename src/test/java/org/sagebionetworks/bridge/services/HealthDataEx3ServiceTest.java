@@ -8,6 +8,7 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
 
 import java.net.URL;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import com.amazonaws.HttpMethod;
@@ -163,6 +164,15 @@ public class HealthDataEx3ServiceTest {
         assertEquals(request.getMethod(), HttpMethod.GET);
         assertEquals(request.getKey(), S3KEY);
         assertEquals(request.getExpiration(), DateTime.now().plusMinutes(EXPIRATION_IN_MINUTES).toDate());
+    }
+
+    @Test
+    public void getRecord_emptyRecord() {
+        when(mockDao.getRecord(RECORD_ID)).thenReturn(Optional.empty());
+        Optional<HealthDataRecordEx3> result = service.getRecord(RECORD_ID, true);
+        assertEquals(result, Optional.empty());
+
+        verify(mockDao).getRecord(RECORD_ID);
     }
 
     @Test

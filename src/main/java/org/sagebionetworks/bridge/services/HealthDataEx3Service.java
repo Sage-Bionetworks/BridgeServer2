@@ -88,7 +88,7 @@ public class HealthDataEx3Service {
 
         Optional<HealthDataRecordEx3> record = healthDataEx3Dao.getRecord(id);
 
-        if (record != null && download) {
+        if (record.isPresent() && download) {
             record.get().setDownloadUrl(generatePresignedUrl(record.get(), GET).toExternalForm());
         }
         return record;
