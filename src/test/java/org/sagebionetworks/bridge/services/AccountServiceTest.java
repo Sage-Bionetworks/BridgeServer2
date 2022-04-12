@@ -852,6 +852,78 @@ public class AccountServiceTest extends Mockito {
         verify(mockAccountDao).deleteAllAccounts(TEST_APP_ID);
     }
     
+    @Test
+    public void createAccount_participantNotMarkedAsAdmin( ) {
+        App app = App.create();
+        
+        Account account = Account.create();
+        account.setId(TEST_USER_ID);
+        
+        service.createAccount(app, account);
+        
+        assertFalse(account.isAdmin());
+    }
+    
+    @Test
+    public void createAccount_adminMarkedAsAdminFromOrgMembership( ) {
+        App app = App.create();
+        
+        Account account = Account.create();
+        account.setOrgMembership(TEST_ORG_ID);
+        account.setId(TEST_USER_ID);
+        
+        service.createAccount(app, account);
+        
+        assertTrue(account.isAdmin());
+    }
+    
+    @Test
+    public void createAccount_adminMarkedAsAdminFromRoles( ) {
+        App app = App.create();
+        
+        Account account = Account.create();
+        account.setRoles(ImmutableSet.of(DEVELOPER));
+        account.setId(TEST_USER_ID);
+        
+        service.createAccount(app, account);
+        
+        assertTrue(account.isAdmin());
+    }
+    
+    @Test
+    public void updateAccount_participantNotMarkedAsAdmin( ) {
+        Account account = Account.create();
+        account.setAppId(TEST_APP_ID);
+        account.setId(TEST_USER_ID);
+        account.setAdmin(TRUE);
+        
+        Account persistedAccount = Account.create();
+        persistedAccount.setAdmin(FALSE);
+        when(mockAccountDao.getAccount(AccountId.forId(TEST_APP_ID, TEST_USER_ID)))
+            .thenReturn(Optional.of(persistedAccount));
+        
+        service.updateAccount(account);
+        
+        assertFalse(account.isAdmin());
+    }
+    
+    @Test
+    public void updateAccount_adminSet() {
+        Account account = Account.create();
+        account.setAppId(TEST_APP_ID);
+        account.setId(TEST_USER_ID);
+        account.setRoles(ImmutableSet.of(DEVELOPER));
+        
+        Account persistedAccount = Account.create();
+        persistedAccount.setAdmin(FALSE);
+        when(mockAccountDao.getAccount(AccountId.forId(TEST_APP_ID, TEST_USER_ID)))
+            .thenReturn(Optional.of(persistedAccount));
+        
+        service.updateAccount(account);
+        
+        assertTrue(account.isAdmin());
+    }
+
     private Account mockGetAccountById(AccountId accountId, boolean generatePasswordHash) throws Exception {
         Account account = Account.create();
         account.setAppId(TEST_APP_ID);

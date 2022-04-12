@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.hibernate;
 
+import static java.lang.Boolean.TRUE;
 import static org.joda.time.DateTimeZone.UTC;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
@@ -107,6 +108,7 @@ public class HibernateAccountTest {
         account.setMigrationVersion(3);
         account.setNote(TEST_NOTE);
         account.setClientTimeZone(TEST_CLIENT_TIME_ZONE);
+        account.setAdmin(TRUE);
         
         Enrollment en1 = Enrollment.create(TEST_APP_ID, "studyA", TEST_USER_ID);
         Enrollment en2 = Enrollment.create(TEST_APP_ID, "studyB", TEST_USER_ID);
@@ -117,7 +119,7 @@ public class HibernateAccountTest {
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(account);
         assertEquals(node.get("type").textValue(), "Account");
-        assertEquals(node.size(), 21);
+        assertEquals(node.size(), 22);
         assertEquals(node.get("id").textValue(), "id");
         assertEquals(node.get("orgMembership").textValue(), "orgId");
         assertEquals(node.get("email").textValue(), "email");
@@ -140,6 +142,7 @@ public class HibernateAccountTest {
         assertEquals(toSet(node, "languages"), ImmutableSet.of("en", "fr"));
         assertEquals(node.get("note").textValue(), TEST_NOTE);
         assertEquals(node.get("clientTimeZone").textValue(), TEST_CLIENT_TIME_ZONE);
+        assertTrue(node.get("admin").booleanValue());
         
         // these should be null
         assertNull(node.get("appId"));

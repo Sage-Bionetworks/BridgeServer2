@@ -467,12 +467,12 @@ public class HibernateAccountDaoTest extends Mockito {
         
         String expQuery = "SELECT acct.id FROM HibernateAccount AS acct LEFT JOIN "
                 + "acct.enrollments AS enrollment WITH acct.id = enrollment.accountId "
-                + "WHERE acct.appId = :appId AND size(acct.roles) > 0 AND acct.orgMembership "
-                + "= :orgId GROUP BY acct.id";
+                + "WHERE acct.appId = :appId AND admin = 1 AND acct.orgMembership = "
+                + ":orgId GROUP BY acct.id";
 
         String expCountQuery = "SELECT COUNT(DISTINCT acct.id) FROM HibernateAccount AS acct "
                 + "LEFT JOIN acct.enrollments AS enrollment WITH acct.id = enrollment.accountId "
-                +"WHERE acct.appId = :appId AND size(acct.roles) > 0 AND acct.orgMembership = :orgId";
+                +"WHERE acct.appId = :appId AND admin = 1 AND acct.orgMembership = :orgId";
         
         Set<Enrollment> set = ImmutableSet.of(
                 Enrollment.create(TEST_APP_ID, STUDY_A, ACCOUNT_ID),
@@ -613,7 +613,7 @@ public class HibernateAccountDaoTest extends Mockito {
         String expBaseQuery = "FROM HibernateAccount AS acct LEFT JOIN acct.enrollments "
                 +"AS enrollment WITH acct.id = enrollment.accountId LEFT JOIN org.sagebionetworks.bridge."
                 +"models.RequestInfo AS ri WITH acct.id = ri.userId WHERE acct.appId = :appId AND "
-                +"size(acct.roles) > 0 AND acct.orgMembership = :orgId AND acct.email LIKE :email AND "
+                +"admin = 1 AND acct.orgMembership = :orgId AND acct.email LIKE :email AND "
                 +"acct.phone.number LIKE :number AND acct.createdOn >= :startTime AND acct.createdOn <= "
                 +":endTime AND :language IN ELEMENTS(acct.languages) AND (:IN1 IN elements(acct.dataGroups) "
                 +"AND :IN2 IN elements(acct.dataGroups)) AND (:NOTIN1 NOT IN elements(acct.dataGroups) AND "
@@ -1155,7 +1155,7 @@ public class HibernateAccountDaoTest extends Mockito {
 
         String finalQuery = "SELECT acct FROM HibernateAccount AS acct LEFT JOIN "
                 +"acct.enrollments AS enrollment WITH acct.id = enrollment.accountId "
-                +"WHERE acct.appId = :appId AND size(acct.roles) > 0 GROUP BY acct.id";
+                +"WHERE acct.appId = :appId AND admin = 1 GROUP BY acct.id";
 
         assertEquals(builder.getQuery(), finalQuery);
         assertNull(builder.getParameters().get("orgId"));

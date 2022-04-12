@@ -116,6 +116,7 @@ public class AccountService {
         account.setModifiedOn(timestamp);
         account.setPasswordModifiedOn(timestamp);
         account.setMigrationVersion(MIGRATION_VERSION);
+        account.setAdmin(!account.getRoles().isEmpty() || account.getOrgMembership() != null);
         if (CANNOT_ACCESS_PARTICIPANTS.check()) {
             Set<String> newDataGroups = addToSet(account.getDataGroups(), TEST_USER_GROUP);
             account.setDataGroups(newDataGroups);
@@ -174,10 +175,13 @@ public class AccountService {
         account.setOrgMembership(persistedAccount.getOrgMembership());
         // Update modifiedOn.
         account.setModifiedOn(DateUtils.getCurrentDateTime());
+        account.setAdmin(!account.getRoles().isEmpty() || account.getOrgMembership() != null);
+        
         // Only allow Admins to update notes
         if (!RequestContext.get().isAdministrator()) {
             account.setNote(persistedAccount.getNote());
         }
+
         // Update. We don't verify studies because this is handled by validation
         accountDao.updateAccount(account);
         

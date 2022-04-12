@@ -971,3 +971,10 @@ CREATE TABLE IF NOT EXISTS `Permissions` (
   CONSTRAINT `Permission-Organization-Constraint` FOREIGN KEY (`appId`, `organizationId`) REFERENCES Organizations(`appId`, `identifier`) ON DELETE CASCADE,
   CONSTRAINT `Permission-Study-Constraint` FOREIGN KEY (`studyId`, `appId`) REFERENCES Substudies(`id`, `studyId`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+-- changeset bridge:69
+
+ALTER TABLE `Accounts`
+ADD COLUMN `admin` tinyint(1) DEFAULT '0';
+UPDATE Accounts as a JOIN AccountRoles as r ON a.id = r.accountId SET a.admin = 1;
+UPDATE Accounts as a SET a.admin = 1 WHERE a.orgMembership IS NOT NULL;

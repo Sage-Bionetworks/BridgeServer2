@@ -139,6 +139,9 @@ public interface Account extends BridgeEntity {
     String getSynapseUserId();
     void setSynapseUserId(String synapseUserId);
     
+    Boolean isAdmin();
+    void setAdmin(Boolean isAdmin);
+    
     Boolean getEmailVerified();
     void setEmailVerified(Boolean emailVerified);
     
