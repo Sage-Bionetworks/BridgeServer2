@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.dynamodb;
 import java.util.Map;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
@@ -38,8 +37,6 @@ public class DynamoHealthDataRecordEx3 implements HealthDataRecordEx3 {
     private Map<String, String> metadata;
     private SharingScope sharingScope;
     private Long version;
-    private String downloadUrl;
-    private long downloadExpiration;
 
     @DynamoDBHashKey
     @Override
@@ -205,24 +202,4 @@ public class DynamoHealthDataRecordEx3 implements HealthDataRecordEx3 {
     public void setVersion(Long version) {
         this.version = version;
     }
-
-    @Override
-    @DynamoDBIgnore
-    public String getDownloadUrl() {
-        return this.downloadUrl;
-    }
-
-    @Override
-    public void setDownloadUrl(String downloadUrl) { this.downloadUrl = downloadUrl; }
-
-    @Override
-    @DynamoDBIgnore
-    @JsonSerialize(using = DateTimeToLongSerializer.class)
-    public long getDownloadExpiration() {
-        return this.downloadExpiration;
-    }
-
-    @Override
-    @JsonDeserialize(using = DateTimeToLongDeserializer.class)
-    public void setDownloadExpiration(long downloadExpiration) { this.downloadExpiration = downloadExpiration; }
 }
