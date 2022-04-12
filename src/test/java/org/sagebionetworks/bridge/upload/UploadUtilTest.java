@@ -28,12 +28,18 @@ import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordEx3;
+import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 
 @SuppressWarnings({ "ConstantConditions", "unchecked" })
 public class UploadUtilTest {
+    private static final String RECORD_ID = "test-record";
+    private static final String FILE_NAME = "file-name";
+
     @Test
     public void calculateFieldSizeSimpleField() {
         // { fieldType, expectedBytes }
@@ -806,5 +812,25 @@ public class UploadUtilTest {
         assertEquals(outputMap.size(), 2);
         assertEquals(outputMap.get("foo"), "bar");
         assertEquals(outputMap.get("sanitize____this"), "sanitize this's value");
+    }
+
+    @Test
+    public void getRawS3KeyForUpload() {
+        String result = "test-app/2015-01-26/test-record-file-name";
+
+        HealthDataRecordEx3 record = HealthDataRecordEx3.create();
+        record.setAppId(TestConstants.TEST_APP_ID);
+        record.setHealthCode(TestConstants.HEALTH_CODE);
+        record.setCreatedOn(TestConstants.CREATED_ON.getMillis());
+        record.setId(RECORD_ID);
+
+        Upload upload = Upload.create();
+        upload.setAppId(TestConstants.TEST_APP_ID);
+        upload.setHealthCode(TestConstants.HEALTH_CODE);
+        upload.setUploadId(RECORD_ID);
+        upload.setFilename(FILE_NAME);
+
+        String S3Key = UploadUtil.getRawS3KeyForUpload(TestConstants.TEST_APP_ID, upload, record);
+        assertEquals(S3Key, result);
     }
 }
