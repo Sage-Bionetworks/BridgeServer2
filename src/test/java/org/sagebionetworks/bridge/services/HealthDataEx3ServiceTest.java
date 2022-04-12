@@ -1,40 +1,28 @@
 package org.sagebionetworks.bridge.services;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
 
-import java.net.URL;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 
-import com.amazonaws.HttpMethod;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.google.common.collect.ImmutableList;
 import org.joda.time.DateTime;
-import org.joda.time.DateTimeUtils;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestConstants;
-import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.HealthDataEx3Dao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordEx3;
-import org.sagebionetworks.bridge.models.upload.Upload;
 
 @SuppressWarnings("ConstantConditions")
 public class HealthDataEx3ServiceTest {
@@ -45,48 +33,16 @@ public class HealthDataEx3ServiceTest {
     private static final String OFFSET_KEY = "dummy-offset-key";
     private static final String RECORD_ID = "test-record";
     private static final String STUDY_ID = "test-study";
-    private static final String RECORD_BUCKET = "record-bucket";
-    private static final String FILE_NAME = "file-name";
-    private static final String S3KEY = "test-app/2015-01-26/test-record-file-name";
-    private static final int EXPIRATION_IN_MINUTES = 60;
 
     @Mock
     private HealthDataEx3Dao mockDao;
 
-    @Mock
-    AmazonS3 mockS3Client;
-
-    @Mock
-    BridgeConfig mockConfig;
-
-    @Mock
-    UploadService mockUploadService;
-
     @InjectMocks
     private HealthDataEx3Service service;
-
-    @Captor
-    ArgumentCaptor<GeneratePresignedUrlRequest> requestCaptor;
 
     @BeforeMethod
     public void before() {
         MockitoAnnotations.initMocks(this);
-
-        when(mockConfig.getProperty(Exporter3Service.CONFIG_KEY_RAW_HEALTH_DATA_BUCKET)).thenReturn(RECORD_BUCKET);
-        service.setConfig(mockConfig);
-
-        when(mockS3Client.generatePresignedUrl(any())).thenAnswer(i -> {
-            GeneratePresignedUrlRequest request = i.getArgument(0);
-            String filePath = request.getKey();
-            return new URL("https://" + RECORD_BUCKET + "/" + filePath);
-        });
-
-        DateTimeUtils.setCurrentMillisFixed(TestConstants.TIMESTAMP.getMillis());
-    }
-
-    @AfterMethod
-    public void after() {
-        DateTimeUtils.setCurrentMillisSystem();
     }
 
     @Test
@@ -124,11 +80,11 @@ public class HealthDataEx3ServiceTest {
     }
 
     @Test
-    public void getRecord_downloadFalse() {
+    public void getRecord() {
         HealthDataRecordEx3 record = makeValidRecord();
         when(mockDao.getRecord(RECORD_ID)).thenReturn(Optional.of(record));
 
-        HealthDataRecordEx3 result = service.getRecord(RECORD_ID, false).get();
+        HealthDataRecordEx3 result = service.getRecord(RECORD_ID).get();
         assertSame(result, record);
 
         verify(mockDao).getRecord(RECORD_ID);
@@ -137,42 +93,7 @@ public class HealthDataEx3ServiceTest {
     @Test(expectedExceptions = BadRequestException.class, expectedExceptionsMessageRegExp =
             "ID must be specified")
     public void getRecord_NullRecordId() {
-        service.getRecord(null, false);
-    }
-
-    @Test
-    public void getRecord_downloadTrue() {
-        String downloadUrl = "https://" + RECORD_BUCKET + "/" + S3KEY;
-        HealthDataRecordEx3 record = makeValidRecord();
-        when(mockDao.getRecord(RECORD_ID)).thenReturn(Optional.of(record));
-
-        Upload upload = makeValidUpload();
-        when(mockUploadService.getUpload(RECORD_ID)).thenReturn(upload);
-
-        HealthDataRecordEx3 result = service.getRecord(RECORD_ID, true).get();
-
-        assertEquals(result.getDownloadUrl(), downloadUrl);
-        assertEquals(result.getId(), RECORD_ID);
-        assertEquals(result.getAppId(), TestConstants.TEST_APP_ID);
-        assertEquals(result.getHealthCode(), TestConstants.HEALTH_CODE);
-        assertEquals(result.getCreatedOn(), new Long(TestConstants.CREATED_ON.getMillis()));
-        assertEquals(result.getDownloadExpiration(), DateTime.now().plusMinutes(EXPIRATION_IN_MINUTES).getMillis());
-
-        verify(mockS3Client).generatePresignedUrl(requestCaptor.capture());
-        GeneratePresignedUrlRequest request = requestCaptor.getValue();
-        assertEquals(request.getBucketName(), RECORD_BUCKET);
-        assertEquals(request.getMethod(), HttpMethod.GET);
-        assertEquals(request.getKey(), S3KEY);
-        assertEquals(request.getExpiration(), DateTime.now().plusMinutes(EXPIRATION_IN_MINUTES).toDate());
-    }
-
-    @Test
-    public void getRecord_emptyRecord() {
-        when(mockDao.getRecord(RECORD_ID)).thenReturn(Optional.empty());
-        Optional<HealthDataRecordEx3> result = service.getRecord(RECORD_ID, true);
-        assertEquals(result, Optional.empty());
-
-        verify(mockDao).getRecord(RECORD_ID);
+        service.getRecord(null);
     }
 
     @Test
@@ -369,17 +290,6 @@ public class HealthDataEx3ServiceTest {
         record.setAppId(TestConstants.TEST_APP_ID);
         record.setHealthCode(TestConstants.HEALTH_CODE);
         record.setCreatedOn(TestConstants.CREATED_ON.getMillis());
-        record.setId(RECORD_ID);
         return record;
-    }
-
-    private static Upload makeValidUpload() {
-        Upload upload = Upload.create();
-        upload.setAppId(TestConstants.TEST_APP_ID);
-        upload.setHealthCode(TestConstants.HEALTH_CODE);
-        upload.setUploadId(RECORD_ID);
-        upload.setFilename(FILE_NAME);
-
-        return upload;
     }
 }

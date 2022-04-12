@@ -23,21 +23,17 @@ import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
 import org.joda.time.LocalTime;
 import org.joda.time.Period;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
-import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordEx3;
-import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.schema.SchemaUtils;
 
 /** Utility class that contains static utility methods for handling uploads. */
@@ -759,29 +755,5 @@ public class UploadUtil {
             sanitizedFieldMap.put(sanitizedFieldName, oneRawFieldEntry.getValue());
         }
         return sanitizedFieldMap;
-    }
-
-    public static String getRawS3KeyForUpload(String appId, Upload upload, HealthDataRecordEx3 record) {
-        StringBuilder builder = new StringBuilder();
-        builder.append(appId);
-        builder.append('/');
-
-        String dateStr = getCalendarDateForRecord(record);
-        builder.append(dateStr);
-        builder.append('/');
-
-        String filename = getFilenameForUpload(upload);
-        builder.append(filename);
-
-        return builder.toString();
-    }
-
-    private static String getFilenameForUpload(Upload upload) {
-        return upload.getUploadId() + '-' + upload.getFilename();
-    }
-
-    private static String getCalendarDateForRecord(HealthDataRecordEx3 record) {
-        LocalDate localDate = new DateTime(record.getCreatedOn()).withZone(BridgeConstants.LOCAL_TIME_ZONE).toLocalDate();
-        return localDate.toString();
     }
 }
