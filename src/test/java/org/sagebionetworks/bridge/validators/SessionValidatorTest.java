@@ -9,7 +9,8 @@ import static org.sagebionetworks.bridge.validators.SessionValidator.ASSESSMENTS
 import static org.sagebionetworks.bridge.validators.SessionValidator.DELAY_FIELD;
 import static org.sagebionetworks.bridge.validators.SessionValidator.DELAY_LONGER_THAN_SCHEDULE_DURATION_ERROR;
 import static org.sagebionetworks.bridge.validators.SessionValidator.EXPIRATION_LONGER_THAN_INTERVAL_ERROR;
-import static org.sagebionetworks.bridge.validators.SessionValidator.EXPIRATION_REQUIRED_ERROR;
+import static org.sagebionetworks.bridge.validators.SessionValidator.EXPIRATION_REQUIRED_FOR_INTERVAL_ERROR;
+import static org.sagebionetworks.bridge.validators.SessionValidator.EXPIRATION_REQUIRED_FOR_OCCURRENCES_ERROR;
 import static org.sagebionetworks.bridge.validators.SessionValidator.GUID_FIELD;
 import static org.sagebionetworks.bridge.validators.SessionValidator.INTERVAL_FIELD;
 import static org.sagebionetworks.bridge.validators.SessionValidator.LABELS_FIELD;
@@ -20,6 +21,7 @@ import static org.sagebionetworks.bridge.validators.SessionValidator.NAME_FIELD;
 import static org.sagebionetworks.bridge.validators.SessionValidator.NOTIFICATIONS_FIELD;
 import static org.sagebionetworks.bridge.validators.SessionValidator.OCCURRENCES_FIELD;
 import static org.sagebionetworks.bridge.validators.SessionValidator.PERFORMANCE_ORDER_FIELD;
+import static org.sagebionetworks.bridge.validators.SessionValidator.REQUIRES_INTERVAL;
 import static org.sagebionetworks.bridge.validators.SessionValidator.START_EVENT_IDS_FIELD;
 import static org.sagebionetworks.bridge.validators.SessionValidator.SYMBOL_FIELD;
 import static org.sagebionetworks.bridge.validators.SessionValidator.TIME_WINDOWS_FIELD;
@@ -316,18 +318,30 @@ public class SessionValidatorTest extends Mockito {
     @Test
     public void timeWindowExpirationEmptyIsValidForNotRepeatingSchedule() {
         Session session = createValidSession();
+        session.setOccurrences(null);
         session.setInterval(null);
         session.getTimeWindows().get(0).setExpiration(null);
         Validate.entityThrowingException(INSTANCE, session);
     }
     
     @Test
-    public void timeWindowExpirationEmptyInvalidForRepeatingSchedule() {
+    public void timeWindowExpirationEmptyInvalidForOccurrencesSchedule() {
         Session session = createValidSession();
+        session.setInterval(null);
         session.getTimeWindows().get(0).setExpiration(null);
         
         assertValidatorMessage(INSTANCE, session, TIME_WINDOWS_FIELD+"[0].expiration",
-                EXPIRATION_REQUIRED_ERROR);
+                EXPIRATION_REQUIRED_FOR_OCCURRENCES_ERROR);
+    }
+    
+    @Test
+    public void timeWindowExpirationEmptyInvalidForIntervalSchedule() {
+        Session session = createValidSession();
+        session.setOccurrences(null);
+        session.getTimeWindows().get(0).setExpiration(null);
+        
+        assertValidatorMessage(INSTANCE, session, TIME_WINDOWS_FIELD+"[0].expiration",
+                EXPIRATION_REQUIRED_FOR_INTERVAL_ERROR);
     }
     
     @Test
@@ -391,6 +405,7 @@ public class SessionValidatorTest extends Mockito {
     public void timeWindowOverlapOkWhenNoSessionInterval() { 
         // Because this session never repeats, there is no "overlap" here.
         Session session = makeWindows("08:00", "PT4H", "12:30", "PT4H", "20:00", "P18D");
+        session.setOccurrences(null);
         session.setInterval(null);
         
         Validate.entityThrowingException(INSTANCE, session);
@@ -662,6 +677,20 @@ public class SessionValidatorTest extends Mockito {
         session.setDelay(Period.parse("P8WT1H"));
         
         assertValidatorMessage(INSTANCE, session, DELAY_FIELD, DELAY_LONGER_THAN_SCHEDULE_DURATION_ERROR);
+    }
+    
+    @Test
+    public void occurrences_requireInterval() {
+        Session session = createValidSession();
+        session.setOccurrences(10);
+        session.setInterval(null);
+
+        assertValidatorMessage(INSTANCE, session, OCCURRENCES_FIELD, REQUIRES_INTERVAL);
+    }
+    
+    @Test
+    public void expiration_requiredForRepeatingSessions() {
+        
     }
     
     private Session makeWindows(String time1, String exp1, String time2, String exp2, 
