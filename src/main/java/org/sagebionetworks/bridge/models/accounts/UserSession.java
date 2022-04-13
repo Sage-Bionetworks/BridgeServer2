@@ -31,7 +31,6 @@ public class UserSession {
     public UserSession() {
         this.participant = EMPTY_PARTICIPANT;
     }
-    
     public UserSession(StudyParticipant participant) {
         checkNotNull(participant);
         this.participant = participant;

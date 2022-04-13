@@ -121,8 +121,6 @@ public class AuthenticationServiceTest extends Mockito {
     private static final String TOKEN_UNFORMATTED = "ABCDEF";
     private static final String REAUTH_TOKEN = "GHI-JKL";
     
-    private static final AccountId ACCOUNT_ID_WITH_ID = AccountId.forId(TEST_APP_ID, TEST_USER_ID);
-    
     private static final SignIn SIGN_IN_REQUEST_WITH_EMAIL = new SignIn.Builder().withAppId(TEST_APP_ID)
             .withEmail(EMAIL).build();
     private static final SignIn PHONE_SIGN_IN = new SignIn.Builder().withAppId(TEST_APP_ID)
@@ -1956,7 +1954,7 @@ public class AuthenticationServiceTest extends Mockito {
        assertEquals(account.getVersion(), 1);
 
        verify(accountDao).getAccount(ACCOUNT_ID_WITH_EMAIL);
-       verify(accountDao, never()).createAccount(any(), any());
+       verify(accountDao, never()).createAccount(any());
        verify(accountDao, never()).updateAccount(any());
 
        // verify token verification
@@ -2230,36 +2228,30 @@ public class AuthenticationServiceTest extends Mockito {
 
    @Test
    public void signOutUser() {
-       // Need to look this up by email, not account ID
-       AccountId accountId = AccountId.forId(TEST_APP_ID, TEST_USER_ID);
-       
        // Setup
-       when(accountDao.getAccount(accountId)).thenReturn(Optional.of(account));
+       when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
        account.setId(TEST_USER_ID);
 
        // Execute
        service.signUserOut(app, TEST_USER_ID, false);
 
        // Verify
-       verify(accountDao).getAccount(accountId);
+       verify(accountDao).getAccount(ACCOUNT_ID);
        verify(service, never()).deleteReauthToken(any());
        verify(cacheProvider).removeSessionByUserId(TEST_USER_ID);
    }
 
    @Test
    public void signOutUserDeleteReauthToken() {
-       // Need to look this up by email, not account ID
-       AccountId accountId = AccountId.forId(TEST_APP_ID, TEST_USER_ID);
-       
        // Setup
-       when(accountDao.getAccount(accountId)).thenReturn(Optional.of(account));
+       when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
        account.setId(TEST_USER_ID);
 
        // Execute
        service.signUserOut(app, TEST_USER_ID, true);
 
        // Verify
-       verify(accountDao).getAccount(accountId);
+       verify(accountDao).getAccount(ACCOUNT_ID);
        verify(service).deleteReauthToken(TEST_USER_ID);
        verify(cacheProvider).removeSessionByUserId(TEST_USER_ID);
    }
@@ -2271,7 +2263,7 @@ public class AuthenticationServiceTest extends Mockito {
            createJson("{'appId':'"+TEST_APP_ID+"','type':'email','userId':'userId',"+
                    "'expiresOn':"+ TIMESTAMP.getMillis()+"}"));
        when(appService.getApp(TEST_APP_ID)).thenReturn(app);
-       when(accountService.getAccount(ACCOUNT_ID_WITH_ID)).thenReturn(Optional.of(mockAccount));
+       when(accountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(mockAccount));
        when(mockAccount.getId()).thenReturn("accountId");
        
        Verification verification = new Verification(TOKEN);
@@ -2327,7 +2319,7 @@ public class AuthenticationServiceTest extends Mockito {
                createJson("{'appId':'" + TEST_APP_ID + "','type':'email','userId':'userId','expiresOn':"
                        + TIMESTAMP.getMillis() + "}"));
        when(appService.getApp(TEST_APP_ID)).thenReturn(app);
-       when(accountService.getAccount(ACCOUNT_ID_WITH_ID)).thenReturn(Optional.of(mockAccount));
+       when(accountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(mockAccount));
        
        Verification verification = new Verification(TOKEN);
        service.verifyChannel(ChannelType.EMAIL, verification);
@@ -2341,7 +2333,7 @@ public class AuthenticationServiceTest extends Mockito {
            createJson("{'appId':'"+TEST_APP_ID+"','type':'email','userId':'userId','expiresOn':"+
                    TIMESTAMP.getMillis()+"}"));
        when(appService.getApp(TEST_APP_ID)).thenReturn(app);
-       when(accountService.getAccount(ACCOUNT_ID_WITH_ID)).thenReturn(Optional.of(mockAccount));
+       when(accountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(mockAccount));
        when(mockAccount.getId()).thenReturn("accountId");
        when(mockAccount.getEmailVerified()).thenReturn(TRUE);
        
@@ -2365,7 +2357,7 @@ public class AuthenticationServiceTest extends Mockito {
                TestUtils.createJson("{'appId':'"+TEST_APP_ID+"','type':'phone','userId':'userId','expiresOn':"+
                        TIMESTAMP.getMillis()+"}"));
        when(appService.getApp(TEST_APP_ID)).thenReturn(app);
-       when(accountService.getAccount(ACCOUNT_ID_WITH_ID)).thenReturn(Optional.of(mockAccount));
+       when(accountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(mockAccount));
        when(mockAccount.getId()).thenReturn("accountId");
        
        Verification verification = new Verification(TOKEN);
@@ -2382,7 +2374,7 @@ public class AuthenticationServiceTest extends Mockito {
                TestUtils.createJson("{'appId':'"+TEST_APP_ID+"','type':'phone','userId':'userId','expiresOn':"+
                        TIMESTAMP.getMillis()+"}"));
        when(appService.getApp(TEST_APP_ID)).thenReturn(app);
-       when(accountService.getAccount(ACCOUNT_ID_WITH_ID)).thenReturn(Optional.of(mockAccount));
+       when(accountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(mockAccount));
        when(mockAccount.getId()).thenReturn("accountId");
        when(mockAccount.getPhoneVerified()).thenReturn(TRUE);
        
@@ -2398,7 +2390,7 @@ public class AuthenticationServiceTest extends Mockito {
                TestUtils.createJson("{'appId':'"+TEST_APP_ID+"','type':'phone','userId':'userId','expiresOn':"+
                        TIMESTAMP.getMillis()+"}"));
        when(appService.getApp(TEST_APP_ID)).thenReturn(app);
-       when(accountService.getAccount(ACCOUNT_ID_WITH_ID)).thenReturn(Optional.of(mockAccount));
+       when(accountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(mockAccount));
        
        Verification verification = new Verification(TOKEN);
        service.verifyChannel(ChannelType.PHONE, verification);

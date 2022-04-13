@@ -11,6 +11,7 @@ import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
+import static org.sagebionetworks.bridge.TestConstants.ACCOUNT_ID;
 import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
@@ -78,7 +79,6 @@ import org.sagebionetworks.bridge.models.studies.Enrollment;
 
 public class AccountServiceTest extends Mockito {
 
-    private static final AccountId ACCOUNT_ID = AccountId.forId(TEST_APP_ID, TEST_USER_ID);
     private static final AccountId ACCOUNT_ID_WITH_EMAIL = AccountId.forEmail(TEST_APP_ID, EMAIL);
     private static final DateTime MOCK_DATETIME = DateTime.parse("2017-05-19T14:45:27.593Z");
     private static final String DUMMY_PASSWORD = "Aa!Aa!Aa!Aa!1";
@@ -196,7 +196,7 @@ public class AccountServiceTest extends Mockito {
         account.setClientTimeZone(TEST_CLIENT_TIME_ZONE);
 
         service.createAccount(app, account);
-        verify(mockAccountDao).createAccount(eq(app), accountCaptor.capture());
+        verify(mockAccountDao).createAccount(accountCaptor.capture());
         
         Account createdAccount = accountCaptor.getValue();
         assertEquals(createdAccount.getId(), TEST_USER_ID);
@@ -229,7 +229,7 @@ public class AccountServiceTest extends Mockito {
         Account account = Account.create();
         account.setId(TEST_USER_ID);
         service.createAccount(app, account);
-        verify(mockAccountDao).createAccount(eq(app), accountCaptor.capture());
+        verify(mockAccountDao).createAccount(accountCaptor.capture());
         
         Account createdAccount = accountCaptor.getValue();
         assertEquals(createdAccount.getDataGroups(), ImmutableSet.of(TEST_USER_GROUP));
@@ -247,7 +247,7 @@ public class AccountServiceTest extends Mockito {
         Account account = Account.create();
         account.setId(TEST_USER_ID);
         service.createAccount(app, account);
-        verify(mockAccountDao).createAccount(eq(app), accountCaptor.capture());
+        verify(mockAccountDao).createAccount(accountCaptor.capture());
         
         Account createdAccount = accountCaptor.getValue();
         assertEquals(createdAccount.getDataGroups(), ImmutableSet.of(TEST_USER_GROUP));
@@ -552,7 +552,7 @@ public class AccountServiceTest extends Mockito {
 
         service.createAccount(app, account);
 
-        verify(mockAccountDao).createAccount(eq(app), accountCaptor.capture());
+        verify(mockAccountDao).createAccount(accountCaptor.capture());
 
         Account createdAccount = accountCaptor.getValue();
         assertEquals(createdAccount.getId(), TEST_USER_ID);
@@ -582,7 +582,7 @@ public class AccountServiceTest extends Mockito {
 
         service.createAccount(app, account);
 
-        verify(mockAccountDao).createAccount(app, account);
+        verify(mockAccountDao).createAccount(account);
         verify(activityEventService).publishEnrollmentEvent(any(), any(), any());
         verify(studyActivityEventService, times(2)).publishEvent(eventCaptor.capture(), eq(false), eq(true));
 

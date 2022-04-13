@@ -123,7 +123,7 @@ public class AccountService {
         }
 
         // Create account. We don't verify studies because this is handled by validation
-        accountDao.createAccount(app, account);
+        accountDao.createAccount(account);
         
         if (!account.getEnrollments().isEmpty()) {
             activityEventService.publishEnrollmentEvent(

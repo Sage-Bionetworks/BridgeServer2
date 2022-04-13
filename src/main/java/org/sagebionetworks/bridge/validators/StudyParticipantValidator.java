@@ -22,7 +22,7 @@ import java.util.Set;
 
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
-
+import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -56,6 +56,14 @@ public class StudyParticipantValidator implements Validator {
     @Override
     public void validate(Object object, Errors errors) {
         StudyParticipant participant = (StudyParticipant)object;
+        
+        
+        if (StringUtils.isNotBlank(participant.getOrgMembership())) {
+            errors.rejectValue("orgMembership", "prohibited for study participants");
+        }
+        if (!participant.getRoles().isEmpty()) {
+            errors.rejectValue("roles", "prohibited for study participants");
+        }
         
         if (isNew) {
             if (!ValidatorUtils.participantHasValidIdentifier(participant)) {

@@ -60,20 +60,19 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.AccountWorkflowService;
+import org.sagebionetworks.bridge.services.AdminAccountService;
 import org.sagebionetworks.bridge.services.AppService;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.NotificationTopicService;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.services.ConsentService;
 import org.sagebionetworks.bridge.services.OrganizationService;
-import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.services.RequestInfoService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
 import org.sagebionetworks.bridge.services.UserAdminService;
 
 public class AccountsControllerTest extends Mockito {
     
-    private static final IdentifierHolder ID = new IdentifierHolder(TEST_USER_ID);
     private static final AccountId ACCOUNT_ID = AccountId.forId(TEST_APP_ID, TEST_USER_ID);
     private static final Set<Roles> CALLER_ROLES = ImmutableSet.of(RESEARCHER);
     private static final Set<String> CALLER_STUDIES = ImmutableSet.of("studyA");
@@ -94,7 +93,7 @@ public class AccountsControllerTest extends Mockito {
     OrganizationService mockOrganizationService;
     
     @Mock
-    ParticipantService mockParticipantService;
+    AdminAccountService mockAdminAccountService;
     
     @Mock
     UserAdminService mockUserAdminService;
@@ -113,9 +112,15 @@ public class AccountsControllerTest extends Mockito {
     
     @Mock
     AuthenticationService mockAuthenticationService;
+    
+    @Mock
+    ConsentService mockConsentService;
 
     @Mock
     CacheProvider mockCacheProvider;
+    
+    @Mock
+    NotificationTopicService mockNotificationTopicService;
     
     @Mock
     HttpServletRequest mockRequest;
@@ -124,7 +129,7 @@ public class AccountsControllerTest extends Mockito {
     ArgumentCaptor<AccountSummarySearch> searchCaptor;
     
     @Captor
-    ArgumentCaptor<StudyParticipant> participantCaptor;
+    ArgumentCaptor<Account> accountCaptor;
     
     @Captor
     ArgumentCaptor<AccountId> accountIdCaptor;
@@ -156,8 +161,8 @@ public class AccountsControllerTest extends Mockito {
         
         SessionUpdateService sessionUpdateService = new SessionUpdateService();
         sessionUpdateService.setCacheProvider(mockCacheProvider);
-        sessionUpdateService.setConsentService(mock(ConsentService.class));
-        sessionUpdateService.setNotificationTopicService(mock(NotificationTopicService.class));
+        sessionUpdateService.setConsentService(mockConsentService);
+        sessionUpdateService.setNotificationTopicService(mockNotificationTopicService);
         controller.setSessionUpdateService(sessionUpdateService);
         
         app = App.create();
@@ -187,7 +192,6 @@ public class AccountsControllerTest extends Mockito {
         assertPost(AccountsController.class, "resendEmailVerification");
         assertPost(AccountsController.class, "resendPhoneVerification");
         assertPost(AccountsController.class, "signOut");
-        assertPost(AccountsController.class, "updateIdentifiers");
     }
     
     @Test
@@ -196,24 +200,26 @@ public class AccountsControllerTest extends Mockito {
                 .withCallerOrgMembership(TEST_ORG_ID)
                 .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
         doReturn(session).when(controller).getAuthenticatedSession(ORG_ADMIN);
-        when(mockParticipantService.createParticipant(any(), any(), anyBoolean())).thenReturn(ID);
         
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
+        Account persisted = Account.create();
+        persisted.setId(TEST_USER_ID);
+        when(mockAdminAccountService.createAccount(eq(TEST_APP_ID), any())).thenReturn(persisted);
         
-        StudyParticipant participant = new StudyParticipant.Builder()
-                .withFirstName("firstName")
-                .withOrgMembership("wrong-membership").build();
-        mockRequestBody(mockRequest, participant);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(persisted));
+        
+        Account submitted = Account.create();
+        submitted.setFirstName("firstName");
+        submitted.setOrgMembership(TEST_ORG_ID);
+        mockRequestBody(mockRequest, submitted);
         
         IdentifierHolder retValue = controller.createAccount();
-        assertEquals(retValue.getIdentifier(), TEST_USER_ID);
+        assertEquals(retValue.getIdentifier(), persisted.getId());
         
-        verify(mockParticipantService)
-            .createParticipant(eq(app), participantCaptor.capture(), eq(true));
+        verify(mockAdminAccountService).createAccount(eq(TEST_APP_ID), accountCaptor.capture());
         
-        StudyParticipant submitted = participantCaptor.getValue();
-        assertEquals(submitted.getOrgMembership(), TEST_ORG_ID);
-        assertEquals(submitted.getFirstName(), "firstName");
+        Account submittedAccount = accountCaptor.getValue();
+        assertEquals(submittedAccount.getFirstName(), "firstName");
+        assertEquals(submittedAccount.getOrgMembership(), TEST_ORG_ID);
     }
     
     @Test
@@ -222,24 +228,24 @@ public class AccountsControllerTest extends Mockito {
                 .withCallerOrgMembership(TEST_ORG_ID).build());
         session.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(ADMIN)).build());
         doReturn(session).when(controller).getAuthenticatedSession(ORG_ADMIN);
-        when(mockParticipantService.createParticipant(any(), any(), anyBoolean())).thenReturn(ID);
         
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
+        Account persisted = Account.create();
+        persisted.setId(TEST_USER_ID);
+        when(mockAdminAccountService.createAccount(any(), any())).thenReturn(persisted);
         
-        StudyParticipant participant = new StudyParticipant.Builder()
-                .withFirstName("firstName")
-                .withOrgMembership("different-membership").build();
-        mockRequestBody(mockRequest, participant);
+        Account submitted = Account.create();
+        submitted.setFirstName("firstName");
+        submitted.setOrgMembership("different-membership");
+        mockRequestBody(mockRequest, submitted);
         
         IdentifierHolder retValue = controller.createAccount();
-        assertEquals(retValue.getIdentifier(), TEST_USER_ID);
+        assertEquals(retValue.getIdentifier(), persisted.getId());
         
-        verify(mockParticipantService)
-            .createParticipant(eq(app), participantCaptor.capture(), eq(true));
+        verify(mockAdminAccountService).createAccount(eq(TEST_APP_ID), accountCaptor.capture());
         
-        StudyParticipant submitted = participantCaptor.getValue();
-        assertEquals(submitted.getOrgMembership(), "different-membership");
-        assertEquals(submitted.getFirstName(), "firstName");
+        Account submittedAccount = accountCaptor.getValue();
+        assertEquals(submittedAccount.getOrgMembership(), "different-membership");
+        assertEquals(submittedAccount.getFirstName(), "firstName");
     }
     
     @Test
@@ -268,22 +274,22 @@ public class AccountsControllerTest extends Mockito {
         account.setOrgMembership(TEST_ORG_ID);
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
         
-        StudyParticipant submitted = new StudyParticipant.Builder()
-                .withOrgMembership("bad-membership")
-                .withId("bad-id").build();
+        Account submitted = Account.create();
+        submitted.setId(TEST_USER_ID);
+        submitted.setOrgMembership(TEST_ORG_ID);
         mockRequestBody(mockRequest, submitted);
 
-        StudyParticipant persisted = new StudyParticipant.Builder()
-                .withId(TEST_USER_ID)
-                .withOrgMembership(TEST_ORG_ID).build();
-        when(mockParticipantService.getParticipant(app, account, false)).thenReturn(persisted);
+        Account persisted = Account.create();
+        persisted.setId(TEST_USER_ID);
+        persisted.setOrgMembership(TEST_ORG_ID);
+        when(mockAdminAccountService.updateAccount(eq(TEST_APP_ID), any())).thenReturn(persisted);
         
         StatusMessage retValue = controller.updateAccount(TEST_USER_ID);
-        assertEquals(retValue.getMessage(), "Member updated.");
+        assertEquals(retValue, AccountsController.UPDATED_MSG);
         
-        verify(mockParticipantService).updateParticipant(eq(app), participantCaptor.capture());
-        assertEquals(participantCaptor.getValue().getId(), TEST_USER_ID);
-        assertEquals(participantCaptor.getValue().getOrgMembership(), TEST_ORG_ID);
+        verify(mockAdminAccountService).updateAccount(eq(TEST_APP_ID), accountCaptor.capture());
+        assertEquals(accountCaptor.getValue().getId(), TEST_USER_ID);
+        assertEquals(accountCaptor.getValue().getOrgMembership(), TEST_ORG_ID);
     }
     
     @Test
@@ -296,15 +302,14 @@ public class AccountsControllerTest extends Mockito {
         account.setOrgMembership(TEST_ORG_ID);
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
         
-        StudyParticipant existing = new StudyParticipant.Builder()
-                .withOrgMembership(TEST_ORG_ID)
-                .build();
-        when(mockParticipantService.getParticipant(app, TEST_USER_ID, false)).thenReturn(existing);
+        Account existing = Account.create();
+        existing.setOrgMembership(TEST_ORG_ID);
+        when(mockAdminAccountService.getAccount(TEST_APP_ID, TEST_USER_ID)).thenReturn(existing);
 
         StatusMessage retValue = controller.deleteAccount(TEST_USER_ID);
         assertEquals(retValue.getMessage(), "Member account deleted.");
         
-        verify(mockUserAdminService).deleteUser(app, TEST_USER_ID);
+        verify(mockAdminAccountService).deleteAccount(TEST_APP_ID, TEST_USER_ID);
     }
     
     @Test
@@ -357,8 +362,7 @@ public class AccountsControllerTest extends Mockito {
         StatusMessage retValue = controller.requestResetPassword(TEST_USER_ID);
         assertEquals(retValue.getMessage(), "Request to reset password sent to user.");
         
-        AccountId accountId = AccountId.forId(TEST_APP_ID, TEST_USER_ID);
-        verify(mockAccountWorkflowService).requestResetPassword(app, true, accountId);
+        verify(mockAccountWorkflowService).requestResetPassword(app, true, ACCOUNT_ID);
     }
     
     @Test

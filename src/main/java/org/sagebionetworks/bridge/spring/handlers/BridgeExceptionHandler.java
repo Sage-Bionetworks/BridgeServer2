@@ -53,6 +53,8 @@ public class BridgeExceptionHandler {
     }
 
     private void logException(HttpServletRequest request, Throwable throwable) {
+        throwable.printStackTrace();
+        
         final String requestId = request.getHeader(X_REQUEST_ID_HEADER);
         final String msg = "request: " + requestId + " " + throwable.getMessage();
         if (throwable.getClass().isAnnotationPresent(NoStackTraceException.class)) {
