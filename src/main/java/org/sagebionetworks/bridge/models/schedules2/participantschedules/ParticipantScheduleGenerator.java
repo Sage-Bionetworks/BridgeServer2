@@ -80,7 +80,7 @@ public class ParticipantScheduleGenerator {
         scheduledSessions.sort(SCHEDULED_SESSION_COMPARATOR);
         
         DateRange range = null;
-        if (earliestDate.isBefore(latestDate)) {
+        if (earliestDate.isEqual(latestDate) || earliestDate.isBefore(latestDate)) {
             range = new DateRange(earliestDate, latestDate);
         }
         
