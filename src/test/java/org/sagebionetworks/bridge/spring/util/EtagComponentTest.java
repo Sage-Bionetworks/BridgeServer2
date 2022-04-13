@@ -250,4 +250,18 @@ public class EtagComponentTest extends Mockito {
         
         component.checkEtag(mockJoinPoint);
     }
+    
+    // Should throw NotAuthenticatedSession — etag component can only be used on APIs that
+    // must be authenticated to work (at this time).
+    @Test(expectedExceptions = NotAuthenticatedException.class)
+    public void nullBridgeSessionHeader() throws Throwable {
+        reset(mockRequest);
+        when(mockRequest.getHeader(SESSION_TOKEN_HEADER)).thenReturn(null);
+        when(mockRequest.getHeader(IF_NONE_MATCH)).thenReturn(ETAG);
+        
+        reset(mockCacheProvider);
+        when(mockCacheProvider.getUserSession(any())).thenThrow(new NullPointerException());
+        
+        component.checkEtag(mockJoinPoint);
+    }
 }
