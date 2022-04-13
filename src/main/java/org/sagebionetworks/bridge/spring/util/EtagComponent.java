@@ -90,6 +90,9 @@ public class EtagComponent {
         // Because this tag executes before security checks, it requires that the caller be 
         // authenticated. We can add a flag if we want to use this code on public endpoints 
         // to skip a check of the session.
+        if (sessionToken == null) {
+            throw new NotAuthenticatedException();
+        }
         UserSession session = cacheProvider.getUserSession(sessionToken);
         if (session == null) {
             throw new NotAuthenticatedException();
