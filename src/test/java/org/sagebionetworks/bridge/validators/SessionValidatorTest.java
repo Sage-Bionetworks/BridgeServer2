@@ -684,13 +684,19 @@ public class SessionValidatorTest extends Mockito {
         Session session = createValidSession();
         session.setOccurrences(10);
         session.setInterval(null);
+        session.getTimeWindows().get(0).setExpiration(null);
 
         assertValidatorMessage(INSTANCE, session, OCCURRENCES_FIELD, REQUIRES_INTERVAL);
     }
     
     @Test
     public void expiration_requiredForRepeatingSessions() {
-        
+        Session session = createValidSession();
+        session.setOccurrences(10);
+        session.setInterval(null);
+        session.getTimeWindows().get(0).setExpiration(null);
+
+        assertValidatorMessage(INSTANCE, session, OCCURRENCES_FIELD, REQUIRES_INTERVAL);
     }
     
     private Session makeWindows(String time1, String exp1, String time2, String exp2, 
