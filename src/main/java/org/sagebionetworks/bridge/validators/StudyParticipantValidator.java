@@ -4,6 +4,7 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.ORG_ID;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_MEMBERS;
+import static org.sagebionetworks.bridge.BridgeUtils.isValidTimeZoneID;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_EMAIL_ERROR;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_PHONE_ERROR;
@@ -12,9 +13,6 @@ import static org.sagebionetworks.bridge.validators.Validate.INVALID_TIME_ZONE;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateJsonLength;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateStringLength;
-
-import java.time.DateTimeException;
-import java.time.ZoneId;
 
 import java.util.Map;
 import java.util.Optional;
@@ -139,12 +137,8 @@ public class StudyParticipantValidator implements Validator {
                 validateStringLength(errors, 255, attributeValue,"attributes["+attributeName+"]");
             }
         }
-        if (participant.getClientTimeZone() != null) {
-            try {
-                ZoneId.of(participant.getClientTimeZone());
-            } catch (DateTimeException e) {
-                errors.rejectValue("clientTimeZone", INVALID_TIME_ZONE);
-            }
+        if (!isValidTimeZoneID(participant.getClientTimeZone(), false)) {
+            errors.rejectValue("clientTimeZone", INVALID_TIME_ZONE);
         }
         validateStringLength(errors, 255, participant.getEmail(), "email");
         validateStringLength(errors, 255, participant.getFirstName(), "firstName");

@@ -6,6 +6,7 @@ import static org.sagebionetworks.bridge.TestConstants.ACCOUNT_ID;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_CLIENT_TIME_ZONE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
@@ -22,6 +23,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -46,6 +48,79 @@ import com.google.common.net.HttpHeaders;
 public class EtagComponentTest extends Mockito {
     
     private static final String ETAG = "45544147";
+    
+    private static final EtagCacheKey STUDY_KEY_ANN = new EtagCacheKey() {
+        @Override
+        public Class<? extends Annotation> annotationType() {
+            return EtagCacheKey.class;
+        }
+        @Override
+        public Class<?> model() {
+            return Study.class;
+        }
+        @Override
+        public String[] keys() {
+            return new String[] {"appId", "studyId"};
+        }
+        @Override
+        public String invalidateCacheOnChange() {
+            return "";
+        }
+    };
+    EtagCacheKey USER_KEY_ANN = new EtagCacheKey() {
+        @Override
+        public Class<? extends Annotation> annotationType() {
+            return EtagCacheKey.class;
+        }
+        @Override
+        public Class<?> model() {
+            return Account.class;
+        }
+        @Override
+        public String[] keys() {
+            return new String[] {"userId"};
+        }
+        @Override
+        public String invalidateCacheOnChange() {
+            return "";
+        }
+    };
+    EtagCacheKey ORG_KEY_ANN = new EtagCacheKey() {
+        @Override
+        public Class<? extends Annotation> annotationType() {
+            return EtagCacheKey.class;
+        }
+        @Override
+        public Class<?> model() {
+            return Organization.class;
+        }
+        @Override
+        public String[] keys() {
+            return new String[] {"orgId"};
+        }
+        @Override
+        public String invalidateCacheOnChange() {
+            return "";
+        }
+    };
+    EtagCacheKey TIME_ZONE_ANN = new EtagCacheKey() {
+        @Override
+        public Class<? extends Annotation> annotationType() {
+            return EtagCacheKey.class;
+        }
+        @Override
+        public Class<?> model() {
+            return DateTimeZone.class;
+        }
+        @Override
+        public String[] keys() {
+            return new String[] {"userId"};
+        }
+        @Override
+        public String invalidateCacheOnChange() {
+            return "clientTimeZone";
+        }
+    };
 
     @Mock
     CacheProvider mockCacheProvider;
@@ -80,36 +155,8 @@ public class EtagComponentTest extends Mockito {
         doReturn(mockResponse).when(component).response();
         doReturn(mockContext).when(component).context(mockJoinPoint);
         
-        EtagCacheKey studyKeyAnn = new EtagCacheKey() {
-            @Override
-            public Class<? extends Annotation> annotationType() {
-                return EtagCacheKey.class;
-            }
-            @Override
-            public Class<?> model() {
-                return Study.class;
-            }
-            @Override
-            public String[] keys() {
-                return new String[] {"appId", "studyId"};
-            }
-        };
-        EtagCacheKey userKeyAnn = new EtagCacheKey() {
-            @Override
-            public Class<? extends Annotation> annotationType() {
-                return EtagCacheKey.class;
-            }
-            @Override
-            public Class<?> model() {
-                return Account.class;
-            }
-            @Override
-            public String[] keys() {
-                return new String[] {"userId"};
-            }
-        };
         doReturn(Timeline.class).when(mockContext).getModel();
-        doReturn(ImmutableList.of(studyKeyAnn, userKeyAnn)).when(mockContext).getCacheKeys();
+        doReturn(ImmutableList.of(STUDY_KEY_ANN, USER_KEY_ANN)).when(mockContext).getCacheKeys();
         doReturn(ImmutableMap.of("studyId", TEST_STUDY_ID)).when(mockContext).getArgValues();
         when(mockSession.getAppId()).thenReturn(TEST_APP_ID);
         when(mockSession.getId()).thenReturn(TEST_USER_ID);
@@ -208,21 +255,7 @@ public class EtagComponentTest extends Mockito {
     public void orgIdRetrievedFromSession() throws Throwable {
         when(mockRequest.getHeader(IF_NONE_MATCH)).thenReturn(ETAG);
         
-        EtagCacheKey orgKeyAnn = new EtagCacheKey() {
-            @Override
-            public Class<? extends Annotation> annotationType() {
-                return EtagCacheKey.class;
-            }
-            @Override
-            public Class<?> model() {
-                return Organization.class;
-            }
-            @Override
-            public String[] keys() {
-                return new String[] {"orgId"};
-            }
-        };
-        doReturn(ImmutableList.of(orgKeyAnn)).when(mockContext).getCacheKeys();
+        doReturn(ImmutableList.of(ORG_KEY_ANN)).when(mockContext).getCacheKeys();
         
         CacheKey orgKey = CacheKey.etag(Organization.class, TEST_ORG_ID);
         when(mockCacheProvider.getObject(orgKey, DateTime.class)).thenReturn(MODIFIED_ON);
@@ -234,7 +267,8 @@ public class EtagComponentTest extends Mockito {
         
         assertNull(retValue);
         verify(mockResponse).addHeader(HttpHeaders.ETAG, ETAG);
-        verify(mockResponse).setStatus(304);        
+        verify(mockResponse).setStatus(304);
+        verify(mockMd5DigestUtils).digest((byte[])any());
     }
     
     // This will probably never trigger in reality, since the values are usually path parameters
@@ -263,5 +297,113 @@ public class EtagComponentTest extends Mockito {
         when(mockCacheProvider.getUserSession(any())).thenThrow(new NullPointerException());
         
         component.checkEtag(mockJoinPoint);
+    }
+    
+    @Test
+    public void invalidateCacheOnChange_invalidAttributeNoop() throws Throwable {
+        EtagCacheKey badTimeZoneAnn = new EtagCacheKey() {
+            @Override
+            public Class<? extends Annotation> annotationType() {
+                return EtagCacheKey.class;
+            }
+            @Override
+            public Class<?> model() {
+                return DateTimeZone.class;
+            }
+            @Override
+            public String[] keys() {
+                return new String[] {"userId"};
+            }
+            @Override
+            public String invalidateCacheOnChange() {
+                return "bad-value";
+            }
+        };
+        // This just gets ignored
+        doReturn(ImmutableList.of(badTimeZoneAnn)).when(mockContext).getCacheKeys();
+
+        when(mockRequest.getHeader(IF_NONE_MATCH)).thenReturn(ETAG);
+        
+        component.checkEtag(mockJoinPoint);
+        
+        verify(mockCacheProvider, never()).removeObject(any());
+    }
+
+    @Test
+    public void invalidateCacheOnChange_valuesHaveNotChanged() throws Throwable {
+        when(mockSession.getParticipant()).thenReturn(new StudyParticipant.Builder()
+                .withClientTimeZone(TEST_CLIENT_TIME_ZONE).build());
+        
+        doReturn(ImmutableList.of(TIME_ZONE_ANN)).when(mockContext).getCacheKeys();
+        doReturn(ImmutableMap.of("clientTimeZone", TEST_CLIENT_TIME_ZONE)).when(mockContext).getArgValues();
+
+        when(mockRequest.getHeader(IF_NONE_MATCH)).thenReturn(ETAG);
+        
+        component.checkEtag(mockJoinPoint);
+        
+        verify(mockCacheProvider, never()).removeObject(any());
+    }
+
+    @Test
+    public void invalidateCacheOnChange_newValue() throws Throwable {
+        // this is change, because there's no value in the session at this point
+        
+        doReturn(ImmutableList.of(TIME_ZONE_ANN)).when(mockContext).getCacheKeys();
+        doReturn(ImmutableMap.of("userId", TEST_USER_ID, "clientTimeZone", TEST_CLIENT_TIME_ZONE))
+            .when(mockContext).getArgValues();
+
+        when(mockRequest.getHeader(IF_NONE_MATCH)).thenReturn(ETAG);
+        
+        when(mockCacheProvider.getObject(
+                CacheKey.etag(DateTimeZone.class, TEST_USER_ID), DateTime.class)).thenReturn(MODIFIED_ON);
+        when(mockRequest.getHeader(IF_NONE_MATCH)).thenReturn(ETAG);
+        
+        when(mockMd5DigestUtils.digest(MODIFIED_ON.toString().getBytes())).thenReturn("ETAG".getBytes());
+        
+        component.checkEtag(mockJoinPoint);
+        
+        verify(mockCacheProvider).removeObject(CacheKey.etag(DateTimeZone.class, TEST_USER_ID));
+        verify(mockMd5DigestUtils).digest((byte[])any());
+    }
+
+    @Test
+    public void invalidateCacheOnChange_changedValue() throws Throwable {
+        when(mockSession.getParticipant()).thenReturn(new StudyParticipant.Builder()
+                .withClientTimeZone("America/Chicago").build());
+        
+        doReturn(ImmutableList.of(TIME_ZONE_ANN)).when(mockContext).getCacheKeys();
+        doReturn(ImmutableMap.of("userId", TEST_USER_ID, "clientTimeZone", TEST_CLIENT_TIME_ZONE))
+            .when(mockContext).getArgValues();
+        
+        when(mockCacheProvider.getObject(
+                CacheKey.etag(DateTimeZone.class, TEST_USER_ID), DateTime.class)).thenReturn(MODIFIED_ON);
+        when(mockRequest.getHeader(IF_NONE_MATCH)).thenReturn(ETAG);
+        
+        when(mockMd5DigestUtils.digest(MODIFIED_ON.toString().getBytes())).thenReturn("ETAG".getBytes());
+        
+        component.checkEtag(mockJoinPoint);
+        
+        verify(mockCacheProvider).removeObject(CacheKey.etag(DateTimeZone.class, TEST_USER_ID));
+        verify(mockMd5DigestUtils).digest((byte[])any());
+    }
+    
+    @Test
+    public void etagIsRecalculatedOnAChange() throws Throwable {
+        when(mockSession.getParticipant()).thenReturn(new StudyParticipant.Builder()
+                .withClientTimeZone("America/Chicago").build());
+        
+        doReturn(ImmutableList.of(TIME_ZONE_ANN)).when(mockContext).getCacheKeys();
+        doReturn(ImmutableMap.of("userId", TEST_USER_ID, "clientTimeZone", TEST_CLIENT_TIME_ZONE)).when(mockContext).getArgValues();
+
+        when(mockCacheProvider.getObject(
+                CacheKey.etag(DateTimeZone.class, TEST_USER_ID), DateTime.class)).thenReturn(MODIFIED_ON);
+        when(mockMd5DigestUtils.digest(MODIFIED_ON.toString().getBytes())).thenReturn("ETAG".getBytes());
+
+        component.checkEtag(mockJoinPoint);
+        
+        verify(mockCacheProvider).removeObject(CacheKey.etag(DateTimeZone.class, TEST_USER_ID));
+        // It's hard to mock that the change has occurred since that's in the code this surrounds,
+        // but we can verify that the digester was called twice, not once
+        verify(mockMd5DigestUtils, times(2)).digest((byte[])any());
     }
 }
