@@ -62,9 +62,11 @@ public class SessionValidator implements Validator {
     
     static final String DELAY_LONGER_THAN_SCHEDULE_DURATION_ERROR = "cannot be longer than the schedule duration";
     static final String EXPIRATION_LONGER_THAN_INTERVAL_ERROR = "cannot be longer than the session interval";
-    static final String EXPIRATION_REQUIRED_ERROR = "is required when a session has an interval";
+    static final String EXPIRATION_REQUIRED_FOR_INTERVAL_ERROR = "is required when a session has an interval";
+    static final String EXPIRATION_REQUIRED_FOR_OCCURRENCES_ERROR = "is required when a session has more than one occurrence";
     static final String LONGER_THAN_WINDOW_EXPIRATION_ERROR = "cannot be longer than the shortest window expiration";
     static final String MUST_DEFINE_TRIGGER_ERROR = "must define one or more startEventIds or studyBurstIds";
+    static final String REQUIRES_INTERVAL = "requires that an interval be set";
     static final String START_TIME_MILLIS_INVALID_ERROR = "cannot specify milliseconds";
     static final String START_TIME_SECONDS_INVALID_ERROR = "cannot specify seconds";
     static final String WINDOW_OVERLAPS_ERROR = "overlaps another time window";
@@ -163,8 +165,13 @@ public class SessionValidator implements Validator {
             errors.popNestedPath();
         }
         
-        if (session.getOccurrences() != null && session.getOccurrences() < 1) {
-            errors.rejectValue(OCCURRENCES_FIELD, LESS_THAN_ONE_ERROR);
+        if (session.getOccurrences() != null) {
+            if (session.getOccurrences() < 1) {
+                errors.rejectValue(OCCURRENCES_FIELD, LESS_THAN_ONE_ERROR);
+            }
+            if (session.getInterval() == null) {
+                errors.rejectValue(OCCURRENCES_FIELD, REQUIRES_INTERVAL);
+            }
         }
         validateFixedLengthPeriod(errors, session.getDelay(), DELAY_FIELD, false);
         if (scheduleDuration != null && session.getDelay() != null) {
@@ -200,7 +207,7 @@ public class SessionValidator implements Validator {
                 validateFixedLengthPeriod(errors, window.getExpiration(), EXPIRATION_FIELD, false);
                 if (session.getInterval() != null) {
                     if (window.getExpiration() == null) {
-                        errors.rejectValue(EXPIRATION_FIELD, EXPIRATION_REQUIRED_ERROR);
+                        errors.rejectValue(EXPIRATION_FIELD, EXPIRATION_REQUIRED_FOR_INTERVAL_ERROR);
                     } else {
                         long intervalMin = periodInMinutes(session.getInterval());
                         long expMin = periodInMinutes(window.getExpiration());
@@ -208,6 +215,9 @@ public class SessionValidator implements Validator {
                             errors.rejectValue(EXPIRATION_FIELD, EXPIRATION_LONGER_THAN_INTERVAL_ERROR);
                         }
                     }
+                }
+                if (session.getOccurrences() != null && window.getExpiration() == null) {
+                    errors.rejectValue(EXPIRATION_FIELD, EXPIRATION_REQUIRED_FOR_OCCURRENCES_ERROR);
                 }
                 if (window.getExpiration() != null) {
                     long windowExpiration = periodInMinutes(window.getExpiration());
