@@ -88,7 +88,7 @@ public class EventStreamAdherenceReportGenerator {
             dayRange = new DayRange(min, max);
         }
         DateRange dateRange = null;
-        if (earliestDate.isBefore(latestDate)) {
+        if (earliestDate.isEqual(latestDate) || earliestDate.isBefore(latestDate)) {
             dateRange = new DateRange(earliestDate, latestDate);
         }
         EventStreamAdherenceReport report = new EventStreamAdherenceReport();
