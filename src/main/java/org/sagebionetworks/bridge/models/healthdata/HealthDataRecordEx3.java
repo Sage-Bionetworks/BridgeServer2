@@ -123,4 +123,16 @@ public interface HealthDataRecordEx3 extends BridgeEntity {
      */
     Long getVersion();
     void setVersion(Long version);
+
+    /**
+     * Download url for record.
+     */
+    String getDownloadUrl();
+    void setDownloadUrl(String downloadUrl);
+
+    /**
+     * Expiration for record download url.
+     */
+    long getDownloadExpiration();
+    void setDownloadExpiration(long downloadExpiration);
 }

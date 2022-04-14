@@ -93,7 +93,7 @@ public class HealthDataEx3Controller extends BaseController {
             throw new EntityNotFoundException(App.class);
         }
 
-        HealthDataRecordEx3 record = healthDataEx3Service.getRecord(recordId).orElseThrow(() ->
+        HealthDataRecordEx3 record = healthDataEx3Service.getRecord(recordId, false).orElseThrow(() ->
                 new EntityNotFoundException(HealthDataRecordEx3.class));
         if (!appId.equals(record.getAppId())) {
             throw new EntityNotFoundException(HealthDataRecordEx3.class);
@@ -178,10 +178,10 @@ public class HealthDataEx3Controller extends BaseController {
 
     /** Retrieves the record for the given ID for self. */
     @GetMapping(path="/v3/participants/self/exporter3/healthdata/{recordId}")
-    public HealthDataRecordEx3 getRecordForSelf(@PathVariable String recordId) {
+    public HealthDataRecordEx3 getRecordForSelf(@PathVariable String recordId, @RequestParam(required = false) String download) {
         UserSession session = getAuthenticatedAndConsentedSession();
 
-        HealthDataRecordEx3 record = healthDataEx3Service.getRecord(recordId).orElseThrow(() ->
+        HealthDataRecordEx3 record = healthDataEx3Service.getRecord(recordId, "true".equalsIgnoreCase(download)).orElseThrow(() ->
                 new EntityNotFoundException(HealthDataRecordEx3.class));
 
         // Make sure the caller can only get their own health data records for this API
