@@ -165,7 +165,7 @@ public class DynamoHealthDataRecordEx3Test {
 
         // Convert to JsonNode.
         JsonNode jsonNode = BridgeObjectMapper.get().convertValue(record, JsonNode.class);
-        assertEquals(jsonNode.size(), 13);
+        assertEquals(jsonNode.size(), 14);
         assertEquals(jsonNode.get("id").textValue(), RECORD_ID);
         assertEquals(jsonNode.get("appId").textValue(), TestConstants.TEST_APP_ID);
         assertEquals(jsonNode.get("studyId").textValue(), STUDY_ID);
