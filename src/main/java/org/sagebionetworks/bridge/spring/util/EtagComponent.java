@@ -134,7 +134,7 @@ public class EtagComponent {
      */
     protected String recalculateEtag(UserSession session, EtagContext context, String etag) {
         for (EtagCacheKey cacheKey : context.getCacheKeys()) {
-            if (cacheKey.invalidateCacheOnChange() != "") {
+            if (!"".equals(cacheKey.invalidateCacheOnChange())) {
                 return calculateEtag(context, session, false);
             }
         }
