@@ -178,14 +178,14 @@ public class GBFOrderService {
             if (root.has(GBF_SHIPPING_ERROR_KEY)) {
                 throw new BadRequestException(root.get(GBF_SHIPPING_ERROR_KEY).asText());
             }
-        } catch (JsonProcessingException e) {
+        } catch (IOException e) {
             LOG.error("parseShippingConfirmations failed to parse XML as tree", e);
             throw new BridgeServiceException("Error parsing response XML.");
         }
 
         try {
             return XML_MAPPER.readValue(responseXml, ShippingConfirmations.class);
-        } catch (JsonProcessingException e) {
+        } catch (IOException e) {
             LOG.error("parseShippingConfirmations failed while parsing ShippingConfirmations XML", e);
             throw new BridgeServiceException("Error parsing ShippingConfirmations XML.");
         }

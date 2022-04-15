@@ -42,7 +42,7 @@ public class EntityAlreadyExistsExceptionTest {
         assertEquals(e.getEntityClass(), "ExternalIdentifier");
     }
     
-    @Test(expectedExceptions = IllegalArgumentException.class)
+    @Test(expectedExceptions = NullPointerException.class)
     public void exceptionInvalidConstruction() {
         new EntityAlreadyExistsException(null, null);
     }

@@ -4,6 +4,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.BridgeUtils.OR_JOINER;
 import static org.sagebionetworks.bridge.models.SearchTermPredicate.AND;
 
+import java.io.IOException;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -198,7 +199,7 @@ public class HibernateAdherenceReportDao implements AdherenceReportDao {
                     return oneRow;
                 }
             }
-        } catch (JsonProcessingException e) {
+        } catch (IOException e) {
             throw new BridgeServiceException(e);
         }
         // The row JSON is a compound value and the searchableLabel must be one of the values in the row... this is
