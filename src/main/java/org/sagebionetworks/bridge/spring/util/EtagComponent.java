@@ -184,14 +184,14 @@ public class EtagComponent {
                         + ", invalidating cache");
                 cacheProvider.removeObject(cacheKey);
             }
-        }                
+        }
     }
     
     private String getCurrentValue(UserSession session, String fieldName) {
         if (CLIENT_TIME_ZONE_FIELD.equals(fieldName)) {
             return session.getParticipant().getClientTimeZone();
         }
-        return null;
+        throw new IllegalArgumentException(fieldName + " is not a query parameter supported by invalidateCacheOnChange");
     }
     
     private String getValue(EtagContext context, UserSession session, String fieldName) {

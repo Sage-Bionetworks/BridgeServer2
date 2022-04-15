@@ -299,7 +299,8 @@ public class EtagComponentTest extends Mockito {
         component.checkEtag(mockJoinPoint);
     }
     
-    @Test
+    @Test(expectedExceptions = IllegalArgumentException.class,
+            expectedExceptionsMessageRegExp = "bad-value is not a query parameter supported by invalidateCacheOnChange")
     public void invalidateCacheOnChange_invalidAttributeNoop() throws Throwable {
         EtagCacheKey badTimeZoneAnn = new EtagCacheKey() {
             @Override
@@ -325,8 +326,6 @@ public class EtagComponentTest extends Mockito {
         when(mockRequest.getHeader(IF_NONE_MATCH)).thenReturn(ETAG);
         
         component.checkEtag(mockJoinPoint);
-        
-        verify(mockCacheProvider, never()).removeObject(any());
     }
 
     @Test
@@ -384,7 +383,11 @@ public class EtagComponentTest extends Mockito {
         component.checkEtag(mockJoinPoint);
         
         verify(mockCacheProvider).removeObject(CacheKey.etag(DateTimeZone.class, TEST_USER_ID));
+        // This runs once because the etag value matches, and the system returns a 304 instead
+        // of executing the join point, then recalculating the etag.
         verify(mockMd5DigestUtils).digest((byte[])any());
+        verify(mockResponse).addHeader(HttpHeaders.ETAG, ETAG);
+        verify(mockResponse).setStatus(304);
     }
     
     @Test
@@ -393,17 +396,22 @@ public class EtagComponentTest extends Mockito {
                 .withClientTimeZone("America/Chicago").build());
         
         doReturn(ImmutableList.of(TIME_ZONE_ANN)).when(mockContext).getCacheKeys();
-        doReturn(ImmutableMap.of("userId", TEST_USER_ID, "clientTimeZone", TEST_CLIENT_TIME_ZONE)).when(mockContext).getArgValues();
+        doReturn(ImmutableMap.of("userId", TEST_USER_ID, "clientTimeZone", TEST_CLIENT_TIME_ZONE))
+            .when(mockContext).getArgValues();
 
         when(mockCacheProvider.getObject(
                 CacheKey.etag(DateTimeZone.class, TEST_USER_ID), DateTime.class)).thenReturn(MODIFIED_ON);
+
         when(mockMd5DigestUtils.digest(MODIFIED_ON.toString().getBytes())).thenReturn("ETAG".getBytes());
 
         component.checkEtag(mockJoinPoint);
         
         verify(mockCacheProvider).removeObject(CacheKey.etag(DateTimeZone.class, TEST_USER_ID));
         // It's hard to mock that the change has occurred since that's in the code this surrounds,
-        // but we can verify that the digester was called twice, not once
+        // but we can verify that the digester was called twice, not once. It sets a new etag but
+        // does not return 304.
         verify(mockMd5DigestUtils, times(2)).digest((byte[])any());
+        verify(mockResponse).addHeader(HttpHeaders.ETAG, ETAG);
+        verify(mockResponse, never()).setStatus(anyInt());
     }
 }
