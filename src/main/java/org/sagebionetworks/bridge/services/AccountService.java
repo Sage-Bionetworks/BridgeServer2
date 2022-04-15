@@ -155,8 +155,7 @@ public class AccountService {
         Account persistedAccount = accountDao.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
         
-        boolean timeZoneUpdated = !ObjectUtils.nullSafeEquals(
-                account.getClientTimeZone(), persistedAccount.getClientTimeZone());
+        String oldTimeZone = persistedAccount.getClientTimeZone();
         
         // The test_user flag taints an account; once set it cannot be unset.
         boolean testUser = persistedAccount.getDataGroups().contains(TEST_USER_GROUP);
@@ -206,10 +205,13 @@ public class AccountService {
                 studyActivityEventService.publishEvent(builder.withStudyId(studyId).build(), false, true);
             }
         }
-
-        if (timeZoneUpdated) {
+        
+        if (!ObjectUtils.nullSafeEquals(account.getClientTimeZone(), oldTimeZone)) {
+            System.out.println("Updating time zone key to" + account.getModifiedOn());
             CacheKey cacheKey = CacheKey.etag(DateTimeZone.class, account.getId());
             cacheProvider.setObject(cacheKey, account.getModifiedOn());
+        } else {
+            System.out.println("DID NOT UPDATE: " + account.getClientTimeZone() + ", " + oldTimeZone);
         }
         // Create the corresponding Participant Version.
         participantVersionService.createParticipantVersionFromAccount(account);

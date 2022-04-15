@@ -9,6 +9,7 @@ import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_PARTICIPANT_REPORTS;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeUtils.addToSet;
 import static org.sagebionetworks.bridge.BridgeUtils.getDateTimeOrDefault;
+import static org.sagebionetworks.bridge.BridgeUtils.isValidTimeZoneID;
 import static org.sagebionetworks.bridge.BridgeUtils.participantEligibleForDeletion;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
@@ -45,6 +46,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
@@ -290,21 +292,32 @@ public class StudyParticipantController extends BaseController {
         @EtagCacheKey(model=Schedule2.class, keys={"appId", "studyId"}),
         // Most recent modification to the participant’s collection of events
         @EtagCacheKey(model=StudyActivityEvent.class, keys={"userId"}),
-        // Most recent modification to the participant’s time zone
-        @EtagCacheKey(model=DateTimeZone.class, keys={"userId"})
+        // Most recent modification to the participant’s time zone.
+        @EtagCacheKey(model=DateTimeZone.class, keys={"userId"}, invalidateCacheOnChange="clientTimeZone")
     })
     @GetMapping("/v5/studies/{studyId}/participants/self/schedule")
-    public ParticipantSchedule getParticipantScheduleForSelf(@PathVariable String studyId) {
+    public ParticipantSchedule getParticipantScheduleForSelf(@PathVariable String studyId,
+            @RequestParam(defaultValue = "false") String clientTimeZone) {
         UserSession session = getAuthenticatedAndConsentedSession();
         
         // This produces the desired error (unauthorized rather than 404)
         if (!session.getParticipant().getStudyIds().contains(studyId)) {
             throw new UnauthorizedException("Caller is not enrolled in study '" + studyId + "'");
         }
+        if (!isValidTimeZoneID(clientTimeZone, true)) {
+            throw new BadRequestException("clientTimeZone parameter is required");
+        }
+        
         AccountId accountId = AccountId.forId(session.getAppId(), session.getId());
         Account account = accountService.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
-        
+
+        if (!clientTimeZone.equals(session.getParticipant().getClientTimeZone())) {
+            accountService.editAccount(accountId, (acct) -> acct.setClientTimeZone(clientTimeZone));
+            sessionUpdateService.updateClientTimeZone(session, clientTimeZone);
+        }
+        account.setClientTimeZone(clientTimeZone);
+
         // Even if the call fails, we want to know they tried it
         DateTime timelineRequestedOn = getDateTime();
         RequestInfo requestInfo = getRequestInfoBuilder(session)

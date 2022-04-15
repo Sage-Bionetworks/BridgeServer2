@@ -106,7 +106,10 @@ public class StudyAdherenceReportGenerator {
         }
         DateRange dateRange = null;
         if (eventReport.getDateRangeOfAllStreams() != null) {
-            dateRange = new DateRange(studyStartDate, eventReport.getDateRangeOfAllStreams().getEndDate());
+            LocalDate endDate = eventReport.getDateRangeOfAllStreams().getEndDate();
+            if (studyStartDate.isEqual(endDate) || studyStartDate.isBefore(endDate)) {
+                dateRange = new DateRange(studyStartDate, endDate);
+            }
         }
         
         // Break this study stream down into weeks. TreeMap sorts the weeks by week number. This report is still

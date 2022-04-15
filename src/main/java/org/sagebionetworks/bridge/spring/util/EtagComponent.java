@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.ObjectUtils;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
@@ -43,8 +44,10 @@ import com.google.common.net.HttpHeaders;
 @Aspect
 @Component
 public class EtagComponent {
+
     private static final Logger LOG = LoggerFactory.getLogger(EtagComponent.class);
     
+    private static final String CLIENT_TIME_ZONE_FIELD = "clientTimeZone";
     private static final String NO_VALUE_ERROR = "EtagSupport: no value for key: ";
     private static final String ORG_ID_FIELD = "orgId";
     private static final String USER_ID_FIELD = "userId";
@@ -90,14 +93,17 @@ public class EtagComponent {
         // Because this tag executes before security checks, it requires that the caller be 
         // authenticated. We can add a flag if we want to use this code on public endpoints 
         // to skip a check of the session.
+        if (sessionToken == null) {
+            throw new NotAuthenticatedException();
+        }
         UserSession session = cacheProvider.getUserSession(sessionToken);
         if (session == null) {
             throw new NotAuthenticatedException();
         }
-
+        
         // Etag can be null (until all dependent objects have cached their timestamps, 
         // or when a dependent object is deleted).
-        String etag = calculateEtag(context, session);
+        String etag = calculateEtag(context, session, true);
         
         if (requestEtag != null) {
             if (requestEtag.equals(etag)) {
@@ -110,6 +116,8 @@ public class EtagComponent {
             }
         }
         Object retValue = joinPoint.proceed();
+        
+        etag = recalculateEtag(session, context, etag);
         if (etag != null) {
             response.addHeader(HttpHeaders.ETAG, etag);
             if (LOG.isDebugEnabled()) {
@@ -119,20 +127,44 @@ public class EtagComponent {
         return retValue;
     }
 
-    private String calculateEtag(EtagContext context, UserSession session) {
+    /**
+     * Recalculate the etag if any of the cache keys could have updated during the request
+     * itself (invalidateCacheOnChange = a name of a controller method parameter on one of the 
+     * @@EtagCacheKey annotations).
+     */
+    protected String recalculateEtag(UserSession session, EtagContext context, String etag) {
+        for (EtagCacheKey cacheKey : context.getCacheKeys()) {
+            if (!"".equals(cacheKey.invalidateCacheOnChange())) {
+                return calculateEtag(context, session, false);
+            }
+        }
+        return etag;
+    }
+
+    private String calculateEtag(EtagContext context, UserSession session, boolean invalidateCache) {
         // Collect timestamps for all the dependencies that determine freshness of etag
         List<DateTime> timestamps = new ArrayList<>();
-        for (EtagCacheKey timestampKey : context.getCacheKeys()) {
-            int len = timestampKey.keys().length;
+        for (EtagCacheKey cacheKeyDef : context.getCacheKeys()) {
+            int len = cacheKeyDef.keys().length;
             String[] resolvedKeyValues = new String[len];
             for (int i=0; i < len; i++) {
                 // given getValue's behavior, this value will not be null;
-                resolvedKeyValues[i] = getValue(context, session, timestampKey.keys()[i]);
+                resolvedKeyValues[i] = getValue(context, session, cacheKeyDef.keys()[i]);
             }
             // Retrieve the timestamp under this key
-            CacheKey cacheKey = CacheKey.etag(timestampKey.model(), resolvedKeyValues);
+            CacheKey cacheKey = CacheKey.etag(cacheKeyDef.model(), resolvedKeyValues);
+            
+            // Check for a request-scoped parameter that differs from the value on the server,
+            // that will necessitate invalidation of the cache (right now the only field that
+            // can do this is clientTimeZone).
+            if (invalidateCache) {
+                invalidateCacheOnChange(session, context, cacheKeyDef.invalidateCacheOnChange(), cacheKey);    
+            }
+            
+            LOG.debug("looking for cache key: " + cacheKey);
             DateTime timestamp = cacheProvider.getObject(cacheKey, DateTime.class);
             if (timestamp == null) {
+                LOG.debug("cache miss (cacheKey has no value: “" + cacheKey + "”)");
                 return null; // this is a cache miss, any miss means there is no etag
             }
             timestamps.add(timestamp.withZone(DateTimeZone.UTC));
@@ -140,6 +172,26 @@ public class EtagComponent {
         String base = BridgeUtils.SPACE_JOINER.join(timestamps);
         byte[] md5 = md5DigestUtils.digest(base.getBytes(Charset.defaultCharset()));
         return Hex.encodeHexString(md5);
+    }
+    
+    private void invalidateCacheOnChange(UserSession session, EtagContext context, String invalidationField,
+            CacheKey cacheKey) {
+        if (!"".equals(invalidationField)) {
+            String pendingChange = (String)context.getArgValues().get(invalidationField);
+            String currentValue = getCurrentValue(session, invalidationField);
+            if (!ObjectUtils.nullSafeEquals(pendingChange, currentValue)) {
+                LOG.debug("Field " + invalidationField + " changed from " + currentValue + " to " + pendingChange
+                        + ", invalidating cache");
+                cacheProvider.removeObject(cacheKey);
+            }
+        }
+    }
+    
+    private String getCurrentValue(UserSession session, String fieldName) {
+        if (CLIENT_TIME_ZONE_FIELD.equals(fieldName)) {
+            return session.getParticipant().getClientTimeZone();
+        }
+        throw new IllegalArgumentException(fieldName + " is not a query parameter supported by invalidateCacheOnChange");
     }
     
     private String getValue(EtagContext context, UserSession session, String fieldName) {

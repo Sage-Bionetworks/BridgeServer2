@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.validators;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.BridgeUtils.COMMA_SPACE_JOINER;
+import static org.sagebionetworks.bridge.BridgeUtils.isValidTimeZoneID;
 import static org.sagebionetworks.bridge.models.studies.IrbDecisionType.APPROVED;
 import static org.sagebionetworks.bridge.validators.Validate.BRIDGE_EVENT_ID_ERROR;
 import static org.sagebionetworks.bridge.validators.Validate.BRIDGE_EVENT_ID_PATTERN;
@@ -18,8 +19,6 @@ import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateJsonLength;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateStringLength;
 
-import java.time.DateTimeException;
-import java.time.ZoneId;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -130,12 +129,8 @@ public class StudyValidator implements Validator {
                 errors.rejectValue(ADHERENCE_THRESHOLD_PERCENTAGE_FIELD, "must be from 0-100%");
             }
         }
-        if (study.getStudyTimeZone() != null) {
-            try {
-                ZoneId.of(study.getStudyTimeZone());
-            } catch (DateTimeException e) {
-                errors.rejectValue(STUDY_TIME_ZONE_FIELD, INVALID_TIME_ZONE);
-            }
+        if (!isValidTimeZoneID(study.getStudyTimeZone(), false)) {
+            errors.rejectValue(STUDY_TIME_ZONE_FIELD, INVALID_TIME_ZONE);
         }
         
         // If one of these is supplied, all three need to be supplied

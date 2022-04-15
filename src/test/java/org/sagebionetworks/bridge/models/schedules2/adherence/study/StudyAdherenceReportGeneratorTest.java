@@ -1303,4 +1303,66 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
         assertNull(weeks.get(2).getAdherencePercent());
         assertNull(weeks.get(3).getAdherencePercent());
     }
+    
+    @Test
+    public void dateRangeErrorDefaultsToStreamDateRange() {
+        // survey
+        AssessmentReference ref1 = new AssessmentReference();
+        ref1.setGuid("survey");
+        ref1.setAppId(TEST_APP_ID);
+        ref1.setIdentifier("survey");
+        
+        Schedule2 schedule = new Schedule2();
+        
+        TimeWindow win1 = new TimeWindow();
+        win1.setGuid("win1");
+        win1.setStartTime(LocalTime.parse("00:00"));
+        win1.setExpiration(Period.parse("P2D"));
+        
+        Session s1 = new Session();
+        s1.setGuid("s1");
+        s1.setAssessments(ImmutableList.of(ref1));
+        s1.setStartEventIds(ImmutableList.of("custom:event1"));
+        s1.setTimeWindows(ImmutableList.of(win1));
+        s1.setGuid("initialSurveyGuid");
+        s1.setName("Initial Survey");
+        s1.setPerformanceOrder(SEQUENTIAL);
+        
+        schedule.setSessions(ImmutableList.of(s1));
+        schedule.setAppId(TEST_APP_ID);
+        schedule.setGuid(SCHEDULE_GUID);
+        schedule.setName("Test Schedule");
+        schedule.setOwnerId("sage-bionetworks");
+        schedule.setDuration(Period.parse("P4W"));
+        schedule.setCreatedOn(CREATED_ON);
+        schedule.setModifiedOn(MODIFIED_ON);
+        
+        Timeline timeline = Scheduler.INSTANCE.calculateTimeline(schedule);
+        List<TimelineMetadata> metadata = timeline.getMetadata();
+        
+        StudyActivityEvent e1 = new StudyActivityEvent.Builder()
+                .withEventId("custom:event1")
+                .withTimestamp(DateTime.parse("2022-02-08T12:23:15.999-08:00"))
+                .withObjectType(ActivityEventObjectType.CUSTOM)
+                .build();
+        StudyActivityEvent e2 = new StudyActivityEvent.Builder()
+                .withEventId("custom:event2")
+                .withTimestamp(DateTime.parse("2022-03-08T12:23:15.999-08:00"))
+                .withObjectType(ActivityEventObjectType.CUSTOM)
+                .build();
+        List<StudyActivityEvent> events = ImmutableList.of(e1, e2);
+        
+        AdherenceState state = new AdherenceState.Builder()
+                .withStudyStartEventId("custom:event2")
+                .withMetadata(metadata)
+                .withEvents(events)
+                .withClientTimeZone("America/Los_Angeles")
+                .withNow(NOW).build();
+
+        // This used to throw an exception but now returns a null date range object.
+        // I don't know what the date range would mean if activities occur before the
+        // start of the study...it's not specified.
+        StudyAdherenceReport report = INSTANCE.generate(state);
+        assertNull(report.getDateRange());
+    }
 }

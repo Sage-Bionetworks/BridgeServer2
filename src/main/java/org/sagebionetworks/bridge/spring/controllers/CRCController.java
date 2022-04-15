@@ -741,7 +741,6 @@ public class CRCController extends BaseController {
 
         // Verify the password
         SignIn signIn = signInBuilder.build();
-        System.out.println("authenticationService: " + authenticationService);
         Account account = authenticationService.authenticate(app, signIn);
 
         // This method of verification sidesteps RequestContext initialization

@@ -10,6 +10,8 @@ import static org.sagebionetworks.bridge.models.accounts.SharingScope.NO_SHARING
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
+import org.joda.time.DateTimeZone;
+import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.time.DateUtils;
@@ -21,6 +23,7 @@ import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
@@ -241,8 +244,8 @@ public class UserAdminService {
         if (account != null) {
             // remove this first so if account is partially deleted, re-authenticating will pick
             // up accurate information about the state of the account (as we can recover it)
-            cacheProvider.removeSessionByUserId(account.getId());
-            requestInfoService.removeRequestInfo(account.getId());
+            cacheProvider.removeSessionByUserId(id);
+            requestInfoService.removeRequestInfo(id);
             
             String healthCode = account.getHealthCode();
             healthDataService.deleteRecordsForHealthCode(healthCode);
@@ -254,6 +257,10 @@ public class UserAdminService {
             // AccountSecret records and Enrollment records are are deleted on a 
             // cascading delete from Account
             accountService.deleteAccount(accountId);
+            
+            // Remove known etag cache keys for this user
+            cacheProvider.removeObject( CacheKey.etag(DateTimeZone.class, id) );
+            cacheProvider.removeObject( CacheKey.etag(StudyActivityEvent.class, id) );
         }
     }
 }
