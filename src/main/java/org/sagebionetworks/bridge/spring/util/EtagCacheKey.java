@@ -14,4 +14,13 @@ public @interface EtagCacheKey {
      * known in the controller, and what we know when objects are being modified in the service.
      */
     String[] keys();
+    
+    /**
+     * If a query parameter name is given for this attribute, a change in that value from the 
+     * persisted value on the server should invalidate the request (no 304 can be returned, 
+     * although the call should update the value, so a correct etag can be calculated and 
+     * returned to the caller after the controller method returns). The only field currently 
+     * supported in this array is “clientTimeZone”. 
+     */
+    String invalidateCacheOnChange() default "";
 }

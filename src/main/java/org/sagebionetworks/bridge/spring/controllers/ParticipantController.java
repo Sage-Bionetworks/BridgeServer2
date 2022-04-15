@@ -156,7 +156,7 @@ public class ParticipantController extends BaseController {
         // usage pattern in prior APIs and it will make refactoring to use this API easier.
         JsonNode node = parseJson(JsonNode.class);
         Set<String> fieldNames = Sets.newHashSet(node.fieldNames());
-
+        
         StudyParticipant participant = parseJson(node, StudyParticipant.class);
         StudyParticipant existing = participantService.getParticipant(app, session.getId(), false);
         StudyParticipant.Builder builder = new StudyParticipant.Builder()

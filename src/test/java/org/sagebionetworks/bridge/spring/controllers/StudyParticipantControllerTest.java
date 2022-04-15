@@ -76,6 +76,7 @@ import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
@@ -123,6 +124,7 @@ import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.services.ReportService;
 import org.sagebionetworks.bridge.services.RequestInfoService;
 import org.sagebionetworks.bridge.services.Schedule2Service;
+import org.sagebionetworks.bridge.services.SessionUpdateService;
 import org.sagebionetworks.bridge.services.StudyActivityEventService;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.UserAdminService;
@@ -169,6 +171,9 @@ public class StudyParticipantControllerTest extends Mockito {
     
     @Mock
     ReportService mockReportService;
+    
+    @Mock
+    SessionUpdateService mockSessionUpdateService;
     
     @Mock
     HttpServletRequest mockRequest;
@@ -1994,7 +1999,7 @@ public class StudyParticipantControllerTest extends Mockito {
     }
     
     @Test
-    public void getParticipantScheduleForSelf() {
+    public void getParticipantScheduleForSelf_newTimeZone() {
         session.setParticipant(new StudyParticipant.Builder()
                 .withId(TEST_USER_ID).withStudyIds(ImmutableSet.of(TEST_STUDY_ID)).build());
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
@@ -2006,12 +2011,20 @@ public class StudyParticipantControllerTest extends Mockito {
         when(mockScheduleService.getParticipantSchedule(
                 eq(TEST_APP_ID), eq(TEST_STUDY_ID), any())).thenReturn(schedule);
         
-        ParticipantSchedule retValue = controller.getParticipantScheduleForSelf(TEST_STUDY_ID);
+        Account mockAccount = mock(Account.class);
+        TestUtils.mockEditAccount(mockAccountService, mockAccount);
+        
+        ParticipantSchedule retValue = controller.getParticipantScheduleForSelf(TEST_STUDY_ID, TEST_CLIENT_TIME_ZONE);
         assertSame(retValue, schedule);
         
         verify(mockRequestInfoService).updateRequestInfo(requestInfoCaptor.capture());
         RequestInfo info = requestInfoCaptor.getValue();
         assertEquals(info.getTimelineAccessedOn(), CREATED_ON);
+        
+        verify(mockAccountService).editAccount(eq(ACCOUNT_ID), any());
+        verify(mockSessionUpdateService).updateClientTimeZone(session, TEST_CLIENT_TIME_ZONE);
+        assertEquals(account.getClientTimeZone(), TEST_CLIENT_TIME_ZONE);
+        verify(mockAccount).setClientTimeZone(TEST_CLIENT_TIME_ZONE);
         
         verify(mockStudyActivityEventService).publishEvent(eventCaptor.capture(), eq(false), eq(true));
         StudyActivityEvent event = eventCaptor.getValue();
@@ -2022,6 +2035,52 @@ public class StudyParticipantControllerTest extends Mockito {
         assertEquals(event.getTimestamp(), CREATED_ON);
     }
     
+    @Test
+    public void getParticipantScheduleForSelf_changedTimeZone() {
+        session.setParticipant(new StudyParticipant.Builder()
+                .withId(TEST_USER_ID).withStudyIds(ImmutableSet.of(TEST_STUDY_ID)).build());
+        doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
+        mockAccountInStudy(TEST_USER_ID);
+        account.setClientTimeZone("America/Chicago");
+        
+        when(controller.getDateTime()).thenReturn(CREATED_ON);
+        
+        ParticipantSchedule schedule = new ParticipantSchedule();
+        when(mockScheduleService.getParticipantSchedule(
+                eq(TEST_APP_ID), eq(TEST_STUDY_ID), any())).thenReturn(schedule);
+        
+        Account mockAccount = mock(Account.class);
+        TestUtils.mockEditAccount(mockAccountService, mockAccount);
+        
+        controller.getParticipantScheduleForSelf(TEST_STUDY_ID, TEST_CLIENT_TIME_ZONE);
+        
+        verify(mockAccountService).editAccount(eq(ACCOUNT_ID), any());
+        verify(mockSessionUpdateService).updateClientTimeZone(session, TEST_CLIENT_TIME_ZONE);
+        assertEquals(account.getClientTimeZone(), TEST_CLIENT_TIME_ZONE);
+        verify(mockAccount).setClientTimeZone(TEST_CLIENT_TIME_ZONE);
+    }
+    
+    @Test
+    public void getParticipantScheduleForSelf_sameTimeZone() {
+        session.setParticipant(new StudyParticipant.Builder()
+                .withId(TEST_USER_ID).withStudyIds(ImmutableSet.of(TEST_STUDY_ID))
+                .withClientTimeZone(TEST_CLIENT_TIME_ZONE).build());
+        doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
+        mockAccountInStudy(TEST_USER_ID);
+        
+        when(controller.getDateTime()).thenReturn(CREATED_ON);
+        
+        ParticipantSchedule schedule = new ParticipantSchedule();
+        when(mockScheduleService.getParticipantSchedule(
+                eq(TEST_APP_ID), eq(TEST_STUDY_ID), any())).thenReturn(schedule);
+        
+        controller.getParticipantScheduleForSelf(TEST_STUDY_ID, TEST_CLIENT_TIME_ZONE);
+        
+        verify(mockAccountService, never()).editAccount(any(), any());
+        verify(mockSessionUpdateService, never()).updateClientTimeZone(any(), any());
+        assertEquals(account.getClientTimeZone(), TEST_CLIENT_TIME_ZONE);
+    }
+    
     @Test(expectedExceptions = UnauthorizedException.class)
     public void getParticipantScheduleForSelf_notEnrolledInStudy() {
         session.setParticipant(new StudyParticipant.Builder()
@@ -2030,7 +2089,18 @@ public class StudyParticipantControllerTest extends Mockito {
         mockAccountInStudy(TEST_USER_ID);
         account.setClientTimeZone(TEST_CLIENT_TIME_ZONE);
         
-        controller.getParticipantScheduleForSelf(TEST_STUDY_ID);
+        controller.getParticipantScheduleForSelf(TEST_STUDY_ID, TEST_CLIENT_TIME_ZONE);
+    }
+    
+    @Test(expectedExceptions = BadRequestException.class, 
+            expectedExceptionsMessageRegExp = "clientTimeZone parameter is required")
+    public void getParticipantScheduleForSelf_noTimeZone() {
+        session.setParticipant(new StudyParticipant.Builder()
+                .withId(TEST_USER_ID).withStudyIds(ImmutableSet.of(TEST_STUDY_ID)).build());
+        doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
+        mockAccountInStudy(TEST_USER_ID);
+        
+        controller.getParticipantScheduleForSelf(TEST_STUDY_ID, null);
     }
     
     private void mockAccountInStudy() {

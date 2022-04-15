@@ -1,16 +1,15 @@
 package org.sagebionetworks.bridge.validators;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.sagebionetworks.bridge.BridgeUtils.isValidTimeZoneID;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_TIME_ZONE;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateJsonLength;
 
-import java.time.ZoneId;
 
 import org.springframework.validation.Errors;
-
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordList;
 
@@ -51,12 +50,9 @@ public class AdherenceRecordListValidator extends AbstractValidator {
             if (record.getEventTimestamp() == null) {
                 errors.rejectValue(EVENT_TIMESTAMP_FIELD, CANNOT_BE_NULL);
             }
-            if (record.getClientTimeZone() != null) {
-                try {
-                    ZoneId.of(record.getClientTimeZone());
-                } catch (Exception e) {
-                    errors.rejectValue(CLIENT_TIME_ZONE_FIELD, INVALID_TIME_ZONE);
-                }
+            
+            if (!isValidTimeZoneID(record.getClientTimeZone(), false)) {
+                errors.rejectValue(CLIENT_TIME_ZONE_FIELD, INVALID_TIME_ZONE);
             }
             validateJsonLength(errors, TEXT_SIZE,record.getClientData(), "clientData");
             errors.popNestedPath();

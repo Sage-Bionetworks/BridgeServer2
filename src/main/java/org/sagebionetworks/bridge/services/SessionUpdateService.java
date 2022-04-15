@@ -47,6 +47,11 @@ public class SessionUpdateService {
         cacheProvider.setUserSession(session);
     }
     
+    public void updateClientTimeZone(UserSession session, String clientTimeZone) {
+        session.setParticipant(builder(session).withClientTimeZone(clientTimeZone).build());
+        cacheProvider.setUserSession(session);
+    }
+    
     public void updateApp(UserSession session, String appId) {
         session.setAppId(appId);
         cacheProvider.setUserSession(session);
