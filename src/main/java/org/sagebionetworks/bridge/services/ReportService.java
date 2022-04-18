@@ -404,7 +404,7 @@ public class ReportService {
                 return;
             }
         }
-        throw new EntityNotFoundException(ReportIndex.class, "4");
+        throw new EntityNotFoundException(ReportIndex.class);
     }
     
     protected void checkStudyReportAccess(ReportIndex index) {

@@ -55,7 +55,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 
-public class UserAdminServiceTest {
+public class IntegrationTestUserServiceTest {
     
     private static final String USER_ID = "ABC";
 
@@ -70,9 +70,12 @@ public class UserAdminServiceTest {
     
     @Mock
     private ConsentService consentService;
-    
+
     @Mock
     private AccountService accountService;
+
+    @Mock
+    private AdminAccountService adminAccountService;
     
     @Mock
     private Account account;
@@ -111,7 +114,7 @@ public class UserAdminServiceTest {
     private ArgumentCaptor<Account> accountCaptor;
 
     @InjectMocks
-    private UserAdminService service;
+    private IntegrationTestUserService service;
     
     private Map<SubpopulationGuid,ConsentStatus> statuses;
     
@@ -154,7 +157,7 @@ public class UserAdminServiceTest {
         RequestContext.set(new RequestContext.Builder().withCallerRoles(
                 ImmutableSet.of(Roles.ADMIN)).build());
         
-        App app = TestUtils.getValidApp(UserAdminServiceTest.class);
+        App app = TestUtils.getValidApp(IntegrationTestUserServiceTest.class);
         StudyParticipant participant = new StudyParticipant.Builder().withEmail("email@email.com").withPassword("password").build();
         
         Map<SubpopulationGuid,ConsentStatus> statuses = Maps.newHashMap();
@@ -187,7 +190,7 @@ public class UserAdminServiceTest {
         RequestContext.set(new RequestContext.Builder().withCallerRoles(
                 ImmutableSet.of(Roles.ADMIN)).build());
         
-        App app = TestUtils.getValidApp(UserAdminServiceTest.class);
+        App app = TestUtils.getValidApp(IntegrationTestUserServiceTest.class);
         StudyParticipant participant = new StudyParticipant.Builder().withPhone(TestConstants.PHONE)
                 .withPassword("password").build();
 
@@ -210,7 +213,7 @@ public class UserAdminServiceTest {
     public void creatingUserWithExternalId() {
         RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(Roles.ADMIN)).build());
 
-        App app = TestUtils.getValidApp(UserAdminServiceTest.class);
+        App app = TestUtils.getValidApp(IntegrationTestUserServiceTest.class);
         StudyParticipant participant = new StudyParticipant.Builder().withExternalId(TEST_EXTERNAL_ID)
                 .withPassword("password").build();
 
@@ -231,7 +234,7 @@ public class UserAdminServiceTest {
 
     @Test(expectedExceptions = InvalidEntityException.class)
     public void creatingUserWithoutEmailOrPhoneProhibited() {
-        App app = TestUtils.getValidApp(UserAdminServiceTest.class);
+        App app = TestUtils.getValidApp(IntegrationTestUserServiceTest.class);
         StudyParticipant participant = new StudyParticipant.Builder().withPassword("password").build();
 
         service.createUser(app, participant, null, true, true);
@@ -242,7 +245,7 @@ public class UserAdminServiceTest {
         RequestContext.set(new RequestContext.Builder().withCallerRoles(
                 ImmutableSet.of(Roles.ADMIN)).build());
                 
-        App app = TestUtils.getValidApp(UserAdminServiceTest.class);
+        App app = TestUtils.getValidApp(IntegrationTestUserServiceTest.class);
         StudyParticipant participant = new StudyParticipant.Builder().withEmail("email@email.com").withPassword("password").build();
         SubpopulationGuid consentedGuid = statuses.keySet().iterator().next();
         
@@ -265,7 +268,7 @@ public class UserAdminServiceTest {
         RequestContext.set(new RequestContext.Builder().withCallerRoles(
                 ImmutableSet.of(Roles.ADMIN)).build());
                 
-        App app = TestUtils.getValidApp(UserAdminServiceTest.class);
+        App app = TestUtils.getValidApp(IntegrationTestUserServiceTest.class);
         StudyParticipant participant = new StudyParticipant.Builder().withEmail("email@email.com").withPassword("password").build();
         SubpopulationGuid consentedGuid = statuses.keySet().iterator().next();
 
@@ -279,7 +282,7 @@ public class UserAdminServiceTest {
         RequestContext.set(new RequestContext.Builder().withCallerRoles(
                 ImmutableSet.of(Roles.ADMIN)).build());
         
-        App app = TestUtils.getValidApp(UserAdminServiceTest.class);
+        App app = TestUtils.getValidApp(IntegrationTestUserServiceTest.class);
         StudyParticipant participant = new StudyParticipant.Builder().withEmail("email@email.com").withPassword("password").build();
         
         when(consentService.getConsentStatuses(any())).thenReturn(ImmutableMap.of());
@@ -302,7 +305,7 @@ public class UserAdminServiceTest {
         RequestContext.set(new RequestContext.Builder().withCallerRoles(
                 ImmutableSet.of(Roles.ADMIN)).build());
         
-        App app = TestUtils.getValidApp(UserAdminServiceTest.class);
+        App app = TestUtils.getValidApp(IntegrationTestUserServiceTest.class);
         StudyParticipant participant = new StudyParticipant.Builder().withEmail("email@email.com").withPassword("password").build();
         
         when(authenticationService.signIn(eq(app), any(), any()))
@@ -319,7 +322,7 @@ public class UserAdminServiceTest {
         RequestContext.set(new RequestContext.Builder().withCallerRoles(
                 ImmutableSet.of(Roles.ADMIN)).build());
         
-        App app = TestUtils.getValidApp(UserAdminServiceTest.class);
+        App app = TestUtils.getValidApp(IntegrationTestUserServiceTest.class);
         StudyParticipant participant = new StudyParticipant.Builder().withEmail("email@email.com").withPassword("password").build();
         
         Map<SubpopulationGuid,ConsentStatus> statuses = Maps.newHashMap();
@@ -343,7 +346,7 @@ public class UserAdminServiceTest {
     
     @Test
     public void deleteUser() {
-        App app = TestUtils.getValidApp(UserAdminServiceTest.class);
+        App app = TestUtils.getValidApp(IntegrationTestUserServiceTest.class);
         
         AccountId accountId = AccountId.forId(app.getIdentifier(),  "userId");
 
@@ -377,7 +380,7 @@ public class UserAdminServiceTest {
     
     @Test
     public void deleteUserNotFound() {
-        App app = TestUtils.getValidApp(UserAdminServiceTest.class);
+        App app = TestUtils.getValidApp(IntegrationTestUserServiceTest.class);
         
         service.deleteUser(app, "userId");
         

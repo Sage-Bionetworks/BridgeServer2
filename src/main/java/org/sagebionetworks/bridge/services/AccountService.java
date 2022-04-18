@@ -207,11 +207,8 @@ public class AccountService {
         }
         
         if (!ObjectUtils.nullSafeEquals(account.getClientTimeZone(), oldTimeZone)) {
-            System.out.println("Updating time zone key to" + account.getModifiedOn());
             CacheKey cacheKey = CacheKey.etag(DateTimeZone.class, account.getId());
             cacheProvider.setObject(cacheKey, account.getModifiedOn());
-        } else {
-            System.out.println("DID NOT UPDATE: " + account.getClientTimeZone() + ", " + oldTimeZone);
         }
         // Create the corresponding Participant Version.
         participantVersionService.createParticipantVersionFromAccount(account);

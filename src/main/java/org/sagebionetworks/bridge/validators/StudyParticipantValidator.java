@@ -22,6 +22,7 @@ import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.apps.App;
@@ -30,8 +31,11 @@ import org.sagebionetworks.bridge.models.organizations.Organization;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.OrganizationService;
 import org.sagebionetworks.bridge.services.StudyService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class StudyParticipantValidator implements Validator {
+    private static final Logger LOG = LoggerFactory.getLogger(StudyParticipantValidator.class);
 
     private final StudyService studyService;
     private final OrganizationService organizationService;
@@ -55,14 +59,17 @@ public class StudyParticipantValidator implements Validator {
     public void validate(Object object, Errors errors) {
         StudyParticipant participant = (StudyParticipant)object;
         
-        
+        // This is an intermediary step to outright preventing these values from 
+        // being supplied via our participant APIs (such accounts should be managed
+        // through the /v1/accounts APIs for administrative accounts).
         if (StringUtils.isNotBlank(participant.getOrgMembership())) {
-            errors.rejectValue("orgMembership", "prohibited for study participants");
+            LOG.warn("Study participant created with an org membership by caller "
+                    + RequestContext.get().getCallerUserId());
         }
         if (!participant.getRoles().isEmpty()) {
-            errors.rejectValue("roles", "prohibited for study participants");
+            LOG.warn("Study participant created with roles by caller "
+                    + RequestContext.get().getCallerUserId());
         }
-        
         if (isNew) {
             if (!ValidatorUtils.participantHasValidIdentifier(participant)) {
                 errors.reject("email, phone, synapseUserId or externalId is required");

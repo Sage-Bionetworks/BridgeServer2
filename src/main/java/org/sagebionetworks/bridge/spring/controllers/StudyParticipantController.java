@@ -86,7 +86,7 @@ import org.sagebionetworks.bridge.services.ReportService;
 import org.sagebionetworks.bridge.services.Schedule2Service;
 import org.sagebionetworks.bridge.services.StudyActivityEventService;
 import org.sagebionetworks.bridge.services.StudyService;
-import org.sagebionetworks.bridge.services.UserAdminService;
+import org.sagebionetworks.bridge.services.IntegrationTestUserService;
 import org.sagebionetworks.bridge.spring.util.EtagSupport;
 import org.sagebionetworks.bridge.spring.util.EtagCacheKey;
 import org.sagebionetworks.bridge.services.AccountWorkflowService;
@@ -119,7 +119,7 @@ public class StudyParticipantController extends BaseController {
 
     private ParticipantService participantService;
     
-    private UserAdminService userAdminService;
+    private IntegrationTestUserService testUserService;
     
     private EnrollmentService enrollmentService;
     
@@ -139,8 +139,8 @@ public class StudyParticipantController extends BaseController {
     }
     
     @Autowired
-    final void setUserAdminService(UserAdminService userAdminService) {
-        this.userAdminService = userAdminService;
+    final void setIntegrationTestUserService(IntegrationTestUserService testUserService) {
+        this.testUserService = testUserService;
     }
 
     @Autowired
@@ -583,7 +583,7 @@ public class StudyParticipantController extends BaseController {
             throw new UnauthorizedException("Account is not a test account or it is already in use.");
         }
         App app = appService.getApp(session.getAppId());
-        userAdminService.deleteUser(app, account.getId());
+        testUserService.deleteUser(app, account.getId());
         return DELETE_MSG;
     }    
     
@@ -867,10 +867,10 @@ public class StudyParticipantController extends BaseController {
     private Account getValidAccountInStudy(String appId, String studyId, String idToken) {
         AccountId accountId = BridgeUtils.parseAccountId(appId, idToken);
         Account account = accountService.getAccount(accountId)
-                .orElseThrow(() -> new EntityNotFoundException(Account.class, "1"));        
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));        
 
         BridgeUtils.getElement(account.getEnrollments(), Enrollment::getStudyId, studyId)
-                .orElseThrow(() -> new EntityNotFoundException(Account.class, "2"));
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
         
         return account;
     }

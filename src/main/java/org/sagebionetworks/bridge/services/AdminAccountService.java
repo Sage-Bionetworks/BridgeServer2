@@ -121,10 +121,9 @@ public class AdminAccountService {
         return accountDao.getAppIdForUser(synapseUserId);
     }
     
-    public Account getAccount(String appId, String userToken) {
+    public Optional<Account> getAccount(String appId, String userToken) {
         AccountId accountId = BridgeUtils.parseAccountId(appId, userToken);
-        return accountDao.getAccount(accountId)
-                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+        return accountDao.getAccount(accountId);
     }
 
     public Account createAccount(String appId, Account submittedAccount) {

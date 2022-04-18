@@ -3,8 +3,6 @@ package org.sagebionetworks.bridge.services;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.Boolean.TRUE;
-import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
-import static org.sagebionetworks.bridge.BridgeUtils.addToSet;
 import static org.sagebionetworks.bridge.models.accounts.SharingScope.NO_SHARING;
 
 import java.util.Map;
@@ -33,8 +31,8 @@ import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-@Component("userAdminService")
-public class UserAdminService {
+@Component
+public class IntegrationTestUserService {
 
     private AuthenticationService authenticationService;
     private NotificationsService notificationsService;
@@ -138,53 +136,23 @@ public class UserAdminService {
         }
         Validate.entityThrowingException(SignInValidator.MINIMAL, signInBuilder.build());
         
-        // Because this skips all sorts of workflow, it must be a test_user account.
-        participant = new StudyParticipant.Builder().copyOf(participant)
-                .withDataGroups(addToSet(participant.getDataGroups(), TEST_USER_GROUP)).build();
         IdentifierHolder identifier = null;
 
         try {
             if (!participant.getRoles().isEmpty() || participant.getOrgMembership() != null) {
                 // I regret to inform you that you are actually creating an administrative account
-                Account account = Account.create();
-                account.setAppId(app.getIdentifier());
-                account.setFirstName(participant.getFirstName());
-                account.setLastName(participant.getLastName());
-                account.setAttributes(participant.getAttributes());
-                account.setEmail(participant.getEmail());
-                account.setPhone(participant.getPhone());
-                account.setPassword(participant.getPassword());
-                account.setSynapseUserId(participant.getSynapseUserId());
-                account.setStatus(participant.getStatus());
-                account.setOrgMembership(participant.getOrgMembership());
-                account.setRoles(participant.getRoles());
-                account.setClientData(participant.getClientData());
-                account.setTimeZone(participant.getTimeZone());
-                account.setSharingScope(participant.getSharingScope());
-                account.setNotifyByEmail(participant.isNotifyByEmail());
-                account.setDataGroups(participant.getDataGroups());
-                account.setLanguages(participant.getLanguages());
-                account.setClientTimeZone(participant.getClientTimeZone());
-                account.setNote(participant.getNote());
-                
-                account = adminAccountService.createAccount(app.getIdentifier(), account);
-                
-                identifier = new IdentifierHolder(account.getId());
-                participant = new StudyParticipant.Builder().copyOf(participant)
-                        .withId(account.getId()).build();
-                // force verification of of this test account
-                accountService.editAccount(AccountId.forId(account.getAppId(), account.getId()), (acct) -> {
-                    acct.setEmailVerified(TRUE);
-                    acct.setPhoneVerified(TRUE);
-                });
+                identifier = createAdminAccount(app.getIdentifier(), participant);
             } else {
                 identifier = participantService.createParticipant(app, participant, false);
-                participant = participantService.getParticipant(app, identifier.getIdentifier(), false);
+                // Not removing this although it's no longer clear why it is here. We have a clean-up
+                // test that expects this call to be present.
+                participantService.getParticipant(app, identifier.getIdentifier(), false);
             }
             
-            // We don't filter users by any of these filtering criteria in the admin API.
-            CriteriaContext context = new CriteriaContext.Builder()
-                    .withUserId(identifier.getIdentifier()).withAppId(app.getIdentifier()).build();
+            // We don't filter users by any of the filtering criteria in this test API.
+            CriteriaContext context = new CriteriaContext.Builder().withUserId(identifier.getIdentifier())
+                    .withAppId(app.getIdentifier()).build();
+            
             if (consentUser) {
                 String name = String.format("[Signature for %s]", participant.getEmail());
                 ConsentSignature signature = new ConsentSignature.Builder().withName(name)
@@ -203,8 +171,6 @@ public class UserAdminService {
                 }
             }
             if (signUserIn) {
-                // We do ignore consent state here as our intention may be to create a user who is signed in but not
-                // consented.
                 try {
                     return authenticationService.signIn(app, context, signInBuilder.build());    
                 } catch(ConsentRequiredException e) {
@@ -226,9 +192,46 @@ public class UserAdminService {
             throw e;
         }
     }
+    
+    private IdentifierHolder createAdminAccount(String appId, StudyParticipant participant) {
+        Account account = Account.create();
+        account.setAppId(appId);
+        account.setFirstName(participant.getFirstName());
+        account.setLastName(participant.getLastName());
+        account.setAttributes(participant.getAttributes());
+        account.setEmail(participant.getEmail());
+        account.setPhone(participant.getPhone());
+        account.setPassword(participant.getPassword());
+        account.setSynapseUserId(participant.getSynapseUserId());
+        account.setStatus(participant.getStatus());
+        account.setOrgMembership(participant.getOrgMembership());
+        account.setRoles(participant.getRoles());
+        account.setClientData(participant.getClientData());
+        account.setTimeZone(participant.getTimeZone());
+        account.setSharingScope(participant.getSharingScope());
+        account.setNotifyByEmail(participant.isNotifyByEmail());
+        account.setDataGroups(participant.getDataGroups());
+        account.setLanguages(participant.getLanguages());
+        account.setClientTimeZone(participant.getClientTimeZone());
+        account.setNote(participant.getNote());
+        
+        account = adminAccountService.createAccount(appId, account);
+        
+        participant = new StudyParticipant.Builder().copyOf(participant)
+                .withId(account.getId()).build();
+        // force verification of of this test account
+        accountService.editAccount(AccountId.forId(account.getAppId(), account.getId()), (acct) -> {
+            acct.setEmailVerified(TRUE);
+            acct.setPhoneVerified(TRUE);
+        });
+        return new IdentifierHolder(account.getId());
+    }
 
     /**
      * Delete the target user.
+     * 
+     * TODO: Move this code to the AccountService and call through here, then 
+     * replace references to this service outside of IntegrationTestUserController.
      *
      * @param app
      *      target user's app

@@ -69,7 +69,7 @@ import org.sagebionetworks.bridge.services.ConsentService;
 import org.sagebionetworks.bridge.services.OrganizationService;
 import org.sagebionetworks.bridge.services.RequestInfoService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
-import org.sagebionetworks.bridge.services.UserAdminService;
+import org.sagebionetworks.bridge.services.IntegrationTestUserService;
 
 public class AccountsControllerTest extends Mockito {
     
@@ -96,7 +96,7 @@ public class AccountsControllerTest extends Mockito {
     AdminAccountService mockAdminAccountService;
     
     @Mock
-    UserAdminService mockUserAdminService;
+    IntegrationTestUserService mockUserManagementService;
     
     @Mock
     AccountService mockAccountService;
@@ -304,7 +304,7 @@ public class AccountsControllerTest extends Mockito {
         
         Account existing = Account.create();
         existing.setOrgMembership(TEST_ORG_ID);
-        when(mockAdminAccountService.getAccount(TEST_APP_ID, TEST_USER_ID)).thenReturn(existing);
+        when(mockAdminAccountService.getAccount(TEST_APP_ID, TEST_USER_ID)).thenReturn(Optional.of(existing));
 
         StatusMessage retValue = controller.deleteAccount(TEST_USER_ID);
         assertEquals(retValue.getMessage(), "Member account deleted.");
