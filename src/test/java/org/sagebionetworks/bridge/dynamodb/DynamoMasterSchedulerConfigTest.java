@@ -29,7 +29,7 @@ public class DynamoMasterSchedulerConfigTest {
         
         ObjectNode body = JsonNodeFactory.instance.objectNode();
         body.put("a", "bodyString");
-        objNode.put("d", body);
+        objNode.set("d", body);
         
         MasterSchedulerConfig config = MasterSchedulerConfig.create();
         config.setScheduleId(SCHEDULE_ID);

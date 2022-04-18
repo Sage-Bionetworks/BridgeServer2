@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
-import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
+import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 import java.util.List;
 
@@ -48,7 +48,7 @@ public class ScheduleController extends BaseController {
     }
     
     @Deprecated
-    @GetMapping(path="/v3/schedules", produces={APPLICATION_JSON_UTF8_VALUE})
+    @GetMapping(path="/v3/schedules", produces={APPLICATION_JSON_VALUE})
     public String getSchedulesV3() {
         List<Schedule> schedules = getSchedulesInternal();
         

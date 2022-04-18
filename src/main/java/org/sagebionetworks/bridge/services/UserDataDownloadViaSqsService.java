@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
-import com.amazonaws.services.sqs.AmazonSQSClient;
+import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.model.SendMessageResult;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -33,7 +33,7 @@ public class UserDataDownloadViaSqsService implements UserDataDownloadService {
     static final String UDD_SERVICE_TITLE = "UDD";
 
     private BridgeConfig bridgeConfig;
-    private AmazonSQSClient sqsClient;
+    private AmazonSQS sqsClient;
 
     /** Bridge config, used to get the SQS queue URL. */
     @Autowired
@@ -43,7 +43,7 @@ public class UserDataDownloadViaSqsService implements UserDataDownloadService {
 
     /** SQS client. */
     @Autowired
-    public final void setSqsClient(AmazonSQSClient sqsClient) {
+    public final void setSqsClient(AmazonSQS sqsClient) {
         this.sqsClient = sqsClient;
     }
 

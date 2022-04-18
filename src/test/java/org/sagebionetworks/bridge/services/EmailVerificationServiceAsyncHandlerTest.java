@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.amazonaws.AmazonServiceException;
-import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClient;
+import com.amazonaws.services.simpleemail.AmazonSimpleEmailService;
 import com.amazonaws.services.simpleemail.model.GetIdentityNotificationAttributesRequest;
 import com.amazonaws.services.simpleemail.model.GetIdentityNotificationAttributesResult;
 import com.amazonaws.services.simpleemail.model.IdentityNotificationAttributes;
@@ -32,7 +32,7 @@ public class EmailVerificationServiceAsyncHandlerTest {
     private static final String DUMMY_NOTIFICATION_ARN = "my-notification-topic";
     private static final String EMAIL_ADDRESS = "example@example.com";
 
-    private AmazonSimpleEmailServiceClient mockSesClient;
+    private AmazonSimpleEmailService mockSesClient;
     private EmailVerificationService.AsyncSnsTopicHandler asyncHandler;
     private int numSetBounceNotificationCalls;
     private int numSetComplaintNotificationCalls;
@@ -46,7 +46,7 @@ public class EmailVerificationServiceAsyncHandlerTest {
 
         // Mock SES Client. Each call should fail once, then succeed. (Get notification topic call will be mocked
         // individually in tests, since the result varies from test to test.)
-        mockSesClient = mock(AmazonSimpleEmailServiceClient.class);
+        mockSesClient = mock(AmazonSimpleEmailService.class);
         when(mockSesClient.verifyEmailIdentity(any())).thenThrow(makeAwsInternalError()).thenReturn(
                 new VerifyEmailIdentityResult());
 

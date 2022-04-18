@@ -24,7 +24,7 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.cache.CacheKey;
 
-import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClient;
+import com.amazonaws.services.simpleemail.AmazonSimpleEmailService;
 import com.amazonaws.services.simpleemail.model.GetIdentityVerificationAttributesRequest;
 import com.amazonaws.services.simpleemail.model.GetIdentityVerificationAttributesResult;
 import com.amazonaws.services.simpleemail.model.IdentityVerificationAttributes;
@@ -37,7 +37,7 @@ public class EmailVerificationServiceTest {
     private static final CacheKey EMAIL_ADDRESS_KEY = CacheKey.emailVerification(EMAIL_ADDRESS);
 
     @Mock
-    private AmazonSimpleEmailServiceClient sesClient;
+    private AmazonSimpleEmailService sesClient;
     @Mock
     private ExecutorService asyncExecutorService;
     @Mock

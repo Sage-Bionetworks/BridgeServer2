@@ -22,7 +22,7 @@ import static org.sagebionetworks.bridge.models.schedules2.timelines.Scheduler.I
 import static org.sagebionetworks.bridge.models.sms.SmsType.PROMOTIONAL;
 import static org.springframework.http.HttpStatus.NOT_MODIFIED;
 import static org.springframework.http.HttpStatus.OK;
-import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
+import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 import java.util.List;
 import java.util.Set;
@@ -381,7 +381,7 @@ public class StudyParticipantController extends BaseController {
     }
 
     @GetMapping(path="/v5/studies/{studyId}/participants/{userId}", 
-            produces={APPLICATION_JSON_UTF8_VALUE})
+            produces={APPLICATION_JSON_VALUE})
     public String getParticipant(@PathVariable String studyId, @PathVariable String userId,
             @RequestParam(defaultValue = "true") boolean consents) throws Exception {
         UserSession session = getAdministrativeSession();
@@ -407,7 +407,7 @@ public class StudyParticipantController extends BaseController {
     }
     
     @GetMapping(path = "/v5/studies/{studyId}/participants/{userId}/requestInfo", produces = {
-            APPLICATION_JSON_UTF8_VALUE })
+            APPLICATION_JSON_VALUE })
     public String getRequestInfo(@PathVariable String studyId, @PathVariable String userId) throws JsonProcessingException {
         UserSession session = getAdministrativeSession();
         Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);

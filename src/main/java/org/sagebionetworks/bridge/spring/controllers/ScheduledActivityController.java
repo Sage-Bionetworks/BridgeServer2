@@ -7,7 +7,7 @@ import static org.sagebionetworks.bridge.BridgeUtils.getIntOrDefault;
 import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.schedules.ScheduledActivity.SCHEDULED_ACTIVITY_WRITER;
 import static org.sagebionetworks.bridge.time.DateUtils.parseZoneFromOffsetString;
-import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
+import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -72,7 +72,7 @@ public class ScheduledActivityController extends BaseController {
     }
     
     @Deprecated
-    @GetMapping(path="/v3/activities", produces={APPLICATION_JSON_UTF8_VALUE})
+    @GetMapping(path="/v3/activities", produces={APPLICATION_JSON_VALUE})
     public String getScheduledActivities(@RequestParam(required = false) String until,
             @RequestParam(required = false) String offset, @RequestParam(required = false) String daysAhead,
             @RequestParam(required = false) String minimumPerSchedule) throws Exception {
@@ -113,7 +113,7 @@ public class ScheduledActivityController extends BaseController {
         return node;
     }
 
-    @GetMapping(path="/v4/activities/{activityType}/{referentGuid}", produces={APPLICATION_JSON_UTF8_VALUE})
+    @GetMapping(path="/v4/activities/{activityType}/{referentGuid}", produces={APPLICATION_JSON_VALUE})
     public String getActivityHistoryV3WithActivityType(@PathVariable String activityType,
             @PathVariable String referentGuid, @RequestParam(required = false) String scheduledOnStart,
             @RequestParam(required = false) String scheduledOnEnd, @RequestParam(required = false) String offsetKey,
@@ -122,7 +122,7 @@ public class ScheduledActivityController extends BaseController {
                 pageSize);
     }
     
-    @GetMapping(path="/v4/activities/{referentGuid}", produces={APPLICATION_JSON_UTF8_VALUE})
+    @GetMapping(path="/v4/activities/{referentGuid}", produces={APPLICATION_JSON_VALUE})
     public String getActivityHistoryV3(@PathVariable String referentGuid,
             @RequestParam(required = false) String scheduledOnStart,
             @RequestParam(required = false) String scheduledOnEnd, @RequestParam(required = false) String offsetKey,
@@ -130,7 +130,7 @@ public class ScheduledActivityController extends BaseController {
         return getActivityHistoryV3Internal(null, referentGuid, scheduledOnStart, scheduledOnEnd, offsetKey, pageSize);
     }
 
-    @GetMapping(path="/v4/activities", produces={APPLICATION_JSON_UTF8_VALUE})
+    @GetMapping(path="/v4/activities", produces={APPLICATION_JSON_VALUE})
     public String getScheduledActivitiesByDateRange(@RequestParam String startTime, @RequestParam String endTime)
             throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();

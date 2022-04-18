@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
 
@@ -62,7 +62,7 @@ public class BulkDownloadUtil {
         AbstractApplicationContext springCtx = new ClassPathXmlApplicationContext("application-context.xml");
         springCtx.registerShutdownHook();
 
-        AmazonDynamoDBClient ddbClient = springCtx.getBean(AmazonDynamoDBClient.class);
+        AmazonDynamoDB ddbClient = springCtx.getBean(AmazonDynamoDB.class);
         S3DownloadHandler s3DownloadHandler = springCtx.getBean(S3DownloadHandler.class);
         DecryptHandler decryptHandler = springCtx.getBean(DecryptHandler.class);
         UnzipHandler unzipHandler = springCtx.getBean(UnzipHandler.class);

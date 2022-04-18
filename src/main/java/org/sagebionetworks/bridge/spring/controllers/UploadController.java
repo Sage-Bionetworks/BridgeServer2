@@ -5,7 +5,7 @@ import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
-import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
+import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 import java.util.EnumSet;
 
@@ -64,7 +64,7 @@ public class UploadController extends BaseController {
     
     /** Gets validation status and messages for the given upload ID. 
      * @throws JsonProcessingException */
-    @GetMapping(path={"/v3/uploadstatuses/{uploadId}", "/api/v1/upload/{uploadId}/status"}, produces={APPLICATION_JSON_UTF8_VALUE})
+    @GetMapping(path={"/v3/uploadstatuses/{uploadId}", "/api/v1/upload/{uploadId}/status"}, produces={APPLICATION_JSON_VALUE})
     public String getValidationStatus(@PathVariable String uploadId) throws JsonProcessingException {
         UserSession session = getAuthenticatedAndConsentedSession();
         
@@ -120,7 +120,7 @@ public class UploadController extends BaseController {
      * allow redrives and backfills.
      * </p>
      */
-    @PostMapping(path={"/v3/uploads/{uploadId}/complete", "/api/v1/upload/{uploadId}/complete"}, produces={APPLICATION_JSON_UTF8_VALUE})
+    @PostMapping(path={"/v3/uploads/{uploadId}/complete", "/api/v1/upload/{uploadId}/complete"}, produces={APPLICATION_JSON_VALUE})
     public String uploadComplete(@PathVariable String uploadId,
             @RequestParam(defaultValue = "false") boolean synchronous,
             @RequestParam(defaultValue = "false") boolean redrive) throws Exception {

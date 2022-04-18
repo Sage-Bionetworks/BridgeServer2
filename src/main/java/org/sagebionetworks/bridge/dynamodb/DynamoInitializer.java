@@ -4,7 +4,6 @@ import java.util.Collection;
 import java.util.Map;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.dynamodbv2.model.CreateTableRequest;
 import com.amazonaws.services.dynamodbv2.model.DescribeTableResult;
 import com.amazonaws.services.dynamodbv2.model.ResourceNotFoundException;
@@ -28,7 +27,7 @@ public class DynamoInitializer {
 
     @Autowired
     public DynamoInitializer(BridgeConfig bridgeConfig,
-                             AmazonDynamoDBClient dynamoDBClient,
+                             AmazonDynamoDB dynamoDBClient,
                              DynamoUtils dynamoUtils, DynamoNamingHelper dynamoNamingHelper) {
         this.bridgeConfig = bridgeConfig;
         this.dynamoDBClient = dynamoDBClient;

@@ -30,7 +30,7 @@ import org.sagebionetworks.bridge.validators.NotificationRegistrationValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
 import com.amazonaws.AmazonServiceException;
-import com.amazonaws.services.sns.AmazonSNSClient;
+import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.model.PublishRequest;
 import com.amazonaws.services.sns.model.PublishResult;
 import com.google.common.collect.Sets;
@@ -47,7 +47,7 @@ public class NotificationsService {
     private AppService appService;
     private NotificationRegistrationDao notificationRegistrationDao;
     private NotificationTopicService notificationTopicService;
-    private AmazonSNSClient snsClient;
+    private AmazonSNS snsClient;
 
     /** Participant service, if we need to get the participant. */
     @Autowired
@@ -75,7 +75,7 @@ public class NotificationsService {
     }
 
     @Resource(name = "snsClient")
-    final void setSnsClient(AmazonSNSClient snsClient) {
+    final void setSnsClient(AmazonSNS snsClient) {
         this.snsClient = snsClient;
     }
 

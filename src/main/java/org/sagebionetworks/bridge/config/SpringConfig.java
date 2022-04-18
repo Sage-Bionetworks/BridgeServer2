@@ -23,17 +23,21 @@ import com.amazonaws.ClientConfiguration;
 import com.amazonaws.PredefinedClientConfigurations;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.services.datapipeline.DataPipelineClient;
+import com.amazonaws.regions.Regions;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClient;
-import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClient;
-import com.amazonaws.services.sns.AmazonSNSClient;
-import com.amazonaws.services.sqs.AmazonSQSClient;
+import com.amazonaws.services.securitytoken.AWSSecurityTokenService;
+import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClientBuilder;
+import com.amazonaws.services.simpleemail.AmazonSimpleEmailService;
+import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClientBuilder;
+import com.amazonaws.services.sns.AmazonSNS;
+import com.amazonaws.services.sns.AmazonSNSClientBuilder;
+import com.amazonaws.services.sqs.AmazonSQS;
+import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.LoadingCache;
@@ -223,30 +227,29 @@ public class SpringConfig {
 
     @Bean(name = "dynamoDbClient")
     @Resource(name = "awsCredentials")
-    public AmazonDynamoDBClient dynamoDbClient() {
+    public AmazonDynamoDB dynamoDbClient() {
         int maxRetries = bridgeConfig().getPropertyAsInt("ddb.max.retries");
         ClientConfiguration awsClientConfig = PredefinedClientConfigurations.dynamoDefault()
                 .withMaxErrorRetry(maxRetries);
-        return new AmazonDynamoDBClient(awsCredentials(), awsClientConfig);
+        
+        return AmazonDynamoDBClientBuilder.standard()
+                .withCredentials(new AWSStaticCredentialsProvider(awsCredentials()))
+                .withClientConfiguration(awsClientConfig).build();
     }
     
     @Bean(name = "snsClient")
     @Resource(name = "awsCredentials")
-    public AmazonSNSClient snsClient() {
-        return new AmazonSNSClient(awsCredentials());
-    }
-
-    @Bean(name = "dataPipelineClient")
-    @Resource(name = "awsCredentials")
-    public DataPipelineClient dataPipelineClient(BasicAWSCredentials awsCredentials) {
-        return new DataPipelineClient(awsCredentials);
+    public AmazonSNS snsClient() {
+        return AmazonSNSClientBuilder.standard()
+                .withCredentials(new AWSStaticCredentialsProvider(awsCredentials()))
+                .build();
     }
 
     @Bean(name = "s3Client")
     @Resource(name = "awsCredentials")
-    public AmazonS3Client s3Client(BasicAWSCredentials awsCredentials) {
+    public AmazonS3 s3Client(BasicAWSCredentials awsCredentials) {
         // Setting region is necessary to prevent bug BRIDGE-2910. Don't remove.
-        return new AmazonS3Client(awsCredentials).withRegion(US_EAST_1);
+        return AmazonS3ClientBuilder.standard().withRegion(US_EAST_1).build();
     }
 
     // This client needs to be configured to handle S3 file paths differently, so we can use bucket
@@ -260,8 +263,9 @@ public class SpringConfig {
     
     @Bean(name ="uploadTokenServiceClient")
     @Resource(name = "awsCredentials")
-    public AWSSecurityTokenServiceClient uploadTokenServiceClient(BasicAWSCredentials awsCredentials) {
-        return new AWSSecurityTokenServiceClient(awsCredentials);
+    public AWSSecurityTokenService uploadTokenServiceClient(BasicAWSCredentials awsCredentials) {
+        return AWSSecurityTokenServiceClientBuilder.standard()
+                .withCredentials(new AWSStaticCredentialsProvider(awsCredentials)).build();
     }
 
     @Bean(name = "md5DigestUtils")
@@ -279,14 +283,17 @@ public class SpringConfig {
 
     @Bean(name = "sesClient")
     @Resource(name="awsCredentials")
-    public AmazonSimpleEmailServiceClient sesClient(BasicAWSCredentials awsCredentials) {
-        return new AmazonSimpleEmailServiceClient(awsCredentials);
+    public AmazonSimpleEmailService sesClient(BasicAWSCredentials awsCredentials) {
+        return AmazonSimpleEmailServiceClientBuilder.standard()
+                .withRegion(Regions.US_EAST_1)
+                .withCredentials(new AWSStaticCredentialsProvider(awsCredentials)).build();
     }
 
     @Bean(name = "sqsClient")
     @Resource(name = "awsCredentials")
-    public AmazonSQSClient sqsClient(BasicAWSCredentials awsCredentials) {
-        return new AmazonSQSClient(awsCredentials);
+    public AmazonSQS sqsClient(BasicAWSCredentials awsCredentials) {
+        return AmazonSQSClientBuilder.standard()
+                .withCredentials(new AWSStaticCredentialsProvider(awsCredentials)).build();
     }
 
     @Bean(name = "asyncExecutorService")
@@ -478,28 +485,28 @@ public class SpringConfig {
     
     @Bean(name = "uploadHealthCodeRequestedOnIndex")
     @Autowired
-    public DynamoIndexHelper uploadHealthCodeRequestedOnIndex(AmazonDynamoDBClient dynamoDBClient, DynamoUtils dynamoUtils,
+    public DynamoIndexHelper uploadHealthCodeRequestedOnIndex(AmazonDynamoDB dynamoDBClient, DynamoUtils dynamoUtils,
             DynamoNamingHelper dynamoNamingHelper) {
         return DynamoIndexHelper.create(DynamoUpload2.class, "healthCode-requestedOn-index", dynamoDBClient, dynamoNamingHelper, dynamoUtils);
     }
     
     @Bean(name = "healthCodeActivityGuidIndex")
     @Autowired
-    public DynamoIndexHelper healthCodeActivityGuidIndex(AmazonDynamoDBClient dynamoDBClient, DynamoUtils dynamoUtils,
+    public DynamoIndexHelper healthCodeActivityGuidIndex(AmazonDynamoDB dynamoDBClient, DynamoUtils dynamoUtils,
             DynamoNamingHelper dynamoNamingHelper) {
         return DynamoIndexHelper.create(DynamoScheduledActivity.class, "healthCodeActivityGuid-scheduledOnUTC-index", dynamoDBClient, dynamoNamingHelper, dynamoUtils);
     }
     
     @Bean(name = "uploadStudyIdRequestedOnIndex")
     @Autowired
-    public DynamoIndexHelper uploadStudyIdRequestedOnIndex(AmazonDynamoDBClient dynamoDBClient, DynamoUtils dynamoUtils,
+    public DynamoIndexHelper uploadStudyIdRequestedOnIndex(AmazonDynamoDB dynamoDBClient, DynamoUtils dynamoUtils,
             DynamoNamingHelper dynamoNamingHelper) {
         return DynamoIndexHelper.create(DynamoUpload2.class, "studyId-requestedOn-index", dynamoDBClient, dynamoNamingHelper, dynamoUtils);
     }
 
     @Bean(name = "healthDataHealthCodeCreatedOnIndex")
     @Autowired
-    public DynamoIndexHelper healthDataHealthCodeCreatedOnIndex(AmazonDynamoDBClient dynamoDBClient,
+    public DynamoIndexHelper healthDataHealthCodeCreatedOnIndex(AmazonDynamoDB dynamoDBClient,
                                                        DynamoUtils dynamoUtils,
                                                        DynamoNamingHelper dynamoNamingHelper) {
         return DynamoIndexHelper.create(DynamoHealthDataRecord.class, "healthCode-createdOn-index", dynamoDBClient, dynamoNamingHelper, dynamoUtils);
@@ -507,7 +514,7 @@ public class SpringConfig {
 
     @Bean(name = "healthDataUploadDateIndex")
     @Autowired
-    public DynamoIndexHelper healthDataUploadDateIndexDynamoUtils(AmazonDynamoDBClient dynamoDBClient,
+    public DynamoIndexHelper healthDataUploadDateIndexDynamoUtils(AmazonDynamoDB dynamoDBClient,
                                                                   DynamoUtils dynamoUtils,
                                                                   DynamoNamingHelper dynamoNamingHelper) {
         return DynamoIndexHelper.create(DynamoHealthDataRecord.class, "uploadDate-index", dynamoDBClient, dynamoNamingHelper, dynamoUtils);
@@ -515,7 +522,7 @@ public class SpringConfig {
     
     @Bean(name = "activitySchedulePlanGuidIndex")
     @Autowired
-    public DynamoIndexHelper activitySchedulePlanGuidIndex(AmazonDynamoDBClient dynamoDBClient,
+    public DynamoIndexHelper activitySchedulePlanGuidIndex(AmazonDynamoDB dynamoDBClient,
                                                            DynamoUtils dynamoUtils,
                                                            DynamoNamingHelper dynamoNamingHelper) {
         return DynamoIndexHelper
@@ -524,7 +531,7 @@ public class SpringConfig {
     
     @Bean(name = "healthCodeReferentGuidIndex")
     @Autowired
-    public DynamoIndexHelper healthCodeReferentGuidIndex(AmazonDynamoDBClient dynamoDBClient, DynamoUtils dynamoUtils,
+    public DynamoIndexHelper healthCodeReferentGuidIndex(AmazonDynamoDB dynamoDBClient, DynamoUtils dynamoUtils,
             DynamoNamingHelper dynamoNamingHelper) {
         return DynamoIndexHelper.create(DynamoScheduledActivity.class, "healthCode-referentGuid-index", dynamoDBClient,
                 dynamoNamingHelper, dynamoUtils);
