@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 
 import com.amazonaws.auth.AWSSessionCredentials;
 import com.amazonaws.auth.BasicSessionCredentials;
-import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClient;
+import com.amazonaws.services.securitytoken.AWSSecurityTokenService;
 import com.amazonaws.services.securitytoken.model.Credentials;
 import com.amazonaws.services.securitytoken.model.GetSessionTokenRequest;
 import com.amazonaws.services.securitytoken.model.GetSessionTokenResult;
@@ -31,12 +31,12 @@ public class UploadSessionCredentialsService {
      */
     private static final int MARGIN_IN_SECONDS = 300; // 5 minutes
 
-    private final AWSSecurityTokenServiceClient tokenServiceClient;
+    private final AWSSecurityTokenService tokenServiceClient;
 
     private volatile Credentials credentials;
 
     @Autowired
-    public UploadSessionCredentialsService(AWSSecurityTokenServiceClient tokenServiceClient) {
+    public UploadSessionCredentialsService(AWSSecurityTokenService tokenServiceClient) {
         this.tokenServiceClient = tokenServiceClient;
         credentials = generateCredentials();
     }

@@ -16,7 +16,7 @@ import org.sagebionetworks.bridge.models.notifications.TopicSubscription;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
-import com.amazonaws.services.sns.AmazonSNSClient;
+import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.model.SubscribeRequest;
 import com.amazonaws.services.sns.model.SubscribeResult;
 
@@ -25,7 +25,7 @@ public class DynamoTopicSubscriptionDao implements TopicSubscriptionDao {
 
     private DynamoDBMapper mapper;
     
-    private AmazonSNSClient snsClient;
+    private AmazonSNS snsClient;
     
     @Resource(name = "topicSubscriptionMapper")
     final void setTopicSubscriptionMapper(DynamoDBMapper mapper) {
@@ -33,7 +33,7 @@ public class DynamoTopicSubscriptionDao implements TopicSubscriptionDao {
     }
     
     @Resource(name = "snsClient")
-    final void setSnsClient(AmazonSNSClient snsClient) {
+    final void setSnsClient(AmazonSNS snsClient) {
         this.snsClient = snsClient;
     }
     

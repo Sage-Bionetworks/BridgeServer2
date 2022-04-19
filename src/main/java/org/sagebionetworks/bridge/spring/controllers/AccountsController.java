@@ -12,7 +12,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 import static org.springframework.http.HttpStatus.ACCEPTED;
 import static org.springframework.http.HttpStatus.CREATED;
-import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
+import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -139,7 +139,7 @@ public class AccountsController extends BaseController  {
     
     
     @GetMapping(path = { "/v1/accounts/{userId}/requestInfo" }, 
-            produces = { APPLICATION_JSON_UTF8_VALUE })
+            produces = { APPLICATION_JSON_VALUE })
     public String getRequestInfo(@PathVariable String userId) 
             throws JsonProcessingException {
         UserSession session = getAuthenticatedSession(ORG_ADMIN);

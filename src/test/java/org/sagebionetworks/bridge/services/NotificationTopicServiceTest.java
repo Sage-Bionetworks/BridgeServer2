@@ -40,7 +40,7 @@ import org.sagebionetworks.bridge.models.notifications.SubscriptionStatus;
 import org.sagebionetworks.bridge.models.notifications.NotificationTopic;
 import org.sagebionetworks.bridge.models.notifications.TopicSubscription;
 
-import com.amazonaws.services.sns.AmazonSNSClient;
+import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.model.PublishRequest;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -126,7 +126,7 @@ public class NotificationTopicServiceTest {
     private NotificationTopicDao mockTopicDao;
     
     @Mock
-    private AmazonSNSClient mockSnsClient;
+    private AmazonSNS mockSnsClient;
     
     @Mock
     private NotificationRegistrationDao mockRegistrationDao;

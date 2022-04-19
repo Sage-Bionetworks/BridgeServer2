@@ -51,7 +51,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import com.amazonaws.services.sqs.AmazonSQSClient;
+import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.model.SendMessageResult;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.ImmutableList;
@@ -253,7 +253,7 @@ public class ParticipantServiceTest extends Mockito {
     private TemplateService templateService;
 
     @Mock
-    private AmazonSQSClient sqsClient;
+    private AmazonSQS sqsClient;
 
     @Mock
     private BridgeConfig bridgeConfig;

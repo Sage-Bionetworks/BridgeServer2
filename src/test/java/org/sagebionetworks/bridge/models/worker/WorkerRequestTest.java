@@ -19,6 +19,7 @@ public class WorkerRequestTest {
             this.value = value;
         }
 
+        @SuppressWarnings("unused")
         public String getValue() {
             return value;
         }

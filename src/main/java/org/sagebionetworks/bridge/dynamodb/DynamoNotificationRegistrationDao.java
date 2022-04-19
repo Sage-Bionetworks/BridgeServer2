@@ -20,7 +20,7 @@ import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
-import com.amazonaws.services.sns.AmazonSNSClient;
+import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.model.CreatePlatformEndpointRequest;
 import com.amazonaws.services.sns.model.CreatePlatformEndpointResult;
 import com.amazonaws.services.sns.model.DeleteEndpointRequest;
@@ -39,7 +39,7 @@ public class DynamoNotificationRegistrationDao implements NotificationRegistrati
 
     private DynamoDBMapper mapper;
     
-    private AmazonSNSClient snsClient;
+    private AmazonSNS snsClient;
     
     @Resource(name = "notificationRegistrationMapper")
     final void setNotificationRegistrationMapper(DynamoDBMapper mapper) {
@@ -47,7 +47,7 @@ public class DynamoNotificationRegistrationDao implements NotificationRegistrati
     }
     
     @Resource(name = "snsClient")
-    final void setSnsClient(AmazonSNSClient snsClient) {
+    final void setSnsClient(AmazonSNS snsClient) {
         this.snsClient = snsClient;
     }
 

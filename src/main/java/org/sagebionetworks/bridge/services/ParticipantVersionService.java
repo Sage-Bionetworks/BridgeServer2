@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import com.amazonaws.services.sqs.AmazonSQSClient;
+import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.model.SendMessageResult;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -40,7 +40,7 @@ public class ParticipantVersionService {
 
     private AppService appService;
     private ParticipantVersionDao participantVersionDao;
-    private AmazonSQSClient sqsClient;
+    private AmazonSQS sqsClient;
     private String workerQueueUrl;
 
     @Autowired
@@ -59,7 +59,7 @@ public class ParticipantVersionService {
     }
 
     @Autowired
-    public final void setSqsClient(AmazonSQSClient sqsClient) {
+    public final void setSqsClient(AmazonSQS sqsClient) {
         this.sqsClient = sqsClient;
     }
 

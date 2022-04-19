@@ -3,7 +3,7 @@ package org.sagebionetworks.bridge.spring.controllers;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
-import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
+import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 import java.util.List;
 
@@ -40,7 +40,7 @@ public class SubpopulationController extends BaseController {
         this.subpopService = subpopService;
     }
 
-    @GetMapping(path="/v3/subpopulations", produces={APPLICATION_JSON_UTF8_VALUE})
+    @GetMapping(path="/v3/subpopulations", produces={APPLICATION_JSON_VALUE})
     public String getAllSubpopulations(@RequestParam(defaultValue = "false") boolean includeDeleted) throws Exception {
         // Allowing study coordinator access to subpopulations should be temporary, as we are
         // going to revamp our consent system.
@@ -77,7 +77,7 @@ public class SubpopulationController extends BaseController {
         return new GuidVersionHolder(subpop.getGuidString(), subpop.getVersion());
     }
 
-    @GetMapping(path="/v3/subpopulations/{guid}", produces={APPLICATION_JSON_UTF8_VALUE})
+    @GetMapping(path="/v3/subpopulations/{guid}", produces={APPLICATION_JSON_VALUE})
     public String getSubpopulation(@PathVariable String guid) throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER);
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);

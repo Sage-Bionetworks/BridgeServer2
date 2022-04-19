@@ -170,10 +170,10 @@ public class TestUtils {
                 if (restAnn != null && method.getReturnType() == String.class) {
                     if (annClazz == GetMapping.class) {
                         GetMapping gm = (GetMapping)ann;
-                        assertEquals(gm.produces()[0], MediaType.APPLICATION_JSON_UTF8_VALUE);
+                        assertEquals(gm.produces()[0], MediaType.APPLICATION_JSON_VALUE);
                     } else if (annClazz == PostMapping.class) {
                         PostMapping pm = (PostMapping)ann;
-                        assertEquals(pm.produces()[0], MediaType.APPLICATION_JSON_UTF8_VALUE);
+                        assertEquals(pm.produces()[0], MediaType.APPLICATION_JSON_VALUE);
                     }
                 }
                 return ann;

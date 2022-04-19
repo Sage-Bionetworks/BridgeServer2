@@ -8,7 +8,7 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.List;
 
-import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import com.google.common.base.Charsets;
@@ -68,7 +68,7 @@ public class S3HelperTest {
         mockS3Object.setObjectContent(mockS3Stream);
 
         // mock S3 client
-        AmazonS3Client mockS3Client = mock(AmazonS3Client.class);
+        AmazonS3 mockS3Client = mock(AmazonS3.class);
         when(mockS3Client.getObject(bucket, key)).thenReturn(mockS3Object);
 
         // set up test S3 helper
