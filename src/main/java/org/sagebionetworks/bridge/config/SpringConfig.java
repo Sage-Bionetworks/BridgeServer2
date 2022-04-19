@@ -28,7 +28,6 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.securitytoken.AWSSecurityTokenService;
 import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClientBuilder;
@@ -272,7 +271,7 @@ public class SpringConfig {
 
     @Bean(name = "s3Helper")
     @Resource(name = "s3Client")
-    public S3Helper s3Helper(AmazonS3Client s3Client) {
+    public S3Helper s3Helper(AmazonS3 s3Client) {
         S3Helper s3Helper = new S3Helper();
         s3Helper.setS3Client(s3Client);
         return s3Helper;
