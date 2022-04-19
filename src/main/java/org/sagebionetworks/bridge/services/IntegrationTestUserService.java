@@ -217,7 +217,7 @@ public class IntegrationTestUserService {
         
         account = adminAccountService.createAccount(appId, account);
         
-        // force verification of of this test account
+        // force verification of this test account
         accountService.editAccount(AccountId.forId(account.getAppId(), account.getId()), (acct) -> {
             acct.setEmailVerified(TRUE);
             acct.setPhoneVerified(TRUE);
@@ -228,9 +228,6 @@ public class IntegrationTestUserService {
     /**
      * Delete the target user.
      * 
-     * TODO: Move this code to the AccountService and call through here, then 
-     * replace references to this service outside of IntegrationTestUserController.
-     *
      * @param app
      *      target user's app
      * @param id

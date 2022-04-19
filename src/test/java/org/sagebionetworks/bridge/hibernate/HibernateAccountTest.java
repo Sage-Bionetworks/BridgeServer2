@@ -109,6 +109,11 @@ public class HibernateAccountTest {
         account.setNote(TEST_NOTE);
         account.setClientTimeZone(TEST_CLIENT_TIME_ZONE);
         account.setAdmin(TRUE);
+        HibernateAccountConsentKey fooConsentKey = new HibernateAccountConsentKey("foo-guid", 1111);
+        HibernateAccountConsent fooConsent = new HibernateAccountConsent();
+        Map<HibernateAccountConsentKey, HibernateAccountConsent> originalConsentMap = new HashMap<>();
+        originalConsentMap.put(fooConsentKey, fooConsent);
+        account.setConsents(originalConsentMap);
         
         Enrollment en1 = Enrollment.create(TEST_APP_ID, "studyA", TEST_USER_ID);
         Enrollment en2 = Enrollment.create(TEST_APP_ID, "studyB", TEST_USER_ID);

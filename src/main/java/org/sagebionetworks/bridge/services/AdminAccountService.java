@@ -34,6 +34,7 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.LimitExceededException;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
@@ -52,6 +53,7 @@ import com.google.common.collect.Sets;
 
 @Component
 public class AdminAccountService {
+    public static final String CALLER_NOT_ADMIN_MSG = "Caller must be an administrative user.";
 
     private AppService appService;
     private AccountWorkflowService accountWorkflowService;
@@ -203,13 +205,16 @@ public class AdminAccountService {
             throw new EntityNotFoundException(Account.class);
         }
         account.setPassword(null); // don’t validate this value
-        
-        Validator validator = new AdminAccountValidator(app.getPasswordPolicy(), app.getUserProfileAttributes());
-        Validate.entityThrowingException(validator, account);
-        
+
         AccountId accountId = AccountId.forId(appId,  account.getId());
         Account persistedAccount = accountDao.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
+        if (!persistedAccount.isAdmin()) {
+            throw new UnauthorizedException(CALLER_NOT_ADMIN_MSG);
+        }
+
+        Validator validator = new AdminAccountValidator(app.getPasswordPolicy(), app.getUserProfileAttributes());
+        Validate.entityThrowingException(validator, account);
         
         // None of these values should be changeable by the user.
         account.setAppId(persistedAccount.getAppId());

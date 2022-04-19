@@ -48,6 +48,7 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.LimitExceededException;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
@@ -496,6 +497,7 @@ public class AdminAccountServiceTest extends Mockito {
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
         
         Account persistedAccount = Account.create();
+        persistedAccount.setAdmin(TRUE);
         persistedAccount.setId(TEST_USER_ID);
         persistedAccount.setAppId(TEST_APP_ID);
         persistedAccount.setEmail(EMAIL);
@@ -579,6 +581,25 @@ public class AdminAccountServiceTest extends Mockito {
         verify(mockAccountWorkflowService).sendPhoneVerificationToken(app, TEST_USER_ID, changedPhone);
     }
     
+    @Test(expectedExceptions = UnauthorizedException.class, 
+            expectedExceptionsMessageRegExp = AdminAccountService.CALLER_NOT_ADMIN_MSG)
+    public void updateAccount_cannotEditNonAdminUser() {
+        App app = App.create();
+        app.setUserProfileAttributes(ImmutableSet.of("a"));
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
+        
+        Account persistedAccount = Account.create();
+        persistedAccount.setAdmin(FALSE);
+
+        when(mockAccountDao.getAccount(any())).thenReturn(Optional.of(persistedAccount));
+
+        Account account = Account.create();
+        account.setId(TEST_USER_ID);
+        account.setAdmin(TRUE); // a lie
+        
+        service.updateAccount(TEST_APP_ID, account);
+    }
+    
     @Test(expectedExceptions = EntityNotFoundException.class, 
             expectedExceptionsMessageRegExp = "App not found.")
     public void updateAccount_appNotFound() {
@@ -618,6 +639,7 @@ public class AdminAccountServiceTest extends Mockito {
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
         
         Account persistedAccount = Account.create();
+        persistedAccount.setAdmin(TRUE);
         persistedAccount.setAppId(TEST_APP_ID);
         persistedAccount.setId(TEST_USER_ID);
         persistedAccount.setEmail(EMAIL);
@@ -653,6 +675,7 @@ public class AdminAccountServiceTest extends Mockito {
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
         
         Account persistedAccount = Account.create();
+        persistedAccount.setAdmin(TRUE);
         persistedAccount.setStatus(AccountStatus.DISABLED);
 
         when(mockAccountDao.getAccount(any())).thenReturn(Optional.of(persistedAccount));
@@ -675,6 +698,7 @@ public class AdminAccountServiceTest extends Mockito {
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
         
         Account persistedAccount = Account.create();
+        persistedAccount.setAdmin(TRUE);
         persistedAccount.setEmail(EMAIL);
         persistedAccount.setEmailVerified(TRUE);
         persistedAccount.setStatus(AccountStatus.DISABLED);
@@ -700,6 +724,7 @@ public class AdminAccountServiceTest extends Mockito {
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
         
         Account persistedAccount = Account.create();
+        persistedAccount.setAdmin(TRUE);
         persistedAccount.setEmail(EMAIL);
         persistedAccount.setEmailVerified(TRUE);
         persistedAccount.setStatus(AccountStatus.DISABLED);
