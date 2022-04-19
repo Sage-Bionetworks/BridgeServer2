@@ -11,7 +11,7 @@ import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.models.files.FileDispositionType.INLINE;
-import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
+import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 
@@ -175,7 +175,7 @@ public class StudyController extends BaseController {
 
     // This exists because apps want to get rudimentary study data to show participants before they've created their
     // account. For the worker API, see getStudyForWorker() below.
-    @GetMapping(path = "/v1/apps/{appId}/studies/{studyId}", produces = { APPLICATION_JSON_UTF8_VALUE })
+    @GetMapping(path = "/v1/apps/{appId}/studies/{studyId}", produces = { APPLICATION_JSON_VALUE })
     public String getStudyForApp(@PathVariable String appId, @PathVariable String studyId)
             throws JsonProcessingException {
         CacheKey key = CacheKey.publicStudy(appId, studyId);

@@ -34,7 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.amazonaws.services.sqs.AmazonSQSClient;
+import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.model.SendMessageResult;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -152,7 +152,7 @@ public class ParticipantService {
 
     private BridgeConfig bridgeConfig;
 
-    private AmazonSQSClient sqsClient;
+    private AmazonSQS sqsClient;
     
     private TemplateService templateService;
     
@@ -235,7 +235,7 @@ public class ParticipantService {
     }
 
     @Autowired
-    final void setSqsClient(AmazonSQSClient sqsClient) {
+    final void setSqsClient(AmazonSQS sqsClient) {
         this.sqsClient = sqsClient;
     }
     

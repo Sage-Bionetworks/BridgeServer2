@@ -4,7 +4,7 @@ import static org.sagebionetworks.bridge.BridgeUtils.resolveTemplate;
 
 import java.util.Map;
 
-import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.BucketCrossOriginConfiguration;
 import com.amazonaws.services.s3.model.BucketWebsiteConfiguration;
 import com.amazonaws.services.s3.model.CORSRule;
@@ -94,7 +94,7 @@ public class S3Initializer {
 
     private BridgeConfig bridgeConfig;
     
-    private AmazonS3Client s3Client;
+    private AmazonS3 s3Client;
     
     @Autowired
     public final void setBridgeConfig(BridgeConfig bridgeConfig) {
@@ -102,7 +102,7 @@ public class S3Initializer {
     }
     
     @Autowired
-    public final void setS3Client(AmazonS3Client s3Client) {
+    public final void setS3Client(AmazonS3 s3Client) {
         this.s3Client = s3Client;
     }
     

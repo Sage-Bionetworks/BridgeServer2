@@ -20,7 +20,7 @@ import static org.sagebionetworks.bridge.models.ResourceList.START_DATE;
 import static org.sagebionetworks.bridge.models.ResourceList.START_TIME;
 import static org.sagebionetworks.bridge.models.sms.SmsType.PROMOTIONAL;
 import static org.sagebionetworks.bridge.spring.controllers.StudyParticipantController.INSTALL_LINK_SEND_MSG;
-import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
+import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 import java.util.List;
 import java.util.Map;
@@ -238,7 +238,7 @@ public class ParticipantController extends BaseController {
     
     @GetMapping(path = { "/v1/apps/{appId}/participants/{userId}/activities/{activityType}/{referentGuid}",
             "/v3/studies/{appId}/participants/{userId}/activities/{activityType}/{referentGuid}" }, produces = {
-                    APPLICATION_JSON_UTF8_VALUE })
+                    APPLICATION_JSON_VALUE })
     public String getActivityHistoryForWorkerV3(@PathVariable String appId, @PathVariable String userId,
             @PathVariable String activityType, @PathVariable String referentGuid,
             @RequestParam(required = false) String scheduledOnStart,
@@ -337,7 +337,7 @@ public class ParticipantController extends BaseController {
         return participantService.createParticipant(app, participant, true);
     }
 
-    @GetMapping(path="/v3/participants/self", produces={APPLICATION_JSON_UTF8_VALUE})
+    @GetMapping(path="/v3/participants/self", produces={APPLICATION_JSON_VALUE})
     public String getSelfParticipant(@RequestParam(defaultValue = "true") boolean consents) throws Exception {
         UserSession session = getAuthenticatedSession();
         App app = appService.getApp(session.getAppId());
@@ -352,7 +352,7 @@ public class ParticipantController extends BaseController {
         return writer.writeValueAsString(participant);
     }
 
-    @GetMapping(path="/v3/participants/{userId}", produces={APPLICATION_JSON_UTF8_VALUE})
+    @GetMapping(path="/v3/participants/{userId}", produces={APPLICATION_JSON_VALUE})
     public String getParticipant(@PathVariable String userId, @RequestParam(defaultValue = "true") boolean consents)
             throws Exception {
         UserSession session = getAdministrativeSession();
@@ -376,7 +376,7 @@ public class ParticipantController extends BaseController {
     }
     
     @GetMapping(path= {"/v1/apps/{appId}/participants/{userId}",
-            "/v3/studies/{appId}/participants/{userId}"}, produces={APPLICATION_JSON_UTF8_VALUE})
+            "/v3/studies/{appId}/participants/{userId}"}, produces={APPLICATION_JSON_VALUE})
     public String getParticipantForWorker(@PathVariable String appId, @PathVariable String userId,
             @RequestParam(defaultValue = "true") boolean consents) throws Exception {
         getAuthenticatedSession(WORKER);
@@ -390,7 +390,7 @@ public class ParticipantController extends BaseController {
     
     @GetMapping(path = {"/v1/apps/{appId}/participants/{userId}/requestInfo",
             "/v3/studies/{appId}/participants/{userId}/requestInfo"}, produces = {
-            APPLICATION_JSON_UTF8_VALUE })
+            APPLICATION_JSON_VALUE })
     public String getRequestInfoForWorker(@PathVariable String appId, @PathVariable String userId)
             throws JsonProcessingException {
         getAuthenticatedSession(WORKER);
@@ -406,7 +406,7 @@ public class ParticipantController extends BaseController {
     }
 
     @GetMapping(path = "/v3/participants/{userId}/requestInfo", produces = {
-            APPLICATION_JSON_UTF8_VALUE })
+            APPLICATION_JSON_VALUE })
     public String getRequestInfo(@PathVariable String userId) throws JsonProcessingException {
         UserSession session = getAdministrativeSession();
         CAN_EDIT_PARTICIPANTS.checkAndThrow(USER_ID, userId);
@@ -475,7 +475,7 @@ public class ParticipantController extends BaseController {
             scheduledOnEnd, offsetBy, offsetKey, pageSize);
     }
 
-    @GetMapping(path="/v3/participants/{userId}/activities/{activityType}/{referentGuid}", produces={APPLICATION_JSON_UTF8_VALUE})
+    @GetMapping(path="/v3/participants/{userId}/activities/{activityType}/{referentGuid}", produces={APPLICATION_JSON_VALUE})
     public String getActivityHistoryV3(@PathVariable String userId, @PathVariable String activityType,
             @PathVariable String referentGuid, @RequestParam(required = false) String scheduledOnStart,
             @RequestParam(required = false) String scheduledOnEnd, @RequestParam(required = false) String offsetKey,
@@ -623,8 +623,7 @@ public class ParticipantController extends BaseController {
     }
 
     @GetMapping(path = {"/v3/participants/{userId}/activityEvents",
-            "/v3/participants/{userId}/activityevents"}, produces = {
-            APPLICATION_JSON_UTF8_VALUE })
+            "/v3/participants/{userId}/activityevents"}, produces = { APPLICATION_JSON_VALUE })
     public ResourceList<ActivityEvent> getActivityEvents(@PathVariable String userId) throws JsonProcessingException {
         UserSession researcherSession = getAdministrativeSession();
         CAN_EDIT_PARTICIPANTS.checkAndThrow(USER_ID, userId);

@@ -27,7 +27,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
-import com.amazonaws.services.sns.AmazonSNSClient;
+import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.model.CreateTopicResult;
 import com.amazonaws.services.sns.model.DeleteTopicRequest;
 import com.google.common.collect.ImmutableList;
@@ -40,7 +40,7 @@ public class DynamoNotificationTopicDao implements NotificationTopicDao {
     static final String CRITERIA_KEY_PREFIX = "notificationtopic:";
 
     private DynamoDBMapper mapper;
-    private AmazonSNSClient snsClient;
+    private AmazonSNS snsClient;
     private BridgeConfig config;
     private CriteriaDao criteriaDao;
 
@@ -50,7 +50,7 @@ public class DynamoNotificationTopicDao implements NotificationTopicDao {
     }
     
     @Resource(name = "snsClient")
-    final void setSnsClient(AmazonSNSClient snsClient) {
+    final void setSnsClient(AmazonSNS snsClient) {
         this.snsClient = snsClient;
     }
 

@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -10,7 +12,6 @@ import com.google.common.net.HttpHeaders;
 
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -127,7 +128,7 @@ public class ApplicationController extends BaseController {
     
     // The JSON produces attribute is required here, because we're returning a string and @Controller + @ResponseBody 
     // determine it's of type text/plain
-    @GetMapping(value="/.well-known/assetlinks.json", produces={MediaType.APPLICATION_JSON_UTF8_VALUE})
+    @GetMapping(value="/.well-known/assetlinks.json", produces={APPLICATION_JSON_VALUE})
     @ResponseBody
     public String androidAppLinks() {
         CacheKey cacheKey = viewCache.getCacheKey(AndroidAppLinkList.class);
@@ -146,7 +147,7 @@ public class ApplicationController extends BaseController {
     
     // The JSON produces attribute is required here, because we're returning a string and @Controller + @ResponseBody
     // determine it's of type text/plain
-    @GetMapping(value="/.well-known/apple-app-site-association", produces={MediaType.APPLICATION_JSON_UTF8_VALUE})
+    @GetMapping(value="/.well-known/apple-app-site-association", produces={APPLICATION_JSON_VALUE})
     @ResponseBody
     public String appleAppLinks() {
         CacheKey cacheKey = viewCache.getCacheKey(AppleAppSiteAssociation.class);

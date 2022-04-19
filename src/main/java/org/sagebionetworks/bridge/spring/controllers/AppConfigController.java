@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
-import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
+import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 import java.util.List;
 
@@ -53,7 +53,7 @@ public class AppConfigController extends BaseController {
     }
 
     @GetMapping(path = { "/v1/apps/{appId}/appconfig", "/v3/studies/{appId}/appconfig" }, 
-            produces = { APPLICATION_JSON_UTF8_VALUE })
+            produces = { APPLICATION_JSON_VALUE })
     public String getAppConfigByCriteria(@PathVariable String appId) {
         App app = appService.getApp(appId);
         

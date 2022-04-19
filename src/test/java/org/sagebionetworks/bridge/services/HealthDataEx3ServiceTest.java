@@ -8,7 +8,6 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
 
 import java.net.URL;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import com.amazonaws.HttpMethod;

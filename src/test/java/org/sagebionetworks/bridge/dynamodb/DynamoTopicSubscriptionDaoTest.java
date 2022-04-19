@@ -25,7 +25,7 @@ import org.sagebionetworks.bridge.models.notifications.TopicSubscription;
 
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
-import com.amazonaws.services.sns.AmazonSNSClient;
+import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.model.SubscribeRequest;
 import com.amazonaws.services.sns.model.SubscribeResult;
 
@@ -41,7 +41,7 @@ public class DynamoTopicSubscriptionDaoTest {
     private DynamoDBMapper mockMapper;
     
     @Mock
-    private AmazonSNSClient mockSnsClient;
+    private AmazonSNS mockSnsClient;
     
     @Mock
     private SubscribeResult mockSubscribeResult;

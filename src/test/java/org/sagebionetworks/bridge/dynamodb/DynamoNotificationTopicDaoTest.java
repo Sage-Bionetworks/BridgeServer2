@@ -42,7 +42,7 @@ import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
-import com.amazonaws.services.sns.AmazonSNSClient;
+import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.model.CreateTopicResult;
 import com.amazonaws.services.sns.model.DeleteTopicRequest;
 import com.google.common.collect.Lists;
@@ -74,7 +74,7 @@ public class DynamoNotificationTopicDaoTest {
     private DynamoDBMapper mockMapper;
     
     @Mock
-    private AmazonSNSClient mockSnsClient;
+    private AmazonSNS mockSnsClient;
 
     @Mock
     private BridgeConfig mockConfig;

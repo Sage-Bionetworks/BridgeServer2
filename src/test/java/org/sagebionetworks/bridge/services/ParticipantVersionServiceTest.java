@@ -18,7 +18,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import com.amazonaws.services.sqs.AmazonSQSClient;
+import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.model.SendMessageResult;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -71,7 +71,7 @@ public class ParticipantVersionServiceTest {
     private ParticipantVersionDao mockParticipantVersionDao;
 
     @Mock
-    private AmazonSQSClient mockSqsClient;
+    private AmazonSQS mockSqsClient;
 
     @InjectMocks
     private ParticipantVersionService participantVersionService;

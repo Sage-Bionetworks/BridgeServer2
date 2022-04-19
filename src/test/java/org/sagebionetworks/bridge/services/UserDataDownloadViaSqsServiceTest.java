@@ -15,7 +15,7 @@ import static org.sagebionetworks.bridge.services.UserDataDownloadViaSqsService.
 import static org.sagebionetworks.bridge.services.UserDataDownloadViaSqsService.UDD_SERVICE_TITLE;
 import static org.testng.Assert.assertEquals;
 
-import com.amazonaws.services.sqs.AmazonSQSClient;
+import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.model.SendMessageResult;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -44,7 +44,7 @@ public class UserDataDownloadViaSqsServiceTest {
         when(mockConfig.getProperty(CONFIG_KEY_UDD_SQS_QUEUE_URL)).thenReturn(SQS_URL);
 
         // mock SQS
-        AmazonSQSClient mockSqsClient = mock(AmazonSQSClient.class);
+        AmazonSQS mockSqsClient = mock(AmazonSQS.class);
         SendMessageResult mockSqsResult = new SendMessageResult().withMessageId(SQS_MESSAGE_ID);
         ArgumentCaptor<String> sqsMessageCaptor = ArgumentCaptor.forClass(String.class);
         when(mockSqsClient.sendMessage(eq(SQS_URL), sqsMessageCaptor.capture())).thenReturn(mockSqsResult);

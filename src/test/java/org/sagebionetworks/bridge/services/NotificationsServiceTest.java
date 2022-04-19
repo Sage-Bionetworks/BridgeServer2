@@ -36,7 +36,7 @@ import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationProtocol;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 
-import com.amazonaws.services.sns.AmazonSNSClient;
+import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.model.InvalidParameterException;
 import com.amazonaws.services.sns.model.PublishRequest;
 import com.amazonaws.services.sns.model.PublishResult;
@@ -63,7 +63,7 @@ public class NotificationsServiceTest {
     private AppService mockAppService;
     
     @Mock
-    private AmazonSNSClient mockSnsClient;
+    private AmazonSNS mockSnsClient;
     
     @Mock
     private PublishResult mockPublishResult;

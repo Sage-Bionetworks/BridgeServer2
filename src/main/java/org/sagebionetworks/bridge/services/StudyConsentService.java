@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
 import javax.annotation.Resource;
 
-import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
@@ -95,7 +95,7 @@ public class StudyConsentService {
     private Validator validator;
     private StudyConsentDao studyConsentDao;
     private SubpopulationService subpopService;
-    private AmazonS3Client s3Client;
+    private AmazonS3 s3Client;
     private S3Helper s3Helper;
     private String consentsBucket = BridgeConfigFactory.getConfig().getConsentsBucket();
     private String publicationsBucket = BridgeConfigFactory.getConfig().getHostnameWithPostfix("docs");
@@ -127,7 +127,7 @@ public class StudyConsentService {
      * because it references BridgePF-specific classes.
      */
     @Resource(name = "s3Client")
-    final void setS3Client(AmazonS3Client s3Client) {
+    final void setS3Client(AmazonS3 s3Client) {
         this.s3Client = s3Client;
     }
 

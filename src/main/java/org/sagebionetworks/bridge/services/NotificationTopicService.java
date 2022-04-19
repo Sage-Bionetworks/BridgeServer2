@@ -32,7 +32,7 @@ import org.sagebionetworks.bridge.validators.NotificationTopicValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
 import com.amazonaws.AmazonServiceException;
-import com.amazonaws.services.sns.AmazonSNSClient;
+import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.model.NotFoundException;
 import com.amazonaws.services.sns.model.PublishRequest;
 import com.google.common.collect.Lists;
@@ -49,7 +49,7 @@ public class NotificationTopicService {
     
     private TopicSubscriptionDao subscriptionDao;
     
-    private AmazonSNSClient snsClient;
+    private AmazonSNS snsClient;
     
     @Autowired
     final void setNotificationRegistrationDao(NotificationRegistrationDao registrationDao) {
@@ -67,7 +67,7 @@ public class NotificationTopicService {
     }
     
     @Resource(name = "snsClient")
-    final void setSnsClient(AmazonSNSClient snsClient) {
+    final void setSnsClient(AmazonSNS snsClient) {
         this.snsClient = snsClient;
     }
     

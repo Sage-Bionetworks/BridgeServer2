@@ -7,7 +7,7 @@ import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.models.apps.App.APP_LIST_WRITER;
-import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
+import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -141,7 +141,7 @@ public class AppController extends BaseController {
      * records. This call filters out "deleted" (inactive) apps by default, but these
      * can be included for administrative views.
      */
-    @GetMapping(path = {"/v1/apps", "/v3/studies"}, produces={APPLICATION_JSON_UTF8_VALUE})
+    @GetMapping(path = {"/v1/apps", "/v3/studies"}, produces={APPLICATION_JSON_VALUE})
     public String getAllApps(@RequestParam(required = false) String format,
             @RequestParam(required = false) String summary,
             @RequestParam(required = false) String includeDeleted) throws Exception {        
@@ -169,7 +169,7 @@ public class AppController extends BaseController {
     }
     
     @GetMapping(path = { "/v1/apps/memberships", "/v3/studies/memberships" }, produces = {
-            APPLICATION_JSON_UTF8_VALUE })
+            APPLICATION_JSON_VALUE})
     public String getAppMemberships() throws Exception {   
         UserSession session = getAuthenticatedSession();
         
