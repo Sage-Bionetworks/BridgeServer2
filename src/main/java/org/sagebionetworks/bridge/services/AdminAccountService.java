@@ -45,52 +45,41 @@ import org.sagebionetworks.bridge.validators.AdminAccountValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.ObjectUtils;
 import org.springframework.validation.Validator;
 
 import com.google.common.collect.Sets;
-
-import io.jsonwebtoken.lang.Objects;
 
 @Component
 public class AdminAccountService {
 
     private AppService appService;
-    
     private AccountWorkflowService accountWorkflowService;
-    
     private SmsService smsService;
-    
     private AccountDao accountDao;
-    
     private CacheProvider cacheProvider;
-    
     private RequestInfoService requestInfoService;
     
     @Autowired
     final void setAppService(AppService appService) {
         this.appService = appService;
     }
-    
     @Autowired
     final void setAccountWorkflowService(AccountWorkflowService accountWorkflowService) {
         this.accountWorkflowService = accountWorkflowService;
     }
-    
     @Autowired
     final void setSmsService(SmsService smsService) {
         this.smsService = smsService;
     }
-    
     @Autowired
     final void setAccountDao(AccountDao accountDao) {
         this.accountDao = accountDao;
     }
-    
     @Autowired
     final void setCacheProvider(CacheProvider cacheProvider) {
         this.cacheProvider = cacheProvider;
     }
-    
     @Autowired
     final void setRequestInfoService(RequestInfoService requestInfoService) {
         this.requestInfoService = requestInfoService;
@@ -100,12 +89,11 @@ public class AdminAccountService {
     protected DateTime getCreatedOn() {
         return DateTime.now();
     }
-    
     // accessor for mocking in tests
     protected DateTime getModifiedOn() {
         return DateTime.now();
     }
-    
+    // accessor for mocking in tests
     protected String generateGUID() {
         return BridgeUtils.generateGuid();
     }
@@ -147,15 +135,16 @@ public class AdminAccountService {
         account.setAppId(appId);
         account.setEmailVerified(FALSE);
         account.setPhoneVerified(FALSE);
-        account.setHealthCode(generateGUID()); // not sure all APIs could deal with this being null
+        // not relevant for an admin, but I'm not sure all APIs could deal with this being null
+        account.setHealthCode(generateGUID()); 
         account.setStatus(submittedAccount.getSynapseUserId() != null ? ENABLED : UNVERIFIED);
         account.setCreatedOn(timestamp);
         account.setModifiedOn(timestamp);
         account.setPasswordModifiedOn(timestamp);
         account.setMigrationVersion(MIGRATION_VERSION);
-        // Although this account should not be used to send research data, in case it does, we
-        // flag that data as test data.
+        // Mark the account as test in case it’s ever used to submit data
         account.setDataGroups(addToSet(submittedAccount.getDataGroups(), TEST_USER_GROUP));
+        // Mark the account as no sharing as well
         account.setSharingScope(NO_SHARING);
         account.setNotifyByEmail(FALSE);
         account.setFirstName(submittedAccount.getFirstName());
@@ -166,13 +155,18 @@ public class AdminAccountService {
         account.setClientData(submittedAccount.getClientData());
         account.setLanguages(submittedAccount.getLanguages());
         account.setClientTimeZone(submittedAccount.getClientTimeZone());
-        account.setOrgMembership(submittedAccount.getOrgMembership());
         account.setNote(submittedAccount.getNote());
-        
-        if (account.getOrgMembership() == null) {
-            account.setOrgMembership(RequestContext.get().getCallerOrgMembership());
+
+        RequestContext context = RequestContext.get();
+
+        // Admins and superadmins can set any organization membership
+        if (context.isInRole(Roles.ADMIN, Roles.SUPERADMIN)) {
+            account.setOrgMembership(submittedAccount.getOrgMembership());
         }
-        
+        // If they choose not to, or it‘s any other kind of account, set org to caller‘s organization
+        if (account.getOrgMembership() == null) {
+            account.setOrgMembership(context.getCallerOrgMembership());
+        }
         for (String attribute : app.getUserProfileAttributes()) {
             String value = submittedAccount.getAttributes().get(attribute);
             account.getAttributes().put(attribute, value);
@@ -189,7 +183,6 @@ public class AdminAccountService {
                 throw new BridgeServiceException("Error creating password: " + ex.getMessage(), ex);
             }
         }
-        RequestContext context = RequestContext.get();
         Set<Roles> finalRoles = updateRoles(context, submittedAccount.getRoles(), account.getRoles());
         account.setRoles(finalRoles);
 
@@ -209,7 +202,7 @@ public class AdminAccountService {
         if (account.getId() == null) {
             throw new EntityNotFoundException(Account.class);
         }
-        account.setPassword(null);
+        account.setPassword(null); // don’t validate this value
         
         Validator validator = new AdminAccountValidator(app.getPasswordPolicy(), app.getUserProfileAttributes());
         Validate.entityThrowingException(validator, account);
@@ -236,10 +229,10 @@ public class AdminAccountService {
         if (!RequestContext.get().isInRole(ADMIN, WORKER)) {
             account.setStatus(persistedAccount.getStatus());
         }
-        if (!Objects.nullSafeEquals(account.getEmail(), persistedAccount.getEmail())) {
+        if (!ObjectUtils.nullSafeEquals(account.getEmail(), persistedAccount.getEmail())) {
             account.setEmailVerified(FALSE);
         }
-        if (!Objects.nullSafeEquals(account.getPhone(), persistedAccount.getPhone())) {
+        if (!ObjectUtils.nullSafeEquals(account.getPhone(), persistedAccount.getPhone())) {
             account.setPhoneVerified(FALSE);
         }
         RequestContext context = RequestContext.get();

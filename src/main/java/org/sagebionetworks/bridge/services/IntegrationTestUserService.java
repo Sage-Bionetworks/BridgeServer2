@@ -217,8 +217,6 @@ public class IntegrationTestUserService {
         
         account = adminAccountService.createAccount(appId, account);
         
-        participant = new StudyParticipant.Builder().copyOf(participant)
-                .withId(account.getId()).build();
         // force verification of of this test account
         accountService.editAccount(AccountId.forId(account.getAppId(), account.getId()), (acct) -> {
             acct.setEmailVerified(TRUE);

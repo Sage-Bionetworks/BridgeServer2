@@ -22,11 +22,11 @@ import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.services.IntegrationTestUserService;
 
 /**
- * These endpoints are intended for account creation during integration tests. These 
- * endpoints should not be used to create users in the system. Given our security design, 
- * we must allow ADMINs to create accounts through this API so we can run integration 
- * tests without the SUPERADMIN role, but again, non-Sage admins should not use these 
- * APIs to create accounts.
+ * These endpoints are intended for account creation during integration tests.
+ * These endpoints should not be used to create users in the system. Given our
+ * security design, we must allow ADMINs to create accounts through this API so
+ * we can run integration tests without the SUPERADMIN role, but again, non-Sage
+ * admins should not use these APIs to create accounts.
  */
 @CrossOrigin
 @RestController

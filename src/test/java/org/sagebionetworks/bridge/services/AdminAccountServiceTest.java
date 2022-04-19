@@ -114,7 +114,7 @@ public class AdminAccountServiceTest extends Mockito {
     
     @Test
     public void createAccount() {
-        RequestContext.set(RequestContext.NULL_INSTANCE);
+        RequestContext.set(new RequestContext.Builder().withCallerOrgMembership("another-org").build());
         
         App app = App.create();
         app.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
@@ -157,7 +157,7 @@ public class AdminAccountServiceTest extends Mockito {
         assertEquals(retValue.getClientData(), TestUtils.getClientData());
         assertEquals(retValue.getLanguages(), TestConstants.LANGUAGES);
         assertEquals(retValue.getClientTimeZone(), "America/Los_Angeles");
-        assertEquals(retValue.getOrgMembership(), TEST_ORG_ID);
+        assertEquals(retValue.getOrgMembership(), "another-org");
         assertEquals(retValue.getAttributes().size(), 1);
         assertEquals(retValue.getAttributes().get("a"), "test");
         assertEquals(retValue.getPasswordAlgorithm(), DEFAULT_PASSWORD_ALGORITHM);
