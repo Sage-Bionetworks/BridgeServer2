@@ -33,6 +33,8 @@ import static org.testng.Assert.assertNull;
 import java.util.Optional;
 import java.util.Set;
 
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -51,6 +53,7 @@ import org.sagebionetworks.bridge.exceptions.LimitExceededException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.Phone;
@@ -82,6 +85,9 @@ public class AdminAccountServiceTest extends Mockito {
     
     @Mock
     RequestInfoService mockRequestInfoService;
+    
+    @Captor
+    ArgumentCaptor<AccountId> accountIdCaptor;
 
     @InjectMocks
     @Spy
@@ -99,6 +105,14 @@ public class AdminAccountServiceTest extends Mockito {
     @AfterMethod
     public void afterMethod() {
         RequestContext.set(RequestContext.NULL_INSTANCE);
+    }
+    
+    @Test
+    public void getAccount() {
+        service.getAccount(TEST_APP_ID, "synapseuserid:12345");
+        
+        verify(mockAccountDao).getAccount(accountIdCaptor.capture());
+        assertEquals(AccountId.forSynapseUserId(TEST_APP_ID, "12345"), accountIdCaptor.getValue());
     }
     
     @Test

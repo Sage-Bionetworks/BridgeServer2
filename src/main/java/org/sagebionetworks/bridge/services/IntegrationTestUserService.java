@@ -52,7 +52,6 @@ public class IntegrationTestUserService {
     final void setAuthenticationService(AuthenticationService authenticationService) {
         this.authenticationService = authenticationService;
     }
-
     /** Notifications service, used to clean up notification registrations when we delete users. */
     @Autowired
     final void setNotificationsService(NotificationsService notificationsService) {
@@ -140,14 +139,15 @@ public class IntegrationTestUserService {
 
         try {
             if (!participant.getRoles().isEmpty() || participant.getOrgMembership() != null) {
+                System.out.println("CREATING ACCOUNT");
                 // I regret to inform you that you are actually creating an administrative account
                 identifier = createAdminAccount(app.getIdentifier(), participant);
             } else {
+                System.out.println("CREATING PARTICIPANT");
                 identifier = participantService.createParticipant(app, participant, false);
-                // Not removing this although it's no longer clear why it is here. We have a clean-up
-                // test that expects this call to be present.
-                participantService.getParticipant(app, identifier.getIdentifier(), false);
             }
+            // We need to load the ID into the participant object because it is passed to several methods below
+            participant = new StudyParticipant.Builder().copyOf(participant).withId(identifier.getIdentifier()).build();
             
             // We don't filter users by any of the filtering criteria in this test API.
             CriteriaContext context = new CriteriaContext.Builder().withUserId(identifier.getIdentifier())
