@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.models.schedules2.adherence.study;
 
+import static org.sagebionetworks.bridge.TestConstants.ASSESSMENT_1_GUID;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.SCHEDULE_GUID;
@@ -18,6 +19,7 @@ import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -26,6 +28,7 @@ import org.joda.time.LocalTime;
 import org.joda.time.Period;
 import org.mockito.Mockito;
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.schedules2.AssessmentReference;
@@ -39,6 +42,7 @@ import org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantStudyPr
 import org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamDay;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamWindow;
+import org.sagebionetworks.bridge.models.schedules2.adherence.weekly.WeeklyAdherenceReport;
 import org.sagebionetworks.bridge.models.schedules2.adherence.weekly.WeeklyAdherenceReportRow;
 import org.sagebionetworks.bridge.models.schedules2.timelines.Scheduler;
 import org.sagebionetworks.bridge.models.schedules2.timelines.Timeline;
@@ -1365,4 +1369,77 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
         StudyAdherenceReport report = INSTANCE.generate(state);
         assertNull(report.getDateRange());
     }
+    
+    // BRIDGE-3287: rows were being duplicated in the weekly report with carry-overs
+    @Test
+    public void rowsAreNotDuplicated() {
+        AssessmentReference ref = new AssessmentReference();
+        ref.setIdentifier("id");
+        ref.setGuid(ASSESSMENT_1_GUID);
+        ref.setRevision(1);
+        
+        TimeWindow win1 = new TimeWindow();
+        win1.setGuid("win1Guid");
+        win1.setStartTime(LocalTime.parse("08:00"));
+
+        Session session1 = new Session();
+        session1.setName("session1");
+        session1.setGuid("session1");
+        session1.setAssessments(ImmutableList.of(ref));
+        session1.setTimeWindows(ImmutableList.of(win1));
+        session1.setStartEventIds(ImmutableList.of("timeline_retrieved"));
+        
+        TimeWindow win2 = new TimeWindow();
+        win2.setGuid("win2Guid");
+        win2.setStartTime(LocalTime.parse("08:00"));
+
+        Session session2 = new Session();
+        session2.setName("session2");
+        session2.setGuid("session2");
+        session2.setAssessments(ImmutableList.of(ref));
+        session2.setTimeWindows(ImmutableList.of(win2));
+        session2.setStartEventIds(ImmutableList.of("timeline_retrieved"));
+        
+        TimeWindow win3 = new TimeWindow();
+        win3.setGuid("win3Guid");
+        win3.setStartTime(LocalTime.parse("08:00"));
+        win3.setExpiration(Period.parse("PT3H"));
+
+        Session session3 = new Session();
+        session3.setName("session3");
+        session3.setGuid("session3");
+        session3.setInterval(Period.parse("P1W"));
+        session3.setAssessments(ImmutableList.of(ref));
+        session3.setTimeWindows(ImmutableList.of(win3));
+        session3.setStartEventIds(ImmutableList.of("timeline_retrieved"));
+        
+        Schedule2 schedule = new Schedule2();
+        schedule.setGuid("scheduleGuid");
+        schedule.setDuration(Period.parse("P3W"));
+        schedule.setSessions(ImmutableList.of(session1, session2, session3));
+        
+        Timeline timeline = Scheduler.INSTANCE.calculateTimeline(schedule);
+        List<TimelineMetadata> metadata = timeline.getMetadata();
+        
+        // Events
+        StudyActivityEvent event = new StudyActivityEvent.Builder()
+                .withEventId("timeline_retrieved")
+                .withTimestamp(DateTime.parse("2022-04-02T04:10:38.593Z")).build();
+        
+        DateTime now = DateTime.parse("2022-04-20T18:27:30.367Z");
+        
+        AdherenceState state = new AdherenceState.Builder()
+                .withEvents(ImmutableList.of(event))
+                .withMetadata(metadata)
+                .withNow(now).build();
+        
+        StudyAdherenceReport report = StudyAdherenceReportGenerator.INSTANCE.generate(state);
+        
+        StudyReportWeek weeklyReport = report.getWeekReport();
+        
+        List<String> rowLabels = weeklyReport.getRows().stream()
+                .map(row -> row.getSearchableLabel()).collect(Collectors.toList());
+        assertEquals(rowLabels, ImmutableList.of(":session1:Week 3:", ":session2:Week 3:", ":session3:Week 3:"));
+    }
+    
 }
