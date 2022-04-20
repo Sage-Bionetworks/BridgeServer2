@@ -323,8 +323,6 @@ public class StudyParticipantController extends BaseController {
         RequestInfo requestInfo = getRequestInfoBuilder(session)
                 .withTimelineAccessedOn(timelineRequestedOn).build();
         requestInfoService.updateRequestInfo(requestInfo);
-        
-        ParticipantSchedule schedule = scheduleService.getParticipantSchedule(session.getAppId(), studyId, account);
 
         studyActivityEventService.publishEvent(new StudyActivityEvent.Builder()
                 .withAppId(session.getAppId())
@@ -333,7 +331,7 @@ public class StudyParticipantController extends BaseController {
                 .withObjectType(TIMELINE_RETRIEVED)
                 .withTimestamp(timelineRequestedOn).build(), false, true);
 
-        return schedule;
+        return scheduleService.getParticipantSchedule(session.getAppId(), studyId, account);
     }
     
     @GetMapping("/v5/studies/{studyId}/participants/{userId}/enrollments")
