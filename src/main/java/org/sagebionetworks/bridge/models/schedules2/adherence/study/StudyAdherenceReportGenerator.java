@@ -219,8 +219,6 @@ public class StudyAdherenceReportGenerator {
 
         // Sort the rows so they display in an order that makes sense, and then pad the days to fit the
         // number and order of the rows.
-        //rows.addAll(oneWeek.getRows());
-        
         List<WeeklyAdherenceReportRow> rowList = Lists.newArrayList(rows);
         rowList.sort(ROW_COMPARATOR);
         
