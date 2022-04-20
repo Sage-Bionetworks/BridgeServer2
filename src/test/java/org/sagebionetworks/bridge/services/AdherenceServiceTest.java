@@ -33,6 +33,8 @@ import static org.sagebionetworks.bridge.models.SearchTermPredicate.AND;
 import static org.sagebionetworks.bridge.models.StringSearchPosition.INFIX;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.IMMUTABLE;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordType.ASSESSMENT;
+import static org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantStudyProgress.NO_SCHEDULE;
+import static org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantStudyProgress.UNSTARTED;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.SortOrder.ASC;
 import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.DEFAULT_PAGE_SIZE;
 import static org.testng.Assert.assertEquals;
@@ -76,11 +78,13 @@ import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.AdherenceReportSearch;
 import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEventIdsMap;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
+import org.sagebionetworks.bridge.models.schedules2.Schedule2Test;
 import org.sagebionetworks.bridge.models.schedules2.Session;
 import org.sagebionetworks.bridge.models.schedules2.StudyBurst;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
@@ -122,6 +126,9 @@ public class AdherenceServiceTest extends Mockito {
     
     @Mock
     Schedule2Service mockScheduleService;
+    
+    @Mock
+    RequestInfoService mockRequestInfoService;
     
     @Captor
     ArgumentCaptor<AdherenceRecordsSearch> searchCaptor;
@@ -893,6 +900,108 @@ public class AdherenceServiceTest extends Mockito {
     }
     
     @Test
+    public void getWeeklyAdherenceReport_neverSignedIn() throws Exception {
+        RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
+        
+        Account account = Account.create();
+        account.setAppId(TEST_APP_ID);
+        account.setId(TEST_USER_ID);
+        account.setFirstName("firstName");
+        account.setLastName("lastName");
+        account.setEmail(TestConstants.EMAIL);
+        account.setPhone(TestConstants.PHONE);
+        account.setClientTimeZone(TEST_CLIENT_TIME_ZONE);
+        account.getEnrollments().add(Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, TEST_EXTERNAL_ID));
+        
+        Study study = Study.create();
+        study.setScheduleGuid(SCHEDULE_GUID);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+        
+        List<StudyActivityEvent> events = ImmutableList.of();
+        ResourceList<StudyActivityEvent> page = new ResourceList<>(events, true);
+        when(mockStudyActivityEventService.getRecentStudyActivityEvents(
+                TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID)).thenReturn(page);
+        
+        PagedResourceList<AdherenceRecord> page2 = new PagedResourceList<>(ImmutableList.of(), 0);
+        when(mockRecordDao.getAdherenceRecords(any())).thenReturn(page2);
+        
+        RequestInfo info = new RequestInfo.Builder().build();
+        when(mockRequestInfoService.getRequestInfo(TEST_USER_ID)).thenReturn(info);
+        
+        WeeklyAdherenceReport retValue = service.getWeeklyAdherenceReport(
+                TEST_APP_ID, TEST_STUDY_ID, account);
+        assertEquals(retValue.getAppId(), TEST_APP_ID);
+        assertEquals(retValue.getStudyId(), TEST_STUDY_ID);
+        assertEquals(retValue.getUserId(), TEST_USER_ID);
+        assertEquals(retValue.getClientTimeZone(), TEST_CLIENT_TIME_ZONE);
+        assertEquals(retValue.getCreatedOn(), MODIFIED_ON.withZone(DateTimeZone.forID(TEST_CLIENT_TIME_ZONE)));
+        assertNull(retValue.getWeeklyAdherencePercent());
+        assertEquals(retValue.getParticipant().getIdentifier(), TEST_USER_ID);
+        assertEquals(retValue.getParticipant().getFirstName(), "firstName");
+        assertEquals(retValue.getParticipant().getLastName(), "lastName");
+        assertEquals(retValue.getParticipant().getEmail(), TestConstants.EMAIL);
+        assertEquals(retValue.getParticipant().getPhone(), TestConstants.PHONE);
+        assertEquals(retValue.getParticipant().getExternalId(), TEST_EXTERNAL_ID);
+        
+        assertTrue(retValue.getRows().isEmpty());
+        assertTrue(retValue.getByDayEntries().get(0).isEmpty());
+        assertTrue(retValue.getByDayEntries().get(1).isEmpty());
+        assertTrue(retValue.getByDayEntries().get(2).isEmpty());
+        assertTrue(retValue.getByDayEntries().get(3).isEmpty());
+        assertTrue(retValue.getByDayEntries().get(4).isEmpty());
+        assertTrue(retValue.getByDayEntries().get(5).isEmpty());
+        assertTrue(retValue.getByDayEntries().get(6).isEmpty());
+        assertEquals(retValue.getProgression(), NO_SCHEDULE); // does’nt overwrite this, that's good
+        assertNull(retValue.getStartDate());
+        assertNull(retValue.getWeekInStudy());
+        assertNull(retValue.getWeeklyAdherencePercent());
+        assertNull(retValue.getNextActivity());
+        
+        verify(mockReportDao).saveWeeklyAdherenceReport(retValue);
+        // The contents of the weekly report are tested separately by testing the generator
+    }
+    
+    @Test
+    public void getWeeklyAdherenceReport_noRequestInfo() throws Exception {
+        RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
+        
+        Account account = Account.create();
+        account.setAppId(TEST_APP_ID);
+        account.setId(TEST_USER_ID);
+        account.setFirstName("firstName");
+        account.setLastName("lastName");
+        account.setEmail(TestConstants.EMAIL);
+        account.setPhone(TestConstants.PHONE);
+        account.setClientTimeZone(TEST_CLIENT_TIME_ZONE);
+        account.getEnrollments().add(Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, TEST_EXTERNAL_ID));
+        
+        Study study = Study.create();
+        study.setScheduleGuid(SCHEDULE_GUID);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+        
+        List<StudyActivityEvent> events = ImmutableList.of();
+        ResourceList<StudyActivityEvent> page = new ResourceList<>(events, true);
+        when(mockStudyActivityEventService.getRecentStudyActivityEvents(
+                TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID)).thenReturn(page);
+        
+        PagedResourceList<AdherenceRecord> page2 = new PagedResourceList<>(ImmutableList.of(), 0);
+        when(mockRecordDao.getAdherenceRecords(any())).thenReturn(page2);
+        
+        when(mockRequestInfoService.getRequestInfo(TEST_USER_ID)).thenReturn(null);
+        
+        // Add a schedule so we can see "UNSTARTED" as the state of this report
+        Schedule2 schedule = Schedule2Test.createValidSchedule();
+        Timeline timeline = Scheduler.INSTANCE.calculateTimeline(schedule);
+        when(mockScheduleService.getScheduleMetadata(SCHEDULE_GUID)).thenReturn(timeline.getMetadata());
+        
+        WeeklyAdherenceReport retValue = service.getWeeklyAdherenceReport(
+                TEST_APP_ID, TEST_STUDY_ID, account);
+        assertEquals(retValue.getProgression(), UNSTARTED);
+        
+        verify(mockReportDao).saveWeeklyAdherenceReport(retValue);
+    }
+    
+    @Test
     public void getWeeklyAdherenceReport_defaultTimeZone() throws Exception {
         RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
@@ -954,7 +1063,10 @@ public class AdherenceServiceTest extends Mockito {
         Timeline timeline = Scheduler.INSTANCE.calculateTimeline(schedule);
         
         when(mockScheduleService.getScheduleMetadata(SCHEDULE_GUID))
-            .thenReturn(timeline.getMetadata());        
+            .thenReturn(timeline.getMetadata());
+        
+        RequestInfo info = new RequestInfo.Builder().withSignedInOn(CREATED_ON).build();
+        when(mockRequestInfoService.getRequestInfo(TEST_USER_ID)).thenReturn(info);
 
         StudyActivityEvent e1 = new StudyActivityEvent.Builder()
                 .withEventId("timeline_retrieved")
@@ -1056,6 +1168,9 @@ public class AdherenceServiceTest extends Mockito {
         when(mockScheduleService.getScheduleMetadata(SCHEDULE_GUID))
             .thenReturn(StudyAdherenceReportGeneratorTest.createTimelineMetadata());        
         
+        RequestInfo info = new RequestInfo.Builder().withSignedInOn(CREATED_ON).build();
+        when(mockRequestInfoService.getRequestInfo(TEST_USER_ID)).thenReturn(info);
+
         ResourceList<StudyActivityEvent> events = 
                 new ResourceList<>(StudyAdherenceReportGeneratorTest.createEvents());
         when(mockStudyActivityEventService.getRecentStudyActivityEvents(
