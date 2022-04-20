@@ -62,6 +62,7 @@ import com.google.common.collect.ImmutableSet;
 import org.joda.time.DateTime;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -2000,6 +2001,10 @@ public class StudyParticipantControllerTest extends Mockito {
     
     @Test
     public void getParticipantScheduleForSelf_newTimeZone() {
+        // Order of operations matters here
+        InOrder ordered = inOrder(mockRequestInfoService, mockScheduleService, mockAccountService, 
+                mockSessionUpdateService, mockStudyActivityEventService);        
+        
         session.setParticipant(new StudyParticipant.Builder()
                 .withId(TEST_USER_ID).withStudyIds(ImmutableSet.of(TEST_STUDY_ID)).build());
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
@@ -2016,23 +2021,25 @@ public class StudyParticipantControllerTest extends Mockito {
         
         ParticipantSchedule retValue = controller.getParticipantScheduleForSelf(TEST_STUDY_ID, TEST_CLIENT_TIME_ZONE);
         assertSame(retValue, schedule);
-        
-        verify(mockRequestInfoService).updateRequestInfo(requestInfoCaptor.capture());
-        RequestInfo info = requestInfoCaptor.getValue();
-        assertEquals(info.getTimelineAccessedOn(), CREATED_ON);
-        
-        verify(mockAccountService).editAccount(eq(ACCOUNT_ID), any());
-        verify(mockSessionUpdateService).updateClientTimeZone(session, TEST_CLIENT_TIME_ZONE);
+
+        ordered.verify(mockAccountService).editAccount(eq(ACCOUNT_ID), any());
+        ordered.verify(mockSessionUpdateService).updateClientTimeZone(session, TEST_CLIENT_TIME_ZONE);
         assertEquals(account.getClientTimeZone(), TEST_CLIENT_TIME_ZONE);
         verify(mockAccount).setClientTimeZone(TEST_CLIENT_TIME_ZONE);
-        
-        verify(mockStudyActivityEventService).publishEvent(eventCaptor.capture(), eq(false), eq(true));
+
+        ordered.verify(mockRequestInfoService).updateRequestInfo(requestInfoCaptor.capture());
+        RequestInfo info = requestInfoCaptor.getValue();
+        assertEquals(info.getTimelineAccessedOn(), CREATED_ON);
+
+        ordered.verify(mockStudyActivityEventService).publishEvent(eventCaptor.capture(), eq(false), eq(true));
         StudyActivityEvent event = eventCaptor.getValue();
         assertEquals(event.getAppId(), TEST_APP_ID);
         assertEquals(event.getStudyId(), TEST_STUDY_ID);
         assertEquals(event.getUserId(), TEST_USER_ID);
         assertEquals(event.getEventId(), TIMELINE_RETRIEVED.name().toLowerCase());
         assertEquals(event.getTimestamp(), CREATED_ON);
+
+        ordered.verify(mockScheduleService).getParticipantSchedule(eq(TEST_APP_ID), eq(TEST_STUDY_ID), any());
     }
     
     @Test
