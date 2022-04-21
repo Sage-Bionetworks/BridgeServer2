@@ -104,22 +104,39 @@ public class StudyAdherenceReportGenerator {
         if (!ParticipantStudyProgress.NO_ADHERENCE.contains(progression)) {
             adherence = calculateAdherencePercentage(ImmutableList.of(studyStream));
         }
+
+        // The studyStartDate is informational; nothing prevents a participant from creating events that
+        // are earlier than this timestamp. In that case, you have to guard against nonsensical date ranges, 
+        // while being sure the range includes all the dates in the stream.
         DateRange dateRange = null;
         if (eventReport.getDateRangeOfAllStreams() != null) {
+            LocalDate startDate = eventReport.getDateRangeOfAllStreams().getStartDate();
             LocalDate endDate = eventReport.getDateRangeOfAllStreams().getEndDate();
-            if (studyStartDate.isEqual(endDate) || studyStartDate.isBefore(endDate)) {
-                dateRange = new DateRange(studyStartDate, endDate);
+            if (startDate.isAfter(studyStartDate)) {
+                startDate = studyStartDate;
+            }
+            if (endDate.isEqual(studyStartDate) || endDate.isAfter(studyStartDate)) {
+                dateRange = new DateRange(startDate, endDate);
             }
         }
         
         // Break this study stream down into weeks. TreeMap sorts the weeks by week number. This report is still
-        // “sparse” (no weeks are present that have no activities). 
+        // “sparse” (no weeks are present that have no activities).
         Map<Integer, StudyReportWeek> weekMap = new TreeMap<>();
         for (Map.Entry<Integer, List<EventStreamDay>> entry : studyStream.getByDayEntries().entrySet()) {
-            int week = entry.getKey() / 7;
+            Integer index = entry.getKey();
+            int week = index / 7;
             // Day of week can be negative if the week was negative... So take the absolute value
-            int dayOfWeek = Math.abs(entry.getKey() % 7);
+            int dayOfWeek = Math.abs(index % 7);
             
+            // If the index is negative, there were events before the study start date. There's no great
+            // way to represent these, but we're going to utilize negative weeks, which reverses the
+            // direction of the dayOfWeek calculation (negative numbers progress backwards on the number
+            // line).
+            if (index < 0) {
+                week--;
+                dayOfWeek = 6 - dayOfWeek;
+            }
             StudyReportWeek oneWeek = weekMap.get(week);
             if (oneWeek == null) {
                 oneWeek = new StudyReportWeek();
