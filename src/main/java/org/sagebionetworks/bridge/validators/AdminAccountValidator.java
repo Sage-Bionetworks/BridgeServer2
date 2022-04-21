@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.validators;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.sagebionetworks.bridge.BridgeUtils.isValidTimeZoneID;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_EMAIL_ERROR;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_PHONE_ERROR;
@@ -71,12 +72,8 @@ public class AdminAccountValidator implements Validator {
                 validateStringLength(errors, 255, attributeValue,"attributes["+attributeName+"]");
             }
         }
-        if (account.getClientTimeZone() != null) {
-            try {
-                ZoneId.of(account.getClientTimeZone());
-            } catch (DateTimeException e) {
-                errors.rejectValue("clientTimeZone", INVALID_TIME_ZONE);
-            }
+        if (!isValidTimeZoneID(account.getClientTimeZone(), false)) {
+            errors.rejectValue("clientTimeZone", INVALID_TIME_ZONE);
         }
         validateStringLength(errors, 255, account.getEmail(), "email");
         validateStringLength(errors, 255, account.getFirstName(), "firstName");

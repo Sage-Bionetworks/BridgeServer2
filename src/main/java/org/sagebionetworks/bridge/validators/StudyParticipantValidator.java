@@ -65,10 +65,12 @@ public class StudyParticipantValidator implements Validator {
         if (StringUtils.isNotBlank(participant.getOrgMembership())) {
             LOG.warn("Study participant created with an org membership by caller "
                     + RequestContext.get().getCallerUserId());
+            errors.rejectValue("orgMembership", "is prohibited for a participant account");
         }
         if (!participant.getRoles().isEmpty()) {
             LOG.warn("Study participant created with roles by caller "
                     + RequestContext.get().getCallerUserId());
+            errors.rejectValue("roles", "are prohibited for a participant account");
         }
         if (isNew) {
             if (!ValidatorUtils.participantHasValidIdentifier(participant)) {

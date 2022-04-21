@@ -1,8 +1,11 @@
-package org.sagebionetworks.bridge.services;
+ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
+import static org.sagebionetworks.bridge.AuthEvaluatorField.ORG_ID;
+import static org.sagebionetworks.bridge.AuthEvaluatorField.USER_ID;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_ADMINS;
 import static org.sagebionetworks.bridge.BridgeConstants.MAX_USERS_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.BridgeUtils.addToSet;
@@ -34,7 +37,6 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.LimitExceededException;
-import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
@@ -53,8 +55,6 @@ import com.google.common.collect.Sets;
 
 @Component
 public class AdminAccountService {
-    public static final String CALLER_NOT_ADMIN_MSG = "Caller must be an administrative user.";
-
     private AppService appService;
     private AccountWorkflowService accountWorkflowService;
     private SmsService smsService;
@@ -113,7 +113,15 @@ public class AdminAccountService {
     
     public Optional<Account> getAccount(String appId, String userToken) {
         AccountId accountId = BridgeUtils.parseAccountId(appId, userToken);
-        return accountDao.getAccount(accountId);
+        Optional<Account> optional = accountDao.getAccount(accountId);
+        if (optional.isPresent()) {
+            Account account = optional.get();
+            if (!TRUE.equals(account.isAdmin()) || !CAN_EDIT_ADMINS.check(
+                ORG_ID, account.getOrgMembership(), USER_ID, account.getId())) {
+                return Optional.empty();
+            }
+        }
+        return optional;
     }
 
     public Account createAccount(String appId, Account submittedAccount) {
@@ -135,8 +143,6 @@ public class AdminAccountService {
         account.setAdmin(true);
         account.setId(generateGUID());
         account.setAppId(appId);
-        account.setEmailVerified(FALSE);
-        account.setPhoneVerified(FALSE);
         // not relevant for an admin, but I'm not sure all APIs could deal with this being null
         account.setHealthCode(generateGUID()); 
         account.setStatus(submittedAccount.getSynapseUserId() != null ? ENABLED : UNVERIFIED);
@@ -190,7 +196,7 @@ public class AdminAccountService {
 
         accountDao.createAccount(account);
         
-        sendVerificationMessages(app, account);
+        sendVerificationMessages(app, Account.create(), account);
         return account;
     }
     
@@ -206,12 +212,8 @@ public class AdminAccountService {
         }
         account.setPassword(null); // don’t validate this value
 
-        AccountId accountId = AccountId.forId(appId,  account.getId());
-        Account persistedAccount = accountDao.getAccount(accountId)
+        Account persistedAccount = getAccount(appId, account.getId())
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
-        if (!persistedAccount.isAdmin()) {
-            throw new UnauthorizedException(CALLER_NOT_ADMIN_MSG);
-        }
 
         Validator validator = new AdminAccountValidator(app.getPasswordPolicy(), app.getUserProfileAttributes());
         Validate.entityThrowingException(validator, account);
@@ -234,19 +236,19 @@ public class AdminAccountService {
         if (!RequestContext.get().isInRole(ADMIN, WORKER)) {
             account.setStatus(persistedAccount.getStatus());
         }
-        if (!ObjectUtils.nullSafeEquals(account.getEmail(), persistedAccount.getEmail())) {
-            account.setEmailVerified(FALSE);
-        }
-        if (!ObjectUtils.nullSafeEquals(account.getPhone(), persistedAccount.getPhone())) {
-            account.setPhoneVerified(FALSE);
-        }
+//        if (!ObjectUtils.nullSafeEquals(account.getEmail(), persistedAccount.getEmail())) {
+//            account.setEmailVerified(FALSE);
+//        }
+//        if (!ObjectUtils.nullSafeEquals(account.getPhone(), persistedAccount.getPhone())) {
+//            account.setPhoneVerified(FALSE);
+//        }
         RequestContext context = RequestContext.get();
         Set<Roles> finalRoles = updateRoles(context, account.getRoles(), persistedAccount.getRoles());
         account.setRoles(finalRoles);
 
         accountDao.updateAccount(account);
         
-        sendVerificationMessages(app, account);
+        sendVerificationMessages(app, persistedAccount, account);
         
         return account;
     }
@@ -266,18 +268,23 @@ public class AdminAccountService {
         }
     }
     
-    protected void sendVerificationMessages(App app, Account account) {
-        // send verify email
-        if (account.getEmail() != null && account.getEmailVerified() != TRUE) {
-            accountWorkflowService.sendEmailVerificationToken(app, account.getId(), account.getEmail());
+    protected void sendVerificationMessages(App app, Account original, Account update) {
+        if (!ObjectUtils.nullSafeEquals(original.getEmail(), update.getEmail())) {
+            update.setEmailVerified(FALSE);
+            if (update.getEmail() != null) {
+                accountWorkflowService.sendEmailVerificationToken(app, update.getId(), update.getEmail());
+            }
         }
-        // If you create an account with a phone number, this opts the phone number in to receiving SMS. We do this
-        // _before_ phone verification / sign-in, because we need to opt the user in to SMS in order to send phone
-        // verification / sign-in.
-        Phone phone = account.getPhone();
-        if (phone != null && account.getPhoneVerified() != TRUE) {
-            smsService.optInPhoneNumber(account.getId(), phone);
-            accountWorkflowService.sendPhoneVerificationToken(app, account.getId(), phone);
+        if (!ObjectUtils.nullSafeEquals(original.getPhone(), update.getPhone())) {
+            update.setPhoneVerified(FALSE);
+            Phone phone = update.getPhone();
+            if (phone != null) {
+                // If you create an account with a phone number, this opts the phone number in to receiving SMS. We do this
+                // _before_ phone verification / sign-in, because we need to opt the user in to SMS in order to send phone
+                // verification / sign-in.
+                smsService.optInPhoneNumber(update.getId(), phone);
+                accountWorkflowService.sendPhoneVerificationToken(app, update.getId(), phone);
+            }
         }
     }
     

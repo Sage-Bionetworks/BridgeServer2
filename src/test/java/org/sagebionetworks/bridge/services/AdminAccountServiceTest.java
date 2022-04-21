@@ -27,6 +27,7 @@ import static org.sagebionetworks.bridge.models.accounts.AccountStatus.UNVERIFIE
 import static org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM;
 import static org.sagebionetworks.bridge.models.accounts.SharingScope.NO_SHARING;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 
@@ -50,7 +51,6 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.LimitExceededException;
-import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
@@ -108,11 +108,79 @@ public class AdminAccountServiceTest extends Mockito {
     }
     
     @Test
-    public void getAccount() {
-        service.getAccount(TEST_APP_ID, "synapseuserid:12345");
+    public void getAccount_forSelf() {
+        RequestContext.set(new RequestContext.Builder().withCallerUserId(TEST_USER_ID).build());
+        AccountId accountId = AccountId.forSynapseUserId(TEST_APP_ID, "12345");
         
-        verify(mockAccountDao).getAccount(accountIdCaptor.capture());
-        assertEquals(AccountId.forSynapseUserId(TEST_APP_ID, "12345"), accountIdCaptor.getValue());
+        Account account = Account.create();
+        account.setAdmin(true);
+        account.setId(TEST_USER_ID);
+        when(mockAccountDao.getAccount(accountId)).thenReturn(Optional.of(account));
+
+        Optional<Account> retValue = service.getAccount(TEST_APP_ID, "synapseuserid:12345");
+        assertEquals(retValue.get(), account);
+        
+        verify(mockAccountDao).getAccount(accountId);
+    }
+    
+    @Test
+    public void getAccount_forOrgMember() {
+        RequestContext.set(new RequestContext.Builder().withCallerUserId(TEST_USER_ID)
+                .withCallerOrgMembership(TEST_ORG_ID).build());
+        AccountId accountId = AccountId.forSynapseUserId(TEST_APP_ID, "12345");
+        
+        Account account = Account.create();
+        account.setAdmin(true);
+        account.setId("some-other-person");
+        account.setOrgMembership(TEST_ORG_ID);
+        when(mockAccountDao.getAccount(accountId)).thenReturn(Optional.of(account));
+
+        Optional<Account> retValue = service.getAccount(TEST_APP_ID, "synapseuserid:12345");
+        assertEquals(retValue.get(), account);
+        
+        verify(mockAccountDao).getAccount(accountId);
+    }
+    
+    @Test
+    public void getAccount_forAdmin() {
+        RequestContext.set(new RequestContext.Builder().withCallerUserId(TEST_USER_ID)
+                .withCallerRoles(ImmutableSet.of(ADMIN)).build());
+        AccountId accountId = AccountId.forSynapseUserId(TEST_APP_ID, "12345");
+        
+        Account account = Account.create();
+        account.setAdmin(true);
+        account.setId("some-other-person");
+        when(mockAccountDao.getAccount(accountId)).thenReturn(Optional.of(account));
+
+        Optional<Account> retValue = service.getAccount(TEST_APP_ID, "synapseuserid:12345");
+        assertEquals(retValue.get(), account);
+        
+        verify(mockAccountDao).getAccount(accountId);
+    }
+    
+    @Test
+    public void getAccount_noAccount() {
+        RequestContext.set(new RequestContext.Builder().withCallerUserId(TEST_USER_ID)
+                .withCallerRoles(ImmutableSet.of(ADMIN)).build());
+        AccountId accountId = AccountId.forSynapseUserId(TEST_APP_ID, "12345");
+        
+        when(mockAccountDao.getAccount(accountId)).thenReturn(Optional.empty());
+        
+        Optional<Account> optional = service.getAccount(TEST_APP_ID, "synapseuserid:12345");
+        assertFalse(optional.isPresent());
+    }
+    
+    @Test
+    public void getAccount_accountIsNotAnAdmin() {
+        RequestContext.set(new RequestContext.Builder().withCallerUserId(TEST_USER_ID)
+                .withCallerRoles(ImmutableSet.of(ADMIN)).build());
+        AccountId accountId = AccountId.forSynapseUserId(TEST_APP_ID, "12345");
+        
+        Account account = Account.create();
+        when(mockAccountDao.getAccount(accountId)).thenReturn(Optional.of(account));
+        
+        Optional<Account> optional = service.getAccount(TEST_APP_ID, "synapseuserid:12345");
+        assertFalse(optional.isPresent());
     }
     
     @Test
@@ -595,8 +663,72 @@ public class AdminAccountServiceTest extends Mockito {
         verify(mockAccountWorkflowService).sendPhoneVerificationToken(app, TEST_USER_ID, changedPhone);
     }
     
-    @Test(expectedExceptions = UnauthorizedException.class, 
-            expectedExceptionsMessageRegExp = AdminAccountService.CALLER_NOT_ADMIN_MSG)
+    @Test
+    public void updateAccount_doesNotChangeEmailOrPhone() {
+        App app = App.create();
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
+        
+        Account persistedAccount = Account.create();
+        persistedAccount.setAdmin(TRUE);
+        persistedAccount.setEmail(EMAIL);
+        persistedAccount.setPhone(PHONE);
+        persistedAccount.setEmailVerified(TRUE);
+        persistedAccount.setPhoneVerified(TRUE);
+
+        when(mockAccountDao.getAccount(any())).thenReturn(Optional.of(persistedAccount));
+
+        Account account = Account.create();
+        account.setEmail(EMAIL);
+        account.setPhone(PHONE);
+        account.setId(TEST_USER_ID);
+        account.setEmailVerified(FALSE); // ignored
+        account.setPhoneVerified(FALSE); // ignored
+        
+        Account retValue = service.updateAccount(TEST_APP_ID, account);
+        
+        assertEquals(retValue.getEmailVerified(), TRUE);
+        assertEquals(retValue.getPhoneVerified(), TRUE);
+        assertEquals(retValue.getEmail(), EMAIL);
+        assertEquals(retValue.getPhone(), PHONE);
+        
+        verify(mockAccountDao).updateAccount(account);
+        verify(mockAccountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
+        verify(mockSmsService, never()).optInPhoneNumber(any(), any());
+        verify(mockAccountWorkflowService, never()).sendPhoneVerificationToken(any(), any(), any());
+    }
+    
+    @Test
+    public void updateAccount_removesEmailAndPhone() {
+        App app = App.create();
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
+        
+        Account persistedAccount = Account.create();
+        persistedAccount.setAdmin(TRUE);
+        persistedAccount.setEmail(EMAIL);
+        persistedAccount.setPhone(PHONE);
+        persistedAccount.setEmailVerified(TRUE);
+        persistedAccount.setPhoneVerified(TRUE);
+
+        when(mockAccountDao.getAccount(any())).thenReturn(Optional.of(persistedAccount));
+
+        Account account = Account.create();
+        account.setId(TEST_USER_ID);
+        account.setSynapseUserId("12345");
+        
+        Account retValue = service.updateAccount(TEST_APP_ID, account);
+        
+        assertEquals(retValue.getEmailVerified(), FALSE);
+        assertEquals(retValue.getPhoneVerified(), FALSE);
+        assertNull(retValue.getEmail());
+        assertNull(retValue.getPhone());
+        
+        verify(mockAccountDao).updateAccount(account);
+        verify(mockAccountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
+        verify(mockSmsService, never()).optInPhoneNumber(any(), any());
+        verify(mockAccountWorkflowService, never()).sendPhoneVerificationToken(any(), any(), any());
+    }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class)
     public void updateAccount_cannotEditNonAdminUser() {
         App app = App.create();
         app.setUserProfileAttributes(ImmutableSet.of("a"));

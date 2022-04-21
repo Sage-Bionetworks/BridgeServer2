@@ -49,6 +49,7 @@ import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 @CrossOrigin
 @RestController
 public class AccountsController extends BaseController  {
+    static final String CALLER_NOT_ADMIN_MSG = "Caller must be an administrative user.";
     static final StatusMessage UPDATED_MSG = new StatusMessage("Member updated.");
     static final StatusMessage DELETED_MSG = new StatusMessage("Member account deleted.");
     static final StatusMessage RESET_PWD_MSG = new StatusMessage("Request to reset password sent to user.");
@@ -76,7 +77,7 @@ public class AccountsController extends BaseController  {
         
         Account account = verifyOrgAdminIsActingOnOrgMember(session, session.getId());
         if (!account.isAdmin()) {
-            throw new UnauthorizedException(AdminAccountService.CALLER_NOT_ADMIN_MSG);
+            throw new UnauthorizedException(CALLER_NOT_ADMIN_MSG);
         }
         return account;
     }
@@ -85,7 +86,7 @@ public class AccountsController extends BaseController  {
     public StatusMessage updateSelfAccount() {
         UserSession session = getAuthenticatedSession();
         
-        Account account = verifyOrgAdminIsActingOnOrgMember(session, session.getId());
+        verifyOrgAdminIsActingOnOrgMember(session, session.getId());
         Account update = parseJson(Account.class); 
         adminAccountService.updateAccount(session.getAppId(), update);
         
