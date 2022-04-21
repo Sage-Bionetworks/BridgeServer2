@@ -236,12 +236,6 @@ public class AdminAccountService {
         if (!RequestContext.get().isInRole(ADMIN, WORKER)) {
             account.setStatus(persistedAccount.getStatus());
         }
-//        if (!ObjectUtils.nullSafeEquals(account.getEmail(), persistedAccount.getEmail())) {
-//            account.setEmailVerified(FALSE);
-//        }
-//        if (!ObjectUtils.nullSafeEquals(account.getPhone(), persistedAccount.getPhone())) {
-//            account.setPhoneVerified(FALSE);
-//        }
         RequestContext context = RequestContext.get();
         Set<Roles> finalRoles = updateRoles(context, account.getRoles(), persistedAccount.getRoles());
         account.setRoles(finalRoles);

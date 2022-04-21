@@ -37,6 +37,7 @@ import org.springframework.validation.Errors;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.models.Label;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
 import org.sagebionetworks.bridge.models.assessments.ColorScheme;
@@ -58,6 +59,33 @@ public class ValidatorUtilsTest extends Mockito {
         return clientData;
     }
     
+    @Test
+    public void accountHasValidIdentifierValidEmail() {
+        Account account = Account.create();
+        account.setEmail(EMAIL);
+        assertTrue(ValidatorUtils.accountHasValidIdentifier(account));
+    }
+
+    @Test
+    public void accountHasValidIdentifierValiPhone() {
+        Account account = Account.create();
+        account.setPhone(PHONE);
+        assertTrue(ValidatorUtils.accountHasValidIdentifier(account));
+    }
+
+    @Test
+    public void accountHasValidIdentifierValidSynapseUserId() {
+        Account account = Account.create();
+        account.setSynapseUserId(SYNAPSE_USER_ID);
+        assertTrue(ValidatorUtils.accountHasValidIdentifier(account));
+    }
+    
+    @Test
+    public void accountHasValidIdentifierInvalid() {
+        Account account = Account.create();
+        assertFalse(ValidatorUtils.accountHasValidIdentifier(account));
+    }
+
     @Test
     public void participantHasValidIdentifierValidEmail() {
         StudyParticipant participant = new StudyParticipant.Builder().withEmail(EMAIL).build();
@@ -82,7 +110,7 @@ public class ValidatorUtilsTest extends Mockito {
         StudyParticipant participant = new StudyParticipant.Builder().withSynapseUserId(SYNAPSE_USER_ID).build();
         assertTrue(ValidatorUtils.participantHasValidIdentifier(participant));
     }
-
+    
     @Test
     public void participantHasValidIdentifierInvalid() {
         StudyParticipant participant = new StudyParticipant.Builder().withExternalIds(ImmutableMap.of()).build();
