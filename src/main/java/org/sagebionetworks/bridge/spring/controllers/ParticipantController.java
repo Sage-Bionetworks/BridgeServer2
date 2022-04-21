@@ -80,7 +80,7 @@ import org.sagebionetworks.bridge.models.studies.EnrollmentDetail;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.upload.UploadView;
 import org.sagebionetworks.bridge.services.ParticipantService;
-import org.sagebionetworks.bridge.services.UserAdminService;
+import org.sagebionetworks.bridge.services.IntegrationTestUserService;
 import org.sagebionetworks.bridge.services.AccountWorkflowService;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.services.EnrollmentService;
@@ -94,7 +94,7 @@ public class ParticipantController extends BaseController {
 
     private ParticipantService participantService;
     
-    private UserAdminService userAdminService;
+    private IntegrationTestUserService testUserService;
     
     private EnrollmentService enrollmentService;
     
@@ -106,8 +106,8 @@ public class ParticipantController extends BaseController {
     }
     
     @Autowired
-    final void setUserAdminService(UserAdminService userAdminService) {
-        this.userAdminService = userAdminService;
+    final void setIntegrationTestUserService(IntegrationTestUserService testUserService) {
+        this.testUserService = testUserService;
     }
     
     @Autowired
@@ -220,7 +220,7 @@ public class ParticipantController extends BaseController {
             throw new UnauthorizedException(CANNOT_DELETE_ACCOUNT_ERROR);
         }
         App app = appService.getApp(session.getAppId());
-        userAdminService.deleteUser(app, account.getId());
+        testUserService.deleteUser(app, account.getId());
         return new StatusMessage("User deleted.");
     }
 

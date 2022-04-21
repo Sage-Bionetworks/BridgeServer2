@@ -1,18 +1,16 @@
 package org.sagebionetworks.bridge.services;
 
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.anyBoolean;
-import static org.mockito.Mockito.anyString;
-import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.TestConstants.EMAIL;
+import static org.sagebionetworks.bridge.TestConstants.PASSWORD;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_EXTERNAL_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertSame;
 import static org.testng.Assert.fail;
 
 import java.util.Map;
@@ -24,6 +22,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -55,7 +54,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 
-public class UserAdminServiceTest {
+public class IntegrationTestUserServiceTest extends Mockito {
     
     private static final String USER_ID = "ABC";
 
@@ -70,9 +69,12 @@ public class UserAdminServiceTest {
     
     @Mock
     private ConsentService consentService;
-    
+
     @Mock
     private AccountService accountService;
+
+    @Mock
+    private AdminAccountService adminAccountService;
     
     @Mock
     private Account account;
@@ -111,7 +113,7 @@ public class UserAdminServiceTest {
     private ArgumentCaptor<Account> accountCaptor;
 
     @InjectMocks
-    private UserAdminService service;
+    private IntegrationTestUserService service;
     
     private Map<SubpopulationGuid,ConsentStatus> statuses;
     
@@ -150,11 +152,11 @@ public class UserAdminServiceTest {
     }
     
     @Test
-    public void creatingUserConsentsToAllRequiredConsents() {
+    public void createUser_consentsToAllRequiredConsents() {
         RequestContext.set(new RequestContext.Builder().withCallerRoles(
                 ImmutableSet.of(Roles.ADMIN)).build());
         
-        App app = TestUtils.getValidApp(UserAdminServiceTest.class);
+        App app = TestUtils.getValidApp(IntegrationTestUserServiceTest.class);
         StudyParticipant participant = new StudyParticipant.Builder().withEmail("email@email.com").withPassword("password").build();
         
         Map<SubpopulationGuid,ConsentStatus> statuses = Maps.newHashMap();
@@ -183,11 +185,11 @@ public class UserAdminServiceTest {
     }
     
     @Test
-    public void creatingUserWithPhone() {
+    public void createUser_withPhone() {
         RequestContext.set(new RequestContext.Builder().withCallerRoles(
                 ImmutableSet.of(Roles.ADMIN)).build());
         
-        App app = TestUtils.getValidApp(UserAdminServiceTest.class);
+        App app = TestUtils.getValidApp(IntegrationTestUserServiceTest.class);
         StudyParticipant participant = new StudyParticipant.Builder().withPhone(TestConstants.PHONE)
                 .withPassword("password").build();
 
@@ -207,10 +209,10 @@ public class UserAdminServiceTest {
     }
 
     @Test
-    public void creatingUserWithExternalId() {
+    public void createUser_withExternalId() {
         RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(Roles.ADMIN)).build());
 
-        App app = TestUtils.getValidApp(UserAdminServiceTest.class);
+        App app = TestUtils.getValidApp(IntegrationTestUserServiceTest.class);
         StudyParticipant participant = new StudyParticipant.Builder().withExternalId(TEST_EXTERNAL_ID)
                 .withPassword("password").build();
 
@@ -230,19 +232,19 @@ public class UserAdminServiceTest {
     }
 
     @Test(expectedExceptions = InvalidEntityException.class)
-    public void creatingUserWithoutEmailOrPhoneProhibited() {
-        App app = TestUtils.getValidApp(UserAdminServiceTest.class);
+    public void createUser_withoutEmailOrPhoneProhibited() {
+        App app = TestUtils.getValidApp(IntegrationTestUserServiceTest.class);
         StudyParticipant participant = new StudyParticipant.Builder().withPassword("password").build();
 
         service.createUser(app, participant, null, true, true);
     }
     
     @Test
-    public void creatingUserWithSubpopulationOnlyConsentsToThatSubpopulation() {
+    public void createUser_withSubpopulationOnlyConsentsToThatSubpopulation() {
         RequestContext.set(new RequestContext.Builder().withCallerRoles(
                 ImmutableSet.of(Roles.ADMIN)).build());
                 
-        App app = TestUtils.getValidApp(UserAdminServiceTest.class);
+        App app = TestUtils.getValidApp(IntegrationTestUserServiceTest.class);
         StudyParticipant participant = new StudyParticipant.Builder().withEmail("email@email.com").withPassword("password").build();
         SubpopulationGuid consentedGuid = statuses.keySet().iterator().next();
         
@@ -261,11 +263,11 @@ public class UserAdminServiceTest {
     }
     
     @Test
-    public void createUserWithoutConsents() {
+    public void createUser_withoutConsents() {
         RequestContext.set(new RequestContext.Builder().withCallerRoles(
                 ImmutableSet.of(Roles.ADMIN)).build());
                 
-        App app = TestUtils.getValidApp(UserAdminServiceTest.class);
+        App app = TestUtils.getValidApp(IntegrationTestUserServiceTest.class);
         StudyParticipant participant = new StudyParticipant.Builder().withEmail("email@email.com").withPassword("password").build();
         SubpopulationGuid consentedGuid = statuses.keySet().iterator().next();
 
@@ -275,11 +277,11 @@ public class UserAdminServiceTest {
     }
     
     @Test
-    public void createUserWithoutSigningIn() {
+    public void createUser_withoutSigningIn() {
         RequestContext.set(new RequestContext.Builder().withCallerRoles(
                 ImmutableSet.of(Roles.ADMIN)).build());
         
-        App app = TestUtils.getValidApp(UserAdminServiceTest.class);
+        App app = TestUtils.getValidApp(IntegrationTestUserServiceTest.class);
         StudyParticipant participant = new StudyParticipant.Builder().withEmail("email@email.com").withPassword("password").build();
         
         when(consentService.getConsentStatuses(any())).thenReturn(ImmutableMap.of());
@@ -298,11 +300,126 @@ public class UserAdminServiceTest {
     }
     
     @Test
-    public void createUserNotConsented() {
+    public void createAccount_adminNoSignInNoConsent() {
         RequestContext.set(new RequestContext.Builder().withCallerRoles(
                 ImmutableSet.of(Roles.ADMIN)).build());
         
-        App app = TestUtils.getValidApp(UserAdminServiceTest.class);
+        App app = App.create();
+        app.setIdentifier(TEST_APP_ID);
+        
+        when(account.getAppId()).thenReturn(TEST_APP_ID);
+        when(account.getId()).thenReturn(TEST_USER_ID);
+        TestUtils.mockEditAccount(accountService, account);
+        
+        when(adminAccountService.createAccount(eq(TEST_APP_ID), any())).thenReturn(account);
+        
+        UserSession session = new UserSession();
+        when(authenticationService.getSession(any(), any())).thenReturn(session);
+        
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withRoles(ImmutableSet.of(DEVELOPER, RESEARCHER))
+                .withEmail(EMAIL)
+                .withPassword(PASSWORD).build();
+        
+        // no consent, no sign in, session is returned for testing
+        UserSession retValue = service.createUser(app, participant, null, false, false);
+        assertSame(retValue, session);
+        
+        verify(adminAccountService).createAccount(eq(TEST_APP_ID), accountCaptor.capture());
+        Account persisted = accountCaptor.getValue();
+        assertEquals(persisted.getEmail(), EMAIL);
+        assertEquals(persisted.getPassword(), PASSWORD);
+        assertEquals(persisted.getRoles(), ImmutableSet.of(DEVELOPER, RESEARCHER));
+        
+        verify(authenticationService).getSession(eq(app), contextCaptor.capture());
+        assertEquals(contextCaptor.getValue().getUserId(), TEST_USER_ID);
+        assertEquals(contextCaptor.getValue().getAppId(), TEST_APP_ID);
+    }
+    
+    @Test
+    public void createAccount_adminWithSignIn() {
+        RequestContext.set(new RequestContext.Builder().withCallerRoles(
+                ImmutableSet.of(Roles.ADMIN)).build());
+        
+        App app = App.create();
+        app.setIdentifier(TEST_APP_ID);
+        
+        when(account.getAppId()).thenReturn(TEST_APP_ID);
+        when(account.getId()).thenReturn(TEST_USER_ID);
+        TestUtils.mockEditAccount(accountService, account);
+        
+        when(adminAccountService.createAccount(eq(TEST_APP_ID), any())).thenReturn(account);
+        
+        UserSession session = new UserSession();
+        when(authenticationService.signIn(eq(app), any(), any())).thenReturn(session);
+        
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withRoles(ImmutableSet.of(DEVELOPER, RESEARCHER))
+                .withEmail(EMAIL)
+                .withPassword(PASSWORD).build();
+        
+        // no consent, no sign in, session is returned for testing
+        UserSession retValue = service.createUser(app, participant, null, true, false);
+        assertSame(retValue, session);
+        
+        verify(adminAccountService).createAccount(eq(TEST_APP_ID), accountCaptor.capture());
+        Account persisted = accountCaptor.getValue();
+        assertEquals(persisted.getEmail(), EMAIL);
+        assertEquals(persisted.getPassword(), PASSWORD);
+        assertEquals(persisted.getRoles(), ImmutableSet.of(DEVELOPER, RESEARCHER));
+        
+        verify(authenticationService).signIn(eq(app), contextCaptor.capture(), signInCaptor.capture());
+        assertEquals(contextCaptor.getValue().getUserId(), TEST_USER_ID);
+        assertEquals(contextCaptor.getValue().getAppId(), TEST_APP_ID);
+        
+        assertEquals(signInCaptor.getValue().getEmail(), EMAIL);
+        assertEquals(signInCaptor.getValue().getPassword(), PASSWORD);
+        assertEquals(signInCaptor.getValue().getAppId(), TEST_APP_ID);
+    }
+    
+    @Test
+    public void createAccount_withOrgMembership() {
+        RequestContext.set(new RequestContext.Builder().withCallerRoles(
+                ImmutableSet.of(Roles.ADMIN)).build());
+        
+        App app = App.create();
+        app.setIdentifier(TEST_APP_ID);
+        
+        when(account.getAppId()).thenReturn(TEST_APP_ID);
+        when(account.getId()).thenReturn(TEST_USER_ID);
+        TestUtils.mockEditAccount(accountService, account);
+        
+        when(adminAccountService.createAccount(eq(TEST_APP_ID), any())).thenReturn(account);
+        
+        UserSession session = new UserSession();
+        when(authenticationService.getSession(any(), any())).thenReturn(session);
+        
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withOrgMembership(TEST_ORG_ID)
+                .withEmail(EMAIL)
+                .withPassword(PASSWORD).build();
+        
+        // no consent, no sign in, session is returned for testing
+        UserSession retValue = service.createUser(app, participant, null, false, false);
+        assertSame(retValue, session);
+        
+        verify(adminAccountService).createAccount(eq(TEST_APP_ID), accountCaptor.capture());
+        Account persisted = accountCaptor.getValue();
+        assertEquals(persisted.getEmail(), EMAIL);
+        assertEquals(persisted.getPassword(), PASSWORD);
+        assertEquals(persisted.getOrgMembership(), TEST_ORG_ID);
+        
+        verify(authenticationService).getSession(eq(app), contextCaptor.capture());
+        assertEquals(contextCaptor.getValue().getUserId(), TEST_USER_ID);
+        assertEquals(contextCaptor.getValue().getAppId(), TEST_APP_ID);
+    }
+    
+    @Test
+    public void createUser_notConsented() {
+        RequestContext.set(new RequestContext.Builder().withCallerRoles(
+                ImmutableSet.of(Roles.ADMIN)).build());
+        
+        App app = TestUtils.getValidApp(IntegrationTestUserServiceTest.class);
         StudyParticipant participant = new StudyParticipant.Builder().withEmail("email@email.com").withPassword("password").build();
         
         when(authenticationService.signIn(eq(app), any(), any()))
@@ -315,11 +432,8 @@ public class UserAdminServiceTest {
     }
     
     @Test
-    public void createUserOnRuntimeExceptionCleansUpUser() {
-        RequestContext.set(new RequestContext.Builder().withCallerRoles(
-                ImmutableSet.of(Roles.ADMIN)).build());
-        
-        App app = TestUtils.getValidApp(UserAdminServiceTest.class);
+    public void createUser_onRuntimeExceptionCleansUpUser() {
+        App app = TestUtils.getValidApp(IntegrationTestUserServiceTest.class);
         StudyParticipant participant = new StudyParticipant.Builder().withEmail("email@email.com").withPassword("password").build();
         
         Map<SubpopulationGuid,ConsentStatus> statuses = Maps.newHashMap();
@@ -330,8 +444,8 @@ public class UserAdminServiceTest {
         AccountId accountId = AccountId.forId(app.getIdentifier(), USER_ID);
         when(accountService.getAccount(accountId)).thenReturn(Optional.of(account));
         
-        when(participantService.getParticipant(app, USER_ID, false))
-                .thenThrow(new IllegalStateException("System is unable to complete call"));        
+        doThrow(new IllegalStateException("System is unable to complete call"))
+            .when(consentService).consentToResearch(any(), any(), any(), any(), any(), anyBoolean());
         
         try {
             service.createUser(app, participant, null, true, true);    
@@ -343,7 +457,7 @@ public class UserAdminServiceTest {
     
     @Test
     public void deleteUser() {
-        App app = TestUtils.getValidApp(UserAdminServiceTest.class);
+        App app = TestUtils.getValidApp(IntegrationTestUserServiceTest.class);
         
         AccountId accountId = AccountId.forId(app.getIdentifier(),  "userId");
 
@@ -376,8 +490,8 @@ public class UserAdminServiceTest {
     }
     
     @Test
-    public void deleteUserNotFound() {
-        App app = TestUtils.getValidApp(UserAdminServiceTest.class);
+    public void deleteUser_notFound() {
+        App app = TestUtils.getValidApp(IntegrationTestUserServiceTest.class);
         
         service.deleteUser(app, "userId");
         

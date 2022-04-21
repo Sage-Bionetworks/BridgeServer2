@@ -172,7 +172,7 @@ public class HibernateAccountDaoTest extends Mockito {
         Account account = makeValidGenericAccount();
 
         // execute - We generate a new account ID.
-        dao.createAccount(app, account);
+        dao.createAccount(account);
         
         verify(mockHibernateHelper).create(account);
     }

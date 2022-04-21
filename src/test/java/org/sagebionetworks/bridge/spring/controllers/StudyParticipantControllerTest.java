@@ -128,7 +128,7 @@ import org.sagebionetworks.bridge.services.Schedule2Service;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
 import org.sagebionetworks.bridge.services.StudyActivityEventService;
 import org.sagebionetworks.bridge.services.StudyService;
-import org.sagebionetworks.bridge.services.UserAdminService;
+import org.sagebionetworks.bridge.services.IntegrationTestUserService;
 
 public class StudyParticipantControllerTest extends Mockito {
     @Mock
@@ -138,7 +138,7 @@ public class StudyParticipantControllerTest extends Mockito {
     ParticipantService mockParticipantService;
     
     @Mock
-    UserAdminService mockUserAdminService;
+    IntegrationTestUserService mockUserManagementService;
     
     @Mock
     EnrollmentService mockEnrollmentService;
@@ -1217,7 +1217,7 @@ public class StudyParticipantControllerTest extends Mockito {
         StatusMessage retValue = controller.deleteTestOrUnusedParticipant(TEST_STUDY_ID, TEST_USER_ID);
         assertEquals(retValue.getMessage(), "User deleted.");
         
-        verify(mockUserAdminService).deleteUser(app, TEST_USER_ID);
+        verify(mockUserManagementService).deleteUser(app, TEST_USER_ID);
     }    
     
     @Test(expectedExceptions = EntityNotFoundException.class)

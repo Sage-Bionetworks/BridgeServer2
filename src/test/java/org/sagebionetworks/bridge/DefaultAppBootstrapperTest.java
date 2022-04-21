@@ -32,13 +32,11 @@ import org.sagebionetworks.bridge.dynamodb.AnnotationBasedTableCreator;
 import org.sagebionetworks.bridge.dynamodb.DynamoInitializer;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.accounts.Account;
-import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.apps.App;
-import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.AccountService;
+import org.sagebionetworks.bridge.services.AdminAccountService;
 import org.sagebionetworks.bridge.services.AppService;
 import org.sagebionetworks.bridge.services.OrganizationService;
-import org.sagebionetworks.bridge.services.UserAdminService;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -52,7 +50,7 @@ public class DefaultAppBootstrapperTest extends Mockito {
     BridgeConfig mockConfig;
     
     @Mock
-    UserAdminService mockUserAdminService;
+    AdminAccountService mockAdminAccountService;
     
     @Mock
     AccountService mockAccountService;
@@ -76,7 +74,7 @@ public class DefaultAppBootstrapperTest extends Mockito {
     ArgumentCaptor<App> appCaptor;
 
     @Captor
-    ArgumentCaptor<StudyParticipant> participantCaptor;
+    ArgumentCaptor<Account> accountCaptor;
     
     @InjectMocks
     DefaultAppBootstrapper bootstrapper;
@@ -137,15 +135,12 @@ public class DefaultAppBootstrapperTest extends Mockito {
         assertTrue(retShared.isEmailVerificationEnabled());
         assertTrue(retShared.isVerifyChannelOnSignInEnabled());
         
-        verify(mockUserAdminService).createUser(eq(retApi), participantCaptor.capture(),
-                eq(SubpopulationGuid.create(API_APP_ID)), eq(false), eq(false));
-        verify(mockUserAdminService).createUser(eq(retApi2), participantCaptor.capture(),
-                eq(SubpopulationGuid.create(API_2_APP_ID)), eq(false), eq(false));
-        verify(mockUserAdminService).createUser(eq(retShared), participantCaptor.capture(),
-                eq(SubpopulationGuid.create(SHARED_APP_ID)), eq(false), eq(false));
+        verify(mockAdminAccountService).createAccount(eq(API_APP_ID), accountCaptor.capture());
+        verify(mockAdminAccountService).createAccount(eq(API_2_APP_ID), accountCaptor.capture());
+        verify(mockAdminAccountService).createAccount(eq(SHARED_APP_ID), accountCaptor.capture());
         
-        assertEquals(participantCaptor.getAllValues().size(), 3);
-        for (StudyParticipant admin : participantCaptor.getAllValues()) {
+        assertEquals(accountCaptor.getAllValues().size(), 3);
+        for (Account admin : accountCaptor.getAllValues()) {
             assertEquals(admin.getEmail(), EMAIL);
             assertEquals(admin.getPassword(), PASSWORD);
             assertEquals(admin.getSynapseUserId(), SYNAPSE_USER_ID);
@@ -173,15 +168,12 @@ public class DefaultAppBootstrapperTest extends Mockito {
         // We don't care about the context
         bootstrapper.onApplicationEvent(null);
         
-        verify(mockUserAdminService).createUser(any(), participantCaptor.capture(),
-                eq(SubpopulationGuid.create(API_APP_ID)), eq(false), eq(false));
-        verify(mockUserAdminService).createUser(any(), participantCaptor.capture(),
-                eq(SubpopulationGuid.create(API_2_APP_ID)), eq(false), eq(false));
-        verify(mockUserAdminService).createUser(any(), participantCaptor.capture(),
-                eq(SubpopulationGuid.create(SHARED_APP_ID)), eq(false), eq(false));
+        verify(mockAdminAccountService).createAccount(eq(API_APP_ID), accountCaptor.capture());
+        verify(mockAdminAccountService).createAccount(eq(API_2_APP_ID), accountCaptor.capture());
+        verify(mockAdminAccountService).createAccount(eq(SHARED_APP_ID), accountCaptor.capture());
         
-        assertEquals(participantCaptor.getAllValues().size(), 3);
-        for (StudyParticipant admin : participantCaptor.getAllValues()) {
+        assertEquals(accountCaptor.getAllValues().size(), 3);
+        for (Account admin : accountCaptor.getAllValues()) {
             assertEquals(admin.getEmail(), EMAIL);
             assertNull(admin.getPassword());
             assertEquals(admin.getSynapseUserId(), SYNAPSE_USER_ID);
@@ -208,15 +200,13 @@ public class DefaultAppBootstrapperTest extends Mockito {
         // We don't care about the context
         bootstrapper.onApplicationEvent(null);
         
-        verify(mockUserAdminService).createUser(any(), participantCaptor.capture(),
-                eq(SubpopulationGuid.create(API_APP_ID)), eq(false), eq(false));
-        verify(mockUserAdminService).createUser(any(), participantCaptor.capture(),
-                eq(SubpopulationGuid.create(API_2_APP_ID)), eq(false), eq(false));
-        
-        StudyParticipant apiAdmin = participantCaptor.getAllValues().get(0);
+        verify(mockAdminAccountService).createAccount(eq(API_APP_ID), accountCaptor.capture());
+        verify(mockAdminAccountService).createAccount(eq(API_2_APP_ID), accountCaptor.capture());
+
+        Account apiAdmin = accountCaptor.getAllValues().get(0);
         assertEquals(apiAdmin.getRoles(), ImmutableSet.of(ADMIN));
 
-        StudyParticipant sharedAdmin = participantCaptor.getAllValues().get(1);
+        Account sharedAdmin = accountCaptor.getAllValues().get(1);
         assertEquals(sharedAdmin.getRoles(), ImmutableSet.of(ADMIN));
     }
     
@@ -234,7 +224,7 @@ public class DefaultAppBootstrapperTest extends Mockito {
         bootstrapper.onApplicationEvent(null);
 
         verify(mockAppService, never()).createApp(any());
-        verify(mockUserAdminService, never()).createUser(any(), any(), any(), anyBoolean(), anyBoolean());
+        verify(mockAdminAccountService, never()).createAccount(any(), any());
     }
     
     @Test
@@ -253,6 +243,6 @@ public class DefaultAppBootstrapperTest extends Mockito {
         verify(mockDynamoInitializer).init(tables);
         verify(mockS3Initializer).initBuckets();
         verify(mockAppService, times(3)).createApp(appCaptor.capture());
-        verify(mockUserAdminService, never()).createUser(any(), any(), any(), anyBoolean(), anyBoolean());
+        verify(mockAdminAccountService, never()).createAccount(any(), any());
     }
 }
