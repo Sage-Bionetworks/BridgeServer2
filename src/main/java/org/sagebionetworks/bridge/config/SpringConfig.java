@@ -233,13 +233,14 @@ public class SpringConfig {
                 .withMaxErrorRetry(maxRetries);
         
         return AmazonDynamoDBClientBuilder.standard().withCredentials(awsCredentials())
-                .withClientConfiguration(awsClientConfig).build();
+                .withClientConfiguration(awsClientConfig).withRegion(US_EAST_1).build();
     }
     
     @Bean(name = "snsClient")
     @Resource(name = "awsCredentials")
     public AmazonSNS snsClient() {
-        return AmazonSNSClientBuilder.standard().withCredentials(awsCredentials()).build();
+        return AmazonSNSClientBuilder.standard().withCredentials(awsCredentials())
+                .withRegion(US_EAST_1).build();
     }
 
     @Bean(name = "s3Client")
@@ -261,7 +262,8 @@ public class SpringConfig {
     @Bean(name ="uploadTokenServiceClient")
     @Resource(name = "awsCredentials")
     public AWSSecurityTokenService uploadTokenServiceClient(AWSStaticCredentialsProvider awsCredentials) {
-        return AWSSecurityTokenServiceClientBuilder.standard().withCredentials(awsCredentials).build();
+        return AWSSecurityTokenServiceClientBuilder.standard().withRegion(US_EAST_1)
+                .withCredentials(awsCredentials).build();
     }
 
     @Bean(name = "md5DigestUtils")
@@ -287,7 +289,7 @@ public class SpringConfig {
     @Bean(name = "sqsClient")
     @Resource(name = "awsCredentials")
     public AmazonSQS sqsClient(AWSStaticCredentialsProvider awsCredentials) {
-        return AmazonSQSClientBuilder.standard().withCredentials(awsCredentials).build();
+        return AmazonSQSClientBuilder.standard().withCredentials(awsCredentials).withRegion(US_EAST_1).build();
     }
 
     @Bean(name = "asyncExecutorService")
