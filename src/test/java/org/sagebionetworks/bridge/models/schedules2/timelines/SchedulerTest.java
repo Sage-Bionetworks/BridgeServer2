@@ -213,12 +213,25 @@ public class SchedulerTest extends Mockito {
     }
     
     @Test
-    public void oneOneTimeSession() {
+    public void oneOneTimeSession_occurrencesNull() {
+        Schedule2 schedule = createSchedule(null);
+            
+        Session session = createOneTimeSession(null);
+        schedule.getSessions().add(session);
+        assertOneTimeSchedule(schedule);
+    }
+    
+    @Test
+    public void oneOneTimeSession_occurrencesOne() {
         Schedule2 schedule = createSchedule(null);
         
         Session session = createOneTimeSession(null);
+        session.setOccurrences(1); // this is the key issue. It must behave the same
         schedule.getSessions().add(session);
-        
+        assertOneTimeSchedule(schedule);
+    }
+    
+    private void assertOneTimeSchedule(Schedule2 schedule) {
         Timeline timeline = INSTANCE.calculateTimeline(schedule);
         
         assertEquals(timeline.getDuration(), Period.parse("P10D"));
@@ -251,7 +264,7 @@ public class SchedulerTest extends Mockito {
         assertEquals(asmtInfo.getAppId(), TEST_APP_ID);
         assertEquals(asmtInfo.getIdentifier(), "assessment-1");
         assertEquals(asmtInfo.getLabel(), "Assessment 1");
-        assertEquals(asmtInfo.getKey(), "932e4de6932e4de6");
+        assertEquals(asmtInfo.getKey(), "932e4de6932e4de6");        
     }
     
     @Test
