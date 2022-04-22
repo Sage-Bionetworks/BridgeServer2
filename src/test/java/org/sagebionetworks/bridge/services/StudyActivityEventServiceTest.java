@@ -1047,7 +1047,7 @@ public class StudyActivityEventServiceTest extends Mockito {
     
     // BRIDGE-3179
     @Test
-    public void getRecentStudyActivityEvents_noDuplicateErrors() {
+    public void getRecentStudyActivityEvents_noDuplicationError() {
         Account account = Account.create();
         account.setAppId(TEST_APP_ID);
         account.setHealthCode(HEALTH_CODE);
