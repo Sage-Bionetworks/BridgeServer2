@@ -263,7 +263,7 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
         StudyAdherenceReport report = INSTANCE.generate(builder.build());
         
         // testAccount is set in the service, not the generator
-        assertEquals(report.getAdherencePercent(), Integer.valueOf(33));
+        assertEquals(report.getAdherencePercent(), Integer.valueOf(50));
         assertEquals(report.getProgression(), ParticipantStudyProgress.IN_PROGRESS);
         assertEquals(report.getDateRange().getStartDate(), LocalDate.parse("2022-03-01"));
         assertEquals(report.getDateRange().getEndDate(), LocalDate.parse("2022-03-27"));
@@ -700,7 +700,7 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
         StudyAdherenceReport report = INSTANCE.generate(builder.build());
         
         // testAccount is set in the service, not the generator
-        assertEquals(report.getAdherencePercent(), Integer.valueOf(28));
+        assertEquals(report.getAdherencePercent(), Integer.valueOf(40));
         assertEquals(report.getProgression(), ParticipantStudyProgress.IN_PROGRESS);
         assertEquals(report.getDateRange().getStartDate(), LocalDate.parse("2022-03-01"));
         assertEquals(report.getDateRange().getEndDate(), LocalDate.parse("2022-03-27"));
@@ -1222,8 +1222,8 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
         
         StudyAdherenceReport report = INSTANCE.generate(builder.build());
         // If the initial survey is not done and not carried over (we remove the AR for it),
-        // adherence is 16%.
-        assertEquals(report.getAdherencePercent(), Integer.valueOf(16));
+        // adherence is 25%.
+        assertEquals(report.getAdherencePercent(), Integer.valueOf(25));
     }
     
     @Test
@@ -1245,8 +1245,8 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
         
         StudyAdherenceReport report = INSTANCE.generate(builder.build());
         // If the initial survey is declared as done by including the adherence recored for it,
-        // adherence is 33%.
-        assertEquals(report.getAdherencePercent(), Integer.valueOf(33));
+        // adherence is 50%.
+        assertEquals(report.getAdherencePercent(), Integer.valueOf(50));
     }
     
     @Test
