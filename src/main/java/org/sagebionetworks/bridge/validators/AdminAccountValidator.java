@@ -11,8 +11,6 @@ import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateJsonLength;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateStringLength;
 
-import java.time.DateTimeException;
-import java.time.ZoneId;
 import java.util.Set;
 
 import org.sagebionetworks.bridge.BridgeUtils;

@@ -689,6 +689,16 @@ public class SessionValidatorTest extends Mockito {
         assertValidatorMessage(INSTANCE, session, OCCURRENCES_FIELD, REQUIRES_INTERVAL);
     }
     
+    @Test
+    public void occurrences_oneDoesNotIntervalOrExpiration() {
+        Session session = createValidSession();
+        session.setOccurrences(1);
+        session.setInterval(null);
+        session.getTimeWindows().get(0).setExpiration(null);
+        
+        Validate.entityThrowingException(INSTANCE, session);
+    }
+    
     private Session makeWindows(String time1, String exp1, String time2, String exp2, 
             String time3, String exp3) {
         Session session = createValidSession();
