@@ -57,9 +57,6 @@ public class AdherenceUtils {
     
     public static int calculateAdherencePercentage(Map<Integer, List<EventStreamDay>> byDayEntries) {
         long compliant = count(byDayEntries.values().stream(), COMPLIANT);
-        // long noncompliant = count(byDayEntries.values().stream(), NONCOMPLIANT);
-        // long unknown = count(byDayEntries.values().stream(), UNKNOWN);
-        // long total = compliant + noncompliant + unknown;
         long total = count(byDayEntries.values().stream(), OFFERED);
 
         return calcPercent(compliant, total);
@@ -68,13 +65,8 @@ public class AdherenceUtils {
     public static int calculateAdherencePercentage(Collection<EventStream> streams) {
         long compliant = count(streams.stream()
                 .flatMap(es -> es.getByDayEntries().values().stream()), COMPLIANT);
-//        long noncompliant = count(streams.stream()
-//                .flatMap(es -> es.getByDayEntries().values().stream()), NONCOMPLIANT);
-//        long unknown = count(streams.stream()
-//                .flatMap(es -> es.getByDayEntries().values().stream()), UNKNOWN);
-//        long total = compliant + noncompliant + unknown;
-      long total = count(streams.stream()
-                  .flatMap(es -> es.getByDayEntries().values().stream()), OFFERED);
+        long total = count(streams.stream()
+                .flatMap(es -> es.getByDayEntries().values().stream()), OFFERED);
         
         return calcPercent(compliant, total);
     }
