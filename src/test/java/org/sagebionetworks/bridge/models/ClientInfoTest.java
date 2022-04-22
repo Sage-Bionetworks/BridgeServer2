@@ -159,6 +159,10 @@ public class ClientInfoTest {
                 "PsorcastValidation", 20, "iPhone SE", "iPhone OS", "13.4", "BridgeSDK", 69);
         assertClientInfo("BiAffect/18 (Unknown iPhone [iPhone12,1]; iOS/13.4.1) BridgeSDK/71",
                 "BiAffect", 18, "Unknown iPhone [iPhone12,1]", "iPhone OS", "13.4.1", "BridgeSDK", 71);
+        assertClientInfo("Mobile Toolbox/14 (Samsung SM-G960U; Android/10) BridgeClientKMM",
+                "Mobile Toolbox", 14, "Samsung SM-G960U", "Android", "10", "BridgeClientKMM", null);
+        assertClientInfo("Mobile Toolbox/14 (Samsung SM-G960U; Android/10)",
+                "Mobile Toolbox", 14, "Samsung SM-G960U", "Android", "10", null, null);
     }
     
     @Test

@@ -1044,4 +1044,26 @@ public class StudyActivityEventServiceTest extends Mockito {
         assertEquals(retValue.getTotal(), Integer.valueOf(1));
         assertEquals(retValue.getItems().get(0).getTimestamp(), CREATED_ON); // not modifiedOn
     }
+    
+    // BRIDGE-3179
+    @Test
+    public void getRecentStudyActivityEvents_noDuplicateErrors() {
+        Account account = Account.create();
+        account.setAppId(TEST_APP_ID);
+        account.setHealthCode(HEALTH_CODE);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
+        
+        StudyActivityEvent event = new StudyActivityEvent.Builder().withEventId(CREATED_ON_FIELD)
+                .withTimestamp(CREATED_ON).build();        
+        when(mockDao.getRecentStudyActivityEvents(TEST_USER_ID, TEST_STUDY_ID))
+                .thenReturn(Lists.newArrayList(event));
+        
+        // This ALSO returns created_on, so ignore it and the MODIFIED_ON timestamp (this really happens)
+        Map<String, DateTime> map = ImmutableMap.of(CREATED_ON_FIELD, MODIFIED_ON); // it should ignore this value
+        when(mockActivityEventService.getActivityEventMap(TEST_APP_ID, HEALTH_CODE)).thenReturn(map);
+        
+        ResourceList<StudyActivityEvent> list = service.getRecentStudyActivityEvents(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+        assertEquals(list.getItems().size(), 1);
+        assertEquals(list.getItems().get(0).getTimestamp(), CREATED_ON);
+    }
 }

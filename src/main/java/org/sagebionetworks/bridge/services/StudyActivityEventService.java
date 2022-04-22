@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.stream.Collectors.toSet;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
@@ -20,6 +21,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
@@ -310,7 +313,8 @@ public class StudyActivityEventService {
     }
     
     private void addIfPresent(List<StudyActivityEvent> events, Map<String, DateTime> map, String field, boolean addCount) {
-        if (map.containsKey(field)) {
+        Set<String> existingFields = events.stream().map(StudyActivityEvent::getEventId).collect(toSet());
+        if (map.containsKey(field) && !existingFields.contains(field)) {
             DateTime ts = map.get(field);
             StudyActivityEvent.Builder builder = new StudyActivityEvent.Builder()
                     .withEventId(field)
