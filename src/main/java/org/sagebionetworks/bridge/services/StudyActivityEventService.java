@@ -310,17 +310,23 @@ public class StudyActivityEventService {
     }
     
     private void addIfPresent(List<StudyActivityEvent> events, Map<String, DateTime> map, String field, boolean addCount) {
-        if (map.containsKey(field)) {
-            DateTime ts = map.get(field);
-            StudyActivityEvent.Builder builder = new StudyActivityEvent.Builder()
-                    .withEventId(field)
-                    .withTimestamp(ts)
-                    .withCreatedOn(ts);
-            if (addCount) {
-                builder.withRecordCount(ONE);
-            }
-            events.add(builder.build());
+        if (!map.containsKey(field)) {
+            return;
         }
+        boolean inEventList = events.stream().map(StudyActivityEvent::getEventId)
+                .anyMatch(eventId -> eventId.equals(field));
+        if (inEventList) {
+            return;
+        }
+        DateTime ts = map.get(field);
+        StudyActivityEvent.Builder builder = new StudyActivityEvent.Builder()
+                .withEventId(field)
+                .withTimestamp(ts)
+                .withCreatedOn(ts);
+        if (addCount) {
+            builder.withRecordCount(ONE);
+        }
+        events.add(builder.build());
     }
     
     /**
