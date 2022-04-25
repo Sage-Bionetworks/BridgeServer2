@@ -76,7 +76,7 @@ public class UploadServiceUploadCompleteTest {
     }
 
     @Test
-    public void validationInProgress() {
+    public void validationInProgress() throws Exception {
         // set up input
         DynamoUpload2 upload = new DynamoUpload2();
         upload.setUploadId(TEST_UPLOAD_ID);
@@ -90,7 +90,7 @@ public class UploadServiceUploadCompleteTest {
     }
 
     @Test
-    public void dupe() {
+    public void dupe() throws Exception {
         // Dupes are detected during the Create Upload call. By the time they get here, the upload is already marked
         // with status=DUPLICATE and a dupe upload ID. Upload Complete trivially ignores these.
 
@@ -108,7 +108,7 @@ public class UploadServiceUploadCompleteTest {
     }
 
     @Test
-    public void notFoundInS3() {
+    public void notFoundInS3() throws Exception {
         // set up input
         DynamoUpload2 upload = new DynamoUpload2();
         upload.setUploadId(TEST_UPLOAD_ID);
@@ -132,7 +132,7 @@ public class UploadServiceUploadCompleteTest {
     }
 
     @Test
-    public void s3InternalError() {
+    public void s3InternalError() throws Exception {
         // set up input
         DynamoUpload2 upload = new DynamoUpload2();
         upload.setUploadId(TEST_UPLOAD_ID);
@@ -157,7 +157,7 @@ public class UploadServiceUploadCompleteTest {
     }
 
     @Test
-    public void uploadSuceeded() {
+    public void uploadSuceeded() throws Exception {
         // set up input
         DynamoUpload2 upload = new DynamoUpload2();
         upload.setUploadId(TEST_UPLOAD_ID);
@@ -171,7 +171,7 @@ public class UploadServiceUploadCompleteTest {
     }
 
     @Test
-    public void concurrentModification() {
+    public void concurrentModification() throws Exception {
         // set up input
         DynamoUpload2 upload = new DynamoUpload2();
         upload.setUploadId(TEST_UPLOAD_ID);
@@ -193,7 +193,7 @@ public class UploadServiceUploadCompleteTest {
     }
 
     @Test
-    public void normalCase() {
+    public void normalCase() throws Exception {
         // set up input
         DynamoUpload2 upload = new DynamoUpload2();
         upload.setUploadId(TEST_UPLOAD_ID);
@@ -213,7 +213,7 @@ public class UploadServiceUploadCompleteTest {
     }
 
     @Test
-    public void exporter3Enabled() {
+    public void exporter3Enabled() throws Exception {
         // Enable Exporter 3.
         app.setExporter3Enabled(true);
 
@@ -239,7 +239,7 @@ public class UploadServiceUploadCompleteTest {
     }
 
     @Test
-    public void redrive() {
+    public void redrive() throws Exception {
         // Enable Exporter 3. It now runs on redrives.
         app.setExporter3Enabled(true);
 
