@@ -25,6 +25,7 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
 import org.joda.time.DateTime;
@@ -404,7 +405,7 @@ public class UploadService {
     }
 
     public void uploadComplete(String appId, UploadCompletionClient completedBy, Upload upload,
-            boolean redrive) {
+            boolean redrive) throws JsonProcessingException {
         String uploadId = upload.getUploadId();
 
         // We don't want to kick off upload validation on an upload that already has upload validation.

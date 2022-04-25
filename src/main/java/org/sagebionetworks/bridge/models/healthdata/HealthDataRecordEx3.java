@@ -4,14 +4,17 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecordEx3;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
+import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.upload.Upload;
 
@@ -28,13 +31,17 @@ public interface HealthDataRecordEx3 extends BridgeEntity {
     }
 
     /** Helper method to create a record from an upload. */
-    static HealthDataRecordEx3 createFromUpload(Upload upload) {
+    static HealthDataRecordEx3 createFromUpload(Upload upload) throws JsonProcessingException {
         HealthDataRecordEx3 record = create();
         record.setId(upload.getUploadId());
         record.setAppId(upload.getAppId());
         record.setHealthCode(upload.getHealthCode());
         record.setCreatedOn(upload.getCompletedOn());
-        record.setClientInfo(RequestContext.get().getCallerClientInfo().toString());
+
+        ClientInfo clientInfo = RequestContext.get().getCallerClientInfo();
+        String clientInfoJsonText = BridgeObjectMapper.get().writerWithDefaultPrettyPrinter()
+                .writeValueAsString(clientInfo);
+        record.setClientInfo(clientInfoJsonText);
 
         ObjectNode metadata = upload.getMetadata();
         if (metadata != null) {

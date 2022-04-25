@@ -21,7 +21,6 @@ import org.sagebionetworks.bridge.models.upload.Upload;
 
 public class DynamoHealthDataRecordEx3Test {
     private static final ClientInfo CLIENT_INFO = ClientInfo.fromUserAgentCache(TestConstants.UA);
-    private static final String CLIENT_INFO_STRING = CLIENT_INFO.toString();
     private static final Map<String, String> METADATA_MAP = ImmutableMap.of("foo", "bar");
     private static final int PARTICIPANT_VERSION = 42;
     private static final String RECORD_ID = "test-record";
@@ -60,7 +59,10 @@ public class DynamoHealthDataRecordEx3Test {
         assertEquals(record.getAppId(), TestConstants.TEST_APP_ID);
         assertEquals(record.getHealthCode(), TestConstants.HEALTH_CODE);
         assertEquals(record.getCreatedOn().longValue(), TestConstants.CREATED_ON.getMillis());
-        assertEquals(record.getClientInfo(), CLIENT_INFO_STRING);
+
+        String clientInfoJsonText = record.getClientInfo();
+        ClientInfo deser = BridgeObjectMapper.get().readValue(clientInfoJsonText, ClientInfo.class);
+        assertEquals(deser, CLIENT_INFO);
 
         Map<String, String> metadataMap = record.getMetadata();
         assertEquals(metadataMap.size(), 4);
@@ -156,7 +158,7 @@ public class DynamoHealthDataRecordEx3Test {
         record.setHealthCode(TestConstants.HEALTH_CODE);
         record.setParticipantVersion(PARTICIPANT_VERSION);
         record.setCreatedOn(TestConstants.CREATED_ON.getMillis());
-        record.setClientInfo(CLIENT_INFO_STRING);
+        record.setClientInfo("dummy client info");
         record.setExported(true);
         record.setExportedOn(TestConstants.EXPORTED_ON.getMillis());
         record.setMetadata(METADATA_MAP);
@@ -172,7 +174,7 @@ public class DynamoHealthDataRecordEx3Test {
         assertEquals(jsonNode.get("healthCode").textValue(), TestConstants.HEALTH_CODE);
         assertEquals(jsonNode.get("participantVersion").intValue(), PARTICIPANT_VERSION);
         assertEquals(jsonNode.get("createdOn").textValue(), TestConstants.CREATED_ON.toString());
-        assertEquals(jsonNode.get("clientInfo").textValue(), CLIENT_INFO_STRING);
+        assertEquals(jsonNode.get("clientInfo").textValue(), "dummy client info");
         assertTrue(jsonNode.get("exported").booleanValue());
         assertEquals(jsonNode.get("exportedOn").textValue(), TestConstants.EXPORTED_ON.toString());
         assertEquals(jsonNode.get("sharingScope").textValue(), "sponsors_and_partners");
@@ -191,7 +193,7 @@ public class DynamoHealthDataRecordEx3Test {
         assertEquals(record.getHealthCode(), TestConstants.HEALTH_CODE);
         assertEquals(record.getParticipantVersion().intValue(), PARTICIPANT_VERSION);
         assertEquals(record.getCreatedOn().longValue(), TestConstants.CREATED_ON.getMillis());
-        assertEquals(record.getClientInfo(), CLIENT_INFO_STRING);
+        assertEquals(record.getClientInfo(), "dummy client info");
         assertTrue(record.isExported());
         assertEquals(record.getExportedOn().longValue(), TestConstants.EXPORTED_ON.getMillis());
         assertEquals(record.getSharingScope(), SharingScope.SPONSORS_AND_PARTNERS);
