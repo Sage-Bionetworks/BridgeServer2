@@ -17,7 +17,9 @@ import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -28,8 +30,10 @@ import com.google.common.collect.Maps;
  * Encryption of account values is handled transparently by the account implementation. 
  * All values are set and retrieved in clear text.
  */
+@JsonIgnoreProperties(value = "consents", allowGetters = true)
 public interface Account extends BridgeEntity {
 
+    @JsonCreator
     static Account create() {
         return new HibernateAccount();
     }
@@ -135,6 +139,9 @@ public interface Account extends BridgeEntity {
     
     Phone getPhone();
     void setPhone(Phone phone);
+    
+    String getPassword();
+    void setPassword(String password);
     
     String getSynapseUserId();
     void setSynapseUserId(String synapseUserId);

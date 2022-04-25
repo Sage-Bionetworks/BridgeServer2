@@ -23,16 +23,13 @@ import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.dynamodb.AnnotationBasedTableCreator;
 import org.sagebionetworks.bridge.dynamodb.DynamoInitializer;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.models.accounts.AccountId;
-import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
 import org.sagebionetworks.bridge.models.organizations.Organization;
-import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
-import org.sagebionetworks.bridge.services.AccountService;
+import org.sagebionetworks.bridge.services.AdminAccountService;
 import org.sagebionetworks.bridge.services.AppService;
 import org.sagebionetworks.bridge.services.OrganizationService;
-import org.sagebionetworks.bridge.services.UserAdminService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationListener;
@@ -63,8 +60,7 @@ public class DefaultAppBootstrapper implements ApplicationListener<ContextRefres
     static final Set<String> TEST_TASK_IDENTIFIERS = ImmutableSet.of("task:AAA", "task:BBB", "task:CCC", "CCC", "task1");
 
     private final BridgeConfig bridgeConfig;
-    private final UserAdminService userAdminService;
-    private final AccountService accountService;
+    private final AdminAccountService adminAccountService;
     private final AppService appService;
     private final OrganizationService orgService;
     private final DynamoInitializer dynamoInitializer;
@@ -72,13 +68,12 @@ public class DefaultAppBootstrapper implements ApplicationListener<ContextRefres
     private final S3Initializer s3Initializer;
 
     @Autowired
-    public DefaultAppBootstrapper(BridgeConfig bridgeConfig, UserAdminService userAdminService,
-            AccountService accountService, AppService appService, OrganizationService orgService,
+    public DefaultAppBootstrapper(BridgeConfig bridgeConfig, AdminAccountService adminAccountService,
+            AppService appService, OrganizationService orgService,
             AnnotationBasedTableCreator annotationBasedTableCreator, DynamoInitializer dynamoInitializer,
             S3Initializer s3Initializer) {
         this.bridgeConfig = bridgeConfig;
-        this.userAdminService = userAdminService;
-        this.accountService = accountService;
+        this.adminAccountService = adminAccountService;
         this.appService = appService;
         this.orgService = orgService;
         this.dynamoInitializer = dynamoInitializer;
@@ -105,16 +100,15 @@ public class DefaultAppBootstrapper implements ApplicationListener<ContextRefres
         Roles adminRole = (bridgeConfig.getEnvironment() == PROD) ? ADMIN : SUPERADMIN;
         boolean bootstrapUserConfigured = (adminEmail != null && adminSynUserId != null);
         
-        StudyParticipant.Builder builder = new StudyParticipant.Builder()
-                .withEmail(adminEmail)
-                .withSynapseUserId(adminSynUserId)
-                .withDataGroups(Sets.newHashSet(TEST_USER_GROUP))
-                .withSharingScope(NO_SHARING)
-                .withRoles(Sets.newHashSet(adminRole));
+        Account admin = Account.create();
+        admin.setEmail(adminEmail);
+        admin.setSynapseUserId(adminSynUserId);
+        admin.setDataGroups(Sets.newHashSet(TEST_USER_GROUP));
+        admin.setSharingScope(NO_SHARING);
+        admin.setRoles(Sets.newHashSet(adminRole));
         if (adminPassword != null) {
-            builder.withPassword(adminPassword);
+            admin.setPassword(adminPassword);
         }
-        StudyParticipant admin = builder.build();
 
         App app = createApp(API_APP_ID, "Test App", provided -> {
             provided.setMinAgeOfConsent(18);
@@ -159,11 +153,10 @@ public class DefaultAppBootstrapper implements ApplicationListener<ContextRefres
         return app;
     }
     
-    private void createAccount(App app, StudyParticipant admin) {
-        AccountId accountId = AccountId.forSynapseUserId(app.getIdentifier(), admin.getSynapseUserId());
-        if (!accountService.getAccount(accountId).isPresent()) {
-            SubpopulationGuid subpopGuid = SubpopulationGuid.create(app.getIdentifier());
-            userAdminService.createUser(app, admin, subpopGuid, false, false);    
+    private void createAccount(App app, Account admin) {
+        String syn = "synapseuserid:"+admin.getSynapseUserId();
+        if (!adminAccountService.getAccount(app.getIdentifier(), syn).isPresent()) {
+            adminAccountService.createAccount(app.getIdentifier(), admin);
         }
     }
     

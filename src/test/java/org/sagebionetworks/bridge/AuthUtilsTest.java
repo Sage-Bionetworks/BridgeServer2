@@ -17,6 +17,7 @@ import static org.sagebionetworks.bridge.AuthUtils.CAN_TRANSITION_STUDY;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_EXTERNAL_IDS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_STUDY_PARTICIPANTS;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_ADMINS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_PARTICIPANTS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_PARTICIPANTS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_SCHEDULES;
@@ -57,6 +58,37 @@ public class AuthUtilsTest extends Mockito {
     @AfterMethod
     public void afterMethod() {
         RequestContext.set(NULL_INSTANCE);
+    }
+    
+    @Test
+    public void canReadAdmins_self() {
+        RequestContext.set(new RequestContext.Builder().withCallerUserId(TEST_USER_ID).build());
+        
+        CAN_EDIT_ADMINS.checkAndThrow(ORG_ID, TEST_ORG_ID, USER_ID, TEST_USER_ID);
+    }
+    
+    @Test
+    public void canReadAdmins_sameOrg() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerOrgMembership(TEST_ORG_ID).withCallerUserId(TEST_USER_ID).build());
+        
+        CAN_EDIT_ADMINS.checkAndThrow(ORG_ID, TEST_ORG_ID, USER_ID, "some-other-user");
+    }
+    
+    @Test
+    public void canReadAdmins_admin() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(ADMIN)).withCallerUserId(TEST_USER_ID).build());
+
+        CAN_EDIT_ADMINS.checkAndThrow(ORG_ID, "some-other-org", USER_ID, "some-other-user");
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void canReadAdmins_fails() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(DEVELOPER)).withCallerUserId(TEST_USER_ID).build());
+        
+        CAN_EDIT_ADMINS.checkAndThrow(ORG_ID, "some-other-org", USER_ID, "some-other-user");
     }
     
     @Test

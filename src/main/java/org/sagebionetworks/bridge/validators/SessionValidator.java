@@ -164,14 +164,11 @@ public class SessionValidator implements Validator {
             }
             errors.popNestedPath();
         }
-        
-        if (session.getOccurrences() != null) {
-            if (session.getOccurrences() < 1) {
-                errors.rejectValue(OCCURRENCES_FIELD, LESS_THAN_ONE_ERROR);
-            }
-            if (session.getInterval() == null) {
-                errors.rejectValue(OCCURRENCES_FIELD, REQUIRES_INTERVAL);
-            }
+        if (lessThanOne(session.getOccurrences())) {
+            errors.rejectValue(OCCURRENCES_FIELD, LESS_THAN_ONE_ERROR);
+        }
+        if (greaterThanOne(session.getOccurrences()) && session.getInterval() == null) {
+            errors.rejectValue(OCCURRENCES_FIELD, REQUIRES_INTERVAL);
         }
         validateFixedLengthPeriod(errors, session.getDelay(), DELAY_FIELD, false);
         if (scheduleDuration != null && session.getDelay() != null) {
@@ -216,7 +213,7 @@ public class SessionValidator implements Validator {
                         }
                     }
                 }
-                if (session.getOccurrences() != null && window.getExpiration() == null) {
+                if (greaterThanOne(session.getOccurrences()) && window.getExpiration() == null) {
                     errors.rejectValue(EXPIRATION_FIELD, EXPIRATION_REQUIRED_FOR_OCCURRENCES_ERROR);
                 }
                 if (window.getExpiration() != null) {
@@ -288,6 +285,14 @@ public class SessionValidator implements Validator {
             }
             errors.popNestedPath();
         }
+    }
+    
+    private boolean lessThanOne(Integer number) {
+        return (number != null && number < 1);
+    }
+
+    private boolean greaterThanOne(Integer number) {
+        return (number != null && number > 1);
     }
     
     private TimeWindow shortestTimeWindow(Session session) {

@@ -109,6 +109,11 @@ public class HibernateAccountTest {
         account.setNote(TEST_NOTE);
         account.setClientTimeZone(TEST_CLIENT_TIME_ZONE);
         account.setAdmin(TRUE);
+        HibernateAccountConsentKey fooConsentKey = new HibernateAccountConsentKey("foo-guid", 1111);
+        HibernateAccountConsent fooConsent = new HibernateAccountConsent();
+        Map<HibernateAccountConsentKey, HibernateAccountConsent> originalConsentMap = new HashMap<>();
+        originalConsentMap.put(fooConsentKey, fooConsent);
+        account.setConsents(originalConsentMap);
         
         Enrollment en1 = Enrollment.create(TEST_APP_ID, "studyA", TEST_USER_ID);
         Enrollment en2 = Enrollment.create(TEST_APP_ID, "studyB", TEST_USER_ID);
@@ -162,6 +167,30 @@ public class HibernateAccountTest {
         assertNull(node.get("consentSignatureHistory"));
         assertNull(node.get("allConsentSignatureHistories"));
         assertNull(node.get("activeEnrollments"));
+        
+        Account deser = BridgeObjectMapper.get().readValue(node.toString(), Account.class);
+        
+        assertEquals(deser.getId(), "id");
+        assertEquals(deser.getOrgMembership(), "orgId");
+        assertEquals(deser.getEmail(), "email");
+        assertEquals(deser.getSynapseUserId(), "synapseUserId");
+        assertEquals(deser.getPhone(), PHONE);
+        assertTrue(deser.getEmailVerified());
+        assertTrue(deser.getPhoneVerified());
+        assertEquals(deser.getAttributes().get("a"), "b");
+        assertEquals(deser.getAttributes().get("c"), "d");
+        assertEquals(deser.getCreatedOn(), CREATED_ON);
+        assertEquals(deser.getModifiedOn(), MODIFIED_ON);
+        assertEquals(deser.getFirstName(), "firstName");
+        assertEquals(deser.getLastName(), "lastName");
+        assertEquals(deser.getRoles(), ImmutableSet.of(DEVELOPER, RESEARCHER));
+        assertEquals(deser.getStatus(), ENABLED);
+        assertNotNull(deser.getClientData());
+        assertEquals(deser.getVersion(), 1);
+        assertEquals(deser.getDataGroups(), ImmutableSet.of("group1", "group2"));
+        assertEquals(deser.getLanguages(), ImmutableSet.of("en", "fr"));
+        assertEquals(deser.getNote(), TEST_NOTE);
+        assertEquals(deser.getClientTimeZone(), TEST_CLIENT_TIME_ZONE);
     }
     
     private Set<String> toSet(JsonNode node, String field) {

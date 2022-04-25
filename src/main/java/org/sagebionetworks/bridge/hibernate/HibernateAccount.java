@@ -90,6 +90,7 @@ public class HibernateAccount implements Account {
     private String note;
     private String clientTimeZone;
     private Boolean admin;
+    private String password;
     
     /**
      * Constructor to load information for the AccountRef object. This avoids loading any of the 
@@ -195,6 +196,15 @@ public class HibernateAccount implements Account {
     /** @see #getPhone */
     public void setPhone(Phone phone) {
         this.phone = phone;
+    }
+    
+    @Transient
+    public String getPassword() { 
+        return password;
+    }
+    
+    public void setPassword(String password) {
+        this.password = password;
     }
 
     /** Has the email address been verified to be under the control of the account holder. */

@@ -6,12 +6,14 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.commons.lang3.StringUtils;
 import org.testng.annotations.Test;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
 public class ClientInfoTest {
 
@@ -159,6 +161,10 @@ public class ClientInfoTest {
                 "PsorcastValidation", 20, "iPhone SE", "iPhone OS", "13.4", "BridgeSDK", 69);
         assertClientInfo("BiAffect/18 (Unknown iPhone [iPhone12,1]; iOS/13.4.1) BridgeSDK/71",
                 "BiAffect", 18, "Unknown iPhone [iPhone12,1]", "iPhone OS", "13.4.1", "BridgeSDK", 71);
+        assertClientInfo("Mobile Toolbox/14 (Samsung SM-G960U; Android/10) BridgeClientKMM",
+                "Mobile Toolbox", 14, "Samsung SM-G960U", "Android", "10", "BridgeClientKMM", null);
+        assertClientInfo("Mobile Toolbox/14 (Samsung SM-G960U; Android/10)",
+                "Mobile Toolbox", 14, "Samsung SM-G960U", "Android", "10", null, null);
     }
     
     @Test
@@ -223,7 +229,8 @@ public class ClientInfoTest {
     }
     
     @Test
-    public void allFieldsCorrect() {
+    public void jsonSerialization() {
+        // Create POJO.
         ClientInfo info = new ClientInfo.Builder()
                 .withAppName("AppName")
                 .withAppVersion(1)
@@ -237,5 +244,21 @@ public class ClientInfoTest {
         assertEquals(info.getOsName(), IOS);
         assertEquals(info.getOsVersion(), "Version1");
         assertEquals(info.getSdkVersion().intValue(), 4);
+
+        // Convert to JSON.
+        JsonNode clientInfoNode = BridgeObjectMapper.get().convertValue(info, JsonNode.class);
+        assertEquals(clientInfoNode.size(), 8);
+        assertEquals(clientInfoNode.get("appName").textValue(), "AppName");
+        assertEquals(clientInfoNode.get("appVersion").intValue(), 1);
+        assertEquals(clientInfoNode.get("deviceName").textValue(), "Happy Jagger");
+        assertEquals(clientInfoNode.get("osName").textValue(), IOS);
+        assertEquals(clientInfoNode.get("osVersion").textValue(), "Version1");
+        assertEquals(clientInfoNode.get("sdkName").textValue(), "BridgeSDK");
+        assertEquals(clientInfoNode.get("sdkVersion").intValue(), 4);
+        assertEquals(clientInfoNode.get("type").textValue(), "ClientInfo");
+
+        // Convert back to POJO.
+        ClientInfo deser = BridgeObjectMapper.get().convertValue(clientInfoNode, ClientInfo.class);
+        assertEquals(deser, info);
     }
  }

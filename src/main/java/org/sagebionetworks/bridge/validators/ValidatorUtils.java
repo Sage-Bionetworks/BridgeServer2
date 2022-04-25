@@ -26,6 +26,7 @@ import org.springframework.validation.Errors;
 
 import org.sagebionetworks.bridge.models.HasLang;
 import org.sagebionetworks.bridge.models.Label;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
@@ -71,6 +72,13 @@ class ValidatorUtils {
                 errors.rejectValue("password", "must contain at least one uppercase letter (A-Z)");
             }
         }
+    }
+    
+    static boolean accountHasValidIdentifier(Account account) {
+        Phone phone = account.getPhone();
+        String email = account.getEmail();
+        String synapseUserId = account.getSynapseUserId();
+        return (email != null || phone != null || isNotBlank(synapseUserId));
     }
 
     static boolean participantHasValidIdentifier(StudyParticipant participant) {
