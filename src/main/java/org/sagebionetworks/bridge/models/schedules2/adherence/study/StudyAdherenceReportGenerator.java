@@ -240,6 +240,10 @@ public class StudyAdherenceReportGenerator {
             oneWeek.getByDayEntries().put(i, paddedDays);
         }
         oneWeek.getSearchableLabels().addAll(labels);
+        // In recalculating the rows on the second pass for carry-overs, those carry-overs may 
+        // have row descriptors that differ only in their week, and that means in this new week 
+        // they look identical to the row descriptor for this current week. So we need to reset 
+        // the rows that have been calculated here. 
         oneWeek.getRows().clear();
         oneWeek.getRows().addAll(rowList);
     }
