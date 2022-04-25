@@ -31,6 +31,6 @@ public interface Organization extends BridgeEntity {
     DateTime getModifiedOn();
     void setModifiedOn(DateTime modifiedOn);
     
-    Long getVersion();
-    void setVersion(Long version);
+    long getVersion();
+    void setVersion(long version);
 }

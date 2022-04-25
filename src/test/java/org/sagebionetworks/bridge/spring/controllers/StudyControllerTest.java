@@ -22,7 +22,6 @@ import static org.sagebionetworks.bridge.TestUtils.assertPost;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.sagebionetworks.bridge.models.files.FileDispositionType.INLINE;
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
 
 import java.util.Optional;
@@ -430,7 +429,7 @@ public class StudyControllerTest extends Mockito {
         Study deser = BridgeObjectMapper.get().readValue(retValue, Study.class);
         assertEquals(deser.getName(), "Name1");
         assertEquals(deser.getIdentifier(), "id1");
-        assertNull(deser.getVersion());
+        assertEquals(deser.getVersion(), 0L);
         
         CacheKey key = CacheKey.publicStudy(TEST_APP_ID, TEST_STUDY_ID);
         String json = Study.STUDY_SUMMARY_WRITER.writeValueAsString(study);
@@ -454,7 +453,7 @@ public class StudyControllerTest extends Mockito {
         Study deser = BridgeObjectMapper.get().readValue(retValue, Study.class);
         assertEquals(deser.getName(), "Name1");
         assertEquals(deser.getIdentifier(), "id1");
-        assertNull(deser.getVersion());
+        assertEquals(deser.getVersion(), 0L);
         
         verify(mockCacheProvider, never()).setObject(any(), any(), anyInt());
         verify(mockStudyService, never()).getStudy(any(), any(), anyBoolean());
@@ -473,7 +472,7 @@ public class StudyControllerTest extends Mockito {
         Study retValue = controller.getStudyForWorker(TEST_APP_ID, TEST_STUDY_ID);
         assertEquals(retValue.getName(), "Name1");
         assertEquals(retValue.getIdentifier(), "id1");
-        assertEquals(retValue.getVersion().intValue(), 10);
+        assertEquals(retValue.getVersion(), 10L);
 
         verify(mockStudyService).getStudy(TEST_APP_ID, TEST_STUDY_ID, true);
     }

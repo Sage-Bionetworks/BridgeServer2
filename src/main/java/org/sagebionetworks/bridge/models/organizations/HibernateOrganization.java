@@ -32,7 +32,7 @@ public class HibernateOrganization implements Organization {
     @Convert(converter = DateTimeToLongAttributeConverter.class)
     private DateTime modifiedOn;
     @Version
-    private Long version;
+    private long version;
     
     public HibernateOrganization() {
     }
@@ -107,12 +107,12 @@ public class HibernateOrganization implements Organization {
     }
 
     @Override
-    public Long getVersion() {
+    public long getVersion() {
         return version;
     }
 
     @Override
-    public void setVersion(Long version) {
+    public void setVersion(long version) {
         this.version = version;
     }
 }

@@ -139,6 +139,6 @@ public interface Study extends BridgeEntity {
     Integer getAdherenceThresholdPercentage();
     void setAdherenceThresholdPercentage(Integer adherenceThresholdPercentage);
 
-    Long getVersion();
-    void setVersion(Long version);
+    long getVersion();
+    void setVersion(long version);
 }
