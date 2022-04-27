@@ -889,6 +889,75 @@ public class AdminAccountServiceTest extends Mockito {
     }
     
     @Test
+    public void updateAccount_noChangeToSynapseUserId() {
+        App app = App.create();
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
+        
+        Account persistedAccount = Account.create();
+        persistedAccount.setAdmin(TRUE);
+        persistedAccount.setId(TEST_USER_ID);
+        persistedAccount.setAppId(TEST_APP_ID);
+        persistedAccount.setSynapseUserId(SYNAPSE_USER_ID);
+
+        when(mockAccountDao.getAccount(any())).thenReturn(Optional.of(persistedAccount));
+
+        Account account = Account.create();
+        account.setId(TEST_USER_ID);
+        account.setSynapseUserId("67890");
+        
+        Account retValue = service.updateAccount(TEST_APP_ID, account);
+        assertEquals(retValue.getSynapseUserId(), "67890");
+        
+        verify(mockCacheProvider).removeSessionByUserId(TEST_USER_ID);
+    }
+    
+    @Test
+    public void updateAccount_nullSynapseUserId() {
+        App app = App.create();
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
+        
+        Account persistedAccount = Account.create();
+        persistedAccount.setEmail(EMAIL);
+        persistedAccount.setAdmin(TRUE);
+        persistedAccount.setId(TEST_USER_ID);
+        persistedAccount.setAppId(TEST_APP_ID);
+
+        when(mockAccountDao.getAccount(any())).thenReturn(Optional.of(persistedAccount));
+
+        Account account = Account.create();
+        account.setId(TEST_USER_ID);
+        account.setEmail(EMAIL);
+        
+        Account retValue = service.updateAccount(TEST_APP_ID, account);
+        assertNull(retValue.getSynapseUserId());
+        
+        verify(mockCacheProvider, never()).removeSessionByUserId(TEST_USER_ID);
+    }
+    
+    @Test
+    public void updateAccount_changeSynapseUserIdSignsOutUser() {
+        App app = App.create();
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
+        
+        Account persistedAccount = Account.create();
+        persistedAccount.setAdmin(TRUE);
+        persistedAccount.setId(TEST_USER_ID);
+        persistedAccount.setAppId(TEST_APP_ID);
+        persistedAccount.setSynapseUserId(SYNAPSE_USER_ID);
+
+        when(mockAccountDao.getAccount(any())).thenReturn(Optional.of(persistedAccount));
+
+        Account account = Account.create();
+        account.setId(TEST_USER_ID);
+        account.setSynapseUserId(SYNAPSE_USER_ID);
+        
+        Account retValue = service.updateAccount(TEST_APP_ID, account);
+        assertEquals(retValue.getSynapseUserId(), SYNAPSE_USER_ID);
+        
+        verify(mockCacheProvider, never()).removeSessionByUserId(TEST_USER_ID);
+    }
+    
+    @Test
     public void deleteAccount() {
         Account account = Account.create();
         account.setId(TEST_USER_ID);
