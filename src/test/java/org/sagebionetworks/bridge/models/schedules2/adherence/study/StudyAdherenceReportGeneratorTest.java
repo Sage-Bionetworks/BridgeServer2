@@ -4,8 +4,14 @@ import static org.sagebionetworks.bridge.TestConstants.ASSESSMENT_1_GUID;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.SCHEDULE_GUID;
+import static org.sagebionetworks.bridge.TestConstants.SESSION_GUID_1;
+import static org.sagebionetworks.bridge.TestConstants.SESSION_GUID_2;
+import static org.sagebionetworks.bridge.TestConstants.SESSION_GUID_3;
+import static org.sagebionetworks.bridge.TestConstants.SESSION_GUID_4;
+import static org.sagebionetworks.bridge.TestConstants.SESSION_WINDOW_GUID_2;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.IMMUTABLE;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.MUTABLE;
 import static org.sagebionetworks.bridge.models.schedules2.PerformanceOrder.SEQUENTIAL;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.COMPLETED;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.EXPIRED;
@@ -29,6 +35,7 @@ import org.joda.time.Period;
 import org.mockito.Mockito;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.schedules2.AssessmentReference;
@@ -42,13 +49,13 @@ import org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantStudyPr
 import org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamDay;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamWindow;
-import org.sagebionetworks.bridge.models.schedules2.adherence.weekly.WeeklyAdherenceReport;
 import org.sagebionetworks.bridge.models.schedules2.adherence.weekly.WeeklyAdherenceReportRow;
 import org.sagebionetworks.bridge.models.schedules2.timelines.Scheduler;
 import org.sagebionetworks.bridge.models.schedules2.timelines.Timeline;
 import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
 import org.testng.annotations.Test;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
@@ -1310,7 +1317,6 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
     
     @Test
     public void dateRangeErrorDefaultsToStreamDateRange() {
-        // survey
         AssessmentReference ref1 = new AssessmentReference();
         ref1.setGuid("survey");
         ref1.setAppId(TEST_APP_ID);
@@ -1363,11 +1369,16 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
                 .withClientTimeZone("America/Los_Angeles")
                 .withNow(NOW).build();
 
-        // This used to throw an exception but now returns a null date range object.
-        // I don't know what the date range would mean if activities occur before the
-        // start of the study...it's not specified.
+        // This used to throw an exception but now returns the full date range of the dates.
         StudyAdherenceReport report = INSTANCE.generate(state);
-        assertNull(report.getDateRange());
+        assertEquals(report.getDateRange().getStartDate(), LocalDate.parse("2022-02-08"));
+        assertEquals(report.getDateRange().getEndDate(), LocalDate.parse("2022-03-08"));
+        
+        try {
+            System.out.println(BridgeObjectMapper.get().writeValueAsString(report));
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
     }
     
     // BRIDGE-3287: rows were being duplicated in the weekly report with carry-overs
@@ -1442,4 +1453,214 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
         assertEquals(rowLabels, ImmutableList.of(":session1:Week 3:", ":session2:Week 3:", ":session3:Week 3:"));
     }
     
+    // BRIDGE-3288: As reported
+    @Test
+    public void negativeDaysDoNotBreakSchedule() throws JsonProcessingException {
+        AssessmentReference ref1 = new AssessmentReference();
+        ref1.setGuid("survey");
+        ref1.setAppId(TEST_APP_ID);
+        ref1.setIdentifier("survey");
+        
+        TimeWindow win1 = new TimeWindow();
+        win1.setGuid(TestConstants.SESSION_WINDOW_GUID_1);
+        win1.setStartTime(LocalTime.parse("08:00"));
+        win1.setExpiration(Period.parse("PT24H"));
+        
+        Session session1 = new Session();
+        session1.setGuid(SESSION_GUID_1);
+        session1.setName("session1");
+        session1.setOccurrences(1);
+        session1.setAssessments(ImmutableList.of(ref1));
+        session1.setTimeWindows(ImmutableList.of(win1));
+        session1.setStartEventIds(ImmutableList.of("custom:First Clinic visit"));
+        
+        TimeWindow win2 = new TimeWindow();
+        win2.setGuid(SESSION_WINDOW_GUID_2);
+        win2.setStartTime(LocalTime.parse("08:30"));
+        win2.setExpiration(Period.parse("PT2H"));
+        
+        TimeWindow win3 = new TimeWindow();
+        win3.setGuid(TestConstants.SESSION_WINDOW_GUID_3);
+        win3.setStartTime(LocalTime.parse("20:30"));
+        win3.setExpiration(Period.parse("PT2H"));
+
+        Session session2 = new Session();
+        session2.setGuid(SESSION_GUID_2);
+        session2.setName("session2");
+        session2.setAssessments(ImmutableList.of(ref1));
+        session2.setDelay(Period.parse("P2D"));
+        session2.setOccurrences(14);
+        session2.setInterval(Period.parse("P1D"));
+        session2.setAssessments(ImmutableList.of(ref1));
+        session2.setTimeWindows(ImmutableList.of(win2, win3));
+        session2.setStudyBurstIds(ImmutableList.of("custom_RemoteActivities_burst"));
+
+        TimeWindow win4 = new TimeWindow();
+        win4.setGuid(SESSION_GUID_4);
+        win4.setStartTime(LocalTime.parse("08:00"));
+        win4.setExpiration(Period.parse("P20D"));
+        
+        Session session3 = new Session();
+        session3.setGuid(SESSION_GUID_3);
+        session3.setName("session3");
+        session3.setDelay(Period.parse("P4W"));
+        session3.setOccurrences(10);
+        session3.setInterval(Period.parse("P4W"));
+        session3.setAssessments(ImmutableList.of(ref1));
+        session3.setTimeWindows(ImmutableList.of(win4));
+        session3.setStartEventIds(ImmutableList.of("custom:First Clinic visit"));
+        
+        StudyBurst burst = new StudyBurst();
+        burst.setIdentifier("custom_RemoteActivities_burst");
+        burst.setOriginEventId("custom:RemoteActivities");
+        burst.setInterval(Period.parse("P2W"));
+        burst.setOccurrences(3);
+        burst.setUpdateType(MUTABLE);
+        
+        Schedule2 schedule = new Schedule2();
+        schedule.setGuid(SCHEDULE_GUID);
+        schedule.setDuration(Period.parse("P2W"));
+        schedule.setStudyBursts(ImmutableList.of(burst));
+        schedule.setSessions(ImmutableList.of(session1, session2, session3));
+        
+        Timeline timeline = Scheduler.INSTANCE.calculateTimeline(schedule);
+        
+        StudyActivityEvent event0 = new StudyActivityEvent.Builder()
+                .withEventId("custom:First Clinic visit")
+                .withTimestamp(DateTime.parse("2022-04-05T19:05:43.000Z")).build();
+        StudyActivityEvent event1 = new StudyActivityEvent.Builder()
+                .withEventId("custom:RemoteActivities")
+                .withTimestamp(DateTime.parse("2022-04-01T19:05:46.000Z")).build();
+        StudyActivityEvent event2 = new StudyActivityEvent.Builder()
+                .withEventId("study_burst:custom_RemoteActivities_burst:01")
+                .withTimestamp(DateTime.parse("2022-04-01T19:05:46.000Z")).build();
+        StudyActivityEvent event3 = new StudyActivityEvent.Builder()
+                .withEventId("study_burst:custom_RemoteActivities_burst:02")
+                .withTimestamp(DateTime.parse("2022-04-15T19:05:46.000Z")).build();
+        StudyActivityEvent event4 = new StudyActivityEvent.Builder()
+                .withEventId("study_burst:custom_RemoteActivities_burst:03")
+                .withTimestamp(DateTime.parse("2022-04-29T19:05:46.000Z")).build();
+        
+        AdherenceState state = new AdherenceState.Builder()
+                .withMetadata(timeline.getMetadata())
+                .withEvents(ImmutableList.of(event0, event1, event2, event3, event4))
+                .withNow(DateTime.parse("2022-04-08T12:53:31.385-08:00"))
+                .withStudyStartEventId("custom:First Clinic visit")
+                .build();
+            
+        StudyAdherenceReport report = StudyAdherenceReportGenerator.INSTANCE.generate(state);
+        StudyReportWeek weeklyReport = report.getWeekReport();
+        
+        assertStartDate(weeklyReport, 0, LocalDate.parse("2022-04-08"));
+        assertStartDate(weeklyReport, 1, LocalDate.parse("2022-04-09"));
+        assertStartDate(weeklyReport, 2, LocalDate.parse("2022-04-10"));
+        assertStartDate(weeklyReport, 3, LocalDate.parse("2022-04-11"));
+        assertStartDate(weeklyReport, 4, LocalDate.parse("2022-04-12"));
+        assertStartDate(weeklyReport, 5, LocalDate.parse("2022-04-13"));
+        assertStartDate(weeklyReport, 6, LocalDate.parse("2022-04-14"));
+    }
+    
+    // BRIDGE-3288 + BRIDGE-3287
+    @Test
+    public void negativeDaysDoNotBreakScheduleSimplified() throws JsonProcessingException {
+        // This schedule won't pass validation, but I'm concerned there are “legal” ways
+        // to break the schedule when there are overlaps and negative weeks.
+        AssessmentReference ref1 = new AssessmentReference();
+        ref1.setGuid("survey");
+        ref1.setAppId(TEST_APP_ID);
+        ref1.setIdentifier("survey");
+        
+        TimeWindow win1 = new TimeWindow();
+        win1.setGuid(TestConstants.SESSION_WINDOW_GUID_1);
+        win1.setStartTime(LocalTime.parse("08:00"));
+        
+        Session session1 = new Session();
+        session1.setGuid(SESSION_GUID_1);
+        session1.setName("session1");
+        session1.setAssessments(ImmutableList.of(ref1));
+        session1.setInterval(Period.parse("P1W"));
+        session1.setTimeWindows(ImmutableList.of(win1));
+        session1.setStartEventIds(ImmutableList.of("custom:event1"));
+        
+        TimeWindow win2 = new TimeWindow();
+        win2.setGuid(SESSION_WINDOW_GUID_2);
+        win2.setStartTime(LocalTime.parse("08:30"));
+        
+        Session session2 = new Session();
+        session2.setGuid(SESSION_GUID_2);
+        session2.setName("session2");
+        session2.setAssessments(ImmutableList.of(ref1));
+        session2.setInterval(Period.parse("P1W"));
+        session2.setTimeWindows(ImmutableList.of(win2));
+        session2.setStartEventIds(ImmutableList.of("custom:event2"));
+
+        Schedule2 schedule = new Schedule2();
+        schedule.setGuid(SCHEDULE_GUID);
+        schedule.setDuration(Period.parse("P2W"));
+        schedule.setSessions(ImmutableList.of(session1, session2));
+        
+        Timeline timeline = Scheduler.INSTANCE.calculateTimeline(schedule);
+        
+        StudyActivityEvent event1 = new StudyActivityEvent.Builder()
+                .withEventId("custom:event1")
+                .withTimestamp(DateTime.parse("2022-04-05T12:00:00.000Z")).build();
+        StudyActivityEvent event2 = new StudyActivityEvent.Builder()
+                .withEventId("custom:event2")
+                .withTimestamp(DateTime.parse("2022-04-20T12:00:00.000Z")).build();
+        
+        AdherenceState state = new AdherenceState.Builder()
+                .withMetadata(timeline.getMetadata())
+                .withEvents(ImmutableList.of(event1, event2))
+                .withNow(DateTime.parse("2022-04-24T12:00:00.000Z"))
+                .withStudyStartEventId("custom:event2")
+                .build();
+            
+        StudyAdherenceReport report = StudyAdherenceReportGenerator.INSTANCE.generate(state);
+        
+        StudyReportWeek week = report.getWeeks().get(0);
+        assertEquals(week.getWeekInStudy(), -1);
+        assertStartDate(week, 0, LocalDate.parse("2022-04-05"));
+        assertStartDate(week, 1, LocalDate.parse("2022-04-06"));
+        assertStartDate(week, 2, LocalDate.parse("2022-04-07"));
+        assertStartDate(week, 3, LocalDate.parse("2022-04-08"));
+        assertStartDate(week, 4, LocalDate.parse("2022-04-09"));
+        assertStartDate(week, 5, LocalDate.parse("2022-04-10"));
+        assertStartDate(week, 6, LocalDate.parse("2022-04-11"));
+        
+        week = report.getWeeks().get(1);
+        assertEquals(week.getWeekInStudy(), 0);
+        assertStartDate(week, 0, LocalDate.parse("2022-04-12"));
+        assertStartDate(week, 1, LocalDate.parse("2022-04-13"));
+        assertStartDate(week, 2, LocalDate.parse("2022-04-14"));
+        assertStartDate(week, 3, LocalDate.parse("2022-04-15"));
+        assertStartDate(week, 4, LocalDate.parse("2022-04-16"));
+        assertStartDate(week, 5, LocalDate.parse("2022-04-17"));
+        assertStartDate(week, 6, LocalDate.parse("2022-04-18"));
+
+        week = report.getWeeks().get(2);
+        assertEquals(week.getWeekInStudy(), 1);
+        assertStartDate(week, 0, LocalDate.parse("2022-04-19"));
+        assertStartDate(week, 1, LocalDate.parse("2022-04-20"));
+        assertStartDate(week, 2, LocalDate.parse("2022-04-21"));
+        assertStartDate(week, 3, LocalDate.parse("2022-04-22"));
+        assertStartDate(week, 4, LocalDate.parse("2022-04-23"));
+        assertStartDate(week, 5, LocalDate.parse("2022-04-24"));
+        assertStartDate(week, 6, LocalDate.parse("2022-04-25"));
+
+        week = report.getWeeks().get(3);
+        assertEquals(week.getWeekInStudy(), 2);
+        assertStartDate(week, 0, LocalDate.parse("2022-04-26"));
+        assertStartDate(week, 1, LocalDate.parse("2022-04-27"));
+        assertStartDate(week, 2, LocalDate.parse("2022-04-28"));
+        assertStartDate(week, 3, LocalDate.parse("2022-04-29"));
+        assertStartDate(week, 4, LocalDate.parse("2022-04-30"));
+        assertStartDate(week, 5, LocalDate.parse("2022-05-01"));
+        assertStartDate(week, 6, LocalDate.parse("2022-05-02"));
+    }
+    
+    private void assertStartDate(StudyReportWeek weeklyReport, int dayOfWeek, LocalDate startDate) {
+        for (EventStreamDay day : weeklyReport.getByDayEntries().get(dayOfWeek)) {
+            assertEquals(day.getStartDate(), startDate);
+        }
+    }
 }
