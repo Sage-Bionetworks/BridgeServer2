@@ -240,6 +240,10 @@ public class StudyAdherenceReportGenerator {
             oneWeek.getByDayEntries().put(i, paddedDays);
         }
         oneWeek.getSearchableLabels().addAll(labels);
+        // Instead of adding carry-over rows to the existing rows, we are recalculating all of them
+        // in this method and replacing the existing rows. This avoids duplicate rows due to carry-
+        // overs in the second pass that are identical except for the week when they started.
+        oneWeek.getRows().clear();
         oneWeek.getRows().addAll(rowList);
     }
     
