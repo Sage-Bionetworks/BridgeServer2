@@ -527,7 +527,7 @@ public class AdherenceService {
         
         Study study = studyService.getStudy(appId, studyId, true);
         
-        scheduleService.getScheduleForStudy(appId, study)
+        scheduleService.getScheduleForStudy(appId, studyId)
             .orElseThrow(() -> new EntityNotFoundException(Schedule2.class));
         
         if (adherenceThreshold == null) {

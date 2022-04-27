@@ -1244,7 +1244,7 @@ public class AdherenceServiceTest extends Mockito {
         when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
         
         Schedule2 schedule = new Schedule2();
-        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study)).thenReturn(Optional.of(schedule));
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(Optional.of(schedule));
         
         AdherenceStatistics stats = new AdherenceStatistics();
         when(mockReportDao.getAdherenceStatistics(TEST_APP_ID, TEST_STUDY_ID, Integer.valueOf(74))).thenReturn(stats);
@@ -1265,10 +1265,7 @@ public class AdherenceServiceTest extends Mockito {
     @Test(expectedExceptions = EntityNotFoundException.class, 
             expectedExceptionsMessageRegExp = "Schedule not found.")
     public void getAdherenceStatistics_scheduleNotFound() {
-        Study study = Study.create();
-        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
-        
-        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study)).thenReturn(Optional.empty());
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(Optional.empty());
         
         service.getAdherenceStatistics(TEST_APP_ID, TEST_STUDY_ID, null);
     }
@@ -1280,7 +1277,7 @@ public class AdherenceServiceTest extends Mockito {
         when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
         
         Schedule2 schedule = new Schedule2();
-        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study)).thenReturn(Optional.of(schedule));
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(Optional.of(schedule));
         
         AdherenceStatistics stats = new AdherenceStatistics();
         when(mockReportDao.getAdherenceStatistics(TEST_APP_ID, TEST_STUDY_ID, Integer.valueOf(32))).thenReturn(stats);
@@ -1292,11 +1289,8 @@ public class AdherenceServiceTest extends Mockito {
     @Test(expectedExceptions = BadRequestException.class, 
             expectedExceptionsMessageRegExp = AdherenceService.NO_THRESHOLD_VALUE_ERROR)
     public void getAdherenceStatistics_noAdherence() {
-        Study study = Study.create();
-        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
-        
         Schedule2 schedule = new Schedule2();
-        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study)).thenReturn(Optional.of(schedule));
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(Optional.of(schedule));
         
         AdherenceStatistics stats = new AdherenceStatistics();
         when(mockReportDao.getAdherenceStatistics(TEST_APP_ID, TEST_STUDY_ID, Integer.valueOf(32))).thenReturn(stats);
@@ -1307,11 +1301,8 @@ public class AdherenceServiceTest extends Mockito {
     @Test(expectedExceptions = BadRequestException.class, 
             expectedExceptionsMessageRegExp = AdherenceService.THRESHOLD_OUT_OF_RANGE_ERROR)
     public void getAdherenceStatistics_adherenceTooLow() {
-        Study study = Study.create();
-        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
-        
         Schedule2 schedule = new Schedule2();
-        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study)).thenReturn(Optional.of(schedule));
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(Optional.of(schedule));
         
         AdherenceStatistics stats = new AdherenceStatistics();
         when(mockReportDao.getAdherenceStatistics(TEST_APP_ID, TEST_STUDY_ID, Integer.valueOf(32))).thenReturn(stats);
@@ -1322,11 +1313,8 @@ public class AdherenceServiceTest extends Mockito {
     @Test(expectedExceptions = BadRequestException.class, 
             expectedExceptionsMessageRegExp = AdherenceService.THRESHOLD_OUT_OF_RANGE_ERROR)
     public void getAdherenceStatistics_adherenceTooHigh() {
-        Study study = Study.create();
-        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
-        
         Schedule2 schedule = new Schedule2();
-        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study)).thenReturn(Optional.of(schedule));
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(Optional.of(schedule));
         
         AdherenceStatistics stats = new AdherenceStatistics();
         when(mockReportDao.getAdherenceStatistics(TEST_APP_ID, TEST_STUDY_ID, Integer.valueOf(32))).thenReturn(stats);

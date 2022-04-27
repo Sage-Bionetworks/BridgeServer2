@@ -28,7 +28,6 @@ import org.joda.time.LocalTime;
 import org.joda.time.Period;
 import org.mockito.Mockito;
 import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.schedules2.AssessmentReference;
@@ -42,7 +41,6 @@ import org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantStudyPr
 import org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamDay;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamWindow;
-import org.sagebionetworks.bridge.models.schedules2.adherence.weekly.WeeklyAdherenceReport;
 import org.sagebionetworks.bridge.models.schedules2.adherence.weekly.WeeklyAdherenceReportRow;
 import org.sagebionetworks.bridge.models.schedules2.timelines.Scheduler;
 import org.sagebionetworks.bridge.models.schedules2.timelines.Timeline;

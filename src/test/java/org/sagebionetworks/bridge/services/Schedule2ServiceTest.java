@@ -271,12 +271,13 @@ public class Schedule2ServiceTest extends Mockito {
         Study study = Study.create();
         study.setIdentifier(TEST_STUDY_ID);
         study.setScheduleGuid(GUID);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, false)).thenReturn(study);
         
         Schedule2 schedule = new Schedule2();
         schedule.setOwnerId(TEST_ORG_ID);
         when(mockDao.getSchedule(TEST_APP_ID, GUID)).thenReturn(Optional.of(schedule));
         
-        Optional<Schedule2> retValue = service.getScheduleForStudy(TEST_APP_ID, study);
+        Optional<Schedule2> retValue = service.getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID);
         assertEquals(retValue.get(), schedule);
     }
     
@@ -291,12 +292,13 @@ public class Schedule2ServiceTest extends Mockito {
         Study study = Study.create();
         study.setIdentifier(TEST_STUDY_ID);
         study.setScheduleGuid(GUID);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, false)).thenReturn(study);
         
         Schedule2 schedule = new Schedule2();
         schedule.setOwnerId(TEST_ORG_ID);
         when(mockDao.getSchedule(TEST_APP_ID, GUID)).thenReturn(Optional.of(schedule));
         
-        Optional<Schedule2> retValue = service.getScheduleForStudy(TEST_APP_ID, study);
+        Optional<Schedule2> retValue = service.getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID);
         assertEquals(retValue.get(), schedule);
     }
     
@@ -305,11 +307,12 @@ public class Schedule2ServiceTest extends Mockito {
         Study study = Study.create();
         study.setIdentifier(TEST_STUDY_ID);
         study.setScheduleGuid(GUID);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, false)).thenReturn(study);
         
         Schedule2 schedule = new Schedule2();
         when(mockDao.getSchedule(TEST_APP_ID, GUID)).thenReturn(Optional.of(schedule));
         
-        service.getScheduleForStudy(TEST_APP_ID, study);
+        service.getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID);
     }
 
     @Test
@@ -320,8 +323,9 @@ public class Schedule2ServiceTest extends Mockito {
         
         Study study = Study.create();
         study.setIdentifier(TEST_STUDY_ID);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, false)).thenReturn(study);
         
-        Optional<Schedule2> optional = service.getScheduleForStudy(TEST_APP_ID, study);
+        Optional<Schedule2> optional = service.getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID);
         assertFalse(optional.isPresent());
 
         verify(mockDao, never()).getSchedule(any(), any());
@@ -336,11 +340,74 @@ public class Schedule2ServiceTest extends Mockito {
         Study study = Study.create();
         study.setIdentifier(TEST_STUDY_ID);
         study.setScheduleGuid(GUID);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, false)).thenReturn(study);
         
         when(mockDao.getSchedule(TEST_APP_ID, GUID)).thenReturn(Optional.empty());
         
-        Optional<Schedule2> optional = service.getScheduleForStudy(TEST_APP_ID, study);
+        Optional<Schedule2> optional = service.getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID);
         assertFalse(optional.isPresent());
+    }
+    
+    @Test
+    public void getScheduleForStudy_2() {
+        RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
+        
+        Study study = Study.create();
+        study.setScheduleGuid(SCHEDULE_GUID);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, false)).thenReturn(study);
+        
+        Schedule2 schedule = new Schedule2();
+        when(mockDao.getSchedule(TEST_APP_ID, SCHEDULE_GUID)).thenReturn(Optional.of(schedule));
+        
+        Optional<Schedule2> retValue = service.getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID);
+        assertSame(retValue.get(), schedule);
+    }
+    
+    @Test
+    public void getScheduleForStudy_scheduleNotFound2() {
+        RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
+        
+        Study study = Study.create();
+        study.setScheduleGuid(SCHEDULE_GUID);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, false)).thenReturn(study);
+        
+        when(mockDao.getSchedule(TEST_APP_ID, SCHEDULE_GUID)).thenReturn(Optional.empty());
+        
+        Optional<Schedule2> retValue = service.getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID);
+        assertFalse(retValue.isPresent());
+    }
+    
+    @Test
+    public void getScheduleForStudy_studyScheduleGuidNull2() {
+        RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
+        
+        Study study = Study.create();
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, false)).thenReturn(study);
+        
+        Optional<Schedule2> retValue = service.getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID);
+        assertFalse(retValue.isPresent());
+    }
+    
+    @Test
+    public void getScheduleForStudy_studyNotFound2() {
+        RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
+        
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, false)).thenReturn(null);
+        
+        Optional<Schedule2> retValue = service.getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID);
+        assertFalse(retValue.isPresent());
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void getScheduleForStudy_unauthorized2() {
+        Study study = Study.create();
+        study.setScheduleGuid(SCHEDULE_GUID);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, false)).thenReturn(study);
+        
+        Schedule2 schedule = new Schedule2();
+        when(mockDao.getSchedule(TEST_APP_ID, SCHEDULE_GUID)).thenReturn(Optional.of(schedule));
+        
+        service.getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID);
     }
     
     @Test
@@ -1089,7 +1156,7 @@ public class Schedule2ServiceTest extends Mockito {
         Study study = Study.create();
         study.setIdentifier(TEST_STUDY_ID);
         study.setScheduleGuid(SCHEDULE_GUID);
-        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, false)).thenReturn(study);
         
         Schedule2 schedule = Schedule2Test.createValidSchedule();
         when(mockDao.getSchedule(TEST_APP_ID, SCHEDULE_GUID)).thenReturn(Optional.of(schedule));
@@ -1103,7 +1170,7 @@ public class Schedule2ServiceTest extends Mockito {
         assertEquals(retValue.getCreatedOn(), CREATED_ON.withZone(DateTimeZone.forID("America/Chicago")));
     }
     
-    @Test
+    @Test(expectedExceptions = EntityNotFoundException.class)
     public void getParticipantSchedule_noScheduleFound() throws Exception {
         Account account = Account.create();
         account.setAppId(TEST_APP_ID);
@@ -1117,12 +1184,6 @@ public class Schedule2ServiceTest extends Mockito {
         Study study = Study.create();
         when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
         
-        ParticipantSchedule retValue = service.getParticipantSchedule(TEST_APP_ID, TEST_STUDY_ID, account);
-        assertEquals(retValue.getClientTimeZone(), "America/Chicago");
-        assertEquals(retValue.getCreatedOn(), CREATED_ON.withZone(DateTimeZone.forID("America/Chicago")));
-        assertTrue(retValue.getSchedule().isEmpty());
-        assertTrue(retValue.getSessions().isEmpty());
-        assertTrue(retValue.getAssessments().isEmpty());
-        assertTrue(retValue.getStudyBursts().isEmpty());
+        service.getParticipantSchedule(TEST_APP_ID, TEST_STUDY_ID, account);
     }
 }

@@ -106,7 +106,7 @@ public class StudyServiceTest {
         
         schedule = new Schedule2();
         schedule.setOwnerId(TEST_ORG_ID);
-        when(mockScheduleService.getScheduleForStudy(any(), any())).thenReturn(Optional.of(schedule));
+        when(mockScheduleService.getScheduleForStudy(any(), any(String.class))).thenReturn(Optional.of(schedule));
         when(mockScheduleService.getSchedule(TEST_APP_ID, SCHEDULE_GUID)).thenReturn(schedule);
         when(mockSponsorService.isStudySponsoredBy(TEST_STUDY_ID, TEST_ORG_ID)).thenReturn(true);
     }
