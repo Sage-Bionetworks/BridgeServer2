@@ -16,12 +16,32 @@ public class WeeklyAdherenceReportRowTest {
     
     @Test
     public void hashCodeEquals() {
-        // We don't use session instance GUID because we're trying to find the rows
-        // that are the same across the full report, and we don't want new rows for 
-        // multiple session instances in the one week.
         EqualsVerifier.forClass(WeeklyAdherenceReportRow.class)
             .suppress(Warning.NONFINAL_FIELDS).allFieldsShouldBeUsed()
             .verify();
+    }
+    
+    @Test
+    public void testPartiallyConstructedRowsAreEqual() {
+        WeeklyAdherenceReportRow row1 = new WeeklyAdherenceReportRow();
+        row1.setLabel("label");
+        row1.setSearchableLabel("searchableLabel");
+        row1.setSessionGuid("sessionGuid");
+        row1.setStartEventId("eventId");
+        row1.setSessionName("sessionName");
+        row1.setSessionSymbol("sessionSymbol");
+        row1.setWeekInStudy(2);
+        
+        WeeklyAdherenceReportRow row2 = new WeeklyAdherenceReportRow();
+        row2.setLabel("label");
+        row2.setSearchableLabel("searchableLabel");
+        row2.setSessionGuid("sessionGuid");
+        row2.setStartEventId("eventId");
+        row2.setSessionName("sessionName");
+        row2.setSessionSymbol("sessionSymbol");
+        row2.setWeekInStudy(2);
+        
+        assertEquals(row1, row2);
     }
     
     @Test
