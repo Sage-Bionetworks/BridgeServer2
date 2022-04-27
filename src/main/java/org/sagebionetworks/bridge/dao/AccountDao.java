@@ -9,7 +9,6 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
-import org.sagebionetworks.bridge.models.apps.App;
 
 /**
  * DAO to retrieve personally identifiable account information, including authentication 
@@ -31,7 +30,7 @@ public interface AccountDao {
      * Create an account. If the optional consumer is passed to this method and it throws an 
      * exception, the account will not be persisted.
      */
-    void createAccount(App app, Account account);
+    void createAccount(Account account);
     
     /**
      * Save account changes. If the optional consumer is passed to this method and 

@@ -526,7 +526,7 @@ public class Exporter3ServiceTest {
     }
 
     @Test
-    public void completeUpload_Case2() {
+    public void completeUpload_Case2() throws Exception {
         // Normal test case with the following changes
         // 1. No participant version
         // 2. Existing record
@@ -572,7 +572,7 @@ public class Exporter3ServiceTest {
     }
 
     @Test
-    public void completeUpload_NoSharing() {
+    public void completeUpload_NoSharing() throws Exception {
         // Set up inputs.
         Upload upload = Upload.create();
         upload.setHealthCode(TestConstants.HEALTH_CODE);
@@ -596,7 +596,7 @@ public class Exporter3ServiceTest {
     }
 
     @Test
-    public void completeUpload_NoAccount() {
+    public void completeUpload_NoAccount() throws Exception {
         // Set up inputs.
         Upload upload = Upload.create();
         upload.setHealthCode(TestConstants.HEALTH_CODE);

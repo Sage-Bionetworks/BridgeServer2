@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.lang.Boolean.TRUE;
 import static org.sagebionetworks.bridge.models.accounts.SharingScope.NO_SHARING;
 
 import java.util.Map;
@@ -30,13 +31,14 @@ import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-@Component("userAdminService")
-public class UserAdminService {
+@Component
+public class IntegrationTestUserService {
 
     private AuthenticationService authenticationService;
     private NotificationsService notificationsService;
     private ParticipantService participantService;
     private AccountService accountService;
+    private AdminAccountService adminAccountService;
     private ConsentService consentService;
     private HealthDataService healthDataService;
     private HealthDataEx3Service healthDataEx3Service;
@@ -50,7 +52,6 @@ public class UserAdminService {
     final void setAuthenticationService(AuthenticationService authenticationService) {
         this.authenticationService = authenticationService;
     }
-
     /** Notifications service, used to clean up notification registrations when we delete users. */
     @Autowired
     final void setNotificationsService(NotificationsService notificationsService) {
@@ -97,23 +98,25 @@ public class UserAdminService {
     final void setRequestInfoService(RequestInfoService requestInfoService) {
         this.requestInfoService = requestInfoService;
     }
+    @Autowired
+    final void setAdminAccountService(AdminAccountService adminAccountService) {
+        this.adminAccountService = adminAccountService;
+    }
     
     /**
-     * Create a user and optionally consent the user and/or sign the user in. If a specific subpopulation 
-     * is not specified (and currently the API for this method does not allow it), than the method iterates 
-     * through all subpopulations in the app and consents the user to all required consents. This should 
-     * allow the user to make calls without receiving a 412 response. 
+     * A method to create test users (only). Create a user and optionally consent
+     * the user and/or sign the user in. If a specific subpopulation is not
+     * specified (and currently the API for this method does not allow it), than the
+     * method iterates through all subpopulations in the app and consents the user
+     * to all required consents. This should allow the user to make calls without
+     * receiving a 412 response.
      * 
-     * @param appId
-     *            the app of the target user
-     * @param participant
-     *            sign up information for the target user
-     * @param subpopGuid
-     *            the subpopulation to consent to (if null, it will use the default/app subpopulation).
-     * @param signUserIn
-     *            should the user be signed into Bridge after creation?
-     * @param consentUser
-     *            should the user be consented to the research?
+     * @param appId       the app of the target user
+     * @param participant sign up information for the target user
+     * @param subpopGuid  the subpopulation to consent to (if null, it will use the
+     *                    default/app subpopulation).
+     * @param signUserIn  should the user be signed into Bridge after creation?
+     * @param consentUser should the user be consented to the research?
      *
      * @return UserSession for the newly created user
      */
@@ -133,35 +136,39 @@ public class UserAdminService {
         Validate.entityThrowingException(SignInValidator.MINIMAL, signInBuilder.build());
         
         IdentifierHolder identifier = null;
+
         try {
-            identifier = participantService.createParticipant(app, participant, false);
-            StudyParticipant updatedParticipant = participantService.getParticipant(app, identifier.getIdentifier(), false);
+            if (!participant.getRoles().isEmpty() || participant.getOrgMembership() != null) {
+                // I regret to inform you that you are actually creating an administrative account
+                identifier = createAdminAccount(app.getIdentifier(), participant);
+            } else {
+                identifier = participantService.createParticipant(app, participant, false);
+            }
+            // We need to load the ID into the participant object because it is passed to several methods below
+            participant = new StudyParticipant.Builder().copyOf(participant).withId(identifier.getIdentifier()).build();
             
-            // We don't filter users by any of these filtering criteria in the admin API.
-            CriteriaContext context = new CriteriaContext.Builder()
-                    .withUserId(identifier.getIdentifier())
+            // We don't filter users by any of the filtering criteria in this test API.
+            CriteriaContext context = new CriteriaContext.Builder().withUserId(identifier.getIdentifier())
                     .withAppId(app.getIdentifier()).build();
             
             if (consentUser) {
-                String name = String.format("[Signature for %s]", updatedParticipant.getEmail());
+                String name = String.format("[Signature for %s]", participant.getEmail());
                 ConsentSignature signature = new ConsentSignature.Builder().withName(name)
                         .withBirthdate("1989-08-19").withSignedOn(DateUtils.getCurrentMillisFromEpoch()).build();
                 
                 if (subpopGuid != null) {
-                    consentService.consentToResearch(app, subpopGuid, updatedParticipant, signature, NO_SHARING, false);
+                    consentService.consentToResearch(app, subpopGuid, participant, signature, NO_SHARING, false);
                 } else {
                     Map<SubpopulationGuid,ConsentStatus> statuses = consentService.getConsentStatuses(context);
                     for (ConsentStatus consentStatus : statuses.values()) {
                         if (consentStatus.isRequired()) {
                             SubpopulationGuid guid = SubpopulationGuid.create(consentStatus.getSubpopulationGuid());
-                            consentService.consentToResearch(app, guid, updatedParticipant, signature, NO_SHARING, false);
+                            consentService.consentToResearch(app, guid, participant, signature, NO_SHARING, false);
                         }
                     }
                 }
             }
             if (signUserIn) {
-                // We do ignore consent state here as our intention may be to create a user who is signed in but not
-                // consented.
                 try {
                     return authenticationService.signIn(app, context, signInBuilder.build());    
                 } catch(ConsentRequiredException e) {
@@ -183,10 +190,42 @@ public class UserAdminService {
             throw e;
         }
     }
+    
+    private IdentifierHolder createAdminAccount(String appId, StudyParticipant participant) {
+        Account account = Account.create();
+        account.setAppId(appId);
+        account.setFirstName(participant.getFirstName());
+        account.setLastName(participant.getLastName());
+        account.setAttributes(participant.getAttributes());
+        account.setEmail(participant.getEmail());
+        account.setPhone(participant.getPhone());
+        account.setPassword(participant.getPassword());
+        account.setSynapseUserId(participant.getSynapseUserId());
+        account.setStatus(participant.getStatus());
+        account.setOrgMembership(participant.getOrgMembership());
+        account.setRoles(participant.getRoles());
+        account.setClientData(participant.getClientData());
+        account.setTimeZone(participant.getTimeZone());
+        account.setSharingScope(participant.getSharingScope());
+        account.setNotifyByEmail(participant.isNotifyByEmail());
+        account.setDataGroups(participant.getDataGroups());
+        account.setLanguages(participant.getLanguages());
+        account.setClientTimeZone(participant.getClientTimeZone());
+        account.setNote(participant.getNote());
+        
+        account = adminAccountService.createAccount(appId, account);
+        
+        // force verification of this test account
+        accountService.editAccount(AccountId.forId(account.getAppId(), account.getId()), (acct) -> {
+            acct.setEmailVerified(TRUE);
+            acct.setPhoneVerified(TRUE);
+        });
+        return new IdentifierHolder(account.getId());
+    }
 
     /**
      * Delete the target user.
-     *
+     * 
      * @param app
      *      target user's app
      * @param id

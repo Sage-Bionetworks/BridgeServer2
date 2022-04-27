@@ -139,7 +139,7 @@ import org.sagebionetworks.bridge.services.SponsorService;
 import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.AccountWorkflowService;
 import org.sagebionetworks.bridge.services.AppService;
-import org.sagebionetworks.bridge.services.UserAdminService;
+import org.sagebionetworks.bridge.services.IntegrationTestUserService;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 
 public class ParticipantControllerTest extends Mockito {
@@ -203,7 +203,7 @@ public class ParticipantControllerTest extends Mockito {
     CacheProvider mockCacheProvider;
 
     @Mock
-    UserAdminService mockUserAdminService;
+    IntegrationTestUserService mockUserManagementService;
     
     @Mock
     RequestInfoService mockRequestInfoService;
@@ -1509,7 +1509,7 @@ public class ParticipantControllerTest extends Mockito {
         when(mockParticipantService.getParticipant(app, TEST_USER_ID, false)).thenReturn(participant);
         controller.deleteTestOrUnusedParticipant(TEST_USER_ID);
 
-        verify(mockUserAdminService).deleteUser(app, TEST_USER_ID);
+        verify(mockUserManagementService).deleteUser(app, TEST_USER_ID);
     }
 
     @Test(expectedExceptions = UnauthorizedException.class)

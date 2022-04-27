@@ -456,7 +456,7 @@ public class Exporter3Service {
     }
 
     /** Complete an upload for Exporter 3.0, and also export that upload. */
-    public void completeUpload(App app, Upload upload) {
+    public void completeUpload(App app, Upload upload) throws JsonProcessingException {
         String appId = app.getIdentifier();
         String healthCode = upload.getHealthCode();
 

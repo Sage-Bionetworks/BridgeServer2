@@ -56,7 +56,6 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
-import org.sagebionetworks.bridge.models.apps.App;
 
 /** Hibernate implementation of Account Dao. */
 @Component
@@ -100,7 +99,7 @@ public class HibernateAccountDao implements AccountDao {
     
     /** {@inheritDoc} */
     @Override
-    public void createAccount(App app, Account account) {
+    public void createAccount(Account account) {
         hibernateHelper.create(account);
     }
 

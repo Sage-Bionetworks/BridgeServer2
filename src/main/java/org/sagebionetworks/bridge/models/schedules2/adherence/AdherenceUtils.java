@@ -5,11 +5,10 @@ import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionComp
 import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.COMPLIANT;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.DECLINED;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.EXPIRED;
-import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.NONCOMPLIANT;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.NOT_APPLICABLE;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.NOT_YET_AVAILABLE;
+import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.OFFERED;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.STARTED;
-import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.UNKNOWN;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.UNSTARTED;
 
 import java.util.Collection;
@@ -58,9 +57,7 @@ public class AdherenceUtils {
     
     public static int calculateAdherencePercentage(Map<Integer, List<EventStreamDay>> byDayEntries) {
         long compliant = count(byDayEntries.values().stream(), COMPLIANT);
-        long noncompliant = count(byDayEntries.values().stream(), NONCOMPLIANT);
-        long unknown = count(byDayEntries.values().stream(), UNKNOWN);
-        long total = compliant + noncompliant + unknown;
+        long total = count(byDayEntries.values().stream(), OFFERED);
 
         return calcPercent(compliant, total);
     }
@@ -68,11 +65,8 @@ public class AdherenceUtils {
     public static int calculateAdherencePercentage(Collection<EventStream> streams) {
         long compliant = count(streams.stream()
                 .flatMap(es -> es.getByDayEntries().values().stream()), COMPLIANT);
-        long noncompliant = count(streams.stream()
-                .flatMap(es -> es.getByDayEntries().values().stream()), NONCOMPLIANT);
-        long unknown = count(streams.stream()
-                .flatMap(es -> es.getByDayEntries().values().stream()), UNKNOWN);
-        long total = compliant + noncompliant + unknown;
+        long total = count(streams.stream()
+                .flatMap(es -> es.getByDayEntries().values().stream()), OFFERED);
         
         return calcPercent(compliant, total);
     }
