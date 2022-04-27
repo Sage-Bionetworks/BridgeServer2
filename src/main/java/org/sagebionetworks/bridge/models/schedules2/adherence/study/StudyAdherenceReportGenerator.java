@@ -60,7 +60,7 @@ public class StudyAdherenceReportGenerator {
         // calculations are correct.
         LocalDate earliestDate = getDate(state, eventReport.getEarliestEventId());
         // Get the start date of the report. If the schedule was not set up correctly, this can be after
-        // the earliest date. The timeline is calculated the same, but we’ll shor weeks before the start
+        // the earliest date. The timeline is calculated the same, but we’ll show weeks before the start
         // of the study as “Week 0”, “Week -1”, and so forth.
         LocalDate studyStartDate = getDate(state, state.getStudyStartEventId());
 
@@ -139,11 +139,14 @@ public class StudyAdherenceReportGenerator {
             adherence = calculateAdherencePercentage(ImmutableList.of(studyStream));
         }
         // If the earliest date is before the study start date, we're going to offset the weekInStudy 
-        // field to show there are scheduled activities occurring earlier in the study design.
+        // field to show there are scheduled activities occurring earlier in the study design. Up to 7
+        // days difference, earliestDate and studyStartDate are in the same week (so the offset is, 
+        // correctly, still 0). Above seven days, earliestDate and studyStartDate will start to be in 
+        // different weeks.
         int weekOffset = 0;
         if (earliestDate != null && studyStartDate != null && earliestDate.isBefore(studyStartDate)) {
             int days = Days.daysBetween(earliestDate, studyStartDate).getDays();
-            weekOffset = days/7;
+            weekOffset = (days/7);
         }
 
         List<StudyReportWeek> weeks = Lists.newArrayList(weekMap.values());
