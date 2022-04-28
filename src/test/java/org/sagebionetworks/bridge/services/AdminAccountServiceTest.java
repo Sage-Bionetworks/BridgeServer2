@@ -889,7 +889,7 @@ public class AdminAccountServiceTest extends Mockito {
     }
     
     @Test
-    public void updateAccount_noChangeToSynapseUserId() {
+    public void updateAccount_changeToSynapseUserIdSignsOutUser() {
         App app = App.create();
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
         
@@ -935,7 +935,7 @@ public class AdminAccountServiceTest extends Mockito {
     }
     
     @Test
-    public void updateAccount_changeSynapseUserIdSignsOutUser() {
+    public void updateAccount_noChangeToSynapseUserId() {
         App app = App.create();
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
         
