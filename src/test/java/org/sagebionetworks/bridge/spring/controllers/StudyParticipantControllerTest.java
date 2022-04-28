@@ -1460,7 +1460,7 @@ public class StudyParticipantControllerTest extends Mockito {
         assertEquals(retValue.getStatusCodeValue(), 304);
         assertNull(retValue.getBody());
         
-        verify(mockScheduleService, never()).getScheduleForStudy(any(), any(String.class));
+        verify(mockScheduleService, never()).getScheduleForStudy(any(), any());
         verify(mockCacheProvider).getObject(scheduleModificationTimestamp(TEST_APP_ID, TEST_STUDY_ID), String.class);
     }
     

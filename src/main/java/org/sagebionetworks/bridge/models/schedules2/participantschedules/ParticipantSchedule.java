@@ -13,6 +13,8 @@ import org.sagebionetworks.bridge.models.schedules2.timelines.StudyBurstInfo;
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 /**
  * A schedule that is very similar to a timeline, but laid out with a real chronology for a specific
@@ -25,11 +27,11 @@ public class ParticipantSchedule {
     private DateRange dateRange;
     private DateTime createdOn;
     private String clientTimeZone;
-    private List<ScheduledSession> scheduledSessions;
-    private List<AssessmentInfo> assessments;
-    private List<SessionInfo> sessions;
-    private List<StudyBurstInfo> studyBursts;
-    private Map<String, DateTime> eventTimestamps;
+    private List<ScheduledSession> scheduledSessions = ImmutableList.of();
+    private List<AssessmentInfo> assessments = ImmutableList.of();
+    private List<SessionInfo> sessions = ImmutableList.of();
+    private List<StudyBurstInfo> studyBursts = ImmutableList.of();
+    private Map<String, DateTime> eventTimestamps = ImmutableMap.of();
 
     public DateRange getDateRange() {
         return dateRange;

@@ -171,26 +171,6 @@ public class Schedule2Service {
     }
     
     /**
-     * Get the schedule assigned to a study. Access is only checked through 
-     * enrollment in the study; administrative calls should be made through the
-     * getSchedule() method of this service.
-     */
-    public Optional<Schedule2> getScheduleForStudy(String appId, Study study) {
-        checkNotNull(appId);
-        checkNotNull(study);
-        
-        if (study.getScheduleGuid() == null) {
-            return Optional.empty();
-        }
-        Optional<Schedule2> optional = dao.getSchedule(appId, study.getScheduleGuid());
-
-        if (optional.isPresent()) {
-            CAN_READ_STUDIES.checkAndThrow(STUDY_ID, study.getIdentifier());    
-        }
-        return optional;
-    }
-    
-    /**
      * Get the schedule assigned to a study. Access to the schedule is granted if the caller
      * can access the study.
      */
@@ -208,6 +188,13 @@ public class Schedule2Service {
             CAN_READ_STUDIES.checkAndThrow(STUDY_ID, study.getIdentifier());    
         }
         return optional;
+    }
+
+    public Optional<Schedule2> getScheduleForStudyValidator(String appId, String guid) {
+        checkNotNull(appId);
+        checkNotNull(guid);
+        
+        return dao.getSchedule(appId, guid);
     }
     
     public Schedule2 createOrUpdateStudySchedule(Study study, Schedule2 schedule) {
@@ -449,12 +436,15 @@ public class Schedule2Service {
         AdherenceState state = builder.build();
         
         ParticipantSchedule participantSchedule = null;
-        Schedule2 schedule = getScheduleForStudy(appId, studyId)
-                    .orElseThrow(() -> new EntityNotFoundException(Schedule2.class));
-        
-        Timeline timeline = Scheduler.INSTANCE.calculateTimeline(schedule);
-        participantSchedule = ParticipantScheduleGenerator.INSTANCE.generate(state, timeline);
-
+        Schedule2 schedule = getScheduleForStudy(appId, studyId).orElse(null);
+        if (schedule != null) {
+            Timeline timeline = Scheduler.INSTANCE.calculateTimeline(schedule);
+            participantSchedule = ParticipantScheduleGenerator.INSTANCE.generate(state, timeline);
+        } else {
+            participantSchedule = new ParticipantSchedule();
+            participantSchedule.setCreatedOn(state.getNow());
+            participantSchedule.setClientTimeZone(state.getClientTimeZone());
+        }
         watch.stop();
         LOG.info("Participant schedule took " + watch.elapsed(TimeUnit.MILLISECONDS) + "ms");
         return participantSchedule;

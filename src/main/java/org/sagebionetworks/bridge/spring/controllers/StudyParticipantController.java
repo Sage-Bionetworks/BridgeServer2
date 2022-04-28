@@ -329,8 +329,8 @@ public class StudyParticipantController extends BaseController {
                 .withUserId(session.getId())
                 .withObjectType(TIMELINE_RETRIEVED)
                 .withTimestamp(timelineRequestedOn).build(), false, true);
-
-        return scheduleService.getParticipantSchedule(session.getAppId(), studyId, account);
+        
+        return scheduleService.getParticipantSchedule(session.getAppId(), studyId, account);    
     }
     
     @GetMapping("/v5/studies/{studyId}/participants/{userId}/enrollments")

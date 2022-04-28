@@ -12,6 +12,7 @@ import static org.sagebionetworks.bridge.TestConstants.SCHEDULE_GUID;
 import static org.sagebionetworks.bridge.TestConstants.SESSION_GUID_1;
 import static org.sagebionetworks.bridge.TestConstants.SESSION_WINDOW_GUID_1;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_CLIENT_TIME_ZONE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
@@ -349,7 +350,7 @@ public class Schedule2ServiceTest extends Mockito {
     }
     
     @Test
-    public void getScheduleForStudy_2() {
+    public void getScheduleForStudy() {
         RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
         Study study = Study.create();
@@ -364,7 +365,7 @@ public class Schedule2ServiceTest extends Mockito {
     }
     
     @Test
-    public void getScheduleForStudy_scheduleNotFound2() {
+    public void getScheduleForStudy_scheduleNotFound() {
         RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
         Study study = Study.create();
@@ -378,7 +379,7 @@ public class Schedule2ServiceTest extends Mockito {
     }
     
     @Test
-    public void getScheduleForStudy_studyScheduleGuidNull2() {
+    public void getScheduleForStudy_studyScheduleGuidNull() {
         RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
         Study study = Study.create();
@@ -389,7 +390,7 @@ public class Schedule2ServiceTest extends Mockito {
     }
     
     @Test
-    public void getScheduleForStudy_studyNotFound2() {
+    public void getScheduleForStudy_studyNotFound() {
         RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
         when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, false)).thenReturn(null);
@@ -399,7 +400,7 @@ public class Schedule2ServiceTest extends Mockito {
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void getScheduleForStudy_unauthorized2() {
+    public void getScheduleForStudy_unauthorized() {
         Study study = Study.create();
         study.setScheduleGuid(SCHEDULE_GUID);
         when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, false)).thenReturn(study);
@@ -408,6 +409,17 @@ public class Schedule2ServiceTest extends Mockito {
         when(mockDao.getSchedule(TEST_APP_ID, SCHEDULE_GUID)).thenReturn(Optional.of(schedule));
         
         service.getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID);
+    }
+    
+    @Test
+    public void getScheduleForStudyValidator() {
+        Schedule2 schedule = new Schedule2();
+        when(mockDao.getSchedule(TEST_APP_ID, SCHEDULE_GUID)).thenReturn(Optional.of(schedule));
+        
+        Optional<Schedule2> retValue = service.getScheduleForStudyValidator(TEST_APP_ID, SCHEDULE_GUID);
+        assertSame(retValue.get(), schedule);
+        
+        verify(mockDao).getSchedule(TEST_APP_ID, SCHEDULE_GUID);
     }
     
     @Test
@@ -1170,12 +1182,12 @@ public class Schedule2ServiceTest extends Mockito {
         assertEquals(retValue.getCreatedOn(), CREATED_ON.withZone(DateTimeZone.forID("America/Chicago")));
     }
     
-    @Test(expectedExceptions = EntityNotFoundException.class)
+    @Test
     public void getParticipantSchedule_noScheduleFound() throws Exception {
         Account account = Account.create();
         account.setAppId(TEST_APP_ID);
         account.setId(TEST_USER_ID);
-        account.setClientTimeZone("America/Chicago");
+        account.setClientTimeZone(TEST_CLIENT_TIME_ZONE);
         
         ResourceList<StudyActivityEvent> events = new ResourceList<>(ImmutableList.of());
         when(mockStudyActivityEventService.getRecentStudyActivityEvents(
@@ -1184,6 +1196,14 @@ public class Schedule2ServiceTest extends Mockito {
         Study study = Study.create();
         when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
         
-        service.getParticipantSchedule(TEST_APP_ID, TEST_STUDY_ID, account);
+        ParticipantSchedule participantSchedule = service.getParticipantSchedule(TEST_APP_ID, TEST_STUDY_ID, account);
+        assertEquals(participantSchedule.getCreatedOn(), 
+                CREATED_ON.withZone(DateTimeZone.forID(TEST_CLIENT_TIME_ZONE)));
+        assertEquals(participantSchedule.getClientTimeZone(), TEST_CLIENT_TIME_ZONE);
+        assertTrue(participantSchedule.getSchedule().isEmpty());
+        assertTrue(participantSchedule.getSessions().isEmpty());
+        assertTrue(participantSchedule.getAssessments().isEmpty());
+        assertTrue(participantSchedule.getStudyBursts().isEmpty());
+        assertTrue(participantSchedule.getEventTimestamps().isEmpty());
     }
 }

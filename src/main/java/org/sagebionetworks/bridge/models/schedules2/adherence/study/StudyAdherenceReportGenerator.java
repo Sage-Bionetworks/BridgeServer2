@@ -101,7 +101,7 @@ public class StudyAdherenceReportGenerator {
         // study-wide progress and adherence. Don't calculate adherence if there's no schedule.
         ParticipantStudyProgress progression = calculateProgress(state, ImmutableList.of(studyStream));
         Integer adherence = null;
-        if (!ParticipantStudyProgress.NO_ADHERENCE.contains(progression)) {
+        if (ParticipantStudyProgress.UNSTARTED != progression) {
             adherence = calculateAdherencePercentage(ImmutableList.of(studyStream));
         }
         DateRange dateRange = null;
@@ -334,7 +334,7 @@ public class StudyAdherenceReportGenerator {
         
         // recalculate this, again if there's no schedule, don't calculate anything.
         Integer adhPercent = null;
-        if (!ParticipantStudyProgress.NO_ADHERENCE.contains(progression)) {
+        if (ParticipantStudyProgress.UNSTARTED != progression) {
             adhPercent = calculateAdherencePercentage(weekReport.getByDayEntries());
         }
         weekReport.setAdherencePercent(adhPercent);

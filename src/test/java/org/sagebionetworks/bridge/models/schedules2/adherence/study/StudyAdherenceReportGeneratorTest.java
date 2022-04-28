@@ -28,6 +28,7 @@ import org.joda.time.LocalTime;
 import org.joda.time.Period;
 import org.mockito.Mockito;
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.schedules2.AssessmentReference;
@@ -600,23 +601,15 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
         assertNull(report.getWeekReport().getAdherencePercent());
     }
     
-    @Test
+    @Test(expectedExceptions = EntityNotFoundException.class, 
+            expectedExceptionsMessageRegExp = "Schedule not found.")
     public void generate_noSchedule() throws Exception {
         AdherenceState.Builder builder = createAdherenceState();
         builder.withMetadata(ImmutableList.of());
         builder.withAdherenceRecords(createAdherenceRecords());
         builder.withClientTimeZone("America/Chicago");
-        StudyAdherenceReport report = INSTANCE.generate(builder.build());
         
-        // testAccount is set in the service, not the generator
-        assertNull(report.getAdherencePercent());
-        assertEquals(report.getProgression(), ParticipantStudyProgress.NO_SCHEDULE);
-        assertNull(report.getDateRange());
-        
-        assertTrue(report.getUnsetEventIds().isEmpty());
-        assertTrue(report.getUnscheduledSessions().isEmpty());
-        assertTrue(report.getEventTimestamps().isEmpty());
-        assertTrue(report.getWeeks().isEmpty());
+        INSTANCE.generate(builder.build());
     }
     
     @Test

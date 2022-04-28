@@ -21,6 +21,7 @@ import java.util.List;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceState;
@@ -316,22 +317,12 @@ public class EventStreamAdherenceReportGeneratorTest {
         assertEquals(getReportStates(report), ImmutableList.of(COMPLETED, NOT_YET_AVAILABLE));
     }
     
-    @Test
-    public void handleNulls() {
-        AdherenceState state = new AdherenceState.Builder().withNow(NOW).build();
-        
-        EventStreamAdherenceReport report = INSTANCE.generate(state);
-        assertEquals(100, report.getAdherencePercent());
-        assertEquals(report.getTimestamp(), NOW); // no time zone adjustment
-        assertTrue(report.getStreams().isEmpty());
-    }
-    
-    @Test
+    @Test(expectedExceptions = EntityNotFoundException.class, 
+            expectedExceptionsMessageRegExp = "Schedule not found.")
     public void progression_noSchedule() { 
         AdherenceState state = new AdherenceState.Builder().withNow(NOW).build();
         
-        EventStreamAdherenceReport report = INSTANCE.generate(state);
-        assertEquals(report.getProgression(), ParticipantStudyProgress.NO_SCHEDULE);
+        INSTANCE.generate(state);
     }
     
     @Test

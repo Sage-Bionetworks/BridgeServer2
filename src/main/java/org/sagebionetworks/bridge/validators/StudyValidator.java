@@ -225,7 +225,7 @@ public class StudyValidator implements Validator {
         }
         if (study.getScheduleGuid() != null) {
             try {
-                Optional<Schedule2> opt = scheduleService.getScheduleForStudy(study.getAppId(), study);
+                Optional<Schedule2> opt = scheduleService.getScheduleForStudyValidator(study.getAppId(), study.getScheduleGuid());
                 if (!opt.isPresent()) {
                     errors.rejectValue(SCHEDULE_GUID_FIELD, SCHEDULE_GUID_INVALID_MSG);
                 } else if (!sponsorService.isStudySponsoredBy(study.getIdentifier(), opt.get().getOwnerId())) {

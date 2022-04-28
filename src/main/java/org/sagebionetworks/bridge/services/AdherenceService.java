@@ -26,7 +26,6 @@ import static org.sagebionetworks.bridge.models.ResourceList.TIME_WINDOW_GUIDS;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ASSESSMENT;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.SESSION;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventType.FINISHED;
-import static org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantStudyProgress.NO_ADHERENCE;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantStudyProgress.UNSTARTED;
 import static org.sagebionetworks.bridge.validators.AdherenceRecordListValidator.INSTANCE;
 
@@ -444,13 +443,9 @@ public class AdherenceService {
         
         RequestInfo info = requestInfoService.getRequestInfo(account.getId());
         if (info == null || info.getSignedInOn() == null) {
-            if (NO_ADHERENCE.contains(report.getProgression())) {
-                weeklyReport.setProgression(report.getProgression());
-            } else {
-                weeklyReport.setProgression(UNSTARTED);
-            }
             // Pad out this report so it is similar to reports that have no current active
             // tasks for the participant.
+            weeklyReport.setProgression(UNSTARTED);
             weeklyReport.setRows(EMPTY_WEEK.getRows());
             weeklyReport.setByDayEntries(EMPTY_WEEK.getByDayEntries());
         } else {
