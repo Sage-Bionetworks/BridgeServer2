@@ -23,6 +23,7 @@ import java.util.Map;
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStream;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamDay;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamWindow;
@@ -233,18 +234,25 @@ public class AdherenceUtilsTest {
     private static Object[] dataRow(int expectedPercentage, EventStream... streams) {
         return new Object[] { expectedPercentage, ImmutableList.copyOf(streams) };
     }
-
     
     @Test(dataProvider = "progressStates")
     public void calculateProgress(ParticipantStudyProgress expectedProgress, AdherenceState state, List<EventStream> eventStreams) {
         ParticipantStudyProgress retValue = AdherenceUtils.calculateProgress(state, eventStreams);
         assertEquals(retValue, expectedProgress);
     }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class,
+            expectedExceptionsMessageRegExp = "Schedule not found.")
+    public void calculateProgress_noSchedule() {
+        List<EventStream> streams = ImmutableList.of(createEventStream(0, SessionCompletionState.STARTED, SessionCompletionState.COMPLETED) );
+        AdherenceState state = new AdherenceState.Builder().withNow(STARTED_ON).build();
+        
+        AdherenceUtils.calculateProgress(state, streams);
+    }
 
     @DataProvider(name = "progressStates")
     public static Object[] progressStates() {
         return new Object[][] {
-            // TODO:
             progressDataRow(true, 
                     ParticipantStudyProgress.UNSTARTED, 
                     createEventStream(0, NOT_APPLICABLE, NOT_APPLICABLE)),
