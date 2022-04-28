@@ -18,6 +18,7 @@ import static org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.UNVERIFIED;
 import static org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM;
 import static org.sagebionetworks.bridge.models.accounts.SharingScope.NO_SHARING;
+import static org.springframework.util.ObjectUtils.nullSafeEquals;
 
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -48,7 +49,6 @@ import org.sagebionetworks.bridge.validators.AdminAccountValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.util.ObjectUtils;
 import org.springframework.validation.Validator;
 
 import com.google.common.collect.Sets;
@@ -242,6 +242,12 @@ public class AdminAccountService {
 
         accountDao.updateAccount(account);
         
+        // If the Synapse account ID on this account is changed, sign out the account and make the 
+        // user confirm that they control this new Synapse ID by signing in again. This does not 
+        // effect account status.
+        if (!nullSafeEquals(account.getSynapseUserId(), persistedAccount.getSynapseUserId())) {
+            cacheProvider.removeSessionByUserId(account.getId());
+        }
         sendVerificationMessages(app, persistedAccount, account);
         
         return account;
@@ -263,13 +269,13 @@ public class AdminAccountService {
     }
     
     protected void sendVerificationMessages(App app, Account original, Account update) {
-        if (!ObjectUtils.nullSafeEquals(original.getEmail(), update.getEmail())) {
+        if (!nullSafeEquals(original.getEmail(), update.getEmail())) {
             update.setEmailVerified(FALSE);
             if (update.getEmail() != null) {
                 accountWorkflowService.sendEmailVerificationToken(app, update.getId(), update.getEmail());
             }
         }
-        if (!ObjectUtils.nullSafeEquals(original.getPhone(), update.getPhone())) {
+        if (!nullSafeEquals(original.getPhone(), update.getPhone())) {
             update.setPhoneVerified(FALSE);
             Phone phone = update.getPhone();
             if (phone != null) {
