@@ -1182,7 +1182,8 @@ public class Schedule2ServiceTest extends Mockito {
         assertEquals(retValue.getCreatedOn(), CREATED_ON.withZone(DateTimeZone.forID("America/Chicago")));
     }
     
-    @Test
+    @Test(expectedExceptions = EntityNotFoundException.class,
+            expectedExceptionsMessageRegExp = "Schedule not found.")
     public void getParticipantSchedule_noScheduleFound() throws Exception {
         Account account = Account.create();
         account.setAppId(TEST_APP_ID);
@@ -1196,14 +1197,6 @@ public class Schedule2ServiceTest extends Mockito {
         Study study = Study.create();
         when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
         
-        ParticipantSchedule participantSchedule = service.getParticipantSchedule(TEST_APP_ID, TEST_STUDY_ID, account);
-        assertEquals(participantSchedule.getCreatedOn(), 
-                CREATED_ON.withZone(DateTimeZone.forID(TEST_CLIENT_TIME_ZONE)));
-        assertEquals(participantSchedule.getClientTimeZone(), TEST_CLIENT_TIME_ZONE);
-        assertTrue(participantSchedule.getSchedule().isEmpty());
-        assertTrue(participantSchedule.getSessions().isEmpty());
-        assertTrue(participantSchedule.getAssessments().isEmpty());
-        assertTrue(participantSchedule.getStudyBursts().isEmpty());
-        assertTrue(participantSchedule.getEventTimestamps().isEmpty());
+        service.getParticipantSchedule(TEST_APP_ID, TEST_STUDY_ID, account);
     }
 }

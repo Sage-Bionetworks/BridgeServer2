@@ -423,6 +423,9 @@ public class Schedule2Service {
         
         Stopwatch watch = Stopwatch.createStarted();
 
+        Schedule2 schedule = getScheduleForStudy(appId, studyId)
+                .orElseThrow(() -> new EntityNotFoundException(Schedule2.class));
+
         List<StudyActivityEvent> events = studyActivityEventService.getRecentStudyActivityEvents(
                 account.getAppId(), studyId, account.getId()).getItems();
 
@@ -434,17 +437,10 @@ public class Schedule2Service {
             builder.withClientTimeZone(account.getClientTimeZone());    
         }
         AdherenceState state = builder.build();
+
+        Timeline timeline = Scheduler.INSTANCE.calculateTimeline(schedule);
+        ParticipantSchedule participantSchedule = ParticipantScheduleGenerator.INSTANCE.generate(state, timeline);
         
-        ParticipantSchedule participantSchedule = null;
-        Schedule2 schedule = getScheduleForStudy(appId, studyId).orElse(null);
-        if (schedule != null) {
-            Timeline timeline = Scheduler.INSTANCE.calculateTimeline(schedule);
-            participantSchedule = ParticipantScheduleGenerator.INSTANCE.generate(state, timeline);
-        } else {
-            participantSchedule = new ParticipantSchedule();
-            participantSchedule.setCreatedOn(state.getNow());
-            participantSchedule.setClientTimeZone(state.getClientTimeZone());
-        }
         watch.stop();
         LOG.info("Participant schedule took " + watch.elapsed(TimeUnit.MILLISECONDS) + "ms");
         return participantSchedule;
