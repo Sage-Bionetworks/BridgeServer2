@@ -191,7 +191,7 @@ public class StudyService {
                 scheduleService, sponsorService);
         Validate.entityThrowingException(validator, study);
         
-        study.setVersion(null);
+        study.setVersion(0);
         study.setDeleted(false);
         DateTime timestamp = DateTime.now();
         study.setCreatedOn(timestamp);

@@ -44,7 +44,7 @@ public class OrganizationTest {
         assertEquals(deser.getDescription(), "aDescription");
         assertEquals(deser.getCreatedOn(), CREATED_ON);
         assertEquals(deser.getModifiedOn(), MODIFIED_ON);
-        assertEquals(deser.getVersion(), Long.valueOf(3L));
+        assertEquals(deser.getVersion(), 3L);
     }
 
     @Test

@@ -187,7 +187,7 @@ public class OrganizationServiceTest extends Mockito {
         Organization retValue = service.createOrganization(org);
         assertEquals(retValue.getCreatedOn(), CREATED_ON);
         assertEquals(retValue.getModifiedOn(), CREATED_ON);
-        assertNull(retValue.getVersion());
+        assertEquals(retValue.getVersion(), 0L);
         
         verify(mockOrgDao).createOrganization(org);
     }
