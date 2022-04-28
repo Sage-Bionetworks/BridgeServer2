@@ -46,31 +46,23 @@ public class StudyAdherenceReportGenerator {
         int sb = STRING_COMPARATOR.compare(r1.getStudyBurstId(), r2.getStudyBurstId());
         return (sb != 0) ? sb : STRING_COMPARATOR.compare(r1.getLabel(), r2.getLabel());
     };
-    
-    /**
-     * Find a master starting date for this participant. The Study.studyStartEventId is the canonical 
-     * start of the study, but if that's not present, we have identified the earliest activity’s 
-     * startEventId in the event stream report so we can use that timestamp. This should reduce the 
-     * appearance of negative weeks, though if the studyStartEventId comes after another event mentioned 
-     * in the schedule and present for this participant, it can still happen. 
-     */
-    protected LocalDate getStudyStartDate(AdherenceState state, EventStreamAdherenceReport report) {
-        DateTime eventTimestamp = state.getEventTimestampById(state.getStudyStartEventId());
-        if (eventTimestamp != null) {
-            return eventTimestamp.toLocalDate();
-        }
-        DateTime timestamp = state.getEventTimestampById(report.getEarliestEventId());
-        if (timestamp != null) {
-            return timestamp.toLocalDate();
-        }
-        return null;
+
+    protected LocalDate getDate(AdherenceState state, String eventId) {
+        DateTime timestamp = state.getEventTimestampById(eventId);
+        return (timestamp != null) ? timestamp.toLocalDate() : null;
     }
 
     public StudyAdherenceReport generate(AdherenceState state) {
         
         EventStreamAdherenceReport eventReport = EventStreamAdherenceReportGenerator.INSTANCE.generate(state);
         
-        LocalDate studyStartDate = getStudyStartDate(state, eventReport);
+        // Get the earliest date present in the report. The report starts from this date so week and day 
+        // calculations are correct.
+        LocalDate earliestDate = getDate(state, eventReport.getEarliestEventId());
+        // Get the start date of the report. If the schedule was not set up correctly, this can be after
+        // the earliest date. The timeline is calculated the same, but we’ll show weeks before the start
+        // of the study as “Week 0”, “Week -1”, and so forth.
+        LocalDate studyStartDate = getDate(state, state.getStudyStartEventId());
 
         EventStream studyStream = new EventStream();
         Set<String> unsetEventIds = new HashSet<>();
@@ -78,52 +70,35 @@ public class StudyAdherenceReportGenerator {
         Map<String, DateTime> eventTimestamps = new HashMap<>();
         LocalDate localToday = state.getNow().toLocalDate();
         
-        // Remap all the event streams to one event stream — the study event stream, measured from studyStartDate
+        // Remap all the event streams to one event stream one one timeline from the earliest date
         for (EventStream stream : eventReport.getStreams()) {
             stream.visitDays((day, i) -> {
                 if (day.getStartDate() != null) {
-                    // Map this stream into the study stream
-                    Integer numDays = Days.daysBetween(studyStartDate, day.getStartDate()).getDays();
+                    Integer numDays = Days.daysBetween(earliestDate, day.getStartDate()).getDays();
                     studyStream.addEntry(numDays, day);
                     
                     String eventId = day.getStartEventId();
                     eventTimestamps.put(eventId, state.getEventTimestampById(eventId));
                 } else {
-                    // Note that this event does not exist and this session is not scheduled for this user
+                    // This event has no timestamp and so this session is not scheduled for the user.
+                    // Record to report back.
                     unsetEventIds.add(day.getStartEventId());
                     unscheduledSessions.add(day.getSessionName());
                 }
             });
         }
         
-        // Some study-wide calculations:
-        
-        // study-wide progress and adherence. Don't calculate adherence if there's no schedule.
-        ParticipantStudyProgress progression = calculateProgress(state, ImmutableList.of(studyStream));
-        Integer adherence = null;
-        if (!ParticipantStudyProgress.NO_ADHERENCE.contains(progression)) {
-            adherence = calculateAdherencePercentage(ImmutableList.of(studyStream));
-        }
-        DateRange dateRange = null;
-        if (eventReport.getDateRangeOfAllStreams() != null) {
-            LocalDate endDate = eventReport.getDateRangeOfAllStreams().getEndDate();
-            if (studyStartDate.isEqual(endDate) || studyStartDate.isBefore(endDate)) {
-                dateRange = new DateRange(studyStartDate, endDate);
-            }
-        }
-        
-        // Break this study stream down into weeks. TreeMap sorts the weeks by week number. This report is still
+        // Break this combined stream down into weeks. TreeMap sorts the weeks by week number. This report is still
         // “sparse” (no weeks are present that have no activities). 
         Map<Integer, StudyReportWeek> weekMap = new TreeMap<>();
         for (Map.Entry<Integer, List<EventStreamDay>> entry : studyStream.getByDayEntries().entrySet()) {
             int week = entry.getKey() / 7;
-            // Day of week can be negative if the week was negative... So take the absolute value
-            int dayOfWeek = Math.abs(entry.getKey() % 7);
+            int dayOfWeek = entry.getKey() % 7;
             
             StudyReportWeek oneWeek = weekMap.get(week);
             if (oneWeek == null) {
                 oneWeek = new StudyReportWeek();
-                oneWeek.setStartDate(studyStartDate.plusDays(week*7));
+                oneWeek.setStartDate(earliestDate.plusDays(week*7));
                 oneWeek.setWeekInStudy(week+1); // humans are 1-indexed
                 
                 weekMap.put(week, oneWeek);
@@ -135,11 +110,51 @@ public class StudyAdherenceReportGenerator {
             days.addAll(entry.getValue());
         };
 
+        // Some study-wide calculations:
+        
+        // Calculate the date range, but make sure it includes the study start date
+        // so the user can see if the participant is acting well before the study start 
+        // date or well after, etc.
+        DateRange dateRange = null;
+        if (eventReport.getDateRangeOfAllStreams() != null) {
+            DateRange streamDates = eventReport.getDateRangeOfAllStreams();
+            LocalDate startDate = streamDates.getStartDate();
+            LocalDate endDate = streamDates.getEndDate();
+            if (studyStartDate != null) {
+                if (studyStartDate.isBefore(startDate)) {
+                    startDate = studyStartDate;
+                } else if (studyStartDate.isAfter(endDate)) {
+                    endDate = studyStartDate;
+                }
+            }
+            if (startDate.isEqual(endDate) || startDate.isBefore(endDate)) {
+                dateRange = new DateRange(startDate, endDate);
+            }
+        }
+        
+        // Study-wide progress and adherence. Don't calculate adherence if there's no schedule.
+        ParticipantStudyProgress progression = calculateProgress(state, ImmutableList.of(studyStream));
+        Integer adherence = null;
+        if (!ParticipantStudyProgress.NO_ADHERENCE.contains(progression)) {
+            adherence = calculateAdherencePercentage(ImmutableList.of(studyStream));
+        }
+        // If the earliest date is before the study start date, we're going to offset the weekInStudy 
+        // field to show there are scheduled activities occurring earlier in the study design. Up to 7
+        // days difference, earliestDate and studyStartDate are in the same week (so the offset is, 
+        // correctly, still 0). Above seven days, earliestDate and studyStartDate will start to be in 
+        // different weeks.
+        int weekOffset = 0;
+        if (earliestDate != null && studyStartDate != null && earliestDate.isBefore(studyStartDate)) {
+            int days = Days.daysBetween(earliestDate, studyStartDate).getDays();
+            weekOffset = (days/7);
+        }
+
         List<StudyReportWeek> weeks = Lists.newArrayList(weekMap.values());
         StudyReportWeek currentWeek = null;
         
         // Calculate rows and labels, determine the current week, and calculate adherence for each week
         for (StudyReportWeek oneWeek : weeks) {
+            oneWeek.setWeekInStudy(oneWeek.getWeekInStudy()-weekOffset);
             LocalDate firstDayOfWeek = oneWeek.getStartDate();
             LocalDate lastDayOfWeek = oneWeek.getStartDate().plusDays(6);
 
@@ -159,7 +174,7 @@ public class StudyAdherenceReportGenerator {
             nextActivity = getNextActivity(weeks, localToday);
         }
         
-        StudyReportWeek weekReport = createWeekReport(progression, weeks, currentWeek, studyStartDate, localToday);
+        StudyReportWeek weekReport = createWeekReport(progression, weeks, currentWeek, earliestDate, localToday);
         
         // Delete unnecessary fields, set today for all day entries
         weeks.forEach(week -> clearUnusedFields(week, localToday));
