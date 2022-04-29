@@ -23,7 +23,6 @@ import java.util.Map;
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestConstants;
-import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStream;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamDay;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamWindow;
@@ -241,13 +240,13 @@ public class AdherenceUtilsTest {
         assertEquals(retValue, expectedProgress);
     }
     
-    @Test(expectedExceptions = EntityNotFoundException.class,
-            expectedExceptionsMessageRegExp = "Schedule not found.")
+    @Test
     public void calculateProgress_noSchedule() {
-        List<EventStream> streams = ImmutableList.of(createEventStream(0, SessionCompletionState.STARTED, SessionCompletionState.COMPLETED) );
+        List<EventStream> streams = ImmutableList.of(createEventStream(0, null, null) );
         AdherenceState state = new AdherenceState.Builder().withNow(STARTED_ON).build();
         
-        AdherenceUtils.calculateProgress(state, streams);
+        ParticipantStudyProgress retValue = AdherenceUtils.calculateProgress(state, streams);
+        assertEquals(retValue, ParticipantStudyProgress.UNSTARTED);
     }
 
     @DataProvider(name = "progressStates")

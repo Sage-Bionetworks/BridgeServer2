@@ -86,7 +86,7 @@ public class HibernateStudy implements Study {
     private String logoGuid;
     private String keywords;
     @Version
-    private Long version;
+    private long version;
     
     // the subselect annotations below reduce the number of SQL queries that
     // hibernate makes to retrieve the full study object. Tables are being used
@@ -217,12 +217,12 @@ public class HibernateStudy implements Study {
     }
     
     @Override
-    public Long getVersion() {
+    public long getVersion() {
         return version;
     }
     
     @Override
-    public void setVersion(Long version) {
+    public void setVersion(long version) {
         this.version = version;
     }
 

@@ -287,7 +287,7 @@ public class StudyServiceTest {
         assertEquals(persisted.getName(), "oneName");
         assertEquals(persisted.getAppId(), TEST_APP_ID);
         assertEquals(persisted.getPhase(), DESIGN);
-        assertNull(persisted.getVersion());
+        assertEquals(persisted.getVersion(), 0L);
         assertFalse(persisted.isDeleted());
         assertNotEquals(persisted.getCreatedOn(), timestamp);
         assertNotEquals(persisted.getModifiedOn(), timestamp);

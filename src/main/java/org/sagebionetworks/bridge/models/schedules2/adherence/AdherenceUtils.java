@@ -19,8 +19,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStream;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamDay;
 
@@ -74,9 +72,6 @@ public class AdherenceUtils {
     }
     
     public static ParticipantStudyProgress calculateProgress(AdherenceState state, List<EventStream> eventStreams) {
-        if (state.getMetadata().isEmpty()) {
-            throw new EntityNotFoundException(Schedule2.class);
-        }
         long total = count(eventStreams.stream().flatMap(es -> es.getByDayEntries().values().stream()),
                 EnumSet.allOf(SessionCompletionState.class));
         long na = count(eventStreams.stream().flatMap(es -> es.getByDayEntries().values().stream()),

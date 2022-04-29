@@ -47,6 +47,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -75,6 +76,7 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.AdherenceReportSearch;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.RequestInfo;
@@ -806,14 +808,19 @@ public class AdherenceServiceTest extends Mockito {
         service.deleteAdherenceRecord(record);
     }
     
-    @Test(expectedExceptions = EntityNotFoundException.class, 
-            expectedExceptionsMessageRegExp = "Schedule not found.")
-    public void getEventStreamAdherenceReport_studyHasNoSchedule() { 
+    @Test
+    public void getEventStreamAdherenceReport_studyHasNoSchedule() throws JsonProcessingException { 
         Study study = Study.create();
         when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
         
-        service.getEventStreamAdherenceReport(TEST_APP_ID, TEST_STUDY_ID,
+        EventStreamAdherenceReport report = service.getEventStreamAdherenceReport(TEST_APP_ID, TEST_STUDY_ID,
                 TEST_USER_ID, EVENT_TS, TEST_CLIENT_TIME_ZONE, true);
+        
+        assertEquals(report.getClientTimeZone(), TEST_CLIENT_TIME_ZONE);
+        assertEquals(report.getAdherencePercent(), 100);
+        assertEquals(report.getProgression(), ParticipantStudyProgress.UNSTARTED);
+        assertTrue(report.getStreams().isEmpty());
+        assertEquals(report.getTimestamp(), EVENT_TS.withZone(DateTimeZone.forID(TEST_CLIENT_TIME_ZONE)));
     }
     
     @Test
@@ -1094,8 +1101,7 @@ public class AdherenceServiceTest extends Mockito {
         assertEquals(activity.getStartDate(), LocalDate.parse("2015-08-24"));
     }
     
-    @Test(expectedExceptions = EntityNotFoundException.class, 
-            expectedExceptionsMessageRegExp = "Schedule not found.")
+    @Test
     public void getWeeklyAdherenceReport_studyHasNoSchedule() { 
         RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
@@ -1120,7 +1126,15 @@ public class AdherenceServiceTest extends Mockito {
         PagedResourceList<AdherenceRecord> page2 = new PagedResourceList<>(ImmutableList.of(), 0);
         when(mockRecordDao.getAdherenceRecords(any())).thenReturn(page2);
         
-        service.getWeeklyAdherenceReport(TEST_APP_ID, TEST_STUDY_ID, account);
+        WeeklyAdherenceReport report = service.getWeeklyAdherenceReport(TEST_APP_ID, TEST_STUDY_ID, account);
+        
+        assertEquals(report.getProgression(), ParticipantStudyProgress.UNSTARTED);
+        assertEquals(report.getClientTimeZone(), account.getClientTimeZone());
+        assertEquals(report.getCreatedOn(), MODIFIED_ON.withZone(DateTimeZone.forID(account.getClientTimeZone())));
+        assertTrue(report.getRows().isEmpty());
+        for (int i=0; i < 6; i++) {
+            assertTrue(report.getByDayEntries().get(i).isEmpty());
+        }
     }
     
     @Test
