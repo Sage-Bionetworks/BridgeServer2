@@ -492,7 +492,7 @@ public class AdherenceService {
         
         Study study = studyService.getStudy(appId, studyId, true);
         if (study.getScheduleGuid() == null) {
-            return func.apply(builder.build());
+            throw new EntityNotFoundException(Schedule2.class);
         }
         List<TimelineMetadata> metadata = scheduleService.getScheduleMetadata(study.getScheduleGuid());
 
