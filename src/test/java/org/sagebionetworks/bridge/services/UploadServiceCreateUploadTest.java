@@ -13,7 +13,6 @@ import static org.testng.Assert.assertEquals;
 
 import java.net.URL;
 
-import com.amazonaws.auth.AWSSessionCredentials;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import org.apache.commons.codec.binary.Base64;
@@ -86,11 +85,6 @@ public class UploadServiceCreateUploadTest {
         mockUploadDao = mock(UploadDao.class);
         mockUploadDedupeDao = mock(UploadDedupeDao.class);
 
-        // mock upload credentials service
-        AWSSessionCredentials mockCredentials = mock(AWSSessionCredentials.class);
-        UploadSessionCredentialsService mockCredentialsSvc = mock(UploadSessionCredentialsService.class);
-        when(mockCredentialsSvc.getSessionCredentials()).thenReturn(mockCredentials);
-
         // mock presigned URL call
         presignedUrlRequestArgumentCaptor = ArgumentCaptor.forClass(GeneratePresignedUrlRequest.class);
         AmazonS3 mockS3UploadClient = mock(AmazonS3.class);
@@ -102,7 +96,6 @@ public class UploadServiceCreateUploadTest {
         svc.setConfig(mockConfig);
         svc.setUploadDao(mockUploadDao);
         svc.setUploadDedupeDao(mockUploadDedupeDao);
-        svc.setUploadSessionCredentialsService(mockCredentialsSvc);
         svc.setS3UploadClient(mockS3UploadClient);
     }
 
