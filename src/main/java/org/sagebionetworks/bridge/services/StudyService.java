@@ -143,7 +143,7 @@ public class StudyService {
         Study study = getStudy(appId, studyId, true);
         map.addCustomEvents(study.getCustomEvents());
         
-        Schedule2 schedule = scheduleService.getScheduleForStudy(appId, study).orElse(null);
+        Schedule2 schedule = scheduleService.getScheduleForStudy(appId, studyId).orElse(null);
         if (schedule != null) {
             map.addStudyBursts(schedule.getStudyBursts());            
         }

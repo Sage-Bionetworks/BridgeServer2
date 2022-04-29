@@ -611,7 +611,7 @@ public class StudyValidatorTest extends Mockito {
     public void scheduleGuidNotFund() { 
         study = createStudy();
         study.setScheduleGuid(SCHEDULE_GUID);
-        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study)).thenReturn(Optional.empty());
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(Optional.empty());
         
         assertValidatorMessage(validator, study, SCHEDULE_GUID_FIELD, SCHEDULE_GUID_INVALID_MSG);
     }
@@ -623,7 +623,7 @@ public class StudyValidatorTest extends Mockito {
         
         Schedule2 schedule = new Schedule2();
         schedule.setOwnerId(TEST_ORG_ID);
-        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study)).thenReturn(Optional.of(schedule));
+        when(mockScheduleService.getScheduleForStudyValidator(TEST_APP_ID, SCHEDULE_GUID)).thenReturn(Optional.of(schedule));
         when(mockSponsorService.isStudySponsoredBy(TEST_STUDY_ID, TEST_ORG_ID)).thenReturn(false);
         
         assertValidatorMessage(validator, study, SCHEDULE_GUID_FIELD, SCHEDULE_GUID_OWNER_ERROR_MSG);
@@ -636,7 +636,7 @@ public class StudyValidatorTest extends Mockito {
 
         Schedule2 schedule = new Schedule2();
         schedule.setOwnerId(TEST_ORG_ID);
-        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study)).thenReturn(Optional.of(schedule));
+        when(mockScheduleService.getScheduleForStudyValidator(TEST_APP_ID, SCHEDULE_GUID)).thenReturn(Optional.of(schedule));
         when(mockSponsorService.isStudySponsoredBy(TEST_STUDY_ID, TEST_ORG_ID)).thenReturn(true);
 
         Validate.entityThrowingException(validator, study);
@@ -647,7 +647,7 @@ public class StudyValidatorTest extends Mockito {
         study = createStudy();
         study.setScheduleGuid(SCHEDULE_GUID);
         
-        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study)).thenThrow(new UnauthorizedException());
+        when(mockScheduleService.getScheduleForStudyValidator(TEST_APP_ID, SCHEDULE_GUID)).thenThrow(new UnauthorizedException());
         
         assertValidatorMessage(validator, study, SCHEDULE_GUID_FIELD, SCHEDULE_GUID_OWNER_ERROR_MSG);
     }

@@ -614,17 +614,24 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
         builder.withMetadata(ImmutableList.of());
         builder.withAdherenceRecords(createAdherenceRecords());
         builder.withClientTimeZone("America/Chicago");
+        
         StudyAdherenceReport report = INSTANCE.generate(builder.build());
-        
-        // testAccount is set in the service, not the generator
-        assertNull(report.getAdherencePercent());
-        assertEquals(report.getProgression(), ParticipantStudyProgress.NO_SCHEDULE);
-        assertNull(report.getDateRange());
-        
+        assertEquals(report.getProgression(), ParticipantStudyProgress.UNSTARTED);
+        assertTrue(report.getWeeks().isEmpty());
         assertTrue(report.getUnsetEventIds().isEmpty());
         assertTrue(report.getUnscheduledSessions().isEmpty());
         assertTrue(report.getEventTimestamps().isEmpty());
-        assertTrue(report.getWeeks().isEmpty());
+        
+        StudyReportWeek week = report.getWeekReport();
+        assertEquals(week.getWeekInStudy(), 1);
+        assertTrue(week.getRows().isEmpty());
+        assertTrue(week.getByDayEntries().get(0).isEmpty());
+        assertTrue(week.getByDayEntries().get(1).isEmpty());
+        assertTrue(week.getByDayEntries().get(2).isEmpty());
+        assertTrue(week.getByDayEntries().get(3).isEmpty());
+        assertTrue(week.getByDayEntries().get(4).isEmpty());
+        assertTrue(week.getByDayEntries().get(5).isEmpty());
+        assertTrue(week.getByDayEntries().get(6).isEmpty());
     }
     
     @Test

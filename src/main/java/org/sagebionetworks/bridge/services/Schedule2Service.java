@@ -171,15 +171,15 @@ public class Schedule2Service {
     }
     
     /**
-     * Get the schedule assigned to a study. Access is only checked through 
-     * enrollment in the study; administrative calls should be made through the
-     * getSchedule() method of this service.
+     * Get the schedule assigned to a study. Access to the schedule is granted if the caller
+     * can access the study.
      */
-    public Optional<Schedule2> getScheduleForStudy(String appId, Study study) {
+    public Optional<Schedule2> getScheduleForStudy(String appId, String studyId) {
         checkNotNull(appId);
-        checkNotNull(study);
+        checkNotNull(studyId);
         
-        if (study.getScheduleGuid() == null) {
+        Study study = studyService.getStudy(appId, studyId, false);
+        if (study == null || study.getScheduleGuid() == null) {
             return Optional.empty();
         }
         Optional<Schedule2> optional = dao.getSchedule(appId, study.getScheduleGuid());
@@ -188,6 +188,13 @@ public class Schedule2Service {
             CAN_READ_STUDIES.checkAndThrow(STUDY_ID, study.getIdentifier());    
         }
         return optional;
+    }
+
+    public Optional<Schedule2> getScheduleForStudyValidator(String appId, String guid) {
+        checkNotNull(appId);
+        checkNotNull(guid);
+        
+        return dao.getSchedule(appId, guid);
     }
     
     public Schedule2 createOrUpdateStudySchedule(Study study, Schedule2 schedule) {
@@ -416,6 +423,9 @@ public class Schedule2Service {
         
         Stopwatch watch = Stopwatch.createStarted();
 
+        Schedule2 schedule = getScheduleForStudy(appId, studyId)
+                .orElseThrow(() -> new EntityNotFoundException(Schedule2.class));
+
         List<StudyActivityEvent> events = studyActivityEventService.getRecentStudyActivityEvents(
                 account.getAppId(), studyId, account.getId()).getItems();
 
@@ -427,20 +437,10 @@ public class Schedule2Service {
             builder.withClientTimeZone(account.getClientTimeZone());    
         }
         AdherenceState state = builder.build();
+
+        Timeline timeline = Scheduler.INSTANCE.calculateTimeline(schedule);
+        ParticipantSchedule participantSchedule = ParticipantScheduleGenerator.INSTANCE.generate(state, timeline);
         
-        Schedule2 schedule = null;
-        ParticipantSchedule participantSchedule = null;
-        Study study = studyService.getStudy(appId, studyId, true);
-        if (study.getScheduleGuid() != null) {
-            schedule = getScheduleForStudy(appId, study).orElse(null);
-        }
-        if (schedule == null) {
-            Timeline timeline = new Timeline.Builder().build();
-            participantSchedule = ParticipantScheduleGenerator.INSTANCE.generate(state, timeline);
-        } else {
-            Timeline timeline = Scheduler.INSTANCE.calculateTimeline(schedule);
-            participantSchedule = ParticipantScheduleGenerator.INSTANCE.generate(state, timeline);
-        }
         watch.stop();
         LOG.info("Participant schedule took " + watch.elapsed(TimeUnit.MILLISECONDS) + "ms");
         return participantSchedule;
