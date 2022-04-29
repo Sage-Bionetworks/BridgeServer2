@@ -21,8 +21,6 @@ import javax.sql.DataSource;
 
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.PredefinedClientConfigurations;
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
@@ -159,6 +157,9 @@ import org.sagebionetworks.client.SynapseClient;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 
+// These configs get credentials from the default credential chain. For developer desktops, this is ~/.aws/credentials.
+// For EC2 instances, this happens transparently.
+// See https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html
 @ComponentScan("org.sagebionetworks.bridge")
 @Configuration
 public class SpringConfig {
@@ -217,53 +218,40 @@ public class SpringConfig {
         return new AnnotationBasedTableCreator(dynamoNamingHelper);
     }
 
-    @Bean(name = "awsCredentials")
-    public AWSStaticCredentialsProvider awsCredentials() {
-        BridgeConfig bridgeConfig = bridgeConfig();
-        return new AWSStaticCredentialsProvider(new BasicAWSCredentials(
-                bridgeConfig.getProperty("aws.key"),
-                bridgeConfig.getProperty("aws.secret.key")));
-    }
-
     @Bean(name = "dynamoDbClient")
-    @Resource(name = "awsCredentials")
     public AmazonDynamoDB dynamoDbClient() {
         int maxRetries = bridgeConfig().getPropertyAsInt("ddb.max.retries");
         ClientConfiguration awsClientConfig = PredefinedClientConfigurations.dynamoDefault()
                 .withMaxErrorRetry(maxRetries);
         
-        return AmazonDynamoDBClientBuilder.standard().withCredentials(awsCredentials())
+        return AmazonDynamoDBClientBuilder.standard()
                 .withClientConfiguration(awsClientConfig).withRegion(US_EAST_1).build();
     }
     
     @Bean(name = "snsClient")
-    @Resource(name = "awsCredentials")
     public AmazonSNS snsClient() {
-        return AmazonSNSClientBuilder.standard().withCredentials(awsCredentials())
+        return AmazonSNSClientBuilder.standard()
                 .withRegion(US_EAST_1).build();
     }
 
     @Bean(name = "s3Client")
-    @Resource(name = "awsCredentials")
-    public AmazonS3 s3Client(AWSStaticCredentialsProvider awsCredentials) {
+    public AmazonS3 s3Client() {
         // Setting region is necessary to prevent bug BRIDGE-2910. Don't remove.
-        return AmazonS3ClientBuilder.standard().withCredentials(awsCredentials).withRegion(US_EAST_1).build();
+        return AmazonS3ClientBuilder.standard().withRegion(US_EAST_1).build();
     }
 
     // This client needs to be configured to handle S3 file paths differently, so we can use bucket
     // names with periods in them (and we need these in turn so they can be fronted with CloudFront).
     @Bean(name = "fileUploadS3Client")
-    @Resource(name = "awsCredentials")
-    public AmazonS3 fileUploadS3Client(AWSStaticCredentialsProvider awsCredentials) {
+    public AmazonS3 fileUploadS3Client() {
         return AmazonS3ClientBuilder.standard().withPathStyleAccessEnabled(true).withRegion(US_EAST_1)
-                .withCredentials(awsCredentials).build();
+                .build();
     }
     
     @Bean(name ="uploadTokenServiceClient")
-    @Resource(name = "awsCredentials")
-    public AWSSecurityTokenService uploadTokenServiceClient(AWSStaticCredentialsProvider awsCredentials) {
+    public AWSSecurityTokenService uploadTokenServiceClient() {
         return AWSSecurityTokenServiceClientBuilder.standard().withRegion(US_EAST_1)
-                .withCredentials(awsCredentials).build();
+                .build();
     }
 
     @Bean(name = "md5DigestUtils")
@@ -280,16 +268,14 @@ public class SpringConfig {
     }
 
     @Bean(name = "sesClient")
-    @Resource(name="awsCredentials")
-    public AmazonSimpleEmailService sesClient(AWSStaticCredentialsProvider awsCredentials) {
+    public AmazonSimpleEmailService sesClient() {
         return AmazonSimpleEmailServiceClientBuilder.standard().withRegion(Regions.US_EAST_1)
-                .withCredentials(awsCredentials).build();
+                .build();
     }
 
     @Bean(name = "sqsClient")
-    @Resource(name = "awsCredentials")
-    public AmazonSQS sqsClient(AWSStaticCredentialsProvider awsCredentials) {
-        return AmazonSQSClientBuilder.standard().withCredentials(awsCredentials).withRegion(US_EAST_1).build();
+    public AmazonSQS sqsClient() {
+        return AmazonSQSClientBuilder.standard().withRegion(US_EAST_1).build();
     }
 
     @Bean(name = "asyncExecutorService")

@@ -29,7 +29,6 @@ import java.util.Date;
 import java.util.List;
 
 import com.amazonaws.HttpMethod;
-import com.amazonaws.auth.BasicSessionCredentials;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
@@ -99,9 +98,6 @@ public class UploadServiceTest {
     
     @Mock
     AmazonS3 mockS3Client;
-    
-    @Mock
-    UploadSessionCredentialsService mockUploadCredentailsService;
     
     @Mock
     UploadValidationService mockUploadValidationService;
@@ -426,8 +422,6 @@ public class UploadServiceTest {
         
         when(mockUploadDao.getUpload(ORIGINAL_UPLOAD_ID)).thenReturn(upload);
         when(mockUploadDao.createUpload(uploadRequest, TEST_APP_ID, HEALTH_CODE, null)).thenReturn(upload);
-        when(mockUploadCredentailsService.getSessionCredentials())
-                .thenReturn(new BasicSessionCredentials(null, null, null));
         when(mockS3UploadClient.generatePresignedUrl(any())).thenReturn(new URL("https://ws.com/some-link"));
         
         UploadSession session = svc.createUpload(TEST_APP_ID, PARTICIPANT, uploadRequest);
@@ -452,8 +446,6 @@ public class UploadServiceTest {
         upload.setUploadId(NEW_UPLOAD_ID);
         
         when(mockUploadDao.createUpload(uploadRequest, API_APP_ID, HEALTH_CODE, null)).thenReturn(upload);
-        when(mockUploadCredentailsService.getSessionCredentials())
-            .thenReturn(new BasicSessionCredentials(null, null, null));
         when(mockS3UploadClient.generatePresignedUrl(any())).thenReturn(new URL("https://ws.com/some-link"));
         
         UploadSession session = svc.createUpload(API_APP_ID, PARTICIPANT, uploadRequest);
@@ -473,8 +465,6 @@ public class UploadServiceTest {
         when(mockUploadDedupeDao.getDuplicate(eq(HEALTH_CODE), eq("md5-value"), any())).thenReturn(ORIGINAL_UPLOAD_ID);
         when(mockUploadDao.getUpload(ORIGINAL_UPLOAD_ID)).thenReturn(upload);
         when(mockUploadDao.createUpload(uploadRequest, TEST_APP_ID, HEALTH_CODE, ORIGINAL_UPLOAD_ID)).thenReturn(upload);
-        when(mockUploadCredentailsService.getSessionCredentials())
-                .thenReturn(new BasicSessionCredentials(null, null, null));
         when(mockS3UploadClient.generatePresignedUrl(any())).thenReturn(new URL("https://ws.com/some-link"));
         
         UploadSession session = svc.createUpload(TEST_APP_ID, PARTICIPANT, uploadRequest);
