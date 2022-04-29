@@ -35,8 +35,6 @@ import org.joda.time.Period;
 import org.mockito.Mockito;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestConstants;
-import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.schedules2.AssessmentReference;

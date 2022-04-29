@@ -21,19 +21,14 @@ import java.util.List;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
-import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceState;
 import org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantStudyProgress;
 import org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState;
-import org.sagebionetworks.bridge.models.schedules2.adherence.study.StudyAdherenceReport;
-import org.sagebionetworks.bridge.models.schedules2.adherence.study.StudyReportWeek;
 import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
 import org.testng.annotations.Test;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.ImmutableList;
 
 public class EventStreamAdherenceReportGeneratorTest {
