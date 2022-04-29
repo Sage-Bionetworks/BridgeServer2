@@ -195,14 +195,13 @@ public class StudyParticipantController extends BaseController {
                 .withTimelineAccessedOn(timelineRequestedOn).build();
         requestInfoService.updateRequestInfo(requestInfo);
         
-        Study study = studyService.getStudy(session.getAppId(), studyId, true);
         DateTime modifiedSince = modifiedSinceHeader();
         DateTime modifiedOn = modifiedOn(session.getAppId(), studyId);
         
         if (isUpToDate(modifiedSince, modifiedOn)) {
             return new ResponseEntity<>(NOT_MODIFIED);
         }
-        Schedule2 schedule = scheduleService.getScheduleForStudy(session.getAppId(), study)
+        Schedule2 schedule = scheduleService.getScheduleForStudy(session.getAppId(), studyId)
                 .orElseThrow(() -> new EntityNotFoundException(Schedule2.class));
         cacheProvider.setObject(scheduleModificationTimestamp(session.getAppId(), studyId), schedule.getModifiedOn().toString());
         
@@ -330,7 +329,6 @@ public class StudyParticipantController extends BaseController {
                 .withUserId(session.getId())
                 .withObjectType(TIMELINE_RETRIEVED)
                 .withTimestamp(timelineRequestedOn).build(), false, true);
-
         return scheduleService.getParticipantSchedule(session.getAppId(), studyId, account);
     }
     

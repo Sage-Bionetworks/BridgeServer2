@@ -129,11 +129,8 @@ public class Schedule2ControllerTest extends Mockito {
                 .build());
         doReturn(session).when(controller).getAuthenticatedSession(STUDY_DESIGNER, DEVELOPER);
         
-        Study study = Study.create();
-        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
-        
         Schedule2 schedule = new Schedule2();
-        when(mockService.getScheduleForStudy(TEST_APP_ID, study)).thenReturn(Optional.of(schedule));
+        when(mockService.getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(Optional.of(schedule));
         
         Schedule2 retValue = controller.getSchedule(TEST_STUDY_ID);
         assertEquals(retValue, schedule);

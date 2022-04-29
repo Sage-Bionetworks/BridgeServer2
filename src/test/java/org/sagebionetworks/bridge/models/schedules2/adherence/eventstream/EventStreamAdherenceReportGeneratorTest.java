@@ -317,21 +317,13 @@ public class EventStreamAdherenceReportGeneratorTest {
     }
     
     @Test
-    public void handleNulls() {
-        AdherenceState state = new AdherenceState.Builder().withNow(NOW).build();
-        
-        EventStreamAdherenceReport report = INSTANCE.generate(state);
-        assertEquals(100, report.getAdherencePercent());
-        assertEquals(report.getTimestamp(), NOW); // no time zone adjustment
-        assertTrue(report.getStreams().isEmpty());
-    }
-    
-    @Test
     public void progression_noSchedule() { 
         AdherenceState state = new AdherenceState.Builder().withNow(NOW).build();
         
         EventStreamAdherenceReport report = INSTANCE.generate(state);
-        assertEquals(report.getProgression(), ParticipantStudyProgress.NO_SCHEDULE);
+        assertEquals(report.getAdherencePercent(), 100);
+        assertEquals(report.getProgression(), ParticipantStudyProgress.UNSTARTED);
+        assertTrue(report.getStreams().isEmpty());
     }
     
     @Test

@@ -72,9 +72,6 @@ public class AdherenceUtils {
     }
     
     public static ParticipantStudyProgress calculateProgress(AdherenceState state, List<EventStream> eventStreams) {
-        if (state.getMetadata().isEmpty()) {
-            return ParticipantStudyProgress.NO_SCHEDULE;
-        }
         long total = count(eventStreams.stream().flatMap(es -> es.getByDayEntries().values().stream()),
                 EnumSet.allOf(SessionCompletionState.class));
         long na = count(eventStreams.stream().flatMap(es -> es.getByDayEntries().values().stream()),

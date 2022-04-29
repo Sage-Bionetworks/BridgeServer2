@@ -88,7 +88,7 @@ public class StudyAdherenceReportGenerator {
             });
         }
         
-        // Break this combined stream down into weeks. TreeMap sorts the weeks by week number. This report is still
+        // Break this study stream down into weeks. TreeMap sorts the weeks by week number. This report is still
         // “sparse” (no weeks are present that have no activities). 
         Map<Integer, StudyReportWeek> weekMap = new TreeMap<>();
         for (Map.Entry<Integer, List<EventStreamDay>> entry : studyStream.getByDayEntries().entrySet()) {
@@ -135,7 +135,7 @@ public class StudyAdherenceReportGenerator {
         // Study-wide progress and adherence. Don't calculate adherence if there's no schedule.
         ParticipantStudyProgress progression = calculateProgress(state, ImmutableList.of(studyStream));
         Integer adherence = null;
-        if (!ParticipantStudyProgress.NO_ADHERENCE.contains(progression)) {
+        if (ParticipantStudyProgress.UNSTARTED != progression) {
             adherence = calculateAdherencePercentage(ImmutableList.of(studyStream));
         }
         // If the earliest date is before the study start date, we're going to offset the weekInStudy 
@@ -349,7 +349,7 @@ public class StudyAdherenceReportGenerator {
         
         // recalculate this, again if there's no schedule, don't calculate anything.
         Integer adhPercent = null;
-        if (!ParticipantStudyProgress.NO_ADHERENCE.contains(progression)) {
+        if (ParticipantStudyProgress.UNSTARTED != progression) {
             adhPercent = calculateAdherencePercentage(weekReport.getByDayEntries());
         }
         weekReport.setAdherencePercent(adhPercent);
