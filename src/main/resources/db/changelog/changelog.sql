@@ -983,3 +983,8 @@ UPDATE Accounts as a SET a.admin = 1 WHERE a.orgMembership IS NOT NULL;
 
 ALTER TABLE `FileRevisions`
 MODIFY COLUMN `uploadURL` VARCHAR(1536) DEFAULT NULL;
+
+-- changeset bridge:71
+
+ALTER TABLE `FileRevisions`
+MODIFY COLUMN `uploadURL` VARCHAR(2048) DEFAULT NULL;
