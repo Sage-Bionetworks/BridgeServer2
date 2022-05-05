@@ -80,6 +80,7 @@ import org.sagebionetworks.bridge.models.apps.SynapseProjectIdTeamIdHolder;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadView;
 import org.sagebionetworks.bridge.services.AccountService;
+import org.sagebionetworks.bridge.services.AdminAccountService;
 import org.sagebionetworks.bridge.services.EmailVerificationService;
 import org.sagebionetworks.bridge.services.AppService;
 import org.sagebionetworks.bridge.services.UploadCertificateService;
@@ -123,6 +124,9 @@ public class AppControllerTest extends Mockito {
     
     @Mock
     AccountService mockAccountService;
+    
+    @Mock
+    AdminAccountService mockAdminAccountService;
     
     @Mock
     BridgeConfig mockBridgeConfig;
@@ -820,7 +824,7 @@ public class AppControllerTest extends Mockito {
         mockApp("App A", "appA", false);
         
         List<String> list = ImmutableList.of("appA", "appB", "appC");
-        when(mockAccountService.getAppIdsForUser(SYNAPSE_USER_ID)).thenReturn(list);
+        when(mockAdminAccountService.getAppIdsForUser(SYNAPSE_USER_ID)).thenReturn(list);
         
         String jsonString = controller.getAppMemberships();
         JsonNode node = BridgeObjectMapper.get().readTree(jsonString).get("items");
@@ -847,7 +851,7 @@ public class AppControllerTest extends Mockito {
         JsonNode node = BridgeObjectMapper.get().readTree(jsonString).get("items");
         
         assertEquals(node.size(), 0);
-        verify(mockAccountService, never()).getAppIdsForUser(SYNAPSE_USER_ID);
+        verify(mockAdminAccountService, never()).getAppIdsForUser(SYNAPSE_USER_ID);
     }
     
     @Test
@@ -869,7 +873,7 @@ public class AppControllerTest extends Mockito {
         
         // This user is only associated to the API app, but they are an admin
         List<String> list = ImmutableList.of(TEST_APP_ID);
-        when(mockAccountService.getAppIdsForUser(SYNAPSE_USER_ID)).thenReturn(list);
+        when(mockAdminAccountService.getAppIdsForUser(SYNAPSE_USER_ID)).thenReturn(list);
         
         String jsonString = controller.getAppMemberships();
         JsonNode node = BridgeObjectMapper.get().readTree(jsonString).get("items");

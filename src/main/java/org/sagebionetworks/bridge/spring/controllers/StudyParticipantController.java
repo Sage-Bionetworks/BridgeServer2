@@ -86,7 +86,6 @@ import org.sagebionetworks.bridge.services.ReportService;
 import org.sagebionetworks.bridge.services.Schedule2Service;
 import org.sagebionetworks.bridge.services.StudyActivityEventService;
 import org.sagebionetworks.bridge.services.StudyService;
-import org.sagebionetworks.bridge.services.IntegrationTestUserService;
 import org.sagebionetworks.bridge.spring.util.EtagSupport;
 import org.sagebionetworks.bridge.spring.util.EtagCacheKey;
 import org.sagebionetworks.bridge.services.AccountWorkflowService;
@@ -119,8 +118,6 @@ public class StudyParticipantController extends BaseController {
 
     private ParticipantService participantService;
     
-    private IntegrationTestUserService testUserService;
-    
     private EnrollmentService enrollmentService;
     
     private StudyActivityEventService studyActivityEventService;
@@ -138,11 +135,6 @@ public class StudyParticipantController extends BaseController {
         this.participantService = participantService;
     }
     
-    @Autowired
-    final void setIntegrationTestUserService(IntegrationTestUserService testUserService) {
-        this.testUserService = testUserService;
-    }
-
     @Autowired
     final void setEnrollmentService(EnrollmentService enrollmentService) {
         this.enrollmentService = enrollmentService;
@@ -578,8 +570,7 @@ public class StudyParticipantController extends BaseController {
         if (!participantEligibleForDeletion(requestInfoService, account)) {
             throw new UnauthorizedException("Account is not a test account or it is already in use.");
         }
-        App app = appService.getApp(session.getAppId());
-        testUserService.deleteUser(app, account.getId());
+        accountService.deleteAccount(AccountId.forId(session.getAppId(), account.getId()));
         return DELETE_MSG;
     }    
     

@@ -127,9 +127,9 @@ public class AccountsController extends BaseController  {
     public StatusMessage deleteAccount(@PathVariable String userId) {
         UserSession session = getAuthenticatedSession(ORG_ADMIN);
         
-        verifyOrgAdminIsActingOnOrgMember(session, userId);
+        Account account = verifyOrgAdminIsActingOnOrgMember(session, userId);
         
-        adminAccountService.deleteAccount(session.getAppId(), userId);
+        accountService.deleteAccount(AccountId.forId(session.getAppId(), account.getId()));
         
         return DELETED_MSG;
     }

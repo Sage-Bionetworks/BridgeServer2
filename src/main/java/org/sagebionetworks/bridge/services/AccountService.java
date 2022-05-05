@@ -48,42 +48,32 @@ import org.sagebionetworks.bridge.time.DateUtils;
 
 @Component
 public class AccountService {
+    @Autowired
     private AccountDao accountDao;
+    @Autowired
     private AppService appService;
+    @Autowired
     private ActivityEventService activityEventService;
+    @Autowired
     private ParticipantVersionService participantVersionService;
+    @Autowired
     private StudyActivityEventService studyActivityEventService;
+    @Autowired
     private CacheProvider cacheProvider;
-
-    @Autowired
-    final void setAccountDao(AccountDao accountDao) {
-        this.accountDao = accountDao;
-    }
     
+    // For cleaning up when deleting a user
     @Autowired
-    final void setAppService(AppService appService) {
-        this.appService = appService;
-    }
-    
+    private NotificationsService notificationsService;
     @Autowired
-    final void setActivityEventService(ActivityEventService activityEventService) {
-        this.activityEventService = activityEventService;
-    }
-
+    private HealthDataService healthDataService;
     @Autowired
-    final void setParticipantVersionService(ParticipantVersionService participantVersionService) {
-        this.participantVersionService = participantVersionService;
-    }
-
+    private HealthDataEx3Service healthDataEx3Service;
     @Autowired
-    final void setStudyActivityEventService(StudyActivityEventService studyActivityEventService) {
-        this.studyActivityEventService = studyActivityEventService;
-    }
-    
+    private ScheduledActivityService scheduledActivityService;
     @Autowired
-    final void setCacheProvider(CacheProvider cacheProvider) {
-        this.cacheProvider = cacheProvider;
-    }
+    private UploadService uploadService;
+    @Autowired
+    private RequestInfoService requestInfoService;
     
     // Provided to override in tests
     protected String generateGUID() {
@@ -94,7 +84,7 @@ public class AccountService {
      * Search for all accounts across apps that have the same Synapse user ID in common, 
      * and return a list of the app IDs where these accounts are found.
      */
-    public List<String> getAppIdsForUser(String synapseUserId) {
+    public List<String> getAppIdsForUser2(String synapseUserId) {
         if (StringUtils.isBlank(synapseUserId)) {
             throw new BadRequestException("Account does not have a Synapse user");
         }
@@ -287,10 +277,26 @@ public class AccountService {
         Optional<Account> opt = accountDao.getAccount(accountId);
         if (opt.isPresent()) {
             Account account = opt.get();
+            
+            // remove this first so if account is partially deleted, re-authenticating will pick
+            // up accurate information about the state of the account (as we can recover it)
+            cacheProvider.removeSessionByUserId(account.getId());
+            requestInfoService.removeRequestInfo(account.getId());
+            
+            String healthCode = account.getHealthCode();
+            healthDataService.deleteRecordsForHealthCode(healthCode);
+            healthDataEx3Service.deleteRecordsForHealthCode(healthCode);
+            notificationsService.deleteAllRegistrations(account.getAppId(), healthCode);
+            uploadService.deleteUploadsForHealthCode(healthCode);
+            scheduledActivityService.deleteActivitiesForUser(healthCode);
+            activityEventService.deleteActivityEvents(account.getAppId(), healthCode);
+            // AccountSecret records and Enrollment records are are deleted on a 
+            // cascading delete from Account
             accountDao.deleteAccount(account.getId());
             
-            CacheKey cacheKey = CacheKey.etag(DateTimeZone.class, account.getId());
-            cacheProvider.removeObject(cacheKey);
+            // Remove known etag cache keys for this user
+            cacheProvider.removeObject( CacheKey.etag(DateTimeZone.class, account.getId()) );
+            cacheProvider.removeObject( CacheKey.etag(StudyActivityEvent.class, account.getId()) );
         }
     }
     

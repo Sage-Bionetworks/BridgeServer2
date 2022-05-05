@@ -309,7 +309,7 @@ public class AccountsControllerTest extends Mockito {
         StatusMessage retValue = controller.deleteAccount(TEST_USER_ID);
         assertEquals(retValue.getMessage(), "Member account deleted.");
         
-        verify(mockAdminAccountService).deleteAccount(TEST_APP_ID, TEST_USER_ID);
+        verify(mockAccountService).deleteAccount(ACCOUNT_ID);
     }
     
     @Test

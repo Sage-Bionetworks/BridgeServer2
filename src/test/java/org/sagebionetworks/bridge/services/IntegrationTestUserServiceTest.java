@@ -15,9 +15,7 @@ import static org.testng.Assert.fail;
 
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
-import org.joda.time.DateTimeZone;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
@@ -32,7 +30,6 @@ import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
@@ -45,9 +42,7 @@ import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.apps.App;
-import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.google.common.collect.ImmutableMap;
@@ -453,56 +448,5 @@ public class IntegrationTestUserServiceTest extends Mockito {
         } catch(IllegalStateException e) {
             verify(accountService).deleteAccount(accountId);
         }
-    }
-    
-    @Test
-    public void deleteUser() {
-        App app = TestUtils.getValidApp(IntegrationTestUserServiceTest.class);
-        
-        AccountId accountId = AccountId.forId(app.getIdentifier(),  "userId");
-
-        Enrollment en1 = Enrollment.create(TEST_APP_ID, "studyA", "userId", "subAextId");
-        Enrollment en2 = Enrollment.create(TEST_APP_ID, "studyB", "userId", "subBextId");
-        Set<Enrollment> enrollments = ImmutableSet.of(en1, en2);
-        
-        doReturn("userId").when(account).getId();
-        doReturn("healthCode").when(account).getHealthCode();
-        doReturn(enrollments).when(account).getActiveEnrollments();
-        doReturn(enrollments).when(account).getEnrollments();
-        doReturn(Optional.of(account)).when(accountService).getAccount(accountId);
-        
-        service.deleteUser(app, "userId");
-        
-        // Verify a lot of stuff is deleted or removed
-        verify(cacheProvider).removeSessionByUserId("userId");
-        verify(requestInfoService).removeRequestInfo("userId");
-        verify(healthDataService).deleteRecordsForHealthCode("healthCode");
-        verify(healthDataEx3Service).deleteRecordsForHealthCode("healthCode");
-        verify(notificationsService).deleteAllRegistrations(app.getIdentifier(), "healthCode");
-        verify(uploadService).deleteUploadsForHealthCode("healthCode");
-        verify(scheduledActivityService).deleteActivitiesForUser("healthCode");
-        verify(activityEventService, atLeastOnce()).deleteActivityEvents(app.getIdentifier(), "healthCode");
-        verify(accountService).deleteAccount(accountId);
-        verify(cacheProvider).removeObject(CacheKey.etag(DateTimeZone.class, "userId"));
-        verify(cacheProvider).removeObject(CacheKey.etag(StudyActivityEvent.class, "userId"));
-        
-        assertEquals(account.getHealthCode(), "healthCode");
-    }
-    
-    @Test
-    public void deleteUser_notFound() {
-        App app = TestUtils.getValidApp(IntegrationTestUserServiceTest.class);
-        
-        service.deleteUser(app, "userId");
-        
-        // (it very quietly does nothing)
-        verify(cacheProvider, never()).removeSessionByUserId(any());
-        verify(requestInfoService, never()).removeRequestInfo(any());
-        verify(healthDataService, never()).deleteRecordsForHealthCode(any());
-        verify(notificationsService, never()).deleteAllRegistrations(any(), any());
-        verify(uploadService, never()).deleteUploadsForHealthCode(any());
-        verify(scheduledActivityService, never()).deleteActivitiesForUser(any());
-        verify(activityEventService, never()).deleteActivityEvents(any(), any());
-        verify(accountService, never()).deleteAccount(any());
     }
 }

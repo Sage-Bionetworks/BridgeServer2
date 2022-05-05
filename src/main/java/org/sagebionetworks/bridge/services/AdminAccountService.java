@@ -55,37 +55,16 @@ import com.google.common.collect.Sets;
 
 @Component
 public class AdminAccountService {
+    @Autowired
     private AppService appService;
+    @Autowired
     private AccountWorkflowService accountWorkflowService;
+    @Autowired
     private SmsService smsService;
+    @Autowired
     private AccountDao accountDao;
+    @Autowired
     private CacheProvider cacheProvider;
-    private RequestInfoService requestInfoService;
-    
-    @Autowired
-    final void setAppService(AppService appService) {
-        this.appService = appService;
-    }
-    @Autowired
-    final void setAccountWorkflowService(AccountWorkflowService accountWorkflowService) {
-        this.accountWorkflowService = accountWorkflowService;
-    }
-    @Autowired
-    final void setSmsService(SmsService smsService) {
-        this.smsService = smsService;
-    }
-    @Autowired
-    final void setAccountDao(AccountDao accountDao) {
-        this.accountDao = accountDao;
-    }
-    @Autowired
-    final void setCacheProvider(CacheProvider cacheProvider) {
-        this.cacheProvider = cacheProvider;
-    }
-    @Autowired
-    final void setRequestInfoService(RequestInfoService requestInfoService) {
-        this.requestInfoService = requestInfoService;
-    }
     
     // accessor for mocking in tests
     protected DateTime getCreatedOn() {
@@ -253,6 +232,7 @@ public class AdminAccountService {
         return account;
     }
     
+    /*
     public void deleteAccount(String appId, String userId) {
         checkNotNull(appId);
         checkNotNull(userId);
@@ -267,7 +247,7 @@ public class AdminAccountService {
             requestInfoService.removeRequestInfo(account.getId());
         }
     }
-    
+    */
     protected void sendVerificationMessages(App app, Account original, Account update) {
         if (!nullSafeEquals(original.getEmail(), update.getEmail())) {
             update.setEmailVerified(FALSE);
