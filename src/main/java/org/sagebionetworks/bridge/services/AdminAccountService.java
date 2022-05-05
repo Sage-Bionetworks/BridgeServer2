@@ -231,23 +231,7 @@ public class AdminAccountService {
         
         return account;
     }
-    
-    /*
-    public void deleteAccount(String appId, String userId) {
-        checkNotNull(appId);
-        checkNotNull(userId);
-        
-        AccountId accountId = AccountId.forId(appId,  userId);
-        Optional<Account> opt = accountDao.getAccount(accountId);
-        if (opt.isPresent()) {
-            Account account = opt.get();
-            accountDao.deleteAccount(account.getId());
-            
-            cacheProvider.removeSessionByUserId(account.getId());
-            requestInfoService.removeRequestInfo(account.getId());
-        }
-    }
-    */
+
     protected void sendVerificationMessages(App app, Account original, Account update) {
         if (!nullSafeEquals(original.getEmail(), update.getEmail())) {
             update.setEmailVerified(FALSE);
