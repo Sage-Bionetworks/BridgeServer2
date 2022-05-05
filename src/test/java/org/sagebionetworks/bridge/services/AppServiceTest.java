@@ -65,6 +65,7 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.cache.CacheKey;
@@ -80,9 +81,8 @@ import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.GuidVersionHolder;
 import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
-import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
-import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
 import org.sagebionetworks.bridge.models.organizations.Organization;
@@ -96,8 +96,6 @@ import org.sagebionetworks.bridge.models.upload.UploadValidationStrictness;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 import org.sagebionetworks.bridge.services.email.EmailType;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmail;
-import org.sagebionetworks.bridge.validators.AppAndUsersValidator;
-import org.sagebionetworks.bridge.validators.AppValidator;
 
 public class AppServiceTest extends Mockito {
     private static final long BRIDGE_ADMIN_TEAM_ID = 1357L;
@@ -146,7 +144,7 @@ public class AppServiceTest extends Mockito {
     @Mock
     EmailVerificationService mockEmailVerificationService;
     @Mock
-    ParticipantService mockParticipantService;
+    AdminAccountService mockAdminAccountService;
     @Mock
     AccessControlList mockAccessControlList;
     @Mock
@@ -211,12 +209,7 @@ public class AppServiceTest extends Mockito {
         service.setAppEmailVerificationTemplate(mockTemplateAsSpringResource(
                 "Click here ${appEmailVerificationUrl} ${appEmailVerificationExpirationPeriod}" + 
                 " ${studyEmailVerificationUrl} ${studyEmailVerificationExpirationPeriod}"));
-        service.setValidator(new AppValidator());
         
-        AppAndUsersValidator appAndUsersValidator = new AppAndUsersValidator();
-        appAndUsersValidator.setSynapseClient(mockSynapseClient);
-        service.setAppAndUsersValidator(appAndUsersValidator);
-
         when(service.getNameScopingToken()).thenReturn(TEST_NAME_SCOPING_TOKEN);
         
         app = getTestApp();
@@ -918,27 +911,26 @@ public class AppServiceTest extends Mockito {
         app.setExternalIdRequiredOnSignup(false);
         app.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
 
-        StudyParticipant mockUser1 = new StudyParticipant.Builder()
-                .withEmail(TEST_USER_EMAIL)
-                .withSynapseUserId(TEST_USER_SYNAPSE_ID)
-                .withFirstName(TEST_USER_FIRST_NAME)
-                .withLastName(TEST_USER_LAST_NAME)
-                .withRoles(ImmutableSet.of(Roles.RESEARCHER, Roles.DEVELOPER))
-                .withPassword(TEST_USER_PASSWORD)
-                .build();
+        Account mockUser1 = Account.create();
+        mockUser1.setId(TestConstants.TEST_USER_ID);
+        mockUser1.setEmail(TEST_USER_EMAIL);
+        mockUser1.setSynapseUserId(TEST_USER_SYNAPSE_ID);
+        mockUser1.setFirstName(TEST_USER_FIRST_NAME);
+        mockUser1.setLastName(TEST_USER_LAST_NAME);
+        mockUser1.setRoles(ImmutableSet.of(Roles.RESEARCHER, Roles.DEVELOPER));
+        mockUser1.setPassword(TEST_USER_PASSWORD);
         
-        StudyParticipant mockUser2 = new StudyParticipant.Builder()
-                .withEmail(TEST_USER_EMAIL_2)
-                .withSynapseUserId(TEST_USER_SYNAPSE_ID_2)
-                .withFirstName(TEST_USER_FIRST_NAME)
-                .withLastName(TEST_USER_LAST_NAME)
-                .withRoles(ImmutableSet.of(Roles.RESEARCHER))
-                .withPassword(TEST_USER_PASSWORD)
-                .build();
+        Account mockUser2 = Account.create();
+        mockUser2.setId(TestConstants.TEST_USER_ID);
+        mockUser2.setEmail(TEST_USER_EMAIL_2);
+        mockUser2.setSynapseUserId(TEST_USER_SYNAPSE_ID_2);
+        mockUser2.setFirstName(TEST_USER_FIRST_NAME);
+        mockUser2.setLastName(TEST_USER_LAST_NAME);
+        mockUser2.setRoles(ImmutableSet.of(Roles.RESEARCHER));
+        mockUser2.setPassword(TEST_USER_PASSWORD);
         
-        List<StudyParticipant> mockUsers = ImmutableList.of(mockUser1, mockUser2);
+        List<Account> mockUsers = ImmutableList.of(mockUser1, mockUser2);
         AppAndUsers mockAppAndUsers = new AppAndUsers(TEST_ADMIN_IDS, app, mockUsers);
-        IdentifierHolder mockIdentifierHolder = new IdentifierHolder(TEST_IDENTIFIER);
         
         // stub out use of synapse client so we can validate it, not just ignore it.
         when(mockAccessControlList.getResourceAccess()).thenReturn(new HashSet<>());
@@ -951,16 +943,18 @@ public class AppServiceTest extends Mockito {
         when(mockSynapseClient.getEntity(SYNAPSE_TRACKING_VIEW_ID, EntityView.class)).thenReturn(view);
 
         // stub
-        when(mockParticipantService.createParticipant(any(), any(), anyBoolean())).thenReturn(mockIdentifierHolder);
+        Account idHolder = Account.create();
+        idHolder.setId("user-id");
+        when(mockAdminAccountService.createAccount(any(), any())).thenReturn(idHolder);
 
         // execute
         service.createAppAndUsers(mockAppAndUsers);
 
         // verify
-        verify(mockParticipantService).createParticipant(app, mockUser1, false);
-        verify(mockParticipantService).createParticipant(app, mockUser2, false);
+        verify(mockAdminAccountService).createAccount(TEST_APP_ID, mockUser1);
+        verify(mockAdminAccountService).createAccount(TEST_APP_ID, mockUser2);
         
-        AccountId accountId = AccountId.forId(TEST_APP_ID, TEST_IDENTIFIER);
+        AccountId accountId = AccountId.forId(TEST_APP_ID, TestConstants.TEST_USER_ID);
         verify(mockAccountWorkflowService, times(2)).requestResetPassword(app, true, accountId);
         
         verify(mockStudyService).createStudy(eq(TEST_APP_ID), studyCaptor.capture(), eq(false));
@@ -993,11 +987,17 @@ public class AppServiceTest extends Mockito {
         app.setExternalIdRequiredOnSignup(false);
         app.setSynapseDataAccessTeamId(null);
         app.setSynapseProjectId(null);
-        List<StudyParticipant> participants = ImmutableList.of(new StudyParticipant.Builder().withEmail(TEST_USER_EMAIL)
-                .withSynapseUserId(TEST_USER_SYNAPSE_ID).withRoles(ImmutableSet.of(DEVELOPER)).build());
+        
+        Account user = Account.create();
+        user.setId(TestConstants.TEST_USER_ID);
+        user.setEmail(TEST_USER_EMAIL);
+        user.setSynapseUserId(TEST_USER_SYNAPSE_ID);
+        user.setRoles(ImmutableSet.of(DEVELOPER));
+        List<Account> accounts = ImmutableList.of(user);
 
-        IdentifierHolder holder = new IdentifierHolder("user-id");
-        when(mockParticipantService.createParticipant(any(), any(), anyBoolean())).thenReturn(holder);
+        Account holder = Account.create();
+        holder.setId("user-id");
+        when(mockAdminAccountService.createAccount(any(), any())).thenReturn(holder);
         
         AccessControlList acl = new AccessControlList();
         acl.setResourceAccess(new HashSet<>());
@@ -1010,7 +1010,7 @@ public class AppServiceTest extends Mockito {
         view.setScopeIds(new ArrayList<>());
         when(mockSynapseClient.getEntity(SYNAPSE_TRACKING_VIEW_ID, EntityView.class)).thenReturn(view);
 
-        AppAndUsers mockAppAndUsers = new AppAndUsers(ImmutableList.of("12345678"), app, participants);
+        AppAndUsers mockAppAndUsers = new AppAndUsers(ImmutableList.of("12345678"), app, accounts);
 
         service.createAppAndUsers(mockAppAndUsers);
         
@@ -1040,8 +1040,12 @@ public class AppServiceTest extends Mockito {
         app.setExternalIdRequiredOnSignup(false);
         app.setSynapseDataAccessTeamId(null);
         app.setSynapseProjectId(null);
-        List<StudyParticipant> participants = ImmutableList.of(new StudyParticipant.Builder()
-                .withSynapseUserId(TEST_USER_SYNAPSE_ID).withEmail(TEST_USER_EMAIL).withRoles(roles).build());
+        
+        Account account = Account.create();
+        account.setSynapseUserId(TEST_USER_SYNAPSE_ID);
+        account.setEmail(TEST_USER_EMAIL);
+        account.setRoles(roles);
+        List<Account> participants = ImmutableList.of(account);
         
         AppAndUsers mockAppAndUsers = new AppAndUsers(ImmutableList.of("12345678"), app, participants);
 
@@ -1054,10 +1058,13 @@ public class AppServiceTest extends Mockito {
         app.setExternalIdRequiredOnSignup(false);
         app.setSynapseDataAccessTeamId(null);
         app.setSynapseProjectId(null);
-        List<StudyParticipant> participants = ImmutableList.of(new StudyParticipant.Builder().withEmail(TEST_USER_EMAIL)
-                .withSynapseUserId(TEST_USER_SYNAPSE_ID).build());
         
-        AppAndUsers mockAppAndUsers = new AppAndUsers(ImmutableList.of("12345678"), app, participants);
+        Account account = Account.create();
+        account.setEmail(TEST_USER_EMAIL);
+        account.setSynapseUserId(TEST_USER_SYNAPSE_ID);
+        List<Account> accounts = ImmutableList.of(account);
+        
+        AppAndUsers mockAppAndUsers = new AppAndUsers(ImmutableList.of("12345678"), app, accounts);
 
         service.createAppAndUsers(mockAppAndUsers);
     }
@@ -1069,25 +1076,23 @@ public class AppServiceTest extends Mockito {
         app.setSynapseProjectId(null);
         app.setSynapseDataAccessTeamId(null);
 
-        StudyParticipant mockUser1 = new StudyParticipant.Builder()
-                .withEmail(TEST_USER_EMAIL)
-                .withSynapseUserId(TEST_USER_SYNAPSE_ID)
-                .withFirstName(TEST_USER_FIRST_NAME)
-                .withLastName(TEST_USER_LAST_NAME)
-                .withRoles(ImmutableSet.of(Roles.RESEARCHER, Roles.DEVELOPER))
-                .withPassword(TEST_USER_PASSWORD)
-                .build();
+        Account mockUser1 = Account.create();
+        mockUser1.setEmail(TEST_USER_EMAIL);
+        mockUser1.setSynapseUserId(TEST_USER_SYNAPSE_ID);
+        mockUser1.setFirstName(TEST_USER_FIRST_NAME);
+        mockUser1.setLastName(TEST_USER_LAST_NAME);
+        mockUser1.setRoles(ImmutableSet.of(Roles.RESEARCHER, Roles.DEVELOPER));
+        mockUser1.setPassword(TEST_USER_PASSWORD);
 
-        StudyParticipant mockUser2 = new StudyParticipant.Builder()
-                .withEmail(TEST_USER_EMAIL_2)
-                .withSynapseUserId(TEST_USER_SYNAPSE_ID_2)
-                .withFirstName(TEST_USER_FIRST_NAME)
-                .withLastName(TEST_USER_LAST_NAME)
-                .withRoles(ImmutableSet.of(Roles.RESEARCHER))
-                .withPassword(TEST_USER_PASSWORD)
-                .build();
+        Account mockUser2 = Account.create();
+        mockUser2.setEmail(TEST_USER_EMAIL_2);
+        mockUser2.setSynapseUserId(TEST_USER_SYNAPSE_ID_2);
+        mockUser2.setFirstName(TEST_USER_FIRST_NAME);
+        mockUser2.setLastName(TEST_USER_LAST_NAME);
+        mockUser2.setRoles(ImmutableSet.of(Roles.RESEARCHER));
+        mockUser2.setPassword(TEST_USER_PASSWORD);
 
-        List<StudyParticipant> mockUsers = ImmutableList.of(mockUser1, mockUser2);
+        List<Account> mockUsers = ImmutableList.of(mockUser1, mockUser2);
         AppAndUsers mockAppAndUsers = new AppAndUsers(null, app, mockUsers);
 
         // execute
@@ -1101,16 +1106,15 @@ public class AppServiceTest extends Mockito {
         app.setSynapseProjectId(null);
         app.setSynapseDataAccessTeamId(null);
 
-        StudyParticipant mockUser1 = new StudyParticipant.Builder()
-                .withEmail(TEST_USER_EMAIL)
-                .withSynapseUserId(TEST_USER_SYNAPSE_ID)
-                .withFirstName(TEST_USER_FIRST_NAME)
-                .withLastName(TEST_USER_LAST_NAME)
-                .withRoles(ImmutableSet.of())
-                .withPassword(TEST_USER_PASSWORD)
-                .build();
+        Account account = Account.create();
+        account.setEmail(TEST_USER_EMAIL);
+        account.setSynapseUserId(TEST_USER_SYNAPSE_ID);
+        account.setFirstName(TEST_USER_FIRST_NAME);
+        account.setLastName(TEST_USER_LAST_NAME);
+        account.setRoles(ImmutableSet.of());
+        account.setPassword(TEST_USER_PASSWORD);
 
-        List<StudyParticipant> mockUsers = ImmutableList.of(mockUser1);
+        List<Account> mockUsers = ImmutableList.of(account);
         AppAndUsers mockAppAndUsers = new AppAndUsers(null, app, mockUsers);
 
         // execute
@@ -1124,25 +1128,23 @@ public class AppServiceTest extends Mockito {
         app.setSynapseProjectId(null);
         app.setSynapseDataAccessTeamId(null);
 
-        StudyParticipant mockUser1 = new StudyParticipant.Builder()
-                .withEmail(TEST_USER_EMAIL)
-                .withSynapseUserId(TEST_USER_SYNAPSE_ID)
-                .withFirstName(TEST_USER_FIRST_NAME)
-                .withLastName(TEST_USER_LAST_NAME)
-                .withRoles(ImmutableSet.of(Roles.RESEARCHER, Roles.DEVELOPER))
-                .withPassword(TEST_USER_PASSWORD)
-                .build();
+        Account mockUser1 = Account.create();
+        mockUser1.setEmail(TEST_USER_EMAIL);
+        mockUser1.setSynapseUserId(TEST_USER_SYNAPSE_ID);
+        mockUser1.setFirstName(TEST_USER_FIRST_NAME);
+        mockUser1.setLastName(TEST_USER_LAST_NAME);
+        mockUser1.setRoles(ImmutableSet.of(Roles.RESEARCHER, Roles.DEVELOPER));
+        mockUser1.setPassword(TEST_USER_PASSWORD);
 
-        StudyParticipant mockUser2 = new StudyParticipant.Builder()
-                .withEmail(TEST_USER_EMAIL_2)
-                .withSynapseUserId(TEST_USER_SYNAPSE_ID_2)
-                .withFirstName(TEST_USER_FIRST_NAME)
-                .withLastName(TEST_USER_LAST_NAME)
-                .withRoles(ImmutableSet.of(Roles.RESEARCHER))
-                .withPassword(TEST_USER_PASSWORD)
-                .build();
+        Account mockUser2 = Account.create();
+        mockUser2.setEmail(TEST_USER_EMAIL_2);
+        mockUser2.setSynapseUserId(TEST_USER_SYNAPSE_ID_2);
+        mockUser2.setFirstName(TEST_USER_FIRST_NAME);
+        mockUser2.setLastName(TEST_USER_LAST_NAME);
+        mockUser2.setRoles(ImmutableSet.of(Roles.RESEARCHER));
+        mockUser2.setPassword(TEST_USER_PASSWORD);
 
-        List<StudyParticipant> mockUsers = ImmutableList.of(mockUser1, mockUser2);
+        List<Account> mockUsers = ImmutableList.of(mockUser1, mockUser2);
         AppAndUsers mockAppAndUsers = new AppAndUsers(ImmutableList.of(), app, mockUsers);
 
         // execute
@@ -1156,7 +1158,7 @@ public class AppServiceTest extends Mockito {
         app.setSynapseProjectId(null);
         app.setSynapseDataAccessTeamId(null);
 
-        List<StudyParticipant> mockUsers = new ArrayList<>();
+        List<Account> mockUsers = new ArrayList<>();
         AppAndUsers mockAppAndUsers = new AppAndUsers(TEST_ADMIN_IDS, app, mockUsers);
 
         // execute
@@ -1183,25 +1185,23 @@ public class AppServiceTest extends Mockito {
         app.setSynapseProjectId(null);
         app.setSynapseDataAccessTeamId(null);
 
-        StudyParticipant mockUser1 = new StudyParticipant.Builder()
-                .withEmail(TEST_USER_EMAIL)
-                .withSynapseUserId(TEST_USER_SYNAPSE_ID)
-                .withFirstName(TEST_USER_FIRST_NAME)
-                .withLastName(TEST_USER_LAST_NAME)
-                .withRoles(ImmutableSet.of(Roles.RESEARCHER, Roles.DEVELOPER))
-                .withPassword(TEST_USER_PASSWORD)
-                .build();
+        Account mockUser1 = Account.create();
+        mockUser1.setEmail(TEST_USER_EMAIL);
+        mockUser1.setSynapseUserId(TEST_USER_SYNAPSE_ID);
+        mockUser1.setFirstName(TEST_USER_FIRST_NAME);
+        mockUser1.setLastName(TEST_USER_LAST_NAME);
+        mockUser1.setRoles(ImmutableSet.of(Roles.RESEARCHER, Roles.DEVELOPER));
+        mockUser1.setPassword(TEST_USER_PASSWORD);
 
-        StudyParticipant mockUser2 = new StudyParticipant.Builder()
-                .withEmail(TEST_USER_EMAIL_2)
-                .withSynapseUserId(TEST_USER_SYNAPSE_ID_2)
-                .withFirstName(TEST_USER_FIRST_NAME)
-                .withLastName(TEST_USER_LAST_NAME)
-                .withRoles(ImmutableSet.of(Roles.RESEARCHER))
-                .withPassword(TEST_USER_PASSWORD)
-                .build();
+        Account mockUser2 = Account.create();
+        mockUser2.setEmail(TEST_USER_EMAIL_2);
+        mockUser2.setSynapseUserId(TEST_USER_SYNAPSE_ID_2);
+        mockUser2.setFirstName(TEST_USER_FIRST_NAME);
+        mockUser2.setLastName(TEST_USER_LAST_NAME);
+        mockUser2.setRoles(ImmutableSet.of(Roles.RESEARCHER));
+        mockUser2.setPassword(TEST_USER_PASSWORD);
 
-        List<StudyParticipant> mockUsers = ImmutableList.of(mockUser1, mockUser2);
+        List<Account> mockUsers = ImmutableList.of(mockUser1, mockUser2);
         AppAndUsers mockAppAndUsers = new AppAndUsers(TEST_ADMIN_IDS, null, mockUsers);
 
         // execute
@@ -1216,14 +1216,14 @@ public class AppServiceTest extends Mockito {
         app.setExternalIdRequiredOnSignup(false);
         app.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
 
-        StudyParticipant mockUser1 = new StudyParticipant.Builder()
-                .withSynapseUserId(TEST_USER_SYNAPSE_ID)
-                .withEmail(TEST_USER_EMAIL)
-                .withRoles(ImmutableSet.of(Roles.RESEARCHER, Roles.DEVELOPER))
-                .build();
+        Account mockUser1 = Account.create();
+        mockUser1.setId(TestConstants.TEST_USER_ID);
+        mockUser1.setSynapseUserId(TEST_USER_SYNAPSE_ID);
+        mockUser1.setEmail(TEST_USER_EMAIL);
+        mockUser1.setRoles(ImmutableSet.of(Roles.RESEARCHER, Roles.DEVELOPER));
 
-        when(mockParticipantService.createParticipant(any(), any(), anyBoolean()))
-                .thenReturn(new IdentifierHolder("userId"));
+        when(mockAdminAccountService.createAccount(any(), any()))
+                .thenReturn(Account.create());
         
         AppAndUsers mockAppAndUsers = new AppAndUsers(TEST_ADMIN_IDS, app, ImmutableList.of(mockUser1));
 
@@ -1319,16 +1319,16 @@ public class AppServiceTest extends Mockito {
         app.setExternalIdRequiredOnSignup(false);
         app.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
 
-        StudyParticipant mockUser1 = new StudyParticipant.Builder()
-                .withSynapseUserId(TEST_USER_SYNAPSE_ID)
-                .withEmail(TEST_USER_EMAIL)
-                .withRoles(ImmutableSet.of(Roles.RESEARCHER, Roles.DEVELOPER))
-                .build();
+        Account account = Account.create();
+        account.setId(TestConstants.TEST_USER_ID);
+        account.setSynapseUserId(TEST_USER_SYNAPSE_ID);
+        account.setEmail(TEST_USER_EMAIL);
+        account.setRoles(ImmutableSet.of(Roles.RESEARCHER, Roles.DEVELOPER));
 
-        when(mockParticipantService.createParticipant(any(), any(), anyBoolean()))
-                .thenReturn(new IdentifierHolder("userId"));
+        when(mockAdminAccountService.createAccount(any(), any()))
+                .thenReturn(Account.create());
         
-        AppAndUsers mockAppAndUsers = new AppAndUsers(TEST_ADMIN_IDS, app, ImmutableList.of(mockUser1));
+        AppAndUsers mockAppAndUsers = new AppAndUsers(TEST_ADMIN_IDS, app, ImmutableList.of(account));
 
         // execute
         service.createAppAndUsers(mockAppAndUsers);

@@ -36,11 +36,9 @@ import org.sagebionetworks.bridge.upload.UploadUtil;
 
 import com.google.common.collect.Sets;
 
-import org.springframework.stereotype.Component;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
-@Component
 public class AppValidator implements Validator {
     public static final AppValidator INSTANCE = new AppValidator();
     

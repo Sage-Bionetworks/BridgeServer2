@@ -66,9 +66,8 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.GuidVersionHolder;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
-import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
-import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -111,29 +110,48 @@ public class AppService {
     private String bridgeSupportEmailPlain;
     private String bridgeAdminTeamId;
     private String bridgeStaffTeamId;
-    private CompoundActivityDefinitionService compoundActivityDefinitionService;
-    private SendMailService sendMailService;
-    private UploadCertificateService uploadCertService;
-    private AppDao appDao;
-    private AppValidator validator;
-    private AppAndUsersValidator appAndUsersValidator;
-    private CacheProvider cacheProvider;
-    private SubpopulationService subpopService;
-    private NotificationTopicService topicService;
-    private EmailVerificationService emailVerificationService;
-    private SynapseClient synapseClient;
     private String synapseTrackingViewId;
-    private ParticipantService participantService;
+    /** Compound activity definition service, used to clean up deleted apps. This is set by Spring. */
+    @Autowired
+    private CompoundActivityDefinitionService compoundActivityDefinitionService;
+    /** Send mail service, used to send the consent notification email verification email. */
+    @Autowired
+    private SendMailService sendMailService;
+    @Resource(name="uploadCertificateService")
+    private UploadCertificateService uploadCertService;
+    @Autowired
+    private AppDao appDao;
+    @Autowired
+    private CacheProvider cacheProvider;
+    @Autowired
+    private SubpopulationService subpopService;
+    @Autowired
+    private NotificationTopicService topicService;
+    @Autowired
+    private EmailVerificationService emailVerificationService;
+    @Autowired
     private StudyService studyService;
+    @Resource(name = "bridgePFSynapseClient")
+    private SynapseClient synapseClient;
+    @Autowired
     private TemplateService templateService;
+    @Autowired
     private FileService fileService;
+    @Autowired
     private OrganizationService organizationService;
+    @Autowired
     private Schedule2Service scheduleService;
+    @Autowired
     private AccountService accountService;
+    @Autowired
     private AssessmentService assessmentService;
+    @Autowired
     private AssessmentResourceService assessmentResourceService;
+    @Autowired
     private AccountWorkflowService accountWorkflowService;
-
+    @Autowired
+    private AdminAccountService adminAccountService;
+    
     // Not defaults, if you wish to change these, change in source. Not configurable per app
     private String appEmailVerificationTemplate;
     private String appEmailVerificationTemplateSubject;
@@ -159,96 +177,6 @@ public class AppService {
         this.appWhitelist = Collections.unmodifiableSet(new HashSet<>(
                 bridgeConfig.getPropertyAsList(CONFIG_APP_WHITELIST)));
         this.synapseTrackingViewId = bridgeConfig.get(CONFIG_KEY_SYNAPSE_TRACKING_VIEW);
-    }
-
-    /** Compound activity definition service, used to clean up deleted apps. This is set by Spring. */
-    @Autowired
-    final void setCompoundActivityDefinitionService(
-            CompoundActivityDefinitionService compoundActivityDefinitionService) {
-        this.compoundActivityDefinitionService = compoundActivityDefinitionService;
-    }
-
-    /** Send mail service, used to send the consent notification email verification email. */
-    @Autowired
-    public final void setSendMailService(SendMailService sendMailService) {
-        this.sendMailService = sendMailService;
-    }
-
-    @Resource(name="uploadCertificateService")
-    final void setUploadCertificateService(UploadCertificateService uploadCertService) {
-        this.uploadCertService = uploadCertService;
-    }
-    @Autowired
-    final void setValidator(AppValidator validator) {
-        this.validator = validator;
-    }
-    @Autowired
-    final void setAppAndUsersValidator(AppAndUsersValidator appAndUsersValidator) {
-        this.appAndUsersValidator = appAndUsersValidator;
-    }
-    @Autowired
-    final void setAppDao(AppDao appDao) {
-        this.appDao = appDao;
-    }
-    @Autowired
-    final void setCacheProvider(CacheProvider cacheProvider) {
-        this.cacheProvider = cacheProvider;
-    }
-    @Autowired
-    final void setSubpopulationService(SubpopulationService subpopService) {
-        this.subpopService = subpopService;
-    }
-    @Autowired
-    final void setNotificationTopicService(NotificationTopicService topicService) {
-        this.topicService = topicService;
-    }
-    @Autowired
-    final void setEmailVerificationService(EmailVerificationService emailVerificationService) {
-        this.emailVerificationService = emailVerificationService;
-    }
-    @Autowired
-    final void setParticipantService(ParticipantService participantService) {
-        this.participantService = participantService;
-    }
-    @Autowired
-    final void setStudyService(StudyService studyService) {
-        this.studyService = studyService;
-    }
-    @Resource(name = "bridgePFSynapseClient")
-    final void setSynapseClient(SynapseClient synapseClient) {
-        this.synapseClient = synapseClient;
-    }
-    @Autowired
-    final void setTemplateService(TemplateService templateService) {
-        this.templateService = templateService;
-    }
-    @Autowired
-    final void setFileService(FileService fileService) {
-        this.fileService = fileService;
-    }
-    @Autowired
-    final void setOrganizationService(OrganizationService organizationService) {
-        this.organizationService = organizationService;
-    }
-    @Autowired
-    final void setSchedule2Service(Schedule2Service scheduleService) {
-        this.scheduleService = scheduleService;
-    }
-    @Autowired
-    final void setAccountService(AccountService accountService) {
-        this.accountService = accountService;
-    }
-    @Autowired
-    final void setAssessmentService(AssessmentService assessmentService) {
-        this.assessmentService = assessmentService;
-    }
-    @Autowired
-    final void setAssessmentResourceService(AssessmentResourceService assessmentResourceService) {
-        this.assessmentResourceService = assessmentResourceService;
-    }
-    @Autowired
-    final void setAccountWorkflowService(AccountWorkflowService accountWorkflowService) {
-        this.accountWorkflowService = accountWorkflowService; 
     }
     
     public App getApp(String identifier, boolean includeDeleted) {
@@ -289,22 +217,24 @@ public class AppService {
         checkNotNull(appAndUsers);
         
         // Validate AppAndUsers
+        AppAndUsersValidator appAndUsersValidator = new AppAndUsersValidator(synapseClient);
         Validate.entityThrowingException(appAndUsersValidator, appAndUsers);
 
         // Create app
         App app = createApp(appAndUsers.getApp());
 
         // Create users and send password reset email
-        for (StudyParticipant user: appAndUsers.getUsers()) {
-            IdentifierHolder identifierHolder = participantService.createParticipant(app, user, false);
+        for (Account user: appAndUsers.getUsers()) {
+            adminAccountService.createAccount(app.getIdentifier(), user);
+            
             // send resetting password email as well
-            AccountId accountId = AccountId.forId(app.getIdentifier(), identifierHolder.getIdentifier());
+            AccountId accountId = AccountId.forId(app.getIdentifier(), user.getId());
             accountWorkflowService.requestResetPassword(app, true, accountId);
         }
         
         // Add admins and users to the Synapse project and access teams. All IDs have been validated.
         List<String> synapseUserIds = appAndUsers.getUsers().stream()
-                .map(StudyParticipant::getSynapseUserId).collect(toList());
+                .map(Account::getSynapseUserId).collect(toList());
         createSynapseProjectTeam(appAndUsers.getAdminIds(), synapseUserIds, app);
 
         return app;
@@ -338,7 +268,7 @@ public class AppService {
             app.setUploadValidationStrictness(UploadValidationStrictness.REPORT);
         }
 
-        Validate.entityThrowingException(validator, app);
+        Validate.entityThrowingException(AppValidator.INSTANCE, app);
 
         if (appDao.doesIdentifierExist(app.getIdentifier())) {
             throw new EntityAlreadyExistsException(App.class, IDENTIFIER_PROPERTY, app.getIdentifier());
@@ -544,7 +474,7 @@ public class AppService {
             app.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
         }
 
-        Validate.entityThrowingException(validator, app);
+        Validate.entityThrowingException(AppValidator.INSTANCE, app);
 
         if (originalApp.isConsentNotificationEmailVerified() == null) {
             // Apps before the introduction of the consentNotificationEmailVerified flag have it set to null. For

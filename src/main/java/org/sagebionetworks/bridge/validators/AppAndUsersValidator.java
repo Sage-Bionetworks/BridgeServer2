@@ -8,48 +8,26 @@ import static org.sagebionetworks.bridge.Roles.WORKER;
 import java.util.Collections;
 import java.util.List;
 
-import javax.annotation.Resource;
-
 import com.google.common.collect.ImmutableSet;
 
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
 import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.AppAndUsers;
-import org.sagebionetworks.bridge.services.OrganizationService;
-import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.client.SynapseClient;
 import org.sagebionetworks.client.exceptions.SynapseException;
 import org.sagebionetworks.client.exceptions.SynapseNotFoundException;
 
-@Component
 public class AppAndUsersValidator implements Validator {
 
     private SynapseClient synapseClient;
 
-    private StudyService studyService;
-    
-    private OrganizationService organizationService;
-
-    @Resource(name = "bridgePFSynapseClient")
-    public final void setSynapseClient(SynapseClient synapseClient) {
+    public AppAndUsersValidator(SynapseClient synapseClient) {
         this.synapseClient = synapseClient;
-    }
-    
-    @Autowired
-    public final void setStudyService(StudyService studyService) {
-        this.studyService = studyService;
-    }
-    
-    @Autowired
-    public final void setOrganizationService(OrganizationService organizationService) {
-        this.organizationService = organizationService;
     }
     
     @Override
@@ -80,7 +58,7 @@ public class AppAndUsersValidator implements Validator {
             }
             errors.popNestedPath();
         }
-        StudyParticipantValidator participantValidator = new StudyParticipantValidator(studyService, organizationService, app, true);
+        AdminAccountValidator adminAccountValidator = new AdminAccountValidator(app.getPasswordPolicy(), app.getUserProfileAttributes());
         
         List<String> adminIds = appAndUsers.getAdminIds();
         if (adminIds == null || adminIds.isEmpty()) {
@@ -95,6 +73,7 @@ public class AppAndUsersValidator implements Validator {
                 try {
                     synapseClient.getUserProfile(adminId);
                 } catch (SynapseNotFoundException e) {
+                    System.out.println(e);
                     errors.rejectValue("", "is invalid");
                 } catch (SynapseException se) {
                     throw new RuntimeException(se);
@@ -103,12 +82,12 @@ public class AppAndUsersValidator implements Validator {
             }
         }
         
-        List<StudyParticipant> users = appAndUsers.getUsers();
+        List<Account> users = appAndUsers.getUsers();
         if (users == null || users.isEmpty()) {
             errors.rejectValue("users", "are required");
         } else {
             for (int i=0; i < users.size(); i++) {
-                StudyParticipant user = users.get(i);
+                Account user = users.get(i);
                 errors.pushNestedPath("users["+i+"]");
                 if (isBlank(user.getSynapseUserId())) {
                     errors.rejectValue("synapseUserId", "cannot be blank");
@@ -130,7 +109,7 @@ public class AppAndUsersValidator implements Validator {
                 }
                 
                 // validate the user
-                participantValidator.validate(user, errors);
+                adminAccountValidator.validate(user, errors);
                 
                 errors.popNestedPath();
             }
