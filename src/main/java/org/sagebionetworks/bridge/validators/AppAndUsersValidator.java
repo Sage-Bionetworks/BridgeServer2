@@ -73,7 +73,6 @@ public class AppAndUsersValidator implements Validator {
                 try {
                     synapseClient.getUserProfile(adminId);
                 } catch (SynapseNotFoundException e) {
-                    System.out.println(e);
                     errors.rejectValue("", "is invalid");
                 } catch (SynapseException se) {
                     throw new RuntimeException(se);
