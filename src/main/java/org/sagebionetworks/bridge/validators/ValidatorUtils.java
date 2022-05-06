@@ -86,8 +86,7 @@ class ValidatorUtils {
         String email = participant.getEmail();
         String anyExternalId = participant.getExternalIds().isEmpty() ? null
                 : Iterables.getFirst(participant.getExternalIds().entrySet(), null).getValue();
-        String synapseUserId = participant.getSynapseUserId();
-        return (email != null || isNotBlank(anyExternalId) || phone != null || isNotBlank(synapseUserId));
+        return (email != null || isNotBlank(anyExternalId) || phone != null);
     }
 
     private static void validateLanguageSet(Errors errors, List<? extends HasLang> items, String fieldName) {

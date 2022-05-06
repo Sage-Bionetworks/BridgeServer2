@@ -5,14 +5,6 @@ import static org.joda.time.DateTimeZone.UTC;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.BridgeUtils.collectExternalIds;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
-import static org.sagebionetworks.bridge.Roles.ADMIN;
-import static org.sagebionetworks.bridge.Roles.DEVELOPER;
-import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
-import static org.sagebionetworks.bridge.Roles.RESEARCHER;
-import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
-import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
-import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
-import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.ENROLLMENT;
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
@@ -108,7 +100,6 @@ import org.sagebionetworks.bridge.models.apps.SmsTemplate;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationProtocol;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
-import org.sagebionetworks.bridge.models.organizations.Organization;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.studies.EnrollmentInfo;
@@ -157,8 +148,6 @@ public class ParticipantServiceTest extends Mockito {
     private static final String ACTIVITY_GUID = "activityGuid";
     private static final String PAGED_BY = "100";
     private static final int PAGE_SIZE = 50;
-    private static final Set<Roles> RESEARCH_CALLER_ROLES = ImmutableSet.of(RESEARCHER);
-    private static final Set<Roles> DEV_CALLER_ROLES = ImmutableSet.of(DEVELOPER);
     private static final Set<String> CALLER_SUBS = ImmutableSet.of();
     private static final List<String> USER_LANGUAGES = ImmutableList.copyOf(BridgeUtils.commaListToOrderedSet("de,fr"));
     private static final String EMAIL = "email@email.com";
@@ -179,7 +168,6 @@ public class ParticipantServiceTest extends Mockito {
             .withPassword(PASSWORD)
             .withSharingScope(ALL_QUALIFIED_RESEARCHERS)
             .withNotifyByEmail(true)
-            .withRoles(DEV_CALLER_ROLES)
             .withDataGroups(APP_DATA_GROUPS)
             .withAttributes(ATTRS)
             .withLanguages(USER_LANGUAGES)
@@ -307,7 +295,8 @@ public class ParticipantServiceTest extends Mockito {
         
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId("id").withCallerAppId(TEST_APP_ID)
-                .withCallerRoles(RESEARCH_CALLER_ROLES).withOrgSponsoredStudies(CALLER_SUBS).build());
+                .withCallerRoles(ImmutableSet.of(Roles.RESEARCHER))
+                .withOrgSponsoredStudies(CALLER_SUBS).build());
     }
     
     @AfterMethod
@@ -346,7 +335,7 @@ public class ParticipantServiceTest extends Mockito {
 
         StudyParticipant participant = withParticipant()
                 .withExternalIds(ENROLLMENT_MAP)
-                .withSynapseUserId(SYNAPSE_USER_ID).build();
+                .withEmail(EMAIL).build();
         IdentifierHolder idHolder = participantService.createParticipant(APP, participant, true);
         assertEquals(idHolder.getIdentifier(), ID);
         
@@ -371,56 +360,19 @@ public class ParticipantServiceTest extends Mockito {
         assertEquals(account.getFirstName(), FIRST_NAME);
         assertEquals(account.getLastName(), LAST_NAME);
         assertEquals(account.getAttributes().get("can_be_recontacted"), "true");
-        assertEquals(account.getRoles(), DEV_CALLER_ROLES);
         assertEquals(account.getClientData(), TestUtils.getClientData());
-        assertEquals(account.getStatus(), AccountStatus.ENABLED); // has external ID and password
+        assertEquals(account.getStatus(), AccountStatus.UNVERIFIED);
         assertEquals(account.getSharingScope(), SharingScope.ALL_QUALIFIED_RESEARCHERS);
         assertEquals(account.getNotifyByEmail(), Boolean.TRUE);
         assertNull(account.getTimeZone());
         assertEquals(account.getDataGroups(), ImmutableSet.of("group1","group2"));
         assertEquals(account.getLanguages(), ImmutableList.of("de","fr"));
         assertEquals(enrollmentCaptor.getValue().getExternalId(), EXTERNAL_ID);
-        assertEquals(account.getSynapseUserId(), SYNAPSE_USER_ID);
         assertEquals(account.getNote(), TEST_NOTE);
         assertEquals(account.getClientTimeZone(), TEST_CLIENT_TIME_ZONE);
         
         // don't update cache
         Mockito.verifyNoMoreInteractions(cacheProvider);
-    }
-    
-    @Test
-    public void createParticipantSetsOrgMembershipWhenCallerOrgAdmin() {
-        RequestContext.set(new RequestContext.Builder()
-                .withCallerOrgMembership(TEST_ORG_ID)
-                .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
-        when(participantService.generateGUID()).thenReturn(ID);
-        when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
-        when(organizationService.getOrganizationOpt(TEST_APP_ID, TEST_ORG_ID))
-            .thenReturn(Optional.of(Organization.create()));
-
-        StudyParticipant participant = withParticipant()
-                .withOrgMembership(TEST_ORG_ID)
-                .withSynapseUserId(SYNAPSE_USER_ID).build();
-        participantService.createParticipant(APP, participant, true);
-        
-        verify(accountService).createAccount(eq(APP), accountCaptor.capture());
-        
-        Account account = accountCaptor.getValue();
-        assertEquals(account.getOrgMembership(), TEST_ORG_ID);
-    }
-    
-    @Test
-    public void createParticipantSettingOrgMembershipFailsOnWrongRole() {
-        when(organizationService.getOrganizationOpt(TEST_APP_ID, TEST_ORG_ID))
-            .thenReturn(Optional.of(Organization.create()));
-
-        StudyParticipant participant = withParticipant().withOrgMembership(TEST_ORG_ID).build();
-        
-        try {
-            participantService.createParticipant(APP, participant, true);    
-        } catch(InvalidEntityException e) {
-            assertEquals(e.getErrors().get("orgMembership").get(0), "orgMembership cannot be set by caller");
-        }
     }
     
     @Test(expectedExceptions = InvalidEntityException.class)
@@ -484,7 +436,8 @@ public class ParticipantServiceTest extends Mockito {
         // This is a study caller, so the study relationship needs to be enforced
         // when creating a participant. In this case, the relationship is implied by the 
         // external ID but not provided in the externalIds set. It works anyway.
-        RequestContext.set(new RequestContext.Builder().withCallerRoles(RESEARCH_CALLER_ROLES)
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(Roles.STUDY_COORDINATOR))
                 .withCallerEnrolledStudies(ImmutableSet.of("study1")).build());
 
         StudyParticipant participant = new StudyParticipant.Builder()
@@ -661,18 +614,6 @@ public class ParticipantServiceTest extends Mockito {
 
         StudyParticipant participant = withParticipant().withEmail(null).withPhone(null).withPassword(PASSWORD)
                 .withExternalIds(ENROLLMENT_MAP).build();
-        participantService.createParticipant(APP, participant, false);
-        
-        assertEquals(account.getStatus(), AccountStatus.ENABLED);
-        assertFalse(account.getPhoneVerified());
-        assertFalse(account.getEmailVerified());
-    }
-    
-    @Test
-    public void createParticipantSynapseUserIdIsEnabled() {
-        mockHealthCodeAndAccountRetrieval(null, null, null);
-
-        StudyParticipant participant = new StudyParticipant.Builder().withSynapseUserId(SYNAPSE_USER_ID).build();
         participantService.createParticipant(APP, participant, false);
         
         assertEquals(account.getStatus(), AccountStatus.ENABLED);
@@ -880,7 +821,7 @@ public class ParticipantServiceTest extends Mockito {
     public void getPagedAccountSummariesAddsTestFlagForDevelopers() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId("some-id")
-                .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
+                .withCallerRoles(ImmutableSet.of(Roles.DEVELOPER)).build());
         
         AccountSummarySearch search = new AccountSummarySearch.Builder().build();
         
@@ -895,7 +836,7 @@ public class ParticipantServiceTest extends Mockito {
     public void getPagedAccountSummariesAddsTestFlagForStudyDesigners() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId("some-id")
-                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER)).build());
+                .withCallerRoles(ImmutableSet.of(Roles.STUDY_DESIGNER)).build());
         
         AccountSummarySearch search = new AccountSummarySearch.Builder().build();
         
@@ -910,7 +851,7 @@ public class ParticipantServiceTest extends Mockito {
     public void getPagedAccountSummariesAddsTestFlagForOrgAdmins() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId("some-id")
-                .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
+                .withCallerRoles(ImmutableSet.of(Roles.ORG_ADMIN)).build());
         
         AccountSummarySearch search = new AccountSummarySearch.Builder().build();
         
@@ -979,7 +920,7 @@ public class ParticipantServiceTest extends Mockito {
     public void getSelfParticipantNoHistory() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId(ID)
-                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
+                .withCallerRoles(ImmutableSet.of(Roles.STUDY_COORDINATOR))
                 .withOrgSponsoredStudies(USER_STUDY_IDS).build());
         
         // Some data to verify
@@ -1159,7 +1100,7 @@ public class ParticipantServiceTest extends Mockito {
         // Now, the caller only sees A and C
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId("callerUserId")
-                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
+                .withCallerRoles(ImmutableSet.of(Roles.STUDY_COORDINATOR))
                 .withOrgSponsoredStudies(ImmutableSet.of("studyA", "studyC")).build());
         
         StudyParticipant participant = participantService.getParticipant(APP, ID, false);
@@ -1202,7 +1143,8 @@ public class ParticipantServiceTest extends Mockito {
 
     @Test
     public void updateParticipantWithExternalIdValidationAddingId() {
-        RequestContext.set(new RequestContext.Builder().withCallerRoles(RESEARCH_CALLER_ROLES).build());
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(Roles.RESEARCHER)).build());
         
         mockHealthCodeAndAccountRetrieval(null, null, null);
 
@@ -1250,7 +1192,7 @@ public class ParticipantServiceTest extends Mockito {
     @Test
     public void updateParticipantWithoutStudyChangesForAdmins() {
         Set<String> studies = ImmutableSet.of("studyA", "studyC");
-        StudyParticipant participant = mockStudiesInRequest(studies, studies, ADMIN).build();
+        StudyParticipant participant = mockStudiesInRequest(studies, studies, Roles.ADMIN).build();
         
         mockHealthCodeAndAccountRetrieval();
         account.getEnrollments().add(Enrollment.create(APP.getIdentifier(), "studyC", ID));
@@ -1276,11 +1218,9 @@ public class ParticipantServiceTest extends Mockito {
                 .withPhone(new Phone("1234567890", "US"))
                 .withEmailVerified(true)
                 .withPhoneVerified(true)
-                .withSynapseUserId("asdf")
                 .withPassword("asdf")
                 .withHealthCode("asdf")
                 .withConsented(true)
-                .withRoles(ImmutableSet.of(ADMIN))
                 .withStatus(DISABLED)
                 .withCreatedOn(DateTime.now())
                 .withTimeZone(UTC).build();
@@ -1325,32 +1265,33 @@ public class ParticipantServiceTest extends Mockito {
     
     @Test
     public void developerCannotChangeStatusOnEdit() {
-        verifyStatusUpdate(EnumSet.of(DEVELOPER), false);
+        verifyStatusUpdate(EnumSet.of(Roles.DEVELOPER), false);
     }
     
     @Test
     public void researcherCannotChangeStatusOnEdit() {
-        verifyStatusUpdate(EnumSet.of(RESEARCHER), false);
+        verifyStatusUpdate(EnumSet.of(Roles.RESEARCHER), false);
     }
     
     @Test
     public void adminCanChangeStatusOnEdit() {
-        verifyStatusUpdate(EnumSet.of(ADMIN), true);
+        verifyStatusUpdate(EnumSet.of(Roles.ADMIN), true);
     }
 
     @Test
     public void superadminCanChangeStatusOnEdit() {
-        verifyStatusUpdate(EnumSet.of(SUPERADMIN), true);
+        verifyStatusUpdate(EnumSet.of(Roles.SUPERADMIN), true);
     }
     
     @Test
     public void workerCanChangeStatusOnEdit() {
-        verifyStatusUpdate(EnumSet.of(WORKER), true);
+        verifyStatusUpdate(EnumSet.of(Roles.WORKER), true);
     }
 
     @Test
     public void notSettingStatusDoesntClearStatus() {
-        RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(Roles.ADMIN)).build());
         
         mockHealthCodeAndAccountRetrieval();
         account.setStatus(AccountStatus.ENABLED);
@@ -1366,159 +1307,19 @@ public class ParticipantServiceTest extends Mockito {
 
     @Test
     public void userCannotCreateAnybody() {
-        verifyRoleCreate(ImmutableSet.of(), ImmutableSet.of());
+        RequestContext.set(RequestContext.NULL_INSTANCE);
+        
+        mockHealthCodeAndAccountRetrieval();
+        
+        StudyParticipant participant = withParticipant().build();
+        
+        participantService.createParticipant(APP, participant, false);
+        
+        verify(accountService).createAccount(eq(APP), accountCaptor.capture());
+        Account account = accountCaptor.getValue();
+        
+        assertEquals(account.getRoles(), ImmutableSet.of());
     }
-
-    @Test
-    public void workerCannotCreateAnybody() {
-        verifyRoleCreate(ImmutableSet.of(WORKER), ImmutableSet.of());
-    }
-    
-    @Test
-    public void developerCannotCreateAnybody() {
-        verifyRoleCreate(ImmutableSet.of(DEVELOPER), ImmutableSet.of());
-    }
-    
-    @Test
-    public void researcherCanCreateDevelopers() {
-        verifyRoleCreate(ImmutableSet.of(RESEARCHER), ImmutableSet.of(DEVELOPER));
-    }
-    
-    @Test
-    public void adminCanCreateDeveloperAndResearcher() {
-        verifyRoleCreate(ImmutableSet.of(ADMIN), ImmutableSet.of(DEVELOPER, RESEARCHER));
-    }
-    
-    @Test
-    public void superadminCanCreateEverybody() {
-        verifyRoleCreate(ImmutableSet.of(SUPERADMIN), 
-                ImmutableSet.of(SUPERADMIN, ADMIN, DEVELOPER, RESEARCHER, WORKER));
-    }
-    
-    @Test
-    public void workerCannotUpdateAnybody() {
-        verifyRoleUpdate(ImmutableSet.of(WORKER), ImmutableSet.of());
-    }
-    
-    @Test
-    public void developerCannotUpdateAnybody() {
-        verifyRoleUpdate(ImmutableSet.of(DEVELOPER), ImmutableSet.of());
-    }
-    
-    @Test
-    public void researcherCanUpdateDevelopers() {
-        verifyRoleUpdate(ImmutableSet.of(RESEARCHER), ImmutableSet.of(DEVELOPER));
-    }
-    
-    @Test
-    public void adminCanUpdateDeveloperAndResearcher() {
-        verifyRoleUpdate(ImmutableSet.of(ADMIN), ImmutableSet.of(DEVELOPER, RESEARCHER));
-    }
-    
-    @Test
-    public void superadminCanUpdateEverybody() {
-        verifyRoleUpdate(ImmutableSet.of(SUPERADMIN), 
-                ImmutableSet.of(SUPERADMIN, ADMIN, DEVELOPER, RESEARCHER, WORKER));
-    }
-
-    // Now, verify that roles cannot *remove* roles they don't have permissions to remove
-    
-    @Test
-    public void superadminCanRemoveSuperadmin() {
-        account.setRoles(ImmutableSet.of(SUPERADMIN));
-        verifyRoleUpdate(ImmutableSet.of(SUPERADMIN), ImmutableSet.of(), ImmutableSet.of());
-    }
-    
-    @Test
-    public void superadminCanRemoveAdmin() {
-        account.setRoles(ImmutableSet.of(ADMIN));
-        verifyRoleUpdate(ImmutableSet.of(SUPERADMIN), ImmutableSet.of(), ImmutableSet.of());
-    }
-
-    @Test
-    public void superadminCanRemoveResearcher() {
-        account.setRoles(ImmutableSet.of(RESEARCHER));
-        verifyRoleUpdate(ImmutableSet.of(SUPERADMIN), ImmutableSet.of(), ImmutableSet.of());
-    }
-
-    @Test
-    public void superadminCanRemoveDeveloper() {
-        account.setRoles(ImmutableSet.of(DEVELOPER));
-        verifyRoleUpdate(ImmutableSet.of(SUPERADMIN), ImmutableSet.of(), ImmutableSet.of());
-    }
-    
-    @Test
-    public void superadminCanRemoveWorker() {
-        account.setRoles(ImmutableSet.of(WORKER));
-        verifyRoleUpdate(ImmutableSet.of(SUPERADMIN), ImmutableSet.of(), ImmutableSet.of());
-    }
-    
-    @Test
-    public void adminCannotRemoveSuperadmin() {
-        account.setRoles(ImmutableSet.of(SUPERADMIN));
-        verifyRoleUpdate(ImmutableSet.of(ADMIN), ImmutableSet.of(), ImmutableSet.of(SUPERADMIN));
-    }
-    
-    @Test
-    public void adminCannotRemoveAdmin() {
-        account.setRoles(ImmutableSet.of(ADMIN));
-        verifyRoleUpdate(ImmutableSet.of(ADMIN), ImmutableSet.of(), ImmutableSet.of(ADMIN));
-    }
-
-    @Test
-    public void adminCanRemoveResearcher() {
-        account.setRoles(ImmutableSet.of(RESEARCHER));
-        verifyRoleUpdate(ImmutableSet.of(ADMIN), ImmutableSet.of(), ImmutableSet.of());
-    }
-
-    @Test
-    public void adminCanRemoveDeveloper() {
-        account.setRoles(ImmutableSet.of(DEVELOPER));
-        verifyRoleUpdate(ImmutableSet.of(ADMIN), ImmutableSet.of(), ImmutableSet.of());
-    }    
-    
-    @Test
-    public void adminCannotRemoveWorker() {
-        account.setRoles(ImmutableSet.of(WORKER));
-        verifyRoleUpdate(ImmutableSet.of(ADMIN), ImmutableSet.of(), ImmutableSet.of(WORKER));
-    }
-    
-    @Test
-    public void researcherCannotRemoveSuperadmin() {
-        account.setRoles(ImmutableSet.of(SUPERADMIN));
-        verifyRoleUpdate(ImmutableSet.of(RESEARCHER), ImmutableSet.of(), ImmutableSet.of(SUPERADMIN));
-    }
-    
-    @Test
-    public void researcherCannotRemoveAdmin() {
-        account.setRoles(ImmutableSet.of(ADMIN));
-        verifyRoleUpdate(ImmutableSet.of(RESEARCHER), ImmutableSet.of(), ImmutableSet.of(ADMIN));
-    }
-
-    @Test
-    public void researcherCanRemoveResearcher() {
-        account.setRoles(ImmutableSet.of(RESEARCHER));
-        verifyRoleUpdate(ImmutableSet.of(RESEARCHER), ImmutableSet.of(), ImmutableSet.of(RESEARCHER));
-    }
-
-    @Test
-    public void researcherCanRemoveDeveloper() {
-        account.setRoles(ImmutableSet.of(DEVELOPER));
-        verifyRoleUpdate(ImmutableSet.of(RESEARCHER), ImmutableSet.of(), ImmutableSet.of());
-    }
-    
-    @Test
-    public void researcherCanRemoveWorker() {
-        account.setRoles(ImmutableSet.of(WORKER));
-        verifyRoleUpdate(ImmutableSet.of(RESEARCHER), ImmutableSet.of(), ImmutableSet.of(WORKER));
-    }
-    
-    @Test
-    public void developerCannotRemoveAnybody() {
-        account.setRoles(ImmutableSet.of(DEVELOPER, RESEARCHER, ADMIN, SUPERADMIN, WORKER));
-        verifyRoleUpdate(ImmutableSet.of(DEVELOPER), ImmutableSet.of(), 
-                ImmutableSet.of(DEVELOPER, RESEARCHER, ADMIN, SUPERADMIN, WORKER));
-    }     
 
     @Test
     public void getParticipantWithoutHistories() {
@@ -1815,18 +1616,6 @@ public class ParticipantServiceTest extends Mockito {
     }
 
     @Test
-    public void createRequiredExternalIdWithRolesOK() {
-        mockHealthCodeAndAccountRetrieval();
-        APP.setExternalIdRequiredOnSignup(true);
-        
-        // developer
-        StudyParticipant participant = withParticipant().build();
-        
-        participantService.createParticipant(APP, participant, false);
-        verify(enrollmentService, never()).addEnrollment(any(), any(), anyBoolean());
-    }
-    
-    @Test
     public void addingExternalIdsOnUpdateDoesNothing() {
         // Let's make sure this account has an enrollment...it should not be changed.
         mockHealthCodeAndAccountRetrieval(EMAIL, null, EXTERNAL_ID);
@@ -1838,17 +1627,6 @@ public class ParticipantServiceTest extends Mockito {
         verify(enrollmentService, never()).addEnrollment(any(), any(), anyBoolean());
         
         assertEquals(Iterables.getFirst(account.getEnrollments(), null).getExternalId(), EXTERNAL_ID);
-    }
-
-    @Test
-    public void updateParticipantWithNoExternalIdDoesNotChangeExistingId() {
-        mockHealthCodeAndAccountRetrieval(null, null, EXTERNAL_ID);
-
-        // Participant has no external ID, so externalIdService is not called
-        StudyParticipant participant = withParticipant().withExternalId(null).build();
-        participantService.updateParticipant(APP, participant);
-        verify(enrollmentService, never()).addEnrollment(any(), any(), anyBoolean());
-        assertEquals(Iterables.getFirst(account.getEnrollments(),  null).getExternalId(), EXTERNAL_ID);
     }
 
     @Test
@@ -1890,7 +1668,8 @@ public class ParticipantServiceTest extends Mockito {
     
     @Test
     public void removingExternalIdOnlyWorksForResearcher() {
-        RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(Roles.DEVELOPER)).build());
         
         mockHealthCodeAndAccountRetrieval(EMAIL, null, EXTERNAL_ID);
         StudyParticipant participant = withParticipant().build();
@@ -2092,7 +1871,8 @@ public class ParticipantServiceTest extends Mockito {
     
     @Test
     public void adminCanAddExternalIdOnCreate() {
-        RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(Roles.ADMIN)).build());
         when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
         when(participantService.generateGUID()).thenReturn(ID, HEALTH_CODE);
         
@@ -2113,7 +1893,7 @@ public class ParticipantServiceTest extends Mockito {
     public void researcherCanAddExternalIdOnCreate() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId("id")
-                .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
+                .withCallerRoles(ImmutableSet.of(Roles.RESEARCHER)).build());
         when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
         when(participantService.generateGUID()).thenReturn(ID, HEALTH_CODE);
         
@@ -2132,7 +1912,8 @@ public class ParticipantServiceTest extends Mockito {
     }
     @Test
     public void researcherCannotAddStudyIdOnUpdate() {
-        RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(Roles.RESEARCHER)).build());
         when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
         account.setId(ID);
         when(accountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
@@ -2152,7 +1933,7 @@ public class ParticipantServiceTest extends Mockito {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId("id")
                 .withCallerEnrolledStudies(ImmutableSet.of(STUDY_ID))
-                .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
+                .withCallerRoles(ImmutableSet.of(Roles.RESEARCHER)).build());
         when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
         when(participantService.generateGUID()).thenReturn(ID, HEALTH_CODE);
         
@@ -2174,7 +1955,7 @@ public class ParticipantServiceTest extends Mockito {
     public void studyResearcherCannotAddHaveNoStudyOnUpdate() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerEnrolledStudies(ImmutableSet.of(STUDY_ID))
-                .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
+                .withCallerRoles(ImmutableSet.of(Roles.RESEARCHER)).build());
         account.getEnrollments().add(Enrollment.create(TEST_APP_ID, STUDY_ID, ID));
         when(accountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
 
@@ -2288,7 +2069,7 @@ public class ParticipantServiceTest extends Mockito {
     public void requestParticipantRoster_unauthorized() throws JsonProcessingException { 
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId("id")
-                .withCallerRoles(ImmutableSet.of(WORKER)).build());
+                .withCallerRoles(ImmutableSet.of(Roles.WORKER)).build());
         ParticipantRosterRequest request = new ParticipantRosterRequest.Builder().withPassword(PASSWORD).withStudyId(STUDY_ID).build();
 
         participantService.requestParticipantRoster(APP, TEST_USER_ID, request);
@@ -2298,7 +2079,7 @@ public class ParticipantServiceTest extends Mockito {
     public void requestParticipantRoster_notStudyCoordinatorNoStudyAccess() throws JsonProcessingException {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId("id")
-                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
+                .withCallerRoles(ImmutableSet.of(Roles.STUDY_COORDINATOR))
                 .withOrgSponsoredStudies(ImmutableSet.of("study1", "study2")).build());
         ParticipantRosterRequest request = new ParticipantRosterRequest.Builder().withPassword(PASSWORD).withStudyId(STUDY_ID).build();
 
@@ -2309,7 +2090,7 @@ public class ParticipantServiceTest extends Mockito {
     public void requestParticipantRoster_studyCoordinatorWorks() throws JsonProcessingException {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId("id")
-                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
+                .withCallerRoles(ImmutableSet.of(Roles.STUDY_COORDINATOR))
                 .withOrgSponsoredStudies(ImmutableSet.of(STUDY_ID)).build());
         account.setEmail(EMAIL);
         account.setEmailVerified(TRUE);
@@ -2360,7 +2141,7 @@ public class ParticipantServiceTest extends Mockito {
     public void getParticipantHasNoteAsAdmin() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId(account.getId())
-                .withCallerRoles(ImmutableSet.of(RESEARCHER))
+                .withCallerRoles(ImmutableSet.of(Roles.RESEARCHER))
                 .build());
 
         account.setNote(TEST_NOTE);
@@ -2501,48 +2282,6 @@ public class ParticipantServiceTest extends Mockito {
         } else {
             assertNotEquals(account.getStatus(), DISABLED);
         }
-    }
-
-    private void verifyRoleCreate(Set<Roles> callerRoles, Set<Roles> rolesThatAreSet) {
-        RequestContext.set(new RequestContext.Builder().withCallerRoles(callerRoles).build());
-        
-        mockHealthCodeAndAccountRetrieval();
-        
-        StudyParticipant participant = withParticipant()
-                .withRoles(ImmutableSet.of(SUPERADMIN, ADMIN, RESEARCHER, DEVELOPER, WORKER)).build();
-        
-        participantService.createParticipant(APP, participant, false);
-        
-        verify(accountService).createAccount(eq(APP), accountCaptor.capture());
-        Account account = accountCaptor.getValue();
-        
-        if (rolesThatAreSet != null) {
-            assertEquals(account.getRoles(), rolesThatAreSet);
-        } else {
-            assertEquals(ImmutableSet.of(), account.getRoles());
-        }
-    }
-    
-    private void verifyRoleUpdate(Set<Roles> callerRoles, Set<Roles> rolesThatAreSet, Set<Roles> expected) {
-        RequestContext.set(new RequestContext.Builder().withCallerRoles(callerRoles).build());
-
-        mockHealthCodeAndAccountRetrieval();
-        
-        StudyParticipant participant = withParticipant().withRoles(rolesThatAreSet).build();
-        participantService.updateParticipant(APP, participant);
-        
-        verify(accountService).updateAccount(accountCaptor.capture());
-        Account account = accountCaptor.getValue();
-        
-        if (expected != null) {
-            assertEquals(account.getRoles(), expected);
-        } else {
-            assertEquals(ImmutableSet.of(), account.getRoles());
-        }
-    }
-    
-    private void verifyRoleUpdate(Set<Roles> callerRoles, Set<Roles> expected) {
-        verifyRoleUpdate(callerRoles, ImmutableSet.of(SUPERADMIN, ADMIN, RESEARCHER, DEVELOPER, WORKER), expected);
     }
 
     // Makes an app instance, so tests can modify it without affecting other tests.
