@@ -942,11 +942,6 @@ public class AppServiceTest extends Mockito {
         view.setScopeIds(new ArrayList<>());
         when(mockSynapseClient.getEntity(SYNAPSE_TRACKING_VIEW_ID, EntityView.class)).thenReturn(view);
 
-        // stub
-        Account idHolder = Account.create();
-        idHolder.setId("user-id");
-        when(mockAdminAccountService.createAccount(any(), any())).thenReturn(idHolder);
-
         // execute
         service.createAppAndUsers(mockAppAndUsers);
 
@@ -995,10 +990,6 @@ public class AppServiceTest extends Mockito {
         user.setRoles(ImmutableSet.of(DEVELOPER));
         List<Account> accounts = ImmutableList.of(user);
 
-        Account holder = Account.create();
-        holder.setId("user-id");
-        when(mockAdminAccountService.createAccount(any(), any())).thenReturn(holder);
-        
         AccessControlList acl = new AccessControlList();
         acl.setResourceAccess(new HashSet<>());
         
@@ -1222,8 +1213,7 @@ public class AppServiceTest extends Mockito {
         mockUser1.setEmail(TEST_USER_EMAIL);
         mockUser1.setRoles(ImmutableSet.of(Roles.RESEARCHER, Roles.DEVELOPER));
 
-        when(mockAdminAccountService.createAccount(any(), any()))
-                .thenReturn(Account.create());
+        when(mockAdminAccountService.createAccount(any(), any())).thenReturn(Account.create());
         
         AppAndUsers mockAppAndUsers = new AppAndUsers(TEST_ADMIN_IDS, app, ImmutableList.of(mockUser1));
 
