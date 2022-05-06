@@ -18,8 +18,7 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-
-import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.AppAndUsers;
 import org.sagebionetworks.client.SynapseClient;
@@ -36,8 +35,7 @@ public class AppAndUsersValidatorTest extends Mockito {
     @BeforeMethod
     public void beforeMethod() {
         MockitoAnnotations.initMocks(this);
-        validator = new AppAndUsersValidator();
-        validator.setSynapseClient(mockSynapseClient);
+        validator = new AppAndUsersValidator(mockSynapseClient);
     }
     
     @Test
@@ -52,11 +50,14 @@ public class AppAndUsersValidatorTest extends Mockito {
         app.setName("Test Name");
         app.setSponsorName("Test Sponsor Name");
         
-        StudyParticipant user1 = new StudyParticipant.Builder().withSynapseUserId("jkl")
-                .withRoles(ImmutableSet.of(DEVELOPER)).build();
-        StudyParticipant user2 = new StudyParticipant.Builder().withSynapseUserId("mno")
-                .withRoles(ImmutableSet.of(RESEARCHER)).build();
-        List<StudyParticipant> userIds = ImmutableList.of(user1, user2);
+        Account user1 = Account.create();
+        user1.setSynapseUserId("jkl");
+        user1.setRoles(ImmutableSet.of(DEVELOPER));
+        
+        Account user2 = Account.create();
+        user2.setSynapseUserId("mno");
+        user2.setRoles(ImmutableSet.of(RESEARCHER));
+        List<Account> userIds = ImmutableList.of(user1, user2);
         
         AppAndUsers model = new AppAndUsers(adminIds, app, userIds);
         Validate.entityThrowingException(validator, model);
@@ -104,8 +105,8 @@ public class AppAndUsersValidatorTest extends Mockito {
     
     @Test
     public void userSynapseUserIdNull() {
-        StudyParticipant participant = new StudyParticipant.Builder().build();
-        AppAndUsers model = new AppAndUsers(null, App.create(), ImmutableList.of(participant));
+        Account account = Account.create();
+        AppAndUsers model = new AppAndUsers(null, App.create(), ImmutableList.of(account));
         assertValidatorMessage(validator, model, "users[0].synapseUserId", "cannot be blank");
     }
     
@@ -113,8 +114,9 @@ public class AppAndUsersValidatorTest extends Mockito {
     public void userSynapseUserIdInvalid() throws SynapseException {
         when(mockSynapseClient.getUserProfile("userId")).thenThrow(new SynapseNotFoundException());
         
-        StudyParticipant participant = new StudyParticipant.Builder().withSynapseUserId("userId").build();
-        AppAndUsers model = new AppAndUsers(null, App.create(), ImmutableList.of(participant));
+        Account account = Account.create();
+        account.setSynapseUserId("userId");
+        AppAndUsers model = new AppAndUsers(null, App.create(), ImmutableList.of(account));
         assertValidatorMessage(validator, model, "users[0].synapseUserId", "is invalid");
         
         verify(mockSynapseClient).getUserProfile("userId");
@@ -122,22 +124,28 @@ public class AppAndUsersValidatorTest extends Mockito {
     
     @Test
     public void userRolesNull() {
-        StudyParticipant participant = new StudyParticipant.Builder().withRoles(null).build();
-        AppAndUsers model = new AppAndUsers(null, App.create(), ImmutableList.of(participant));
+        Account account = Account.create();
+        account.setRoles(null);
+
+        AppAndUsers model = new AppAndUsers(null, App.create(), ImmutableList.of(account));
         assertValidatorMessage(validator, model, "users[0].roles", "should have at least one role");
     }
     
     @Test
     public void userRolesEmpty() {
-        StudyParticipant participant = new StudyParticipant.Builder().withRoles(ImmutableSet.of()).build();
-        AppAndUsers model = new AppAndUsers(null, App.create(), ImmutableList.of(participant));
+        Account account = Account.create();
+        account.setRoles(ImmutableSet.of());
+        
+        AppAndUsers model = new AppAndUsers(null, App.create(), ImmutableList.of(account));
         assertValidatorMessage(validator, model, "users[0].roles", "should have at least one role");
     }
     
     @Test
     public void userRolesInvalid() {
-        StudyParticipant participant = new StudyParticipant.Builder().withRoles(ImmutableSet.of(WORKER, SUPERADMIN)).build();
-        AppAndUsers model = new AppAndUsers(null, App.create(), ImmutableList.of(participant));
+        Account account = Account.create();
+        account.setRoles(ImmutableSet.of(WORKER, SUPERADMIN));
+
+        AppAndUsers model = new AppAndUsers(null, App.create(), ImmutableList.of(account));
         assertValidatorMessage(validator, model, "users[0].roles", "can only have roles developer and/or researcher");
     }
     
