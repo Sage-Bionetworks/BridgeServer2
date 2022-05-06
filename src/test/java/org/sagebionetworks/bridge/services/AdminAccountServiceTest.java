@@ -10,7 +10,6 @@ import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
-import static org.sagebionetworks.bridge.TestConstants.ACCOUNT_ID;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
@@ -31,6 +30,7 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -185,16 +185,37 @@ public class AdminAccountServiceTest extends Mockito {
     
     @Test
     public void getAppIdsForUser() {
-        service.getAppIdsForUser(SYNAPSE_USER_ID);
-        
+        List<String> apps = ImmutableList.of("app1", "app2");
+        when(mockAccountDao.getAppIdForUser(SYNAPSE_USER_ID)).thenReturn(apps);
+
+        List<String> returnVal = service.getAppIdsForUser(SYNAPSE_USER_ID);
+        assertEquals(returnVal, apps);
         verify(mockAccountDao).getAppIdForUser(SYNAPSE_USER_ID);
     }
-    
+
     @Test(expectedExceptions = BadRequestException.class)
     public void getAppIdsForUser_noSynapseuserId() {
         service.getAppIdsForUser("  ");
     }
-    
+
+    @Test(expectedExceptions = BadRequestException.class, expectedExceptionsMessageRegExp =
+            "Account does not have a Synapse user")
+    public void getAppIdsForUser_NullSynapseUserId() {
+        service.getAppIdsForUser(null);
+    }
+
+    @Test(expectedExceptions = BadRequestException.class, expectedExceptionsMessageRegExp =
+            "Account does not have a Synapse user")
+    public void getAppIdsForUser_EmptySynapseUserId() {
+        service.getAppIdsForUser("");
+    }
+
+    @Test(expectedExceptions = BadRequestException.class, expectedExceptionsMessageRegExp =
+            "Account does not have a Synapse user")
+    public void getAppIdsForUser_BlankSynapseUserId() {
+        service.getAppIdsForUser("   ");
+    }
+
     @Test
     public void createAccount() {
         RequestContext.set(new RequestContext.Builder().withCallerOrgMembership("another-org").build());
@@ -955,31 +976,5 @@ public class AdminAccountServiceTest extends Mockito {
         assertEquals(retValue.getSynapseUserId(), SYNAPSE_USER_ID);
         
         verify(mockCacheProvider, never()).removeSessionByUserId(TEST_USER_ID);
-    }
-    
-    @Test
-    public void deleteAccount() {
-        Account account = Account.create();
-        account.setId(TEST_USER_ID);
-        
-        when(mockAccountDao.getAccount(ACCOUNT_ID))
-            .thenReturn(Optional.of(account));
-        
-        service.deleteAccount(TEST_APP_ID, TEST_USER_ID);
-        
-        verify(mockAccountDao).deleteAccount(TEST_USER_ID);
-        verify(mockCacheProvider).removeSessionByUserId(TEST_USER_ID);
-        verify(mockRequestInfoService).removeRequestInfo(TEST_USER_ID);
-    }
-
-    @Test
-    public void deleteAccount_accountNotFound() {
-        when(mockAccountDao.getAccount(any())).thenReturn(Optional.empty());
-        
-        service.deleteAccount(TEST_APP_ID, TEST_USER_ID);
-        
-        verify(mockAccountDao, never()).deleteAccount(any());
-        verify(mockCacheProvider, never()).removeSessionByUserId(TEST_USER_ID);
-        verify(mockRequestInfoService, never()).removeRequestInfo(TEST_USER_ID);
     }
 }

@@ -122,133 +122,43 @@ public class ParticipantService {
     static final String DOWNLOAD_ROSTER_SERVICE_TITLE = "DownloadParticipantRosterWorker";
     static final String APP_INSTALL_URL_KEY = "appInstallUrl";
 
+    @Autowired
     private AccountService accountService;
-
+    @Autowired
     private SmsService smsService;
-
+    @Autowired
     private SubpopulationService subpopService;
-
+    @Autowired
     private ConsentService consentService;
-    
+    @Autowired
     private RequestInfoService requestInfoService;
-
+    @Autowired
     private ScheduledActivityDao activityDao;
-
+    @Autowired
     private UploadService uploadService;
-
+    @Autowired
     private NotificationsService notificationsService;
-
+    @Autowired
     private ScheduledActivityService scheduledActivityService;
-
+    @Autowired
     private ActivityEventService activityEventService;
-
+    @Autowired
     private AccountWorkflowService accountWorkflowService;
-    
+    @Autowired
     private StudyService studyService;
-    
+    @Autowired
     private OrganizationService organizationService;
-    
+    @Autowired
     private EnrollmentService enrollmentService;
-
+    @Autowired
     private BridgeConfig bridgeConfig;
-
+    @Autowired
     private AmazonSQS sqsClient;
-    
+    @Autowired
     private TemplateService templateService;
-    
+    @Autowired
     private SendMailService sendMailService;
 
-    @Autowired
-    final void setAccountWorkflowService(AccountWorkflowService accountWorkflowService) {
-        this.accountWorkflowService = accountWorkflowService;
-    }
-    
-    @Autowired
-    void setAccountService(AccountService accountService) {
-        this.accountService = accountService;
-    }
-
-    /** SMS Service, used to send text messages to participants. */
-    @Autowired
-    void setSmsService(SmsService smsService) {
-        this.smsService = smsService;
-    }
-
-    @Autowired
-    void setSubpopulationService(SubpopulationService subpopService) {
-        this.subpopService = subpopService;
-    }
-
-    @Autowired
-    void setUserConsent(ConsentService consentService) {
-        this.consentService = consentService;
-    }
-
-    @Autowired
-    void setScheduledActivityDao(ScheduledActivityDao activityDao) {
-        this.activityDao = activityDao;
-    }
-
-    @Autowired
-    void setUploadService(UploadService uploadService) {
-        this.uploadService = uploadService;
-    }
-
-    @Autowired
-    void setNotificationsService(NotificationsService notificationsService) {
-        this.notificationsService = notificationsService;
-    }
-
-    @Autowired
-    void setScheduledActivityService(ScheduledActivityService scheduledActivityService) {
-        this.scheduledActivityService = scheduledActivityService;
-    }
-
-    @Autowired
-    final void setActivityEventService(ActivityEventService activityEventService) {
-        this.activityEventService = activityEventService;
-    }
-
-    @Autowired
-    final void setStudyService(StudyService studyService) {
-        this.studyService = studyService;
-    }
-    
-    @Autowired
-    final void setRequestInfoService(RequestInfoService requestInfoService) {
-        this.requestInfoService = requestInfoService;
-    }
-    
-    @Autowired
-    final void setOrganizationService(OrganizationService organizationService) {
-        this.organizationService = organizationService;
-    }
-    
-    @Autowired
-    final void setEnrollmentService(EnrollmentService enrollmentService) {
-        this.enrollmentService = enrollmentService;
-    }
-
-    @Autowired
-    final void setBridgeConfig(BridgeConfig bridgeConfig) {
-        this.bridgeConfig = bridgeConfig;
-    }
-
-    @Autowired
-    final void setSqsClient(AmazonSQS sqsClient) {
-        this.sqsClient = sqsClient;
-    }
-    
-    @Autowired
-    final void setTemplateService(TemplateService templateService) {
-        this.templateService = templateService;
-    }
-
-    @Autowired
-    final void setSendMailService(SendMailService sendMailService) {
-        this.sendMailService = sendMailService;
-    }
-    
     // Accessor so we can mock the value
     protected DateTime getInstallDateTime() {
         return new DateTime();
