@@ -300,11 +300,8 @@ public class AccountsControllerTest extends Mockito {
         doReturn(session).when(controller).getAuthenticatedSession(ORG_ADMIN);
         
         account.setOrgMembership(TEST_ORG_ID);
+        account.setId(TEST_USER_ID);
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
-        
-        Account existing = Account.create();
-        existing.setOrgMembership(TEST_ORG_ID);
-        when(mockAdminAccountService.getAccount(TEST_APP_ID, TEST_USER_ID)).thenReturn(Optional.of(existing));
 
         StatusMessage retValue = controller.deleteAccount(TEST_USER_ID);
         assertEquals(retValue.getMessage(), "Member account deleted.");

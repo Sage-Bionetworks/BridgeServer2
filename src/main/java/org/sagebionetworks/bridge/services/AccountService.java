@@ -13,7 +13,6 @@ import static org.sagebionetworks.bridge.BridgeUtils.collectStudyIds;
 import static org.sagebionetworks.bridge.dao.AccountDao.MIGRATION_VERSION;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ENROLLMENT;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -21,7 +20,6 @@ import java.util.function.Function;
 
 import com.google.common.collect.Sets;
 
-import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.RequestContext;
@@ -32,7 +30,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.ObjectUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.AccountDao;
-import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
@@ -78,17 +75,6 @@ public class AccountService {
     // Provided to override in tests
     protected String generateGUID() {
         return BridgeUtils.generateGuid();
-    }
-    
-    /**
-     * Search for all accounts across apps that have the same Synapse user ID in common, 
-     * and return a list of the app IDs where these accounts are found.
-     */
-    public List<String> getAppIdsForUser2(String synapseUserId) {
-        if (StringUtils.isBlank(synapseUserId)) {
-            throw new BadRequestException("Account does not have a Synapse user");
-        }
-        return accountDao.getAppIdForUser(synapseUserId);
     }
     
     /**
