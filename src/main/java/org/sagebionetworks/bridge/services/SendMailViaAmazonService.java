@@ -27,9 +27,7 @@ import org.springframework.stereotype.Component;
 
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.AmazonServiceException;
-import com.amazonaws.regions.Region;
-import com.amazonaws.regions.Regions;
-import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClient;
+import com.amazonaws.services.simpleemail.AmazonSimpleEmailService;
 import com.amazonaws.services.simpleemail.model.RawMessage;
 import com.amazonaws.services.simpleemail.model.SendRawEmailRequest;
 import com.amazonaws.services.simpleemail.model.SendRawEmailResult;
@@ -39,14 +37,13 @@ import com.google.common.base.Charsets;
 public class SendMailViaAmazonService implements SendMailService {
 
     private static final Logger logger = LoggerFactory.getLogger(SendMailViaAmazonService.class);
-    private static final Region REGION = Region.getRegion(Regions.US_EAST_1);
     public static final String UNVERIFIED_EMAIL_ERROR = "Bridge cannot send email until you verify Amazon SES can send using your app's support email address";
 
-    private AmazonSimpleEmailServiceClient emailClient;
+    private AmazonSimpleEmailService emailClient;
     private EmailVerificationService emailVerificationService;
 
     @Autowired
-    final void setEmailClient(AmazonSimpleEmailServiceClient emailClient) {
+    final void setEmailClient(AmazonSimpleEmailService emailClient) {
         this.emailClient = emailClient;
     }
     @Autowired
@@ -103,7 +100,6 @@ public class SendMailViaAmazonService implements SendMailService {
         SendRawEmailRequest req = new SendRawEmailRequest(sesRawMessage);
         req.setSource(senderEmail);
         req.setDestinations(Collections.singleton(recipient));
-        emailClient.setRegion(REGION);
         SendRawEmailResult result = emailClient.sendRawEmail(req);
 
         logger.info("Sent email to SES with messageID " + result.getMessageId() + " with type " +

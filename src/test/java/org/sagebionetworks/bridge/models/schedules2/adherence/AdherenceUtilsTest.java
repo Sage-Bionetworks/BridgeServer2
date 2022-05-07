@@ -194,7 +194,7 @@ public class AdherenceUtilsTest {
         // This is admittedly a random selection of cases, I don't have anything systematic
         // in mind here.
         return new Object[][] {
-            dataRow(0,  createEventStream(0, NOT_YET_AVAILABLE, NOT_YET_AVAILABLE)),
+            dataRow(100,createEventStream(0, NOT_YET_AVAILABLE, NOT_YET_AVAILABLE)),
             dataRow(100,createEventStream(0, COMPLETED, COMPLETED),
                         createEventStream(1, COMPLETED, COMPLETED)),
             dataRow(0,  createEventStream(0, EXPIRED, NOT_YET_AVAILABLE)),
@@ -206,7 +206,7 @@ public class AdherenceUtilsTest {
                         createEventStream(0, NOT_APPLICABLE, NOT_APPLICABLE)),
             dataRow(50, createEventStream(0, COMPLETED, null),
                         createEventStream(2, EXPIRED, null)),
-            dataRow(14, createEventStream(0, EXPIRED, null),
+            dataRow(20, createEventStream(0, EXPIRED, null),
                         createEventStream(1, EXPIRED, COMPLETED),
                         createEventStream(2, UNSTARTED, UNSTARTED),
                         createEventStream(3, NOT_YET_AVAILABLE, NOT_YET_AVAILABLE)),
@@ -222,7 +222,7 @@ public class AdherenceUtilsTest {
             dataRow(33, createEventStream(0, COMPLETED, DECLINED),
                         createEventStream(1, COMPLETED, DECLINED),
                         createEventStream(2, STARTED, UNSTARTED)),
-            dataRow(28, createEventStream(0, ABANDONED, COMPLETED),
+            dataRow(33, createEventStream(0, ABANDONED, COMPLETED),
                         createEventStream(1, COMPLETED, EXPIRED),
                         createEventStream(2, STARTED, UNSTARTED),
                         createEventStream(3, NOT_YET_AVAILABLE, null),
@@ -233,26 +233,25 @@ public class AdherenceUtilsTest {
     private static Object[] dataRow(int expectedPercentage, EventStream... streams) {
         return new Object[] { expectedPercentage, ImmutableList.copyOf(streams) };
     }
-
     
     @Test(dataProvider = "progressStates")
     public void calculateProgress(ParticipantStudyProgress expectedProgress, AdherenceState state, List<EventStream> eventStreams) {
         ParticipantStudyProgress retValue = AdherenceUtils.calculateProgress(state, eventStreams);
         assertEquals(retValue, expectedProgress);
     }
+    
+    @Test
+    public void calculateProgress_noSchedule() {
+        List<EventStream> streams = ImmutableList.of(createEventStream(0, null, null) );
+        AdherenceState state = new AdherenceState.Builder().withNow(STARTED_ON).build();
+        
+        ParticipantStudyProgress retValue = AdherenceUtils.calculateProgress(state, streams);
+        assertEquals(retValue, ParticipantStudyProgress.UNSTARTED);
+    }
 
     @DataProvider(name = "progressStates")
     public static Object[] progressStates() {
         return new Object[][] {
-            progressDataRow(false, 
-                    ParticipantStudyProgress.NO_SCHEDULE, 
-                    createEventStream(0, NOT_YET_AVAILABLE, NOT_YET_AVAILABLE)),
-            // Even if there are completed records, if there are no timeline records,
-            // then we don't measure progress because there's no schedule. We have
-            // nothing against which to measure the progress.
-            progressDataRow(false, 
-                    ParticipantStudyProgress.NO_SCHEDULE, 
-                    createEventStream(0, COMPLETED, DECLINED)),
             progressDataRow(true, 
                     ParticipantStudyProgress.UNSTARTED, 
                     createEventStream(0, NOT_APPLICABLE, NOT_APPLICABLE)),

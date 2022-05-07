@@ -20,11 +20,11 @@ import javax.annotation.Nullable;
 import javax.annotation.Resource;
 
 import com.amazonaws.HttpMethod;
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
 import org.joda.time.DateTime;
@@ -72,7 +72,6 @@ public class UploadService {
     private AmazonS3 s3Client;
     private String uploadBucket;
     private UploadDao uploadDao;
-    private UploadSessionCredentialsService uploadCredentailsService;
     private UploadDedupeDao uploadDedupeDao;
     private UploadValidationService uploadValidationService;
 
@@ -124,11 +123,6 @@ public class UploadService {
     @Autowired
     final void setUploadDedupeDao(UploadDedupeDao uploadDedupeDao) {
         this.uploadDedupeDao = uploadDedupeDao;
-    }
-
-    @Autowired
-    public void setUploadSessionCredentialsService(UploadSessionCredentialsService uploadCredentialsService) {
-        this.uploadCredentailsService = uploadCredentialsService;
     }
 
     /** Service handler for upload validation. This is configured by Spring. */
@@ -212,10 +206,6 @@ public class UploadService {
         final Date expiration = DateTime.now(DateTimeZone.UTC).toDate();
         expiration.setTime(expiration.getTime() + EXPIRATION);
         presignedUrlRequest.setExpiration(expiration);
-
-        // Temporary session credentials
-        AWSStaticCredentialsProvider credentialsProvider = new AWSStaticCredentialsProvider(uploadCredentailsService.getSessionCredentials());
-        presignedUrlRequest.setRequestCredentialsProvider(credentialsProvider);
 
         // Ask for server-side encryption
         presignedUrlRequest.addRequestParameter(SERVER_SIDE_ENCRYPTION, AES_256_SERVER_SIDE_ENCRYPTION);
@@ -404,7 +394,7 @@ public class UploadService {
     }
 
     public void uploadComplete(String appId, UploadCompletionClient completedBy, Upload upload,
-            boolean redrive) {
+            boolean redrive) throws JsonProcessingException {
         String uploadId = upload.getUploadId();
 
         // We don't want to kick off upload validation on an upload that already has upload validation.

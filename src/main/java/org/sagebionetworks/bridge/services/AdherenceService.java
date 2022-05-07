@@ -26,6 +26,7 @@ import static org.sagebionetworks.bridge.models.ResourceList.TIME_WINDOW_GUIDS;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ASSESSMENT;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.SESSION;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventType.FINISHED;
+import static org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantStudyProgress.UNSTARTED;
 import static org.sagebionetworks.bridge.validators.AdherenceRecordListValidator.INSTANCE;
 
 import java.util.HashMap;
@@ -52,6 +53,7 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.AdherenceReportSearch;
 import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountRef;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
@@ -83,6 +85,7 @@ import org.slf4j.LoggerFactory;
 public class AdherenceService {
     private static final Logger LOG = LoggerFactory.getLogger(AdherenceService.class);
     
+    static final StudyReportWeek EMPTY_WEEK = new StudyReportWeek();
     static final String THRESHOLD_OUT_OF_RANGE_ERROR = "Adherence threshold must be from 1-100.";
     static final String NO_THRESHOLD_VALUE_ERROR = "An adherence threshold value must be supplied in the request or set as a study default.";
 
@@ -95,6 +98,8 @@ public class AdherenceService {
     private StudyActivityEventService studyActivityEventService;
     
     private Schedule2Service scheduleService;
+    
+    private RequestInfoService requestInfoService;
     
     @Autowired
     final void setAdherenceRecordDao(AdherenceRecordDao recordDao) {
@@ -119,6 +124,11 @@ public class AdherenceService {
     @Autowired
     final void setSchedule2Service(Schedule2Service scheduleService) {
         this.scheduleService = scheduleService;
+    }
+    
+    @Autowired
+    final void setRequestInfoService(RequestInfoService requestInfoService) {
+        this.requestInfoService = requestInfoService;
     }
     
     protected DateTime getDateTime() {
@@ -421,25 +431,35 @@ public class AdherenceService {
 
     protected WeeklyAdherenceReport deriveWeeklyAdherenceFromStudyReportWeek(String studyId, Account account,
             StudyAdherenceReport report) {
+        
         WeeklyAdherenceReport weeklyReport = new WeeklyAdherenceReport();
         weeklyReport.setAppId(account.getAppId());
         weeklyReport.setStudyId(studyId);
         weeklyReport.setUserId(account.getId());
         weeklyReport.setParticipant(report.getParticipant());
-        weeklyReport.setProgression(report.getProgression());
         weeklyReport.setTestAccount(report.isTestAccount());
         weeklyReport.setClientTimeZone(report.getClientTimeZone());
         weeklyReport.setCreatedOn(report.getCreatedOn());
         
-        StudyReportWeek week = report.getWeekReport();
-        weeklyReport.setSearchableLabels(week.getSearchableLabels());
-        weeklyReport.setRows(week.getRows());
-        weeklyReport.setByDayEntries(week.getByDayEntries());
-        weeklyReport.setWeeklyAdherencePercent(week.getAdherencePercent());
-        weeklyReport.setWeekInStudy(week.getWeekInStudy());
-        weeklyReport.setStartDate(week.getStartDate());
-        if (week.getRows().isEmpty()) {
-            weeklyReport.setNextActivity(report.getNextActivity());    
+        RequestInfo info = requestInfoService.getRequestInfo(account.getId());
+        if (info == null || info.getSignedInOn() == null) {
+            // Pad out this report so it is similar to reports that have no current active
+            // tasks for the participant.
+            weeklyReport.setProgression(UNSTARTED);
+            weeklyReport.setRows(EMPTY_WEEK.getRows());
+            weeklyReport.setByDayEntries(EMPTY_WEEK.getByDayEntries());
+        } else {
+            weeklyReport.setProgression(report.getProgression());
+            StudyReportWeek week = report.getWeekReport();
+            weeklyReport.setSearchableLabels(week.getSearchableLabels());
+            weeklyReport.setRows(week.getRows());
+            weeklyReport.setByDayEntries(week.getByDayEntries());
+            weeklyReport.setWeeklyAdherencePercent(week.getAdherencePercent());
+            weeklyReport.setWeekInStudy(week.getWeekInStudy());
+            weeklyReport.setStartDate(week.getStartDate());
+            if (week.getRows().isEmpty()) {
+                weeklyReport.setNextActivity(report.getNextActivity());    
+            }
         }
         reportDao.saveWeeklyAdherenceReport(weeklyReport);
         return weeklyReport;
@@ -472,7 +492,7 @@ public class AdherenceService {
         
         Study study = studyService.getStudy(appId, studyId, true);
         if (study.getScheduleGuid() == null) {
-            return func.apply(builder.build());
+            throw new EntityNotFoundException(Schedule2.class);
         }
         List<TimelineMetadata> metadata = scheduleService.getScheduleMetadata(study.getScheduleGuid());
 
@@ -502,7 +522,7 @@ public class AdherenceService {
         
         Study study = studyService.getStudy(appId, studyId, true);
         
-        scheduleService.getScheduleForStudy(appId, study)
+        scheduleService.getScheduleForStudy(appId, studyId)
             .orElseThrow(() -> new EntityNotFoundException(Schedule2.class));
         
         if (adherenceThreshold == null) {

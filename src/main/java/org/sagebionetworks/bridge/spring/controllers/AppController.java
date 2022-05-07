@@ -7,7 +7,7 @@ import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.models.apps.App.APP_LIST_WRITER;
-import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
+import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -50,6 +50,7 @@ import org.sagebionetworks.bridge.models.apps.SynapseProjectIdTeamIdHolder;
 import org.sagebionetworks.bridge.models.upload.UploadView;
 import org.sagebionetworks.bridge.services.EmailVerificationService;
 import org.sagebionetworks.bridge.services.EmailVerificationStatus;
+import org.sagebionetworks.bridge.services.AdminAccountService;
 import org.sagebionetworks.bridge.services.AppEmailType;
 import org.sagebionetworks.bridge.services.UploadCertificateService;
 import org.sagebionetworks.bridge.services.UploadService;
@@ -74,27 +75,18 @@ public class AppController extends BaseController {
     private final Set<String> appWhitelist = Collections
             .unmodifiableSet(new HashSet<>(BridgeConfigFactory.getConfig().getPropertyAsList("app.whitelist")));
 
+    @Autowired
     private UploadCertificateService uploadCertificateService;
 
+    @Autowired
     private EmailVerificationService emailVerificationService;
 
+    @Autowired
     private UploadService uploadService;
-
-    @Autowired
-    final void setUploadCertificateService(UploadCertificateService uploadCertificateService) {
-        this.uploadCertificateService = uploadCertificateService;
-    }
-
-    @Autowired
-    final void setEmailVerificationService(EmailVerificationService emailVerificationService) {
-        this.emailVerificationService = emailVerificationService;
-    }
-
-    @Autowired
-    final void setUploadService(UploadService uploadService) {
-        this.uploadService = uploadService;
-    }
     
+    @Autowired
+    private AdminAccountService adminAccountService;
+
     // To enable mocking of values.
     Set<String> getAppWhitelist() {
         return appWhitelist;
@@ -141,7 +133,7 @@ public class AppController extends BaseController {
      * records. This call filters out "deleted" (inactive) apps by default, but these
      * can be included for administrative views.
      */
-    @GetMapping(path = {"/v1/apps", "/v3/studies"}, produces={APPLICATION_JSON_UTF8_VALUE})
+    @GetMapping(path = {"/v1/apps", "/v3/studies"}, produces={APPLICATION_JSON_VALUE})
     public String getAllApps(@RequestParam(required = false) String format,
             @RequestParam(required = false) String summary,
             @RequestParam(required = false) String includeDeleted) throws Exception {        
@@ -169,7 +161,7 @@ public class AppController extends BaseController {
     }
     
     @GetMapping(path = { "/v1/apps/memberships", "/v3/studies/memberships" }, produces = {
-            APPLICATION_JSON_UTF8_VALUE })
+            APPLICATION_JSON_VALUE})
     public String getAppMemberships() throws Exception {   
         UserSession session = getAuthenticatedSession();
         
@@ -185,7 +177,7 @@ public class AppController extends BaseController {
             stream = appService.getApps().stream().filter(s -> s.isActive());
         } else {
             // Otherwise, apps are linked by Synapse user ID.
-            List<String> appIds = accountService
+            List<String> appIds = adminAccountService
                     .getAppIdsForUser(session.getParticipant().getSynapseUserId());
             stream = appIds.stream()
                 .map(id -> appService.getApp(id))

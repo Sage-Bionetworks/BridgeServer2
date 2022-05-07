@@ -82,7 +82,7 @@ public class HibernateStudyTest {
         assertTrue(study.isDeleted());
         assertEquals(study.getPhase(), DESIGN);
         assertEquals(study.getStudyLogoUrl(), TEST_LINK);
-        assertEquals(study.getVersion(), Long.valueOf(10L));
+        assertEquals(study.getVersion(), 10L);
         assertEquals(study.getScheduleGuid(), "scheduleGuid");
     }
     
@@ -181,7 +181,7 @@ public class HibernateStudyTest {
         assertEquals(deser.getLogoGuid(), GUID);
         assertEquals(deser.getStudyTimeZone(), "America/Los_Angeles");
         assertEquals(deser.getAdherenceThresholdPercentage(), Integer.valueOf(80));
-        assertEquals(deser.getVersion(), new Long(3));
+        assertEquals(deser.getVersion(), 3L);
         assertEquals(deser.getCustomEvents().get(0).getEventId(), "event1");
         assertEquals(deser.getCustomEvents().get(0).getUpdateType(), IMMUTABLE);
         

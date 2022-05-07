@@ -6,6 +6,9 @@ import static org.sagebionetworks.bridge.BridgeConstants.NOT_SYNAPSE_AUTHENTICAT
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
+import static org.sagebionetworks.bridge.Roles.WORKER;
+import static org.sagebionetworks.bridge.TestConstants.EMAIL;
+import static org.sagebionetworks.bridge.TestConstants.PASSWORD;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.REQUIRED_SIGNED_CURRENT;
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
@@ -13,11 +16,15 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_CONTEXT;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
+import static org.sagebionetworks.bridge.TestUtils.assertAccept;
+import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
+import static org.sagebionetworks.bridge.TestUtils.assertGet;
 import static org.sagebionetworks.bridge.TestUtils.assertPost;
 import static org.sagebionetworks.bridge.TestUtils.createJson;
 import static org.sagebionetworks.bridge.TestUtils.getStudyParticipant;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
+import static org.sagebionetworks.bridge.config.Environment.LOCAL;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
@@ -89,6 +96,7 @@ import org.sagebionetworks.bridge.models.oauth.OAuthAuthorizationToken;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.AccountWorkflowService;
+import org.sagebionetworks.bridge.services.AdminAccountService;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.AppService;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
@@ -129,6 +137,9 @@ public class AuthenticationControllerTest extends Mockito {
     
     @Mock
     AccountService mockAccountService;
+    
+    @Mock
+    AdminAccountService mockAdminAccountService;
     
     @Mock
     AppService mockAppService;
@@ -217,6 +228,25 @@ public class AuthenticationControllerTest extends Mockito {
     public void verifyAnnotations() throws Exception {
         assertCrossOrigin(AuthenticationController.class);
         assertPost(AuthenticationController.class, "oauthSignIn");
+        assertPost(AuthenticationController.class, "signInForSuperAdmin");
+        assertAccept(AuthenticationController.class, "requestEmailSignIn");
+        assertAccept(AuthenticationController.class, "requestPhoneSignIn");
+        assertPost(AuthenticationController.class, "emailSignIn");
+        assertPost(AuthenticationController.class, "phoneSignIn");
+        assertPost(AuthenticationController.class, "signIn");
+        assertPost(AuthenticationController.class, "reauthenticate");
+        assertPost(AuthenticationController.class, "signInV3");
+        assertPost(AuthenticationController.class, "signOut");
+        assertGet(AuthenticationController.class, "signOutGet");
+        assertPost(AuthenticationController.class, "signOutV4");
+        assertCreate(AuthenticationController.class, "signUp");
+        assertPost(AuthenticationController.class, "verifyEmail");
+        assertAccept(AuthenticationController.class, "resendEmailVerification");
+        assertPost(AuthenticationController.class, "verifyPhone");
+        assertAccept(AuthenticationController.class, "resendPhoneVerification");
+        assertAccept(AuthenticationController.class, "requestResetPassword");
+        assertPost(AuthenticationController.class, "resetPassword");
+        assertPost(AuthenticationController.class, "changeApp");
     }
     
     @Test
@@ -1360,7 +1390,7 @@ public class AuthenticationControllerTest extends Mockito {
         userSession.setSynapseAuthenticated(true);
         doReturn(userSession).when(controller).getAuthenticatedSession();
         
-        when(mockAccountService.getAppIdsForUser(SYNAPSE_USER_ID))
+        when(mockAdminAccountService.getAppIdsForUser(SYNAPSE_USER_ID))
             .thenReturn(ImmutableList.of(TEST_APP_ID));
         
         App newApp = App.create();
@@ -1386,6 +1416,55 @@ public class AuthenticationControllerTest extends Mockito {
         when(mockAppService.getApp("my-new-study")).thenReturn(newApp);
 
         controller.changeApp();
+    }
+    
+    @Test
+    public void signInForSuperadmin() throws Exception {
+        StudyParticipant participant = new StudyParticipant.Builder().withId(TEST_USER_ID)
+                .withRoles(ImmutableSet.of(SUPERADMIN)).withEmail(EMAIL).build();
+        userSession.setParticipant(participant);
+        
+        // This will use "api" which is hard-coded in the method, not the TEST_APP_ID
+        when(mockAppService.getApp(BridgeConstants.API_APP_ID)).thenReturn(app);
+        
+        // Set environment to local in order to test that cookies are set
+        when(mockConfig.getEnvironment()).thenReturn(LOCAL);
+        when(mockConfig.get("domain")).thenReturn("localhost");
+
+        SignIn signIn = new SignIn.Builder().withAppId(TEST_APP_ID).withEmail(EMAIL)
+                .withPassword(PASSWORD).build();
+        mockRequestBody(mockRequest, signIn);
+
+        when(mockAuthService.signIn(eq(app), any(CriteriaContext.class), signInCaptor.capture()))
+                .thenReturn(userSession);
+
+        JsonNode result = controller.signInForSuperAdmin();
+        assertEquals(result.get("email").textValue(), EMAIL); // it's the session
+
+        // This isn't in the session that is returned to the user, but verify it has been changed
+        assertEquals(signInCaptor.getValue().getAppId(), BridgeConstants.API_APP_ID);
+    }
+
+    @Test
+    public void signInForAdminNotASuperAdmin() throws Exception {
+        SignIn signIn = new SignIn.Builder().withAppId(TEST_APP_ID).withEmail(EMAIL)
+                .withPassword("password").build();
+        mockRequestBody(mockRequest, signIn);
+        
+        // This will use "api" which is hard-coded in the method, not the TEST_APP_ID
+        when(mockAppService.getApp(BridgeConstants.API_APP_ID)).thenReturn(app);
+
+        // But this person is actually a worker, not an admin
+        userSession.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(WORKER)).build());
+        when(mockAuthService.signIn(eq(app), any(CriteriaContext.class), signInCaptor.capture()))
+                .thenReturn(userSession);
+
+        try {
+            controller.signInForSuperAdmin();
+            fail("Should have thrown exception");
+        } catch (UnauthorizedException e) {
+        }
+        verify(mockAuthService).signOut(userSession);
     }
     
     private void mockResetPasswordRequest() throws Exception {

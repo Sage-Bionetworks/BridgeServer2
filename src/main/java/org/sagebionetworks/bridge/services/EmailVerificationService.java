@@ -27,7 +27,7 @@ import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 
-import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClient;
+import com.amazonaws.services.simpleemail.AmazonSimpleEmailService;
 import com.amazonaws.services.simpleemail.model.GetIdentityVerificationAttributesRequest;
 import com.amazonaws.services.simpleemail.model.GetIdentityVerificationAttributesResult;
 import com.amazonaws.services.simpleemail.model.IdentityVerificationAttributes;
@@ -51,7 +51,7 @@ public class EmailVerificationService {
 
     // dependent services
     private ExecutorService asyncExecutorService;
-    private AmazonSimpleEmailServiceClient sesClient;
+    private AmazonSimpleEmailService sesClient;
     private CacheProvider cacheProvider;
 
     // Most SES administrative calls are throttled to 1 call per second.
@@ -73,7 +73,7 @@ public class EmailVerificationService {
     }
 
     @Resource(name="sesClient")
-    final void setAmazonSimpleEmailServiceClient(AmazonSimpleEmailServiceClient sesClient) {
+    final void setAmazonSimpleEmailServiceClient(AmazonSimpleEmailService sesClient) {
         this.sesClient = sesClient;
     }
 

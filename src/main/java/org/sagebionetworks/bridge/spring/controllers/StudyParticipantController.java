@@ -9,6 +9,7 @@ import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_PARTICIPANT_REPORTS;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeUtils.addToSet;
 import static org.sagebionetworks.bridge.BridgeUtils.getDateTimeOrDefault;
+import static org.sagebionetworks.bridge.BridgeUtils.isValidTimeZoneID;
 import static org.sagebionetworks.bridge.BridgeUtils.participantEligibleForDeletion;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
@@ -21,7 +22,7 @@ import static org.sagebionetworks.bridge.models.schedules2.timelines.Scheduler.I
 import static org.sagebionetworks.bridge.models.sms.SmsType.PROMOTIONAL;
 import static org.springframework.http.HttpStatus.NOT_MODIFIED;
 import static org.springframework.http.HttpStatus.OK;
-import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
+import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 import java.util.List;
 import java.util.Set;
@@ -45,6 +46,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
@@ -84,7 +86,6 @@ import org.sagebionetworks.bridge.services.ReportService;
 import org.sagebionetworks.bridge.services.Schedule2Service;
 import org.sagebionetworks.bridge.services.StudyActivityEventService;
 import org.sagebionetworks.bridge.services.StudyService;
-import org.sagebionetworks.bridge.services.UserAdminService;
 import org.sagebionetworks.bridge.spring.util.EtagSupport;
 import org.sagebionetworks.bridge.spring.util.EtagCacheKey;
 import org.sagebionetworks.bridge.services.AccountWorkflowService;
@@ -117,8 +118,6 @@ public class StudyParticipantController extends BaseController {
 
     private ParticipantService participantService;
     
-    private UserAdminService userAdminService;
-    
     private EnrollmentService enrollmentService;
     
     private StudyActivityEventService studyActivityEventService;
@@ -136,11 +135,6 @@ public class StudyParticipantController extends BaseController {
         this.participantService = participantService;
     }
     
-    @Autowired
-    final void setUserAdminService(UserAdminService userAdminService) {
-        this.userAdminService = userAdminService;
-    }
-
     @Autowired
     final void setEnrollmentService(EnrollmentService enrollmentService) {
         this.enrollmentService = enrollmentService;
@@ -193,14 +187,13 @@ public class StudyParticipantController extends BaseController {
                 .withTimelineAccessedOn(timelineRequestedOn).build();
         requestInfoService.updateRequestInfo(requestInfo);
         
-        Study study = studyService.getStudy(session.getAppId(), studyId, true);
         DateTime modifiedSince = modifiedSinceHeader();
         DateTime modifiedOn = modifiedOn(session.getAppId(), studyId);
         
         if (isUpToDate(modifiedSince, modifiedOn)) {
             return new ResponseEntity<>(NOT_MODIFIED);
         }
-        Schedule2 schedule = scheduleService.getScheduleForStudy(session.getAppId(), study)
+        Schedule2 schedule = scheduleService.getScheduleForStudy(session.getAppId(), studyId)
                 .orElseThrow(() -> new EntityNotFoundException(Schedule2.class));
         cacheProvider.setObject(scheduleModificationTimestamp(session.getAppId(), studyId), schedule.getModifiedOn().toString());
         
@@ -290,28 +283,37 @@ public class StudyParticipantController extends BaseController {
         @EtagCacheKey(model=Schedule2.class, keys={"appId", "studyId"}),
         // Most recent modification to the participant’s collection of events
         @EtagCacheKey(model=StudyActivityEvent.class, keys={"userId"}),
-        // Most recent modification to the participant’s time zone
-        @EtagCacheKey(model=DateTimeZone.class, keys={"userId"})
+        // Most recent modification to the participant’s time zone.
+        @EtagCacheKey(model=DateTimeZone.class, keys={"userId"}, invalidateCacheOnChange="clientTimeZone")
     })
     @GetMapping("/v5/studies/{studyId}/participants/self/schedule")
-    public ParticipantSchedule getParticipantScheduleForSelf(@PathVariable String studyId) {
+    public ParticipantSchedule getParticipantScheduleForSelf(@PathVariable String studyId,
+            @RequestParam(defaultValue = "false") String clientTimeZone) {
         UserSession session = getAuthenticatedAndConsentedSession();
         
         // This produces the desired error (unauthorized rather than 404)
         if (!session.getParticipant().getStudyIds().contains(studyId)) {
             throw new UnauthorizedException("Caller is not enrolled in study '" + studyId + "'");
         }
+        if (!isValidTimeZoneID(clientTimeZone, true)) {
+            throw new BadRequestException("clientTimeZone parameter is required");
+        }
+        
         AccountId accountId = AccountId.forId(session.getAppId(), session.getId());
         Account account = accountService.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
-        
+
+        if (!clientTimeZone.equals(session.getParticipant().getClientTimeZone())) {
+            accountService.editAccount(accountId, (acct) -> acct.setClientTimeZone(clientTimeZone));
+            sessionUpdateService.updateClientTimeZone(session, clientTimeZone);
+        }
+        account.setClientTimeZone(clientTimeZone);
+
         // Even if the call fails, we want to know they tried it
         DateTime timelineRequestedOn = getDateTime();
         RequestInfo requestInfo = getRequestInfoBuilder(session)
                 .withTimelineAccessedOn(timelineRequestedOn).build();
         requestInfoService.updateRequestInfo(requestInfo);
-        
-        ParticipantSchedule schedule = scheduleService.getParticipantSchedule(session.getAppId(), studyId, account);
 
         studyActivityEventService.publishEvent(new StudyActivityEvent.Builder()
                 .withAppId(session.getAppId())
@@ -319,8 +321,7 @@ public class StudyParticipantController extends BaseController {
                 .withUserId(session.getId())
                 .withObjectType(TIMELINE_RETRIEVED)
                 .withTimestamp(timelineRequestedOn).build(), false, true);
-
-        return schedule;
+        return scheduleService.getParticipantSchedule(session.getAppId(), studyId, account);
     }
     
     @GetMapping("/v5/studies/{studyId}/participants/{userId}/enrollments")
@@ -368,7 +369,7 @@ public class StudyParticipantController extends BaseController {
     }
 
     @GetMapping(path="/v5/studies/{studyId}/participants/{userId}", 
-            produces={APPLICATION_JSON_UTF8_VALUE})
+            produces={APPLICATION_JSON_VALUE})
     public String getParticipant(@PathVariable String studyId, @PathVariable String userId,
             @RequestParam(defaultValue = "true") boolean consents) throws Exception {
         UserSession session = getAdministrativeSession();
@@ -394,7 +395,7 @@ public class StudyParticipantController extends BaseController {
     }
     
     @GetMapping(path = "/v5/studies/{studyId}/participants/{userId}/requestInfo", produces = {
-            APPLICATION_JSON_UTF8_VALUE })
+            APPLICATION_JSON_VALUE })
     public String getRequestInfo(@PathVariable String studyId, @PathVariable String userId) throws JsonProcessingException {
         UserSession session = getAdministrativeSession();
         Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
@@ -569,8 +570,7 @@ public class StudyParticipantController extends BaseController {
         if (!participantEligibleForDeletion(requestInfoService, account)) {
             throw new UnauthorizedException("Account is not a test account or it is already in use.");
         }
-        App app = appService.getApp(session.getAppId());
-        userAdminService.deleteUser(app, account.getId());
+        accountService.deleteAccount(AccountId.forId(session.getAppId(), account.getId()));
         return DELETE_MSG;
     }    
     

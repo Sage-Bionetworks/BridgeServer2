@@ -1155,8 +1155,7 @@ public class AccountWorkflowServiceTest extends Mockito {
         
         service.resendVerification(ChannelType.EMAIL, TEST_APP_ID, TEST_USER_ID);
         
-        AccountId accountId = AccountId.forId(TEST_APP_ID, TEST_USER_ID);
-        verify(service).resendVerificationToken(ChannelType.EMAIL, accountId);
+        verify(service).resendVerificationToken(ChannelType.EMAIL, ACCOUNT_ID);
     }
     
     @Test
@@ -1165,8 +1164,7 @@ public class AccountWorkflowServiceTest extends Mockito {
         
         service.resendVerification(ChannelType.PHONE, TEST_APP_ID, TEST_USER_ID);
         
-        AccountId accountId = AccountId.forId(TEST_APP_ID, TEST_USER_ID);
-        verify(service).resendVerificationToken(ChannelType.PHONE, accountId);
+        verify(service).resendVerificationToken(ChannelType.PHONE, ACCOUNT_ID);
     }
     
     @Test(expectedExceptions = UnsupportedOperationException.class)

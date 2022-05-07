@@ -33,8 +33,7 @@ import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 
-import com.amazonaws.regions.Region;
-import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClient;
+import com.amazonaws.services.simpleemail.AmazonSimpleEmailService;
 import com.amazonaws.services.simpleemail.model.SendRawEmailRequest;
 import com.amazonaws.services.simpleemail.model.SendRawEmailResult;
 import com.google.common.base.Charsets;
@@ -52,7 +51,7 @@ public class SendMailViaAmazonServiceConsentTest {
     private static final StudyParticipant PARTICIPANT = new StudyParticipant.Builder()
             .withEmail("test-user@sagebase.org").withEmailVerified(true).build();;
     private SendMailViaAmazonService service;
-    private AmazonSimpleEmailServiceClient emailClient;
+    private AmazonSimpleEmailService emailClient;
     private AppService appService;
     private StudyConsentService studyConsentService;
     private EmailVerificationService emailVerificationService;
@@ -80,7 +79,7 @@ public class SendMailViaAmazonServiceConsentTest {
         appService = mock(AppService.class);
         when(appService.getApp(app.getIdentifier())).thenReturn(app);
         
-        emailClient = mock(AmazonSimpleEmailServiceClient.class);
+        emailClient = mock(AmazonSimpleEmailService.class);
         argument = ArgumentCaptor.forClass(SendRawEmailRequest.class);
 
         service = new SendMailViaAmazonService();
@@ -122,7 +121,6 @@ public class SendMailViaAmazonServiceConsentTest {
                 .withRecipientEmail("test-user@sagebase.org").build();
         service.sendEmail(provider);
 
-        verify(emailClient).setRegion(any(Region.class));
         verify(emailClient).sendRawEmail(argument.capture());
 
         // validate from
@@ -164,7 +162,6 @@ public class SendMailViaAmazonServiceConsentTest {
         
         service.sendEmail(provider);
 
-        verify(emailClient).setRegion(any(Region.class));
         verify(emailClient).sendRawEmail(argument.capture());
 
         // validate from

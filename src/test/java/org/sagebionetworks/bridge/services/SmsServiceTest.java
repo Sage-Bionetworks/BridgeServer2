@@ -16,7 +16,7 @@ import static org.testng.Assert.assertTrue;
 
 import java.util.List;
 
-import com.amazonaws.services.sns.AmazonSNSClient;
+import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.model.CheckIfPhoneNumberIsOptedOutRequest;
 import com.amazonaws.services.sns.model.CheckIfPhoneNumberIsOptedOutResult;
 import com.amazonaws.services.sns.model.OptInPhoneNumberRequest;
@@ -77,7 +77,7 @@ public class SmsServiceTest {
     private SmsMessageDao mockMessageDao;
     private ParticipantService mockParticipantService;
     private UploadSchemaService mockSchemaService;
-    private AmazonSNSClient mockSnsClient;
+    private AmazonSNS mockSnsClient;
     private App app;
     private SmsService svc;
 
@@ -95,7 +95,7 @@ public class SmsServiceTest {
                 SmsService.MESSAGE_LOG_SCHEMA_REV)).thenReturn(UploadSchema.create());
 
         // Mock SMS providers.
-        mockSnsClient = mock(AmazonSNSClient.class);
+        mockSnsClient = mock(AmazonSNS.class);
         when(mockSnsClient.publish(any())).thenReturn(new PublishResult().withMessageId(MESSAGE_ID));
 
         // Mock app service. This is only used to get the app short name.

@@ -93,6 +93,22 @@ public class BridgeUtilsTest extends Mockito {
     }
     
     @Test
+    public void isValidTimeZoneID_optional() {
+        assertTrue(BridgeUtils.isValidTimeZoneID(null, false));
+        assertFalse(BridgeUtils.isValidTimeZoneID("", false));
+        assertFalse(BridgeUtils.isValidTimeZoneID("Some value", false));
+        assertTrue(BridgeUtils.isValidTimeZoneID("America/Chicago", false));
+    }
+    
+    @Test
+    public void isValidTimeZoneID_required() {
+        assertFalse(BridgeUtils.isValidTimeZoneID(null, true));
+        assertFalse(BridgeUtils.isValidTimeZoneID("", true));
+        assertFalse(BridgeUtils.isValidTimeZoneID("Some value", true));
+        assertTrue(BridgeUtils.isValidTimeZoneID("America/Chicago", true));
+    }
+    
+    @Test
     public void localDateInRange() {
         LocalDate start = LocalDate.parse("2022-02-10");
         LocalDate end = LocalDate.parse("2022-02-17");

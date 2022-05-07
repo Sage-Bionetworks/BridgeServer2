@@ -4,6 +4,7 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.CLEAR_SITE_DATA_HEADER;
 import static org.sagebionetworks.bridge.BridgeConstants.CLEAR_SITE_DATA_VALUE;
 import static org.sagebionetworks.bridge.BridgeConstants.NOT_SYNAPSE_AUTHENTICATED;
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.APP_ACCESS_EXCEPTION_MSG;
 import static org.sagebionetworks.bridge.BridgeConstants.APP_ID_PROPERTY;
 import static org.sagebionetworks.bridge.BridgeConstants.STUDY_PROPERTY;
@@ -59,6 +60,33 @@ public class AuthenticationController extends BaseController {
     @Autowired
     final void setAccountWorkflowService(AccountWorkflowService accountWorkflowService) {
         this.accountWorkflowService = accountWorkflowService;
+    }
+    
+    @PostMapping("/v3/auth/admin/signIn")
+    public JsonNode signInForSuperAdmin() {
+        SignIn originSignIn = parseJson(SignIn.class);
+        
+        // Adjust the sign in so it is always done against the API app.
+        SignIn signIn = new SignIn.Builder().withSignIn(originSignIn)
+                .withAppId(API_APP_ID).build();        
+        
+        App app = appService.getApp(signIn.getAppId());
+        CriteriaContext context = getCriteriaContext(app.getIdentifier());
+
+        // We do not check consent, but do verify this is an administrator
+        UserSession session = authenticationService.signIn(app, context, signIn);
+
+        if (!session.isInRole(SUPERADMIN)) {
+            authenticationService.signOut(session);
+            throw new UnauthorizedException("Not a superadmin account");
+        }
+        
+        // Now act as if the user is in the app that was requested
+        sessionUpdateService.updateApp(session, originSignIn.getAppId());
+        request().setAttribute("CreatedUserSession", session);
+        updateRequestInfoFromSession(session);
+        
+        return UserSessionInfo.toJSON(session);
     }
 
     @PostMapping("/v3/auth/email")

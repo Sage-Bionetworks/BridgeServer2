@@ -82,6 +82,16 @@ public class SessionUpdateServiceTest {
     }
     
     @Test
+    public void updateClientTimeZone() {
+        UserSession session = new UserSession();
+        
+        service.updateClientTimeZone(session, "America/Chicago");
+        
+        verify(mockCacheProvider).setUserSession(session);
+        assertEquals(session.getParticipant().getClientTimeZone(), "America/Chicago");
+    }
+    
+    @Test
     public void updateLanguage() {
         // Mock consent service to return dummy consents.
         when(mockConsentService.getConsentStatuses(any())).thenReturn(CONSENT_STATUS_MAP);

@@ -4,6 +4,7 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.ORG_ID;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_MEMBERS;
+import static org.sagebionetworks.bridge.BridgeUtils.isValidTimeZoneID;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_EMAIL_ERROR;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_PHONE_ERROR;
@@ -13,17 +14,15 @@ import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateJsonLength;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateStringLength;
 
-import java.time.DateTimeException;
-import java.time.ZoneId;
-
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
-
+import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.apps.App;
@@ -32,8 +31,11 @@ import org.sagebionetworks.bridge.models.organizations.Organization;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.OrganizationService;
 import org.sagebionetworks.bridge.services.StudyService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class StudyParticipantValidator implements Validator {
+    private static final Logger LOG = LoggerFactory.getLogger(StudyParticipantValidator.class);
 
     private final StudyService studyService;
     private final OrganizationService organizationService;
@@ -57,6 +59,17 @@ public class StudyParticipantValidator implements Validator {
     public void validate(Object object, Errors errors) {
         StudyParticipant participant = (StudyParticipant)object;
         
+        // This is an intermediary step to outright preventing these values from 
+        // being supplied via our participant APIs (such accounts should be managed
+        // through the /v1/accounts APIs for administrative accounts).
+        if (StringUtils.isNotBlank(participant.getOrgMembership())) {
+            LOG.warn("Study participant created with an org membership by caller "
+                    + RequestContext.get().getCallerUserId());
+        }
+        if (!participant.getRoles().isEmpty()) {
+            LOG.warn("Study participant created with roles by caller "
+                    + RequestContext.get().getCallerUserId());
+        }
         if (isNew) {
             if (!ValidatorUtils.participantHasValidIdentifier(participant)) {
                 errors.reject("email, phone, synapseUserId or externalId is required");
@@ -139,12 +152,8 @@ public class StudyParticipantValidator implements Validator {
                 validateStringLength(errors, 255, attributeValue,"attributes["+attributeName+"]");
             }
         }
-        if (participant.getClientTimeZone() != null) {
-            try {
-                ZoneId.of(participant.getClientTimeZone());
-            } catch (DateTimeException e) {
-                errors.rejectValue("clientTimeZone", INVALID_TIME_ZONE);
-            }
+        if (!isValidTimeZoneID(participant.getClientTimeZone(), false)) {
+            errors.rejectValue("clientTimeZone", INVALID_TIME_ZONE);
         }
         validateStringLength(errors, 255, participant.getEmail(), "email");
         validateStringLength(errors, 255, participant.getFirstName(), "firstName");

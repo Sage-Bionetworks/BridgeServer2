@@ -17,7 +17,7 @@ import org.sagebionetworks.bridge.models.apps.MimeType;
 import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 
-import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClient;
+import com.amazonaws.services.simpleemail.AmazonSimpleEmailService;
 import com.amazonaws.services.simpleemail.model.SendRawEmailResult;
 
 public class SendMailViaAmazonServiceTest {
@@ -30,7 +30,7 @@ public class SendMailViaAmazonServiceTest {
     private App app;
     
     @Mock
-    private AmazonSimpleEmailServiceClient emailClient;
+    private AmazonSimpleEmailService emailClient;
     
     @Mock
     private EmailVerificationService emailVerificationService;

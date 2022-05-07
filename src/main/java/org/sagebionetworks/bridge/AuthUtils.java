@@ -28,6 +28,14 @@ import org.sagebionetworks.bridge.models.studies.Enrollment;
  * All methods throw UnauthorizedException if they fail.
  */
 public class AuthUtils {
+
+    /**
+     * The calling account is an admin, it is in the same organization as the target account,
+     * or it is the caller’s own account.
+     */
+    public static final AuthEvaluator CAN_EDIT_ADMINS = new AuthEvaluator().isSelf().or()
+            .isInOrg().or()
+            .hasAnyRole(ADMIN);
     
     /**
      * Calling account is only a developer, and thus should only have access to test
@@ -285,7 +293,7 @@ public class AuthUtils {
     }
     
     /**
-     * To access an individual account, one of these conditions must hold true:
+     * To access an individual participant, one of these conditions must hold true:
      * 
      * 1) it's the caller's account;
      * 2) the account is enrolled in a study and the caller is a researcher;

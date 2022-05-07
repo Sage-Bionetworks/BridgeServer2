@@ -201,10 +201,6 @@ public class StudyActivityEventServiceTest extends Mockito {
                 .withTimestamp(ENROLLMENT_TS).withObjectType(CUSTOM)
                 .withUpdateType(MUTABLE).build();        
         
-        Study study = Study.create();
-        study.setAppId(TEST_APP_ID);
-        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
-
         StudyBurst burst = new StudyBurst();
         burst.setOriginEventId("custom:foo");
         burst.setIdentifier("foo");
@@ -215,7 +211,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         Schedule2 schedule = new Schedule2();
         schedule.setStudyBursts(ImmutableList.of(burst));
         
-        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study))
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID))
                 .thenReturn(Optional.of(schedule));
         
         StudyActivityEvent persistedEvent = new StudyActivityEvent();
@@ -342,10 +338,6 @@ public class StudyActivityEventServiceTest extends Mockito {
         when(mockDao.getRecentStudyActivityEvent(TEST_USER_ID, TEST_STUDY_ID, "study_burst:foo:01")).thenReturn(PERSISTED_EVENT);
         when(mockDao.getRecentStudyActivityEvent(TEST_USER_ID, TEST_STUDY_ID, "study_burst:foo:02")).thenReturn(PERSISTED_EVENT);
         
-        Study study = Study.create();
-        study.setAppId(TEST_APP_ID);
-        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
-
         StudyBurst burst = new StudyBurst();
         burst.setOriginEventId(ENROLLMENT_FIELD);
         burst.setIdentifier("foo");
@@ -356,7 +348,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         Schedule2 schedule = new Schedule2();
         schedule.setStudyBursts(ImmutableList.of(burst));
         
-        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study))
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID))
                 .thenReturn(Optional.of(schedule));
         
         try {
@@ -374,10 +366,6 @@ public class StudyActivityEventServiceTest extends Mockito {
         StudyActivityEvent event = makeBuilder().withObjectId(ENROLLMENT_FIELD)
                 .withTimestamp(ENROLLMENT_TS).withObjectType(ENROLLMENT).build();
 
-        Study study = Study.create();
-        study.setAppId(TEST_APP_ID);
-        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
-
         StudyBurst burst = new StudyBurst();
         burst.setOriginEventId(ENROLLMENT_FIELD);
         burst.setIdentifier("foo");
@@ -388,7 +376,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         Schedule2 schedule = new Schedule2();
         schedule.setStudyBursts(ImmutableList.of(burst));
         
-        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study))
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID))
                 .thenReturn(Optional.of(schedule));
         
         // The existence of the first event will be enough to throw an error
@@ -410,10 +398,6 @@ public class StudyActivityEventServiceTest extends Mockito {
                 .withClientTimeZone("America/Los_Angeles")
                 .build();        
         
-        Study study = Study.create();
-        study.setAppId(TEST_APP_ID);
-        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
-
         StudyBurst burst = new StudyBurst();
         burst.setOriginEventId(ENROLLMENT_FIELD);
         burst.setIdentifier("foo");
@@ -425,7 +409,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         Schedule2 schedule = new Schedule2();
         schedule.setStudyBursts(ImmutableList.of(burst));
         
-        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study))
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID))
                 .thenReturn(Optional.of(schedule));
         
         service.publishEvent(event, false, true);
@@ -468,10 +452,6 @@ public class StudyActivityEventServiceTest extends Mockito {
                 .withClientTimeZone("America/Los_Angeles")
                 .build();        
         
-        Study study = Study.create();
-        study.setAppId(TEST_APP_ID);
-        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
-
         StudyBurst burst = new StudyBurst();
         burst.setOriginEventId(ENROLLMENT_FIELD);
         burst.setIdentifier("foo");
@@ -482,7 +462,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         Schedule2 schedule = new Schedule2();
         schedule.setStudyBursts(ImmutableList.of(burst));
         
-        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study))
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID))
                 .thenReturn(Optional.of(schedule));
         
         service.publishEvent(event, false, true);
@@ -516,10 +496,6 @@ public class StudyActivityEventServiceTest extends Mockito {
         StudyActivityEvent event = makeBuilder().withObjectType(ASSESSMENT).withObjectId("foo").withEventType(FINISHED)
                 .withTimestamp(ENROLLMENT_TS.plusDays(1)).build();
 
-        Study study = Study.create();
-        study.setAppId(TEST_APP_ID);
-        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
-
         StudyBurst burst = new StudyBurst();
         burst.setOriginEventId("assessment:foo:finished");
         burst.setIdentifier("foo");
@@ -530,7 +506,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         Schedule2 schedule = new Schedule2();
         schedule.setStudyBursts(ImmutableList.of(burst));
         
-        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study))
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID))
                 .thenReturn(Optional.of(schedule));
         
         when(mockDao.getRecentStudyActivityEvent(TEST_USER_ID, TEST_STUDY_ID, "assessment:foo:finished"))
@@ -549,10 +525,6 @@ public class StudyActivityEventServiceTest extends Mockito {
         StudyActivityEvent event = makeBuilder().withObjectType(ASSESSMENT).withObjectId("foo").withEventType(FINISHED)
                 .withTimestamp(ENROLLMENT_TS.plusDays(1)).build();
 
-        Study study = Study.create();
-        study.setAppId(TEST_APP_ID);
-        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
-
         StudyBurst burst = new StudyBurst();
         burst.setOriginEventId("assessment:foo:finished");
         burst.setIdentifier("foo");
@@ -563,7 +535,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         Schedule2 schedule = new Schedule2();
         schedule.setStudyBursts(ImmutableList.of(burst));
         
-        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study))
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID))
                 .thenReturn(Optional.of(schedule));
         
         service.publishEvent(event, false, false);
@@ -580,17 +552,13 @@ public class StudyActivityEventServiceTest extends Mockito {
                 .withClientTimeZone("America/Los_Angeles")
                 .build();        
         
-        Study study = Study.create();
-        study.setAppId(TEST_APP_ID);
-        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
-
         StudyBurst burst = new StudyBurst();
         burst.setOriginEventId("some-other-field");
 
         Schedule2 schedule = new Schedule2();
         schedule.setStudyBursts(ImmutableList.of(burst));
         
-        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study))
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID))
                 .thenReturn(Optional.of(schedule));
         
         service.publishEvent(event, false, true);
@@ -640,10 +608,6 @@ public class StudyActivityEventServiceTest extends Mockito {
         when(mockDao.getRecentStudyActivityEvent(any(), any(), eq(ENROLLMENT_FIELD)))
             .thenReturn(PERSISTED_EVENT);
         
-        Study study = Study.create();
-        study.setAppId(TEST_APP_ID);
-        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
-
         StudyBurst burst = new StudyBurst();
         burst.setOriginEventId(ENROLLMENT_FIELD);
         burst.setIdentifier("foo");
@@ -655,7 +619,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         Schedule2 schedule = new Schedule2();
         schedule.setStudyBursts(ImmutableList.of(burst));
         
-        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study))
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID))
                 .thenReturn(Optional.of(schedule));
         
         service.publishEvent(event, false, true);
@@ -673,10 +637,6 @@ public class StudyActivityEventServiceTest extends Mockito {
         when(mockDao.getRecentStudyActivityEvent(any(), any(), eq(ENROLLMENT_FIELD)))
             .thenReturn(PERSISTED_EVENT);
         
-        Study study = Study.create();
-        study.setAppId(TEST_APP_ID);
-        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
-
         StudyBurst burst = new StudyBurst();
         burst.setOriginEventId(ENROLLMENT_FIELD);
         burst.setIdentifier("foo");
@@ -688,7 +648,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         Schedule2 schedule = new Schedule2();
         schedule.setStudyBursts(ImmutableList.of(burst));
         
-        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study))
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID))
                 .thenReturn(Optional.of(schedule));
         
         when(mockDao.getRecentStudyActivityEvent(any(), any(), eq("study_burst:foo:01")))
@@ -742,10 +702,6 @@ public class StudyActivityEventServiceTest extends Mockito {
         when(mockDao.getRecentStudyActivityEvent(TEST_USER_ID, TEST_STUDY_ID, "custom:event1"))
             .thenReturn(persistedEvent);
 
-        Study study = Study.create();
-        study.setAppId(TEST_APP_ID);
-        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
-
         StudyBurst burst = new StudyBurst();
         burst.setOriginEventId("custom:event1");
         burst.setIdentifier("foo");
@@ -755,7 +711,8 @@ public class StudyActivityEventServiceTest extends Mockito {
 
         Schedule2 schedule = new Schedule2();
         schedule.setStudyBursts(ImmutableList.of(burst));
-        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study)).thenReturn(Optional.of(schedule));
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID))
+            .thenReturn(Optional.of(schedule));
 
         StudyActivityEvent persistedBurst = null;
         if (burstPersisted) {
@@ -1043,5 +1000,27 @@ public class StudyActivityEventServiceTest extends Mockito {
         assertEquals(retValue.getItems().size(), 1);
         assertEquals(retValue.getTotal(), Integer.valueOf(1));
         assertEquals(retValue.getItems().get(0).getTimestamp(), CREATED_ON); // not modifiedOn
+    }
+    
+    // BRIDGE-3179
+    @Test
+    public void getRecentStudyActivityEvents_noDuplicationError() {
+        Account account = Account.create();
+        account.setAppId(TEST_APP_ID);
+        account.setHealthCode(HEALTH_CODE);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
+        
+        StudyActivityEvent event = new StudyActivityEvent.Builder().withEventId(CREATED_ON_FIELD)
+                .withTimestamp(CREATED_ON).build();        
+        when(mockDao.getRecentStudyActivityEvents(TEST_USER_ID, TEST_STUDY_ID))
+                .thenReturn(Lists.newArrayList(event));
+        
+        // This ALSO returns created_on, so ignore it and the MODIFIED_ON timestamp (this really happens)
+        Map<String, DateTime> map = ImmutableMap.of(CREATED_ON_FIELD, MODIFIED_ON); // it should ignore this value
+        when(mockActivityEventService.getActivityEventMap(TEST_APP_ID, HEALTH_CODE)).thenReturn(map);
+        
+        ResourceList<StudyActivityEvent> list = service.getRecentStudyActivityEvents(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+        assertEquals(list.getItems().size(), 1);
+        assertEquals(list.getItems().get(0).getTimestamp(), CREATED_ON);
     }
 }

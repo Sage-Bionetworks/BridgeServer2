@@ -36,7 +36,7 @@ import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
-import com.amazonaws.services.sns.AmazonSNSClient;
+import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.model.CreatePlatformEndpointRequest;
 import com.amazonaws.services.sns.model.CreatePlatformEndpointResult;
 import com.amazonaws.services.sns.model.DeleteEndpointRequest;
@@ -65,7 +65,7 @@ public class DynamoNotificationRegistrationDaoTest {
     DynamoDBMapper mockMapper;
     
     @Mock
-    AmazonSNSClient mockSnsClient;
+    AmazonSNS mockSnsClient;
     
     @Mock
     CreatePlatformEndpointResult mockCreatePlatformEndpointResult;

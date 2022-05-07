@@ -62,6 +62,7 @@ import com.google.common.collect.ImmutableSet;
 import org.joda.time.DateTime;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -76,6 +77,7 @@ import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
@@ -123,9 +125,10 @@ import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.services.ReportService;
 import org.sagebionetworks.bridge.services.RequestInfoService;
 import org.sagebionetworks.bridge.services.Schedule2Service;
+import org.sagebionetworks.bridge.services.SessionUpdateService;
 import org.sagebionetworks.bridge.services.StudyActivityEventService;
 import org.sagebionetworks.bridge.services.StudyService;
-import org.sagebionetworks.bridge.services.UserAdminService;
+import org.sagebionetworks.bridge.services.IntegrationTestUserService;
 
 public class StudyParticipantControllerTest extends Mockito {
     @Mock
@@ -135,7 +138,7 @@ public class StudyParticipantControllerTest extends Mockito {
     ParticipantService mockParticipantService;
     
     @Mock
-    UserAdminService mockUserAdminService;
+    IntegrationTestUserService mockUserManagementService;
     
     @Mock
     EnrollmentService mockEnrollmentService;
@@ -169,6 +172,9 @@ public class StudyParticipantControllerTest extends Mockito {
     
     @Mock
     ReportService mockReportService;
+    
+    @Mock
+    SessionUpdateService mockSessionUpdateService;
     
     @Mock
     HttpServletRequest mockRequest;
@@ -1211,7 +1217,7 @@ public class StudyParticipantControllerTest extends Mockito {
         StatusMessage retValue = controller.deleteTestOrUnusedParticipant(TEST_STUDY_ID, TEST_USER_ID);
         assertEquals(retValue.getMessage(), "User deleted.");
         
-        verify(mockUserAdminService).deleteUser(app, TEST_USER_ID);
+        verify(mockAccountService).deleteAccount(AccountId.forId(TEST_APP_ID, TEST_USER_ID));
     }    
     
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -1280,17 +1286,12 @@ public class StudyParticipantControllerTest extends Mockito {
                 .withStudyIds(ImmutableSet.of(TEST_STUDY_ID)).build());
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
             
-        Study study = Study.create();
-        study.setIdentifier(TEST_STUDY_ID);
-        study.setScheduleGuid(SCHEDULE_GUID);
-        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
-        
         when(mockCacheProvider.getObject(
                 scheduleModificationTimestamp(TEST_APP_ID, TEST_STUDY_ID), String.class)).thenReturn(MODIFIED_ON.toString());
         
         Schedule2 schedule = new Schedule2();
         schedule.setModifiedOn(MODIFIED_ON);
-        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study)).thenReturn(Optional.of(schedule));
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(Optional.of(schedule));
         
         when(controller.getDateTime()).thenReturn(CREATED_ON);
         
@@ -1298,9 +1299,8 @@ public class StudyParticipantControllerTest extends Mockito {
         assertEquals(retValue.getStatusCodeValue(), 200);
         assertTrue(retValue.getBody() instanceof Timeline);
         
-        verify(mockStudyService).getStudy(TEST_APP_ID, TEST_STUDY_ID, true);
         verify(mockCacheProvider).setObject(scheduleModificationTimestamp(TEST_APP_ID, TEST_STUDY_ID), MODIFIED_ON.toString());
-        verify(mockScheduleService).getScheduleForStudy(TEST_APP_ID, study);
+        verify(mockScheduleService).getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID);
         
         verify(mockRequestInfoService).updateRequestInfo(requestInfoCaptor.capture());
         assertEquals(requestInfoCaptor.getValue().getTimelineAccessedOn(), CREATED_ON); 
@@ -1330,7 +1330,7 @@ public class StudyParticipantControllerTest extends Mockito {
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class,
-            expectedExceptionsMessageRegExp = "Study not found.")
+            expectedExceptionsMessageRegExp = "Schedule not found.")
     public void getTimelineForSelf_studyNotFound() {
         session.setParticipant(new StudyParticipant.Builder()
                 .withStudyIds(ImmutableSet.of(TEST_STUDY_ID)).build());
@@ -1350,25 +1350,19 @@ public class StudyParticipantControllerTest extends Mockito {
         // It has been modified
         doReturn(MODIFIED_ON.minusMinutes(1).toString()).when(mockRequest).getHeader("If-Modified-Since");
             
-        Study study = Study.create();
-        study.setIdentifier(TEST_STUDY_ID);
-        study.setScheduleGuid(SCHEDULE_GUID);
-        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
-        
         // But no value from cache, it'll have to load the schedule
         
         Schedule2 schedule = new Schedule2();
         schedule.setModifiedOn(MODIFIED_ON);
-        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study)).thenReturn(Optional.of(schedule));
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(Optional.of(schedule));
         
         ResponseEntity<Timeline> retValue = controller.getTimelineForSelf(TEST_STUDY_ID);
         assertEquals(retValue.getStatusCodeValue(), 200);
         assertTrue(retValue.getBody() instanceof Timeline);
         
-        verify(mockStudyService).getStudy(TEST_APP_ID, TEST_STUDY_ID, true);
         verify(mockCacheProvider).getObject(scheduleModificationTimestamp(TEST_APP_ID, TEST_STUDY_ID), String.class);
         verify(mockCacheProvider).setObject(scheduleModificationTimestamp(TEST_APP_ID, TEST_STUDY_ID), MODIFIED_ON.toString());
-        verify(mockScheduleService).getScheduleForStudy(TEST_APP_ID, study);
+        verify(mockScheduleService).getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID);
     }
     
     @Test
@@ -1380,27 +1374,21 @@ public class StudyParticipantControllerTest extends Mockito {
         // It has been modified
         doReturn(MODIFIED_ON.minusMinutes(1).toString()).when(mockRequest).getHeader("If-Modified-Since");
             
-        Study study = Study.create();
-        study.setIdentifier(TEST_STUDY_ID);
-        study.setScheduleGuid(SCHEDULE_GUID);
-        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
-        
         when(mockCacheProvider.getObject(scheduleModificationTimestamp(TEST_APP_ID, TEST_STUDY_ID), 
                 String.class)).thenReturn(MODIFIED_ON.toString());
         
         Schedule2 schedule = new Schedule2();
         // just make this different so we can verify this is set
         schedule.setModifiedOn(CREATED_ON); 
-        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study)).thenReturn(Optional.of(schedule));
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(Optional.of(schedule));
         
         ResponseEntity<Timeline> retValue = controller.getTimelineForSelf(TEST_STUDY_ID);
         assertEquals(retValue.getStatusCodeValue(), 200);
         assertTrue(retValue.getBody() instanceof Timeline);
         
-        verify(mockStudyService).getStudy(TEST_APP_ID, TEST_STUDY_ID, true);
         verify(mockCacheProvider).getObject(scheduleModificationTimestamp(TEST_APP_ID, TEST_STUDY_ID), String.class);
         verify(mockCacheProvider).setObject(scheduleModificationTimestamp(TEST_APP_ID, TEST_STUDY_ID), CREATED_ON.toString());
-        verify(mockScheduleService).getScheduleForStudy(TEST_APP_ID, study);
+        verify(mockScheduleService).getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID);
     }
     
     @Test
@@ -1411,27 +1399,21 @@ public class StudyParticipantControllerTest extends Mockito {
         
         doReturn(MODIFIED_ON.toString()).when(mockRequest).getHeader("If-Modified-Since");
             
-        Study study = Study.create();
-        study.setIdentifier(TEST_STUDY_ID);
-        study.setScheduleGuid(SCHEDULE_GUID);
-        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
-        
         when(mockCacheProvider.getObject(scheduleModificationTimestamp(TEST_APP_ID, TEST_STUDY_ID), 
                 String.class)).thenReturn(MODIFIED_ON.toString());
         
         Schedule2 schedule = new Schedule2();
         // just make this different so we can verify this is set
         schedule.setModifiedOn(CREATED_ON); 
-        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study)).thenReturn(Optional.of(schedule));
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(Optional.of(schedule));
 
         ResponseEntity<Timeline> retValue = controller.getTimelineForSelf(TEST_STUDY_ID);
         assertEquals(retValue.getStatusCodeValue(), 200);
         assertTrue(retValue.getBody() instanceof Timeline);
         
-        verify(mockStudyService).getStudy(TEST_APP_ID, TEST_STUDY_ID, true);
         verify(mockCacheProvider).getObject(scheduleModificationTimestamp(TEST_APP_ID, TEST_STUDY_ID), String.class);
         verify(mockCacheProvider).setObject(scheduleModificationTimestamp(TEST_APP_ID, TEST_STUDY_ID), CREATED_ON.toString());
-        verify(mockScheduleService).getScheduleForStudy(TEST_APP_ID, study);
+        verify(mockScheduleService).getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID);
     }
     
     @Test
@@ -1442,21 +1424,15 @@ public class StudyParticipantControllerTest extends Mockito {
         
         doReturn(MODIFIED_ON.toString()).when(mockRequest).getHeader("If-Modified-Since");
 
-        Study study = Study.create();
-        study.setIdentifier(TEST_STUDY_ID);
-        study.setScheduleGuid(SCHEDULE_GUID);
-        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
-        
         Schedule2 schedule = new Schedule2();
         schedule.setModifiedOn(MODIFIED_ON);
-        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study)).thenReturn(Optional.of(schedule));
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(Optional.of(schedule));
         
         ResponseEntity<Timeline> retValue = controller.getTimelineForSelf(TEST_STUDY_ID);
         assertEquals(retValue.getStatusCodeValue(), 200);
         assertTrue(retValue.getBody() instanceof Timeline);
         
-        verify(mockStudyService).getStudy(TEST_APP_ID, TEST_STUDY_ID, true);
-        verify(mockScheduleService).getScheduleForStudy(TEST_APP_ID, study);
+        verify(mockScheduleService).getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID);
         verify(mockCacheProvider).getObject(scheduleModificationTimestamp(TEST_APP_ID, TEST_STUDY_ID), String.class);
     }
     
@@ -1478,13 +1454,12 @@ public class StudyParticipantControllerTest extends Mockito {
         
         Schedule2 schedule = new Schedule2();
         schedule.setModifiedOn(MODIFIED_ON);
-        when(mockScheduleService.getScheduleForStudy(TEST_STUDY_ID, study)).thenReturn(Optional.of(schedule));
+        when(mockScheduleService.getScheduleForStudy(TEST_STUDY_ID, TEST_STUDY_ID)).thenReturn(Optional.of(schedule));
         
         ResponseEntity<Timeline> retValue = controller.getTimelineForSelf(TEST_STUDY_ID);
         assertEquals(retValue.getStatusCodeValue(), 304);
         assertNull(retValue.getBody());
         
-        verify(mockStudyService).getStudy(TEST_APP_ID, TEST_STUDY_ID, true);
         verify(mockScheduleService, never()).getScheduleForStudy(any(), any());
         verify(mockCacheProvider).getObject(scheduleModificationTimestamp(TEST_APP_ID, TEST_STUDY_ID), String.class);
     }
@@ -1499,21 +1474,15 @@ public class StudyParticipantControllerTest extends Mockito {
         doReturn(MODIFIED_ON.minusMinutes(1).toString()).when(mockRequest).getHeader("If-Modified-Since");
         doReturn(CREATED_ON).when(controller).getDateTime();
 
-        Study study = Study.create();
-        study.setIdentifier(TEST_STUDY_ID);
-        study.setScheduleGuid(SCHEDULE_GUID);
-        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
-        
         Schedule2 schedule = new Schedule2();
         schedule.setModifiedOn(MODIFIED_ON);
-        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study)).thenReturn(Optional.of(schedule));
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(Optional.of(schedule));
         
         ResponseEntity<Timeline> retValue = controller.getTimelineForSelf(TEST_STUDY_ID);
         assertEquals(retValue.getStatusCodeValue(), 200);
         assertTrue(retValue.getBody() instanceof Timeline);
         
-        verify(mockStudyService).getStudy(TEST_APP_ID, TEST_STUDY_ID, true);
-        verify(mockScheduleService).getScheduleForStudy(TEST_APP_ID, study);
+        verify(mockScheduleService).getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID);
         verify(mockCacheProvider).getObject(scheduleModificationTimestamp(TEST_APP_ID, TEST_STUDY_ID), String.class);
         verify(mockStudyActivityEventService).publishEvent(eventCaptor.capture(), eq(false), eq(true));
         StudyActivityEvent event = eventCaptor.getValue();
@@ -1994,7 +1963,11 @@ public class StudyParticipantControllerTest extends Mockito {
     }
     
     @Test
-    public void getParticipantScheduleForSelf() {
+    public void getParticipantScheduleForSelf_newTimeZone() {
+        // Order of operations matters here
+        InOrder ordered = inOrder(mockRequestInfoService, mockScheduleService, mockAccountService, 
+                mockSessionUpdateService, mockStudyActivityEventService);        
+        
         session.setParticipant(new StudyParticipant.Builder()
                 .withId(TEST_USER_ID).withStudyIds(ImmutableSet.of(TEST_STUDY_ID)).build());
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
@@ -2006,20 +1979,76 @@ public class StudyParticipantControllerTest extends Mockito {
         when(mockScheduleService.getParticipantSchedule(
                 eq(TEST_APP_ID), eq(TEST_STUDY_ID), any())).thenReturn(schedule);
         
-        ParticipantSchedule retValue = controller.getParticipantScheduleForSelf(TEST_STUDY_ID);
-        assertSame(retValue, schedule);
+        Account mockAccount = mock(Account.class);
+        TestUtils.mockEditAccount(mockAccountService, mockAccount);
         
-        verify(mockRequestInfoService).updateRequestInfo(requestInfoCaptor.capture());
+        ParticipantSchedule retValue = controller.getParticipantScheduleForSelf(TEST_STUDY_ID, TEST_CLIENT_TIME_ZONE);
+        assertSame(retValue, schedule);
+
+        ordered.verify(mockAccountService).editAccount(eq(ACCOUNT_ID), any());
+        ordered.verify(mockSessionUpdateService).updateClientTimeZone(session, TEST_CLIENT_TIME_ZONE);
+        assertEquals(account.getClientTimeZone(), TEST_CLIENT_TIME_ZONE);
+        verify(mockAccount).setClientTimeZone(TEST_CLIENT_TIME_ZONE);
+
+        ordered.verify(mockRequestInfoService).updateRequestInfo(requestInfoCaptor.capture());
         RequestInfo info = requestInfoCaptor.getValue();
         assertEquals(info.getTimelineAccessedOn(), CREATED_ON);
-        
-        verify(mockStudyActivityEventService).publishEvent(eventCaptor.capture(), eq(false), eq(true));
+
+        ordered.verify(mockStudyActivityEventService).publishEvent(eventCaptor.capture(), eq(false), eq(true));
         StudyActivityEvent event = eventCaptor.getValue();
         assertEquals(event.getAppId(), TEST_APP_ID);
         assertEquals(event.getStudyId(), TEST_STUDY_ID);
         assertEquals(event.getUserId(), TEST_USER_ID);
         assertEquals(event.getEventId(), TIMELINE_RETRIEVED.name().toLowerCase());
         assertEquals(event.getTimestamp(), CREATED_ON);
+
+        ordered.verify(mockScheduleService).getParticipantSchedule(eq(TEST_APP_ID), eq(TEST_STUDY_ID), any());
+    }
+    
+    @Test
+    public void getParticipantScheduleForSelf_changedTimeZone() {
+        session.setParticipant(new StudyParticipant.Builder()
+                .withId(TEST_USER_ID).withStudyIds(ImmutableSet.of(TEST_STUDY_ID)).build());
+        doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
+        mockAccountInStudy(TEST_USER_ID);
+        account.setClientTimeZone("America/Chicago");
+        
+        when(controller.getDateTime()).thenReturn(CREATED_ON);
+        
+        ParticipantSchedule schedule = new ParticipantSchedule();
+        when(mockScheduleService.getParticipantSchedule(
+                eq(TEST_APP_ID), eq(TEST_STUDY_ID), any())).thenReturn(schedule);
+        
+        Account mockAccount = mock(Account.class);
+        TestUtils.mockEditAccount(mockAccountService, mockAccount);
+        
+        controller.getParticipantScheduleForSelf(TEST_STUDY_ID, TEST_CLIENT_TIME_ZONE);
+        
+        verify(mockAccountService).editAccount(eq(ACCOUNT_ID), any());
+        verify(mockSessionUpdateService).updateClientTimeZone(session, TEST_CLIENT_TIME_ZONE);
+        assertEquals(account.getClientTimeZone(), TEST_CLIENT_TIME_ZONE);
+        verify(mockAccount).setClientTimeZone(TEST_CLIENT_TIME_ZONE);
+    }
+    
+    @Test
+    public void getParticipantScheduleForSelf_sameTimeZone() {
+        session.setParticipant(new StudyParticipant.Builder()
+                .withId(TEST_USER_ID).withStudyIds(ImmutableSet.of(TEST_STUDY_ID))
+                .withClientTimeZone(TEST_CLIENT_TIME_ZONE).build());
+        doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
+        mockAccountInStudy(TEST_USER_ID);
+        
+        when(controller.getDateTime()).thenReturn(CREATED_ON);
+        
+        ParticipantSchedule schedule = new ParticipantSchedule();
+        when(mockScheduleService.getParticipantSchedule(
+                eq(TEST_APP_ID), eq(TEST_STUDY_ID), any())).thenReturn(schedule);
+        
+        controller.getParticipantScheduleForSelf(TEST_STUDY_ID, TEST_CLIENT_TIME_ZONE);
+        
+        verify(mockAccountService, never()).editAccount(any(), any());
+        verify(mockSessionUpdateService, never()).updateClientTimeZone(any(), any());
+        assertEquals(account.getClientTimeZone(), TEST_CLIENT_TIME_ZONE);
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
@@ -2030,7 +2059,18 @@ public class StudyParticipantControllerTest extends Mockito {
         mockAccountInStudy(TEST_USER_ID);
         account.setClientTimeZone(TEST_CLIENT_TIME_ZONE);
         
-        controller.getParticipantScheduleForSelf(TEST_STUDY_ID);
+        controller.getParticipantScheduleForSelf(TEST_STUDY_ID, TEST_CLIENT_TIME_ZONE);
+    }
+    
+    @Test(expectedExceptions = BadRequestException.class, 
+            expectedExceptionsMessageRegExp = "clientTimeZone parameter is required")
+    public void getParticipantScheduleForSelf_noTimeZone() {
+        session.setParticipant(new StudyParticipant.Builder()
+                .withId(TEST_USER_ID).withStudyIds(ImmutableSet.of(TEST_STUDY_ID)).build());
+        doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
+        mockAccountInStudy(TEST_USER_ID);
+        
+        controller.getParticipantScheduleForSelf(TEST_STUDY_ID, null);
     }
     
     private void mockAccountInStudy() {

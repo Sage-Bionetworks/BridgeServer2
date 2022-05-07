@@ -42,7 +42,6 @@ import org.sagebionetworks.bridge.models.activities.StudyActivityEventIdsMap;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.schedules2.StudyBurst;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
-import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -131,8 +130,8 @@ public class StudyActivityEventService {
         if (event.getUpdateType().canDelete(mostRecent, event)) {
             dao.deleteEvent(event);
             
-            Study study = studyService.getStudy(event.getAppId(), event.getStudyId(), true);
-            Schedule2 schedule = scheduleService.getScheduleForStudy(study.getAppId(), study).orElse(null);
+            Schedule2 schedule = scheduleService.getScheduleForStudy(
+                    event.getAppId(), event.getStudyId()).orElse(null);
             if (schedule != null) {
                 deleteStudyBurstEvents(schedule, event);
             }
@@ -200,8 +199,8 @@ public class StudyActivityEventService {
             updateBursts = false;
         }
         if (updateBursts) {
-            Study study = studyService.getStudy(event.getAppId(), event.getStudyId(), true);
-            Schedule2 schedule = scheduleService.getScheduleForStudy(study.getAppId(), study).orElse(null);
+            Schedule2 schedule = scheduleService.getScheduleForStudy(
+                    event.getAppId(), event.getStudyId()).orElse(null);
             if (schedule != null) {
                 createStudyBurstEvents(schedule, event, failedEventIds);
             }
@@ -310,17 +309,23 @@ public class StudyActivityEventService {
     }
     
     private void addIfPresent(List<StudyActivityEvent> events, Map<String, DateTime> map, String field, boolean addCount) {
-        if (map.containsKey(field)) {
-            DateTime ts = map.get(field);
-            StudyActivityEvent.Builder builder = new StudyActivityEvent.Builder()
-                    .withEventId(field)
-                    .withTimestamp(ts)
-                    .withCreatedOn(ts);
-            if (addCount) {
-                builder.withRecordCount(ONE);
-            }
-            events.add(builder.build());
+        if (!map.containsKey(field)) {
+            return;
         }
+        boolean inEventList = events.stream().map(StudyActivityEvent::getEventId)
+                .anyMatch(eventId -> eventId.equals(field));
+        if (inEventList) {
+            return;
+        }
+        DateTime ts = map.get(field);
+        StudyActivityEvent.Builder builder = new StudyActivityEvent.Builder()
+                .withEventId(field)
+                .withTimestamp(ts)
+                .withCreatedOn(ts);
+        if (addCount) {
+            builder.withRecordCount(ONE);
+        }
+        events.add(builder.build());
     }
     
     /**

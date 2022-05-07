@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import com.amazonaws.services.sqs.AmazonSQSClient;
+import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.model.SendMessageResult;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -116,7 +116,7 @@ public class Exporter3ServiceTest {
     private S3Helper mockS3Helper;
 
     @Mock
-    private AmazonSQSClient mockSqsClient;
+    private AmazonSQS mockSqsClient;
 
     @Mock
     private StudyService mockStudyService;
@@ -526,7 +526,7 @@ public class Exporter3ServiceTest {
     }
 
     @Test
-    public void completeUpload_Case2() {
+    public void completeUpload_Case2() throws Exception {
         // Normal test case with the following changes
         // 1. No participant version
         // 2. Existing record
@@ -572,7 +572,7 @@ public class Exporter3ServiceTest {
     }
 
     @Test
-    public void completeUpload_NoSharing() {
+    public void completeUpload_NoSharing() throws Exception {
         // Set up inputs.
         Upload upload = Upload.create();
         upload.setHealthCode(TestConstants.HEALTH_CODE);
@@ -596,7 +596,7 @@ public class Exporter3ServiceTest {
     }
 
     @Test
-    public void completeUpload_NoAccount() {
+    public void completeUpload_NoAccount() throws Exception {
         // Set up inputs.
         Upload upload = Upload.create();
         upload.setHealthCode(TestConstants.HEALTH_CODE);

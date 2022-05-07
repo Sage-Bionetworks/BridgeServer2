@@ -4,7 +4,7 @@ import static org.testng.Assert.assertEquals;
 
 import java.util.Map;
 
-import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.BucketCrossOriginConfiguration;
 import com.amazonaws.services.s3.model.BucketWebsiteConfiguration;
 import com.amazonaws.services.s3.model.CORSRule;
@@ -33,7 +33,7 @@ public class S3InitializerTest extends Mockito {
     BridgeConfig mockBridgeConfig;
     
     @Mock
-    AmazonS3Client mockS3Client;
+    AmazonS3 mockS3Client;
     
     @InjectMocks
     @Spy

@@ -7,7 +7,7 @@ import java.util.Optional;
 import java.util.Set;
 import javax.annotation.Resource;
 
-import com.amazonaws.services.sqs.AmazonSQSClient;
+import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.model.SendMessageResult;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -165,7 +165,7 @@ public class Exporter3Service {
     private HealthDataEx3Service healthDataEx3Service;
     private ParticipantVersionService participantVersionService;
     private S3Helper s3Helper;
-    private AmazonSQSClient sqsClient;
+    private AmazonSQS sqsClient;
     private StudyService studyService;
     private SynapseHelper synapseHelper;
 
@@ -220,7 +220,7 @@ public class Exporter3Service {
     }
 
     @Autowired
-    final void setSqsClient(AmazonSQSClient sqsClient) {
+    final void setSqsClient(AmazonSQS sqsClient) {
         this.sqsClient = sqsClient;
     }
 
@@ -456,7 +456,7 @@ public class Exporter3Service {
     }
 
     /** Complete an upload for Exporter 3.0, and also export that upload. */
-    public void completeUpload(App app, Upload upload) {
+    public void completeUpload(App app, Upload upload) throws JsonProcessingException {
         String appId = app.getIdentifier();
         String healthCode = upload.getHealthCode();
 

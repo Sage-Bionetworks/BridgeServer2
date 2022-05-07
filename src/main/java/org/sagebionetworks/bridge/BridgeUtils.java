@@ -22,6 +22,8 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
+import java.time.DateTimeException;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
@@ -122,6 +124,18 @@ public class BridgeUtils {
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     private static final StudyAssociations NO_ASSOCIATIONS = new StudyAssociations(ImmutableSet.of(),
             ImmutableMap.of());
+    
+    public static boolean isValidTimeZoneID(String timeZoneId, boolean required) {
+        if (timeZoneId != null) {
+            try {
+                ZoneId.of(timeZoneId);
+                return true;
+            } catch (DateTimeException e) {
+                return false;
+            }
+        }
+        return !required;
+    }
     
     public static String hashCredential(PasswordAlgorithm algorithm, String type, String value) {
         try {

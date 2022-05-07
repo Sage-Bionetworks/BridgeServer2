@@ -8,7 +8,7 @@ import java.util.List;
 
 import javax.annotation.Resource;
 
-import com.amazonaws.services.sns.AmazonSNSClient;
+import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.model.CheckIfPhoneNumberIsOptedOutRequest;
 import com.amazonaws.services.sns.model.CheckIfPhoneNumberIsOptedOutResult;
 import com.amazonaws.services.sns.model.OptInPhoneNumberRequest;
@@ -67,7 +67,7 @@ public class SmsService {
     private SmsMessageDao messageDao;
     private ParticipantService participantService;
     private UploadSchemaService schemaService;
-    private AmazonSNSClient snsClient;
+    private AmazonSNS snsClient;
 
     /** Health data service, used to submit SMS message logs as health data. */
     @Autowired
@@ -95,7 +95,7 @@ public class SmsService {
 
     /** SNS client, to send SMS through AWS. */
     @Resource(name = "snsClient")
-    public final void setSnsClient(AmazonSNSClient snsClient) {
+    public final void setSnsClient(AmazonSNS snsClient) {
         this.snsClient = snsClient;
     }
 

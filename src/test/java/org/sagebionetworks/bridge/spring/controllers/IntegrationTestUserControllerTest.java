@@ -1,22 +1,16 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
-import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
-import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
-import static org.sagebionetworks.bridge.TestConstants.PASSWORD;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertDelete;
-import static org.sagebionetworks.bridge.TestUtils.assertPost;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
-import static org.sagebionetworks.bridge.config.Environment.LOCAL;
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.fail;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -38,9 +32,8 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
-import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
-import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.StatusMessage;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -50,9 +43,9 @@ import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.RequestInfoService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
 import org.sagebionetworks.bridge.services.AppService;
-import org.sagebionetworks.bridge.services.UserAdminService;
+import org.sagebionetworks.bridge.services.IntegrationTestUserService;
 
-public class UserManagementControllerTest extends Mockito {
+public class IntegrationTestUserControllerTest extends Mockito {
 
     @Mock
     AuthenticationService mockAuthService;
@@ -61,7 +54,7 @@ public class UserManagementControllerTest extends Mockito {
     AppService mockAppService;
 
     @Mock
-    UserAdminService mockUserAdminService;
+    IntegrationTestUserService mockUserManagementService;
 
     @Mock
     CacheProvider mockCacheProvider;
@@ -86,7 +79,7 @@ public class UserManagementControllerTest extends Mockito {
     
     @Spy
     @InjectMocks
-    UserManagementController controller;
+    IntegrationTestUserController controller;
 
     @Captor
     ArgumentCaptor<SignIn> signInCaptor;
@@ -113,7 +106,7 @@ public class UserManagementControllerTest extends Mockito {
         sessionUpdateService.setCacheProvider(mockCacheProvider);
         controller.setSessionUpdateService(sessionUpdateService);
 
-        doReturn(session).when(mockUserAdminService).createUser(any(), any(), any(), anyBoolean(), anyBoolean());
+        doReturn(session).when(mockUserManagementService).createUser(any(), any(), any(), anyBoolean(), anyBoolean());
         doReturn(session).when(mockAuthService).getSession(any(String.class));
         doReturn(mockApp).when(mockAppService).getApp(TEST_APP_ID);
 
@@ -126,56 +119,9 @@ public class UserManagementControllerTest extends Mockito {
     
     @Test
     public void verifyAnnotations() throws Exception {
-        assertCrossOrigin(UserManagementController.class);
-        assertPost(UserManagementController.class, "signInForSuperAdmin");
-        assertCreate(UserManagementController.class, "createUser");
-        assertDelete(UserManagementController.class, "deleteUser");
-    }
-
-    @Test
-    public void signInForSuperadmin() throws Exception {
-        // We look specifically for an account in the API app
-        doReturn(mockApp).when(mockAppService).getApp(API_APP_ID);
-        
-        // Set environment to local in order to test that cookies are set
-        when(mockBridgeConfig.getEnvironment()).thenReturn(LOCAL);
-        when(mockBridgeConfig.get("domain")).thenReturn("localhost");
-
-        SignIn signIn = new SignIn.Builder().withAppId("originalStudy").withEmail(EMAIL)
-                .withPassword(PASSWORD).build();
-        mockRequestBody(mockRequest, signIn);
-
-        when(mockAuthService.signIn(eq(mockApp), any(CriteriaContext.class), signInCaptor.capture()))
-                .thenReturn(session);
-
-        JsonNode result = controller.signInForSuperAdmin();
-        assertEquals(result.get("email").textValue(), EMAIL); // it's the session
-
-        // This isn't in the session that is returned to the user, but verify it has been changed
-        assertEquals(session.getAppId(), "originalStudy");
-        assertEquals(signInCaptor.getValue().getAppId(), API_APP_ID);
-    }
-
-    @Test
-    public void signInForAdminNotASuperAdmin() throws Exception {
-        // We look specifically for an account in the API app
-        doReturn(mockApp).when(mockAppService).getApp(API_APP_ID);
-        
-        SignIn signIn = new SignIn.Builder().withAppId("originalStudy").withEmail(EMAIL)
-                .withPassword("password").build();
-        mockRequestBody(mockRequest, signIn);
-
-        // But this person is actually a worker, not an admin
-        session.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(WORKER)).build());
-        when(mockAuthService.signIn(eq(mockApp), any(CriteriaContext.class), signInCaptor.capture()))
-                .thenReturn(session);
-
-        try {
-            controller.signInForSuperAdmin();
-            fail("Should have thrown exception");
-        } catch (UnauthorizedException e) {
-        }
-        verify(mockAuthService).signOut(session);
+        assertCrossOrigin(IntegrationTestUserController.class);
+        assertCreate(IntegrationTestUserController.class, "createUser");
+        assertDelete(IntegrationTestUserController.class, "deleteUser");
     }
 
     @Test
@@ -203,8 +149,8 @@ public class UserManagementControllerTest extends Mockito {
         when(mockRequest.getHeader(SESSION_TOKEN_HEADER)).thenReturn("AAA");
 
         StatusMessage result = controller.deleteUser(TEST_USER_ID);
-        assertEquals(result, UserManagementController.DELETED_MSG);
+        assertEquals(result, IntegrationTestUserController.DELETED_MSG);
 
-        verify(mockUserAdminService).deleteUser(mockApp, TEST_USER_ID);
+        verify(mockAccountService).deleteAccount(AccountId.forId(TEST_APP_ID, TEST_USER_ID));
     }
 }

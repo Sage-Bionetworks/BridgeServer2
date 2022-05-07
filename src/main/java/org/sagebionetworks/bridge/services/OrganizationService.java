@@ -129,7 +129,7 @@ public class OrganizationService {
         DateTime timestamp = getCreatedOn();
         organization.setCreatedOn(timestamp);
         organization.setModifiedOn(timestamp);
-        organization.setVersion(null);
+        organization.setVersion(0L);
         return orgDao.createOrganization(organization);
     }
     
