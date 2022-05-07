@@ -48,4 +48,13 @@ public class Exporter3Controller extends BaseController {
         CAN_UPDATE_STUDIES.checkAndThrow(STUDY_ID, studyId);
         return exporter3Service.initExporter3ForStudy(session.getAppId(), studyId);
     }
+
+    @PostMapping("v5/studies/{studyId}/timeline/export")
+    @ResponseStatus(HttpStatus.CREATED)
+    public Exporter3Configuration exportTimelineForStudy(@PathVariable String studyId)
+            throws BridgeSynapseException, SynapseException, IOException {
+        UserSession session = getAuthenticatedSession(STUDY_DESIGNER, DEVELOPER);
+        CAN_UPDATE_STUDIES.checkAndThrow(STUDY_ID, studyId);
+        return exporter3Service.exportTimelineForStudy(session.getAppId(), studyId);
+    }
 }

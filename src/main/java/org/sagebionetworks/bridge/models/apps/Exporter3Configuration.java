@@ -9,6 +9,7 @@ public final class Exporter3Configuration {
     private String projectId;
     private String rawDataFolderId;
     private Long storageLocationId;
+    private String wikiPageId;
 
     /** Helper method that returns true if all configuration attributes are specified. */
     public boolean isConfigured() {
@@ -67,6 +68,14 @@ public final class Exporter3Configuration {
 
     public void setStorageLocationId(Long storageLocationId) {
         this.storageLocationId = storageLocationId;
+    }
+
+    public String getWikiPageId() {
+        return wikiPageId;
+    }
+
+    public void setWikiPageId(String wikiPageId) {
+        this.wikiPageId = wikiPageId;
     }
 
     @Override
