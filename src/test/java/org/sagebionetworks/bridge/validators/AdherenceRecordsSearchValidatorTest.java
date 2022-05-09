@@ -25,7 +25,6 @@ import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValida
 import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.START_TIME_MISSING;
 import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.STUDY_ID_FIELD;
 import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.TIME_WINDOW_GUIDS_FIELD;
-import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.USER_ID_FIELD;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NEGATIVE;
 import static org.testng.Assert.assertEquals;
@@ -65,18 +64,6 @@ public class AdherenceRecordsSearchValidatorTest extends Mockito {
         assertEquals(search.getOffsetBy(), Integer.valueOf(0));
         assertEquals(search.getPageSize(), Integer.valueOf(DEFAULT_PAGE_SIZE));
         assertEquals(search.getSortOrder(), SortOrder.ASC);
-    }
-    
-    @Test
-    public void userIdBlank() {
-        AdherenceRecordsSearch search = search().withUserId("").build();
-        assertValidatorMessage(INSTANCE, search, USER_ID_FIELD, CANNOT_BE_BLANK);
-    }
-    
-    @Test
-    public void userIdNull() {
-        AdherenceRecordsSearch search = search().withUserId(null).build();
-        assertValidatorMessage(INSTANCE, search, USER_ID_FIELD, CANNOT_BE_BLANK);
     }
     
     @Test

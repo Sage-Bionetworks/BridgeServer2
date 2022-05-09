@@ -180,7 +180,7 @@ public class HibernateAccountDao implements AccountDao {
             where.append(":language IN ELEMENTS(acct.languages)", "language", search.getLanguage());
             where.like(search.getStringSearchPosition(), "enrollment.externalId LIKE :extId", "extId", search.getExternalIdFilter());
             where.append("acct.status = :status", "status", search.getStatus());
-            where.adminOnlyRequired(search.isAdminOnly());
+            where.appendBoolean("admin", search.isAdminOnly());
             where.dataGroups(search.getAllOfGroups(), "IN");
             where.dataGroups(search.getNoneOfGroups(), "NOT IN");
             where.like(search.getStringSearchPosition(), "acct.attributes['"+search.getAttributeKey()+"'] LIKE :attValue", "attValue", search.getAttributeValueFilter());

@@ -118,8 +118,15 @@ public class AdherenceRecordsSearch implements BridgeEntity {
      * Should search terms be joined by "and" or "or".
      */
     private final SearchTermPredicate predicate;
-    
+
     private final StringSearchPosition stringSearchPosition;
+    
+    /**
+     * Return records that are declined, or not declined. If null, return records in
+     * either state. Sessions are considered declined if all the assessments in the session
+     * are declined.
+     */
+    private final Boolean declined;
     
     private AdherenceRecordsSearch(AdherenceRecordsSearch.Builder builder) {
         this.userId = builder.userId;
@@ -140,6 +147,7 @@ public class AdherenceRecordsSearch implements BridgeEntity {
         this.sortOrder = builder.sortOrder;
         this.predicate = builder.predicate;
         this.stringSearchPosition = builder.stringSearchPosition;
+        this.declined = builder.declined;
     }
     
     public String getUserId() {
@@ -214,6 +222,10 @@ public class AdherenceRecordsSearch implements BridgeEntity {
         return stringSearchPosition;
     }
     
+    public Boolean isDeclined() {
+        return declined;
+    }
+    
     public AdherenceRecordsSearch.Builder toBuilder() {
         return new AdherenceRecordsSearch.Builder()
                 .withUserId(userId)
@@ -233,7 +245,8 @@ public class AdherenceRecordsSearch implements BridgeEntity {
                 .withPageSize(pageSize)
                 .withSortOrder(sortOrder)
                 .withPredicate(predicate)
-                .withStringSearchPosition(stringSearchPosition);
+                .withStringSearchPosition(stringSearchPosition)
+                .withDeclined(declined);
     }
 
     public static class Builder {
@@ -255,6 +268,7 @@ public class AdherenceRecordsSearch implements BridgeEntity {
         private SortOrder sortOrder;
         private SearchTermPredicate predicate;
         private StringSearchPosition stringSearchPosition;
+        private Boolean declined;
         
         public Builder withUserId(String userId) {
             this.userId = userId;
@@ -326,6 +340,10 @@ public class AdherenceRecordsSearch implements BridgeEntity {
         }
         public Builder withStringSearchPosition(StringSearchPosition stringSearchPosition) {
             this.stringSearchPosition = stringSearchPosition;
+            return this;
+        }
+        public Builder withDeclined(Boolean declined) {
+            this.declined = declined;
             return this;
         }
         

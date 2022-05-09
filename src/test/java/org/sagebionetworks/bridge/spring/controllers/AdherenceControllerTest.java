@@ -23,6 +23,7 @@ import static org.sagebionetworks.bridge.models.AccountTestFilter.TEST;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantStudyProgress.IN_PROGRESS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
+import static org.testng.Assert.fail;
 
 import java.util.List;
 import java.util.Optional;
@@ -126,9 +127,15 @@ public class AdherenceControllerTest extends Mockito {
         assertGet(AdherenceController.class, "getEventStreamAdherenceReport");
         assertGet(AdherenceController.class, "getEventStreamAdherenceReportForSelf");
         assertPost(AdherenceController.class, "updateAdherenceRecords");
+        assertPost(AdherenceController.class, "searchForAdherenceRecordsForStudy");
         assertPost(AdherenceController.class, "searchForAdherenceRecordsForSelf");
         assertPost(AdherenceController.class, "searchForAdherenceRecords");
         assertDelete(AdherenceController.class, "deleteAdherenceRecord");
+    }
+    
+    @Test
+    public void searchForAdherenceRecordsForStudy() {
+      fail();  
     }
 
     @Test
