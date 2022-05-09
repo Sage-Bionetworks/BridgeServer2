@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.StatusMessage;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
@@ -62,10 +63,8 @@ public class IntegrationTestUserController extends BaseController {
     @DeleteMapping("/v3/users/{userId}")
     public StatusMessage deleteUser(@PathVariable String userId) {
         UserSession session = getAuthenticatedSession(ADMIN);
-        App app = appService.getApp(session.getAppId());
         
-        testUserService.deleteUser(app, userId);
-        
+        accountService.deleteAccount(AccountId.forId(session.getAppId(), userId));
         return DELETED_MSG;
     }
 }

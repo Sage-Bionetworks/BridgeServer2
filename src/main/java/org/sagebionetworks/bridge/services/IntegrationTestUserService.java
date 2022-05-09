@@ -1,16 +1,11 @@
 package org.sagebionetworks.bridge.services;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.Boolean.TRUE;
 import static org.sagebionetworks.bridge.models.accounts.SharingScope.NO_SHARING;
 
 import java.util.Map;
 
-import org.apache.commons.lang3.StringUtils;
-import org.joda.time.DateTimeZone;
-import org.sagebionetworks.bridge.cache.CacheKey;
-import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.CriteriaContext;
@@ -21,7 +16,6 @@ import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
@@ -35,29 +29,15 @@ import org.springframework.stereotype.Component;
 public class IntegrationTestUserService {
 
     private AuthenticationService authenticationService;
-    private NotificationsService notificationsService;
     private ParticipantService participantService;
     private AccountService accountService;
     private AdminAccountService adminAccountService;
     private ConsentService consentService;
-    private HealthDataService healthDataService;
-    private HealthDataEx3Service healthDataEx3Service;
-    private ScheduledActivityService scheduledActivityService;
-    private ActivityEventService activityEventService;
-    private CacheProvider cacheProvider;
-    private UploadService uploadService;
-    private RequestInfoService requestInfoService;
 
     @Autowired
     final void setAuthenticationService(AuthenticationService authenticationService) {
         this.authenticationService = authenticationService;
     }
-    /** Notifications service, used to clean up notification registrations when we delete users. */
-    @Autowired
-    final void setNotificationsService(NotificationsService notificationsService) {
-        this.notificationsService = notificationsService;
-    }
-
     @Autowired
     final void setParticipantService(ParticipantService participantService) {
         this.participantService = participantService;
@@ -69,34 +49,6 @@ public class IntegrationTestUserService {
     @Autowired
     final void setConsentService(ConsentService consentService) {
         this.consentService = consentService;
-    }
-    @Autowired
-    final void setHealthDataService(HealthDataService healthDataService) {
-        this.healthDataService = healthDataService;
-    }
-    @Autowired
-    final void setHealthDataEx3Service(HealthDataEx3Service healthDataEx3Service) {
-        this.healthDataEx3Service = healthDataEx3Service;
-    }
-    @Autowired
-    final void setScheduledActivityService(ScheduledActivityService scheduledActivityService) {
-        this.scheduledActivityService = scheduledActivityService;
-    }
-    @Autowired
-    final void setActivityEventService(ActivityEventService activityEventService) {
-        this.activityEventService = activityEventService;
-    }
-    @Autowired
-    final void setCacheProvider(CacheProvider cache) {
-        this.cacheProvider = cache;
-    }
-    @Autowired
-    final void setUploadService(UploadService uploadService) {
-        this.uploadService = uploadService;
-    }
-    @Autowired
-    final void setRequestInfoService(RequestInfoService requestInfoService) {
-        this.requestInfoService = requestInfoService;
     }
     @Autowired
     final void setAdminAccountService(AdminAccountService adminAccountService) {
@@ -185,7 +137,7 @@ public class IntegrationTestUserService {
             // Created the account, but failed to process the account properly. To avoid leaving behind a bunch of test
             // accounts, delete this account.
             if (identifier != null) {
-                deleteUser(app, identifier.getIdentifier());    
+                accountService.deleteAccount(AccountId.forId(app.getIdentifier(), identifier.getIdentifier()));    
             }
             throw e;
         }
@@ -221,42 +173,5 @@ public class IntegrationTestUserService {
             acct.setPhoneVerified(TRUE);
         });
         return new IdentifierHolder(account.getId());
-    }
-
-    /**
-     * Delete the target user.
-     * 
-     * @param app
-     *      target user's app
-     * @param id
-     *      target user's ID
-     */
-    public void deleteUser(App app, String id) {
-        checkNotNull(app);
-        checkArgument(StringUtils.isNotBlank(id));
-        
-        AccountId accountId = AccountId.forId(app.getIdentifier(), id);
-        Account account = accountService.getAccount(accountId).orElse(null);
-        if (account != null) {
-            // remove this first so if account is partially deleted, re-authenticating will pick
-            // up accurate information about the state of the account (as we can recover it)
-            cacheProvider.removeSessionByUserId(id);
-            requestInfoService.removeRequestInfo(id);
-            
-            String healthCode = account.getHealthCode();
-            healthDataService.deleteRecordsForHealthCode(healthCode);
-            healthDataEx3Service.deleteRecordsForHealthCode(healthCode);
-            notificationsService.deleteAllRegistrations(app.getIdentifier(), healthCode);
-            uploadService.deleteUploadsForHealthCode(healthCode);
-            scheduledActivityService.deleteActivitiesForUser(healthCode);
-            activityEventService.deleteActivityEvents(app.getIdentifier(), healthCode);
-            // AccountSecret records and Enrollment records are are deleted on a 
-            // cascading delete from Account
-            accountService.deleteAccount(accountId);
-            
-            // Remove known etag cache keys for this user
-            cacheProvider.removeObject( CacheKey.etag(DateTimeZone.class, id) );
-            cacheProvider.removeObject( CacheKey.etag(StudyActivityEvent.class, id) );
-        }
     }
 }

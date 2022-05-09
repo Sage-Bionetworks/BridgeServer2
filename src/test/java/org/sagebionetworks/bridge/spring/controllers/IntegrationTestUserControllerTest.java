@@ -33,6 +33,7 @@ import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.StatusMessage;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -150,6 +151,6 @@ public class IntegrationTestUserControllerTest extends Mockito {
         StatusMessage result = controller.deleteUser(TEST_USER_ID);
         assertEquals(result, IntegrationTestUserController.DELETED_MSG);
 
-        verify(mockUserManagementService).deleteUser(mockApp, TEST_USER_ID);
+        verify(mockAccountService).deleteAccount(AccountId.forId(TEST_APP_ID, TEST_USER_ID));
     }
 }

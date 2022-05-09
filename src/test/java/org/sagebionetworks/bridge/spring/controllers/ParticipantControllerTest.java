@@ -1509,7 +1509,7 @@ public class ParticipantControllerTest extends Mockito {
         when(mockParticipantService.getParticipant(app, TEST_USER_ID, false)).thenReturn(participant);
         controller.deleteTestOrUnusedParticipant(TEST_USER_ID);
 
-        verify(mockUserManagementService).deleteUser(app, TEST_USER_ID);
+        verify(mockAccountService).deleteAccount(AccountId.forId(TEST_APP_ID, TEST_USER_ID));
     }
 
     @Test(expectedExceptions = UnauthorizedException.class)
