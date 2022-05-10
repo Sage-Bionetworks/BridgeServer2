@@ -13,6 +13,7 @@ import static org.sagebionetworks.bridge.models.schedules2.adherence.SortOrder.A
 import static org.sagebionetworks.bridge.models.schedules2.adherence.SortOrder.DESC;
 import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.DEFAULT_PAGE_SIZE;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNull;
 
 import java.util.List;
 import java.util.Map;
@@ -45,6 +46,8 @@ public class HibernateAdherenceRecordDaoTest extends Mockito {
 
     private static final String BASE_QUERY = HibernateAdherenceRecordDao.BASE_QUERY
             + " WHERE ar.userId = :userId AND ar.studyId = :studyId";
+    private static final String BASE_QUERY_WITHOUT_USER_ID = HibernateAdherenceRecordDao.BASE_QUERY
+            + " WHERE ar.studyId = :studyId";
     private static final String ORDER = " ORDER BY ar.startedOn ASC";
 
     // It doesn't matter what these strings are, we're just verifying they are passed
@@ -109,6 +112,18 @@ public class HibernateAdherenceRecordDaoTest extends Mockito {
         assertEquals(builder.getQuery(), BASE_QUERY + ORDER);
         assertEquals(builder.getParameters().get("studyId"), TEST_STUDY_ID);
         assertEquals(builder.getParameters().get("userId"), TEST_USER_ID);
+    }
+    
+    // Study-scoped query.
+    @Test
+    public void createQuery_noUserId() {
+        AdherenceRecordsSearch.Builder searchBuilder = search();
+        searchBuilder.withUserId(null);
+        
+        QueryBuilder builder = dao.createQuery(searchBuilder.build());
+        assertEquals(builder.getQuery(), BASE_QUERY_WITHOUT_USER_ID + ORDER);
+        assertEquals(builder.getParameters().get("studyId"), TEST_STUDY_ID);
+        assertNull(builder.getParameters().get("userId"));
     }
 
     @Test
@@ -258,9 +273,17 @@ public class HibernateAdherenceRecordDaoTest extends Mockito {
         AdherenceRecordsSearch search = search().withSortOrder(DESC).build();
 
         QueryBuilder builder = dao.createQuery(search);
-        // This could be variable, but since it comes from an enum's name, it
-        // seems safe to just concatenate it
         assertEquals(builder.getQuery(), BASE_QUERY + " ORDER BY ar.startedOn DESC");
+        assertEquals(builder.getParameters().get("studyId"), TEST_STUDY_ID);
+        assertEquals(builder.getParameters().get("userId"), TEST_USER_ID);
+    }
+    
+    @Test
+    public void createQuery_withBoolean() {
+        AdherenceRecordsSearch search = search().withDeclined(true).build();
+        
+        QueryBuilder builder = dao.createQuery(search);
+        assertEquals(builder.getQuery(), BASE_QUERY + " AND declined = 1" + ORDER);
         assertEquals(builder.getParameters().get("studyId"), TEST_STUDY_ID);
         assertEquals(builder.getParameters().get("userId"), TEST_USER_ID);
     }

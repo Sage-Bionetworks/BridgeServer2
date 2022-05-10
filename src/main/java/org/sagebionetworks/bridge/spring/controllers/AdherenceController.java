@@ -149,6 +149,18 @@ public class AdherenceController extends BaseController {
         return service.getAdherenceStatistics(session.getAppId(), studyId, adherenceThresholdInt);
     }
     
+    @PostMapping("/v5/studies/{studyId}/adherence/search")
+    public PagedResourceList<AdherenceRecord> searchForAdherenceRecordsForStudy(@PathVariable String studyId) {
+        UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_DESIGNER, STUDY_COORDINATOR);
+        
+        AdherenceRecordsSearch payload = parseJson(AdherenceRecordsSearch.class);
+        AdherenceRecordsSearch search = payload.toBuilder()
+                .withUserId(null)
+                .withStudyId(studyId).build();
+
+        return service.getAdherenceRecords(session.getAppId(), search);
+    }
+    
     @PostMapping("/v5/studies/{studyId}/participants/self/adherence")
     public StatusMessage updateAdherenceRecordsForSelf(@PathVariable String studyId) {
         UserSession session = getAuthenticatedAndConsentedSession();

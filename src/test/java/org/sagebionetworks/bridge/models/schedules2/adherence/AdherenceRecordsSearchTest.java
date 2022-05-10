@@ -32,7 +32,7 @@ public class AdherenceRecordsSearchTest extends Mockito {
         AdherenceRecordsSearch search = createSearch();
                 
         JsonNode node = BridgeObjectMapper.get().valueToTree(search);
-        assertEquals(node.size(), 18);
+        assertEquals(node.size(), 19);
         assertEquals(node.get("userId").textValue(), TEST_USER_ID);
         assertEquals(node.get("studyId").textValue(), TEST_STUDY_ID);
         assertEquals(node.get("instanceGuids").get(0).textValue(), "A");
@@ -52,6 +52,7 @@ public class AdherenceRecordsSearchTest extends Mockito {
         assertEquals(node.get("predicate").textValue(), "or");
         assertEquals(node.get("stringSearchPosition").textValue(), "infix");
         assertNull(node.get("guidToStartedOnMap"));
+        assertTrue(node.get("declined").booleanValue());
         
         AdherenceRecordsSearch deser = BridgeObjectMapper.get()
                 .readValue(node.toString(), AdherenceRecordsSearch.class);
@@ -72,6 +73,7 @@ public class AdherenceRecordsSearchTest extends Mockito {
         assertEquals(deser.getSortOrder(), DESC);
         assertEquals(deser.getInstanceGuidStartedOnMap(), ImmutableMap.of());
         assertEquals(deser.getPredicate(), OR);
+        assertTrue(deser.isDeclined());
     }
     
     // We don't want these to throw 500s. These probably exist elsewhere in our APIs.
@@ -112,6 +114,7 @@ public class AdherenceRecordsSearchTest extends Mockito {
         assertEquals(copy.getPageSize(), Integer.valueOf(20));
         assertEquals(copy.getSortOrder(), DESC);
         assertEquals(copy.getPredicate(), OR);
+        assertEquals(copy.isDeclined(), Boolean.TRUE);
     }
 
     protected AdherenceRecordsSearch createSearch() {
@@ -133,6 +136,7 @@ public class AdherenceRecordsSearchTest extends Mockito {
                 .withPageSize(20)
                 .withSortOrder(DESC)
                 .withPredicate(OR)
+                .withDeclined(Boolean.TRUE)
                 .build();
         return search;
     }
