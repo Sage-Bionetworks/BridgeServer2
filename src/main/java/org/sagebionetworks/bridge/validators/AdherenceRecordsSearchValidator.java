@@ -65,9 +65,7 @@ public class AdherenceRecordsSearchValidator extends AbstractValidator {
                 errors.rejectValue(END_TIME_FIELD, END_TIME_BEFORE_START_TIME);
             }
         }
-        if (isBlank(search.getUserId())) {
-            errors.rejectValue(USER_ID_FIELD, CANNOT_BE_BLANK);
-        }
+        // User ID can be blank for study-scoped searches of the data
         if (isBlank(search.getStudyId())) {
             errors.rejectValue(STUDY_ID_FIELD, CANNOT_BE_BLANK);
         }
