@@ -22,17 +22,15 @@ import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.assessments.config.AssessmentConfig;
 import org.sagebionetworks.bridge.services.AssessmentConfigService;
+import org.sagebionetworks.bridge.spring.util.EtagCacheKey;
+import org.sagebionetworks.bridge.spring.util.EtagSupport;
 
 @CrossOrigin
 @RestController
 public class AssessmentConfigController extends BaseController {
     
-    private AssessmentConfigService service;
-    
     @Autowired
-    final void setAssessmentConfigService(AssessmentConfigService service) {
-        this.service = service;
-    }
+    private AssessmentConfigService service;
     
     private String getOwnerId(UserSession session) {
         if (session.isInRole(ImmutableSet.of(DEVELOPER))) {
@@ -41,6 +39,10 @@ public class AssessmentConfigController extends BaseController {
         return session.getParticipant().getOrgMembership();
     }
     
+    @EtagSupport({
+        // Most recent modification to the configuration
+        @EtagCacheKey(model=AssessmentConfig.class, keys={"guid"})
+    })
     @GetMapping("/v1/assessments/{guid}/config")
     public AssessmentConfig getAssessmentConfig(@PathVariable String guid) {
         UserSession session = getAuthenticatedSession();
