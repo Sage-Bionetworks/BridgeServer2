@@ -1,10 +1,5 @@
 package org.sagebionetworks.bridge.services;
 
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
@@ -16,6 +11,7 @@ import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.SCHEDULE_GUID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_CLIENT_TIME_ZONE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.IMMUTABLE;
@@ -44,7 +40,9 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
+import org.mockito.Spy;
 import org.sagebionetworks.bridge.models.schedules2.Session;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -69,7 +67,7 @@ import org.sagebionetworks.bridge.models.studies.StudyCustomEvent;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
-public class StudyServiceTest {
+public class StudyServiceTest extends Mockito {
     private static final PagedResourceList<Study> STUDIES = new PagedResourceList<>(
             ImmutableList.of(Study.create(), Study.create()), 5);
     private static final VersionHolder VERSION_HOLDER = new VersionHolder(1L);
@@ -94,6 +92,7 @@ public class StudyServiceTest {
     private ArgumentCaptor<Study> studyCaptor;
     
     @InjectMocks
+    @Spy
     private StudyService service;
 
     private Schedule2 schedule;
@@ -125,6 +124,33 @@ public class StudyServiceTest {
         assertEquals(returnedValue, study);
         
         verify(mockStudyDao).getStudy(TEST_APP_ID, TEST_STUDY_ID);
+    }
+    
+    @Test
+    public void getZoneId_clientTimeZoneReturned() {
+        String retValue = service.getZoneId(TEST_APP_ID, TEST_STUDY_ID, TEST_CLIENT_TIME_ZONE);
+        assertEquals(retValue, TEST_CLIENT_TIME_ZONE);
+    }
+    
+    @Test
+    public void getZoneId_studyTimeZoneReturned() {
+        Study study = Study.create();
+        study.setStudyTimeZone(TEST_CLIENT_TIME_ZONE);
+        when(service.getStudy(TEST_APP_ID, TEST_STUDY_ID, false)).thenReturn(study);
+        
+        String retValue = service.getZoneId(TEST_APP_ID, TEST_STUDY_ID, null);
+        assertEquals(retValue, TEST_CLIENT_TIME_ZONE);
+    }
+    
+    @Test
+    public void getZoneId_defaultZoneReturned() {
+        Study study = Study.create();
+        when(service.getStudy(TEST_APP_ID, TEST_STUDY_ID, false)).thenReturn(study);
+        
+        doReturn("America/Chicago").when(service).getDefaultTimeZoneId();
+        
+        String retValue = service.getZoneId(TEST_APP_ID, TEST_STUDY_ID, null);
+        assertEquals(retValue, "America/Chicago");
     }
     
     @Test

@@ -31,7 +31,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.joda.time.DateTime;
-
+import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.cache.CacheProvider;
@@ -55,32 +55,34 @@ import com.google.common.collect.ImmutableMap;
 @Component
 public class StudyService {
     
+    @Autowired
     private StudyDao studyDao;
-    
+    @Autowired
     private SponsorService sponsorService;
-    
+    @Autowired
     private CacheProvider cacheProvider;
-    
+    @Autowired
     private Schedule2Service scheduleService;
     
-    @Autowired
-    final void setStudyDao(StudyDao studyDao) {
-        this.studyDao = studyDao;
+    protected String getDefaultTimeZoneId() { 
+        return DateTimeZone.getDefault().getID();
     }
     
-    @Autowired
-    final void setSponsorService(SponsorService sponsorService) {
-        this.sponsorService = sponsorService;
-    }
-    
-    @Autowired
-    final void setCacheProvider(CacheProvider cacheProvider) {
-        this.cacheProvider = cacheProvider;
-    }
-    
-    @Autowired
-    final void setSchedule2Service(Schedule2Service scheduleService) {
-        this.scheduleService = scheduleService;
+    /**
+     * Find the appropriate time zone for a specific participant. If clientTimeZoneId 
+     * exists, that is returned. Otherwise, the study’s time zone is returned. If that
+     * doesn’t exist, the system’s time zone is returned.
+     */
+    public String getZoneId(String appId, String studyId, String clientTimeZoneId) {
+        if (clientTimeZoneId != null) {
+            return clientTimeZoneId;
+        } else {
+            Study study = getStudy(appId, studyId, false);
+            if (study != null && study.getStudyTimeZone() != null) {
+                return study.getStudyTimeZone();
+            }
+        }
+        return getDefaultTimeZoneId();
     }
     
     public void removeStudyEtags(String appId, String scheduleGuid) {
