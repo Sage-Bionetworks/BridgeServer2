@@ -5,6 +5,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.models.apps.MimeType.HTML;
 
 import java.io.IOException;
@@ -50,7 +51,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
 
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.SecureTokenGenerator;
 import org.sagebionetworks.bridge.cache.CacheProvider;
@@ -252,7 +252,7 @@ public class AppService {
         app.setAppIdExcludedInExport(true);
         app.setVerifyChannelOnSignInEnabled(true);
         app.setEmailVerificationEnabled(true);
-        app.getDataGroups().add(BridgeConstants.TEST_USER_GROUP);
+        app.getDataGroups().add(TEST_USER_GROUP);
         if (app.getPasswordPolicy() == null) {
             app.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
         }

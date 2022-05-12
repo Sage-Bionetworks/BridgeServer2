@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
+import static org.sagebionetworks.bridge.BridgeConstants.PREVIEW_USER_GROUP;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.BridgeUtils.getElement;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
@@ -747,7 +748,53 @@ public class EnrollmentServiceTest extends Mockito {
         
         assertTrue(account.getDataGroups().contains(TEST_USER_GROUP));
     }
+    
+    @Test(expectedExceptions = BadRequestException.class,
+            expectedExceptionsMessageRegExp = EnrollmentService.PREVIEW_USER_ERROR_MSG)
+    public void addEnrollment_previewUserCannotEnrollSecondStudy() {
+        Enrollment existing = Enrollment.create(TEST_APP_ID, "another-study", TEST_USER_ID);
 
+        Account account = Account.create();
+        account.setId(TEST_USER_ID);
+        account.setDataGroups(ImmutableSet.of(PREVIEW_USER_GROUP));
+        account.setEnrollments(ImmutableSet.of(existing));
+        
+        Study study = Study.create();
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+
+        Enrollment en = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+        service.addEnrollment(account, en, true);
+    }
+
+    @Test
+    public void addEnrollment_previewUserCanEnrollFirstStudy() {
+        Account account = Account.create();
+        account.setId(TEST_USER_ID);
+        account.setDataGroups(ImmutableSet.of(PREVIEW_USER_GROUP));
+        
+        Study study = Study.create();
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+
+        Enrollment en = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+        service.addEnrollment(account, en, true);
+    }
+    
+    @Test
+    public void addEnrollment_previewUserCanEnrollSameStudy() {
+        Enrollment existing = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+        
+        Account account = Account.create();
+        account.setId(TEST_USER_ID);
+        account.setDataGroups(ImmutableSet.of(PREVIEW_USER_GROUP));
+        account.setEnrollments(ImmutableSet.of(existing));
+        
+        Study study = Study.create();
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+
+        Enrollment en = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+        service.addEnrollment(account, en, true); // no exception
+    }
+    
     @Test(expectedExceptions = EntityNotFoundException.class,
             expectedExceptionsMessageRegExp = "Study not found.")
     public void unenroll_accountStudyNotFound() {
@@ -758,7 +805,7 @@ public class EnrollmentServiceTest extends Mockito {
     }
 
     @Test
-    public void updateEnrollment_canUpdateOnlyNoteFields() {
+    public void updateEnrollment_canUpdateOnlyNotesAndRequirementField() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId("otherId")
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
@@ -771,6 +818,7 @@ public class EnrollmentServiceTest extends Mockito {
         incomingEnrollment.setWithdrawnBy("someone");
         incomingEnrollment.setWithdrawnOn(DateTime.now());
         incomingEnrollment.setWithdrawalNote(TEST_NOTE);
+        incomingEnrollment.setConsentRequired(true);
 
         AccountId accountId = AccountId.forId(TEST_APP_ID, TEST_USER_ID);
         Account account = Account.create();
@@ -788,6 +836,7 @@ public class EnrollmentServiceTest extends Mockito {
         assertNull(targetEnrollment.getWithdrawnBy());
         assertNull(targetEnrollment.getWithdrawnOn());
         assertEquals(targetEnrollment.getWithdrawalNote(), TEST_NOTE);
+        assertTrue(targetEnrollment.isConsentRequired());
     }
 
     @Test(expectedExceptions = InvalidEntityException.class)

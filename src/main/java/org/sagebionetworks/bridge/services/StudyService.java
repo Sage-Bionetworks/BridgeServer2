@@ -55,33 +55,16 @@ import com.google.common.collect.ImmutableMap;
 @Component
 public class StudyService {
     
+    @Autowired
     private StudyDao studyDao;
-    
+    @Autowired
     private SponsorService sponsorService;
-    
+    @Autowired
     private CacheProvider cacheProvider;
-    
+    @Autowired
     private Schedule2Service scheduleService;
-    
     @Autowired
-    final void setStudyDao(StudyDao studyDao) {
-        this.studyDao = studyDao;
-    }
-    
-    @Autowired
-    final void setSponsorService(SponsorService sponsorService) {
-        this.sponsorService = sponsorService;
-    }
-    
-    @Autowired
-    final void setCacheProvider(CacheProvider cacheProvider) {
-        this.cacheProvider = cacheProvider;
-    }
-    
-    @Autowired
-    final void setSchedule2Service(Schedule2Service scheduleService) {
-        this.scheduleService = scheduleService;
-    }
+    private AccountService accountService;
     
     public void removeStudyEtags(String appId, String scheduleGuid) {
         checkNotNull(appId);
@@ -306,6 +289,7 @@ public class StudyService {
      */
     public Study transitionToRecruitment(String appId, String studyId) {
         return phaseTransition(appId, studyId, RECRUITMENT, (study) -> {
+            accountService.deleteAllPreviewAccounts(appId, studyId);
             if (study.getScheduleGuid() != null) {
                 Schedule2 schedule = scheduleService.getSchedule(appId, study.getScheduleGuid());
                 if (!schedule.isPublished()) {

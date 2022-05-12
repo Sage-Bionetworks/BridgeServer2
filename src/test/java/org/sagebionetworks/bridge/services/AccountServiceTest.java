@@ -2,6 +2,8 @@ package org.sagebionetworks.bridge.services;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
+import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
+import static org.sagebionetworks.bridge.BridgeConstants.PREVIEW_USER_GROUP;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.BridgeUtils.getElement;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
@@ -63,6 +65,7 @@ import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.AccountSecretDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
+import org.sagebionetworks.bridge.models.AccountSummarySearch;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
@@ -149,6 +152,9 @@ public class AccountServiceTest extends Mockito {
     
     @Captor
     ArgumentCaptor<StudyActivityEvent> eventCaptor;
+    
+    @Captor
+    ArgumentCaptor<AccountSummarySearch> searchCaptor;
 
     @BeforeClass
     public static void mockNow() {
@@ -823,6 +829,43 @@ public class AccountServiceTest extends Mockito {
     public void deleteAllAccounts() { 
         service.deleteAllAccounts(TEST_APP_ID);
         verify(mockAccountDao).deleteAllAccounts(TEST_APP_ID);
+    }
+    
+    @SuppressWarnings("unchecked")
+    @Test
+    public void deleteAllPreviewAccounts() {
+        AccountSummary summary1 = new AccountSummary.Builder().withId("user1").build();
+        AccountSummary summary2 = new AccountSummary.Builder().withId("user2").build();
+        AccountSummary summary3 = new AccountSummary.Builder().withId("user3").build();
+        AccountSummary summary4 = new AccountSummary.Builder().withId("user4").build();
+        AccountSummary summary5 = new AccountSummary.Builder().withId("user5").build();
+        AccountSummary summary6 = new AccountSummary.Builder().withId("user6").build();
+        
+        PagedResourceList<AccountSummary> page1 = new PagedResourceList<>(
+                ImmutableList.of(summary1, summary2, summary3), API_MAXIMUM_PAGE_SIZE+1);
+        PagedResourceList<AccountSummary> page2 = new PagedResourceList<>(
+                ImmutableList.of(summary4, summary5, summary6), API_MAXIMUM_PAGE_SIZE+1);
+        when(mockAccountDao.getPagedAccountSummaries(eq(TEST_APP_ID), any())).thenReturn(page1, page2);
+        
+        service.deleteAllPreviewAccounts(TEST_APP_ID, TEST_STUDY_ID);
+        
+        verify(mockAccountDao, times(2)).getPagedAccountSummaries(eq(TEST_APP_ID), searchCaptor.capture());
+        
+        AccountSummarySearch capturedSearch = searchCaptor.getAllValues().get(0);
+        assertEquals(capturedSearch.getPageSize(), API_MAXIMUM_PAGE_SIZE);
+        assertEquals(capturedSearch.getAllOfGroups(), ImmutableSet.of(PREVIEW_USER_GROUP));
+        assertEquals(capturedSearch.getEnrolledInStudyId(), TEST_STUDY_ID);
+        assertEquals(capturedSearch.getOffsetBy(), 0);
+        
+        capturedSearch = searchCaptor.getAllValues().get(1);
+        assertEquals(capturedSearch.getOffsetBy(), 100);
+        
+        verify(mockAccountDao).deleteAccount("user1");
+        verify(mockAccountDao).deleteAccount("user2");
+        verify(mockAccountDao).deleteAccount("user3");
+        verify(mockAccountDao).deleteAccount("user4");
+        verify(mockAccountDao).deleteAccount("user5");
+        verify(mockAccountDao).deleteAccount("user6");
     }
     
     @Test

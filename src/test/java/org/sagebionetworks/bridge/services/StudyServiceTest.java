@@ -90,6 +90,9 @@ public class StudyServiceTest {
     @Mock
     private Schedule2Service mockScheduleService;
     
+    @Mock
+    private AccountService mockAccountService;
+    
     @Captor
     private ArgumentCaptor<Study> studyCaptor;
     
@@ -703,6 +706,8 @@ public class StudyServiceTest {
 
         service.transitionToRecruitment(TEST_APP_ID, TEST_STUDY_ID);
         
+        verify(mockAccountService).deleteAllPreviewAccounts(TEST_APP_ID, TEST_STUDY_ID);
+        
         verify(mockStudyDao).updateStudy(study);
         assertEquals(study.getPhase(), RECRUITMENT);
         
@@ -724,6 +729,8 @@ public class StudyServiceTest {
 
         service.transitionToRecruitment(TEST_APP_ID, TEST_STUDY_ID);
         
+        verify(mockAccountService).deleteAllPreviewAccounts(TEST_APP_ID, TEST_STUDY_ID);
+        
         verify(mockStudyDao).updateStudy(study);
         assertEquals(study.getPhase(), RECRUITMENT);
         
@@ -741,6 +748,8 @@ public class StudyServiceTest {
         when(mockStudyDao.getStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(study);
         
         service.transitionToRecruitment(TEST_APP_ID, TEST_STUDY_ID);
+        
+        verify(mockAccountService).deleteAllPreviewAccounts(TEST_APP_ID, TEST_STUDY_ID);
         
         verify(mockStudyDao).updateStudy(study);
         assertEquals(study.getPhase(), RECRUITMENT);
