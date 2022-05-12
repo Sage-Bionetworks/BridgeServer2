@@ -151,7 +151,6 @@ public class AdherenceServiceTest extends Mockito {
         MockitoAnnotations.initMocks(this);
         
         when(service.getDateTime()).thenReturn(MODIFIED_ON);
-        when(service.getDefaultTimeZoneId()).thenReturn("America/Denver");
     }
     
     @AfterMethod
@@ -826,6 +825,7 @@ public class AdherenceServiceTest extends Mockito {
         Study study = Study.create();
         study.setScheduleGuid(SCHEDULE_GUID);
         when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+        when(mockStudyService.getZoneId(TEST_APP_ID, TEST_STUDY_ID, TEST_CLIENT_TIME_ZONE)).thenReturn(TEST_CLIENT_TIME_ZONE);
         
         Schedule2 schedule = Schedule2Test.createValidSchedule();
         List<TimelineMetadata> metadata = Scheduler.INSTANCE.calculateTimeline(schedule).getMetadata();
@@ -864,12 +864,12 @@ public class AdherenceServiceTest extends Mockito {
         account.setLastName("lastName");
         account.setEmail(TestConstants.EMAIL);
         account.setPhone(TestConstants.PHONE);
-        account.setClientTimeZone(TEST_CLIENT_TIME_ZONE);
         account.getEnrollments().add(Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, TEST_EXTERNAL_ID));
         
         Study study = Study.create();
         study.setScheduleGuid(SCHEDULE_GUID);
         when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+        when(mockStudyService.getZoneId(TEST_APP_ID, TEST_STUDY_ID, null)).thenReturn(TEST_CLIENT_TIME_ZONE);
         
         List<StudyActivityEvent> events = ImmutableList.of();
         ResourceList<StudyActivityEvent> page = new ResourceList<>(events, true);
@@ -913,12 +913,12 @@ public class AdherenceServiceTest extends Mockito {
         account.setLastName("lastName");
         account.setEmail(TestConstants.EMAIL);
         account.setPhone(TestConstants.PHONE);
-        account.setClientTimeZone(TEST_CLIENT_TIME_ZONE);
         account.getEnrollments().add(Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, TEST_EXTERNAL_ID));
         
         Study study = Study.create();
         study.setScheduleGuid(SCHEDULE_GUID);
         when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+        when(mockStudyService.getZoneId(TEST_APP_ID, TEST_STUDY_ID, null)).thenReturn(TEST_CLIENT_TIME_ZONE);
         
         Schedule2 schedule = Schedule2Test.createValidSchedule();
         when(mockScheduleService.getScheduleMetadata(SCHEDULE_GUID))
@@ -1009,41 +1009,6 @@ public class AdherenceServiceTest extends Mockito {
     }
     
     @Test
-    public void getWeeklyAdherenceReport_defaultTimeZone() throws Exception {
-        RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
-        
-        Account account = Account.create();
-        account.setAppId(TEST_APP_ID);
-        account.setId(TEST_USER_ID);
-        account.setFirstName("firstName");
-        account.setLastName("lastName");
-        account.setEmail(TestConstants.EMAIL);
-        account.setPhone(TestConstants.PHONE);
-        account.getEnrollments().add(Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, TEST_EXTERNAL_ID));
-        
-        Study study = Study.create();
-        study.setScheduleGuid(SCHEDULE_GUID);
-        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
-        
-        when(mockScheduleService.getScheduleMetadata(SCHEDULE_GUID))
-            .thenReturn(StudyAdherenceReportGeneratorTest.createTimelineMetadata());        
-
-        List<StudyActivityEvent> events = ImmutableList.of();
-        ResourceList<StudyActivityEvent> page = new ResourceList<>(events, true);
-        when(mockStudyActivityEventService.getRecentStudyActivityEvents(
-                TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID)).thenReturn(page);
-        
-        PagedResourceList<AdherenceRecord> page2 = new PagedResourceList<>(ImmutableList.of(), 0);
-        when(mockRecordDao.getAdherenceRecords(any())).thenReturn(page2);
-        
-        WeeklyAdherenceReport retValue = service.getWeeklyAdherenceReport(
-                TEST_APP_ID, TEST_STUDY_ID, account);
-        assertEquals(retValue.getClientTimeZone(), "America/Denver");
-        assertEquals(retValue.getCreatedOn(), MODIFIED_ON.withZone(DateTimeZone.forID("America/Denver")));
-        assertNull(retValue.getNextActivity());
-    }
-    
-    @Test
     public void getWeeklyAdherenceReport_noRowsCopiesNextActivity() throws Exception {
         RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
 
@@ -1059,7 +1024,8 @@ public class AdherenceServiceTest extends Mockito {
         Study study = Study.create();
         study.setScheduleGuid(SCHEDULE_GUID);
         when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
-        
+        when(mockStudyService.getZoneId(TEST_APP_ID, TEST_STUDY_ID, null)).thenReturn(TEST_CLIENT_TIME_ZONE);
+
         // We have to shift records into the future so they end up in the nextActivity
         // object.
         Schedule2 schedule = StudyAdherenceReportGeneratorTest.createSchedule();
@@ -1156,11 +1122,11 @@ public class AdherenceServiceTest extends Mockito {
         account.setAppId(TEST_APP_ID);
         account.setDataGroups(ImmutableSet.of(BridgeConstants.TEST_USER_GROUP));
         account.setId(TEST_USER_ID);
-        account.setClientTimeZone("America/Chicago");
         
         Study study = Study.create();
         study.setScheduleGuid(SCHEDULE_GUID);
         when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+        when(mockStudyService.getZoneId(TEST_APP_ID, TEST_STUDY_ID, null)).thenReturn("America/Chicago");
         
         when(mockScheduleService.getScheduleMetadata(SCHEDULE_GUID))
             .thenReturn(StudyAdherenceReportGeneratorTest.createTimelineMetadata());        
@@ -1205,38 +1171,6 @@ public class AdherenceServiceTest extends Mockito {
         assertEquals(weeklyReport.getClientTimeZone(), "America/Chicago");
         assertEquals(weeklyReport.getCreatedOn(), MODIFIED_ON.withZone(DateTimeZone.forID("America/Chicago")));
         assertEquals(weeklyReport.getNextActivity().getSessionGuid(), "initialSurveyGuid");
-    }
-    
-    @Test
-    public void getStudyAdherenceReport_defaultTimeZone() {
-        RequestContext.set(new RequestContext.Builder()
-                .withCallerUserId("id")
-                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
-                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
-                .build());
-        
-        Account account = Account.create();
-        account.setDataGroups(ImmutableSet.of(BridgeConstants.TEST_USER_GROUP));
-        account.setId(TEST_USER_ID);
-        
-        Study study = Study.create();
-        study.setScheduleGuid(SCHEDULE_GUID);
-        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
-        
-        ResourceList<StudyActivityEvent> events = new ResourceList<>(ImmutableList.of());
-        when(mockStudyActivityEventService.getRecentStudyActivityEvents(
-                TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID)).thenReturn(events);
-        
-        PagedResourceList<AdherenceRecord> records = new PagedResourceList<>(ImmutableList.of(), 0);
-        when(mockRecordDao.getAdherenceRecords(any())).thenReturn(records);
-        
-        Schedule2 schedule = Schedule2Test.createValidSchedule();
-        when(mockScheduleService.getScheduleMetadata(SCHEDULE_GUID))
-            .thenReturn(Scheduler.INSTANCE.calculateTimeline(schedule).getMetadata());
-        
-        StudyAdherenceReport report = service.getStudyAdherenceReport(TEST_APP_ID, TEST_STUDY_ID, account);
-        assertEquals(report.getCreatedOn(), MODIFIED_ON.withZone(DateTimeZone.forID("America/Denver")));
-        assertEquals(report.getClientTimeZone(), "America/Denver");
     }
     
     @Test

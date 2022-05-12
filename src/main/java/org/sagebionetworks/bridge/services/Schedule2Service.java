@@ -27,7 +27,6 @@ import java.util.function.Consumer;
 
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -68,33 +67,14 @@ import org.slf4j.LoggerFactory;
 public class Schedule2Service {
     private static final Logger LOG = LoggerFactory.getLogger(Schedule2Service.class);
 
+    @Autowired
     private OrganizationService organizationService;
-    
+    @Autowired
     private StudyService studyService;
-    
+    @Autowired
     private StudyActivityEventService studyActivityEventService;
-    
+    @Autowired
     private Schedule2Dao dao;
-    
-    @Autowired
-    final void setOrganizationService(OrganizationService organizationService) {
-        this.organizationService = organizationService;
-    }
-    
-    @Autowired
-    final void setStudyService(StudyService studyService) {
-        this.studyService = studyService;
-    }
-    
-    @Autowired
-    final void setStudyActivityEventService(StudyActivityEventService studyActivityEventService) {
-        this.studyActivityEventService = studyActivityEventService;
-    }
-    
-    @Autowired
-    final void setScheduleDao(Schedule2Dao dao) {
-        this.dao = dao;
-    }
     
     DateTime getCreatedOn() {
         return DateTime.now();
@@ -428,14 +408,13 @@ public class Schedule2Service {
 
         List<StudyActivityEvent> events = studyActivityEventService.getRecentStudyActivityEvents(
                 account.getAppId(), studyId, account.getId()).getItems();
+        
+        String zoneId = studyService.getZoneId(appId, studyId, account.getClientTimeZone());
 
         AdherenceState.Builder builder = new AdherenceState.Builder();
         builder.withEvents(events);
         builder.withNow(getCreatedOn());
-        builder.withClientTimeZone(DateTimeZone.getDefault().getID());
-        if (account.getClientTimeZone() != null) {
-            builder.withClientTimeZone(account.getClientTimeZone());    
-        }
+        builder.withClientTimeZone(zoneId);
         AdherenceState state = builder.build();
 
         Timeline timeline = Scheduler.INSTANCE.calculateTimeline(schedule);

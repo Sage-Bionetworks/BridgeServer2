@@ -31,7 +31,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.joda.time.DateTime;
-
+import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.cache.CacheProvider;
@@ -65,6 +65,27 @@ public class StudyService {
     private Schedule2Service scheduleService;
     @Autowired
     private AccountService accountService;
+    
+    protected String getDefaultTimeZoneId() { 
+        return DateTimeZone.getDefault().getID();
+    }
+    
+    /**
+     * Find the appropriate time zone for a specific participant. If clientTimeZoneId 
+     * exists, that is returned. Otherwise, the study’s time zone is returned. If that
+     * doesn’t exist, the system’s time zone is returned.
+     */
+    public String getZoneId(String appId, String studyId, String clientTimeZoneId) {
+        if (clientTimeZoneId != null) {
+            return clientTimeZoneId;
+        } else {
+            Study study = getStudy(appId, studyId, false);
+            if (study != null && study.getStudyTimeZone() != null) {
+                return study.getStudyTimeZone();
+            }
+        }
+        return getDefaultTimeZoneId();
+    }
     
     public void removeStudyEtags(String appId, String scheduleGuid) {
         checkNotNull(appId);
