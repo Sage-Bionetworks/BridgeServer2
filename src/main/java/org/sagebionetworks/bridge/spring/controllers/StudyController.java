@@ -63,7 +63,7 @@ public class StudyController extends BaseController {
         this.fileService = fileService;
     }
     
-    @GetMapping(path = {"/v5/studies", "/v3/substudies"})
+    @GetMapping(path = "/v5/studies")
     public PagedResourceList<Study> getStudies(
             @RequestParam(required = false) String offsetBy, 
             @RequestParam(required = false) String pageSize,            
@@ -76,7 +76,7 @@ public class StudyController extends BaseController {
         return service.getStudies(session.getAppId(), offsetByInt, pageSizeInt, includeDeleted);
     }
 
-    @PostMapping(path = {"/v5/studies", "/v3/substudies"})
+    @PostMapping(path = "/v5/studies")
     @ResponseStatus(HttpStatus.CREATED)
     public VersionHolder createStudy() {
         UserSession session = getAuthenticatedSession(STUDY_DESIGNER, STUDY_COORDINATOR, ORG_ADMIN);
@@ -92,7 +92,7 @@ public class StudyController extends BaseController {
     @EtagSupport({
         @EtagCacheKey(model=Study.class, keys={"appId", "studyId"})
     })
-    @GetMapping(path = {"/v5/studies/{studyId}", "/v3/substudies/{studyId}"})
+    @GetMapping(path = "/v5/studies/{studyId}")
     public Study getStudy(@PathVariable String studyId) {
         UserSession session = getAuthenticatedSession();
         
@@ -102,7 +102,7 @@ public class StudyController extends BaseController {
         return study;
     }
 
-    @PostMapping(path = {"/v5/studies/{id}", "/v3/substudies/{id}"})
+    @PostMapping(path = "/v5/studies/{id}")
     public VersionHolder updateStudy(@PathVariable String id) {
         UserSession session = getAdministrativeSession();
         
@@ -114,7 +114,7 @@ public class StudyController extends BaseController {
         return service.updateStudy(session.getAppId(), study);
     }
 
-    @DeleteMapping(path = {"/v5/studies/{id}", "/v3/substudies/{id}"})
+    @DeleteMapping(path = "/v5/studies/{id}")
     public StatusMessage deleteStudy(@PathVariable String id,
             @RequestParam(defaultValue = "false") String physical) {
         UserSession session = getAuthenticatedSession(STUDY_DESIGNER, DEVELOPER);
