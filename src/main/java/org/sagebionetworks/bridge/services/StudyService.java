@@ -70,6 +70,10 @@ public class StudyService {
         return DateTimeZone.getDefault().getID();
     }
     
+    protected DateTime getDateTime() {
+        return DateTime.now();
+    }
+    
     /**
      * Find the appropriate time zone for a specific participant. If clientTimeZoneId 
      * exists, that is returned. Otherwise, the study’s time zone is returned. If that
@@ -118,6 +122,10 @@ public class StudyService {
         Study study = studyDao.getStudy(appId, studyId);
         if (throwsException && study == null) {
             throw new EntityNotFoundException(Study.class);
+        }
+        if (study != null) {
+            CacheKey cacheKey = CacheKey.etag(Study.class, appId, studyId);
+            cacheProvider.setObject(cacheKey, study.getModifiedOn());
         }
         return study;
     }
@@ -197,7 +205,7 @@ public class StudyService {
         
         study.setVersion(0);
         study.setDeleted(false);
-        DateTime timestamp = DateTime.now();
+        DateTime timestamp = getDateTime();
         study.setCreatedOn(timestamp);
         study.setModifiedOn(timestamp);
         
@@ -213,6 +221,9 @@ public class StudyService {
         if (setStudySponsor && orgId != null) {
             sponsorService.createStudyWithSponsorship(appId, study.getIdentifier(), orgId);    
         }
+        CacheKey cacheKey = CacheKey.etag(Study.class, appId, study.getIdentifier());
+        cacheProvider.setObject(cacheKey, study.getModifiedOn());
+
         return version;
     }
 
@@ -237,7 +248,7 @@ public class StudyService {
         }
         study.setAppId(appId);
         study.setCreatedOn(existing.getCreatedOn());
-        study.setModifiedOn(DateTime.now());
+        study.setModifiedOn(getDateTime());
         study.setPhase(existing.getPhase());
 
         StudyValidator validator = new StudyValidator(getCustomEventIdsFromSchedule(appId, study.getScheduleGuid()),
@@ -248,6 +259,9 @@ public class StudyService {
         
         CacheKey cacheKey = CacheKey.publicStudy(appId, study.getIdentifier());
         cacheProvider.removeObject(cacheKey);
+        
+        cacheKey = CacheKey.etag(Study.class, appId, study.getIdentifier());
+        cacheProvider.setObject(cacheKey, study.getModifiedOn());
         
         return keys;
     }
@@ -269,6 +283,9 @@ public class StudyService {
         
         CacheKey cacheKey = CacheKey.publicStudy(appId, studyId);
         cacheProvider.removeObject(cacheKey);
+        
+        cacheKey = CacheKey.etag(Study.class, appId, studyId);
+        cacheProvider.removeObject(cacheKey);
     }
     
     public void deleteStudyPermanently(String appId, String studyId) {
@@ -289,6 +306,9 @@ public class StudyService {
             scheduleService.deleteSchedulePermanently(appId, scheduleGuid);    
         }
         CacheKey cacheKey = CacheKey.publicStudy(appId, studyId);
+        cacheProvider.removeObject(cacheKey);
+
+        cacheKey = CacheKey.etag(Study.class, appId, studyId);
         cacheProvider.removeObject(cacheKey);
     }
     
@@ -377,15 +397,18 @@ public class StudyService {
             throw new BadRequestException("Study cannot transition from " + 
                     study.getPhase().label() + " to " + targetPhase.label() + ".");
         }
-        study.setPhase(targetPhase);
-        
         if (consumer != null) {
             consumer.accept(study);
         }
+        study.setPhase(targetPhase);
+        study.setModifiedOn(getDateTime());
         studyDao.updateStudy(study);
         
         CacheKey cacheKey = CacheKey.publicStudy(appId, studyId);
         cacheProvider.removeObject(cacheKey);
+        
+        cacheKey = CacheKey.etag(Study.class, appId, studyId);
+        cacheProvider.setObject(cacheKey, study.getModifiedOn());
 
         return study;
     }

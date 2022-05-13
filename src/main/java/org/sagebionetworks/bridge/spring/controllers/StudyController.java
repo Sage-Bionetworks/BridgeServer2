@@ -40,6 +40,8 @@ import org.sagebionetworks.bridge.models.files.FileRevision;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.FileService;
 import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.spring.util.EtagCacheKey;
+import org.sagebionetworks.bridge.spring.util.EtagSupport;
 
 @CrossOrigin
 @RestController
@@ -87,12 +89,15 @@ public class StudyController extends BaseController {
         return service.createStudy(session.getAppId(), study, true);
     }
 
-    @GetMapping(path = {"/v5/studies/{id}", "/v3/substudies/{id}"})
-    public Study getStudy(@PathVariable String id) {
+    @EtagSupport({
+        @EtagCacheKey(model=Study.class, keys={"appId", "studyId"})
+    })
+    @GetMapping(path = {"/v5/studies/{studyId}", "/v3/substudies/{studyId}"})
+    public Study getStudy(@PathVariable String studyId) {
         UserSession session = getAuthenticatedSession();
         
-        Study study = service.getStudy(session.getAppId(), id, true);
-        CAN_READ_STUDIES.checkAndThrow(STUDY_ID, id);
+        Study study = service.getStudy(session.getAppId(), studyId, true);
+        CAN_READ_STUDIES.checkAndThrow(STUDY_ID, studyId);
         
         return study;
     }
@@ -175,6 +180,9 @@ public class StudyController extends BaseController {
 
     // This exists because apps want to get rudimentary study data to show participants before they've created their
     // account. For the worker API, see getStudyForWorker() below.
+    @EtagSupport({
+        @EtagCacheKey(model=Study.class, keys={"appId", "studyId"})
+    })
     @GetMapping(path = "/v1/apps/{appId}/studies/{studyId}", produces = { APPLICATION_JSON_VALUE })
     public String getStudyForApp(@PathVariable String appId, @PathVariable String studyId)
             throws JsonProcessingException {

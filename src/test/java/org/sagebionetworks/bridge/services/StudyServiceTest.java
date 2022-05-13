@@ -9,6 +9,7 @@ import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
+import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.SCHEDULE_GUID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_CLIENT_TIME_ZONE;
@@ -111,6 +112,8 @@ public class StudyServiceTest extends Mockito {
         when(mockScheduleService.getScheduleForStudyValidator(any(), any())).thenReturn(Optional.of(schedule));
         when(mockScheduleService.getSchedule(TEST_APP_ID, SCHEDULE_GUID)).thenReturn(schedule);
         when(mockSponsorService.isStudySponsoredBy(TEST_STUDY_ID, TEST_ORG_ID)).thenReturn(true);
+        
+        doReturn(MODIFIED_ON).when(service).getDateTime();
     }
     
     @AfterMethod
@@ -121,12 +124,16 @@ public class StudyServiceTest extends Mockito {
     @Test
     public void getStudy() {
         Study study = Study.create();
+        study.setModifiedOn(MODIFIED_ON);
         when(mockStudyDao.getStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(study);
         
         Study returnedValue = service.getStudy(TEST_APP_ID, TEST_STUDY_ID, true);
         assertEquals(returnedValue, study);
         
         verify(mockStudyDao).getStudy(TEST_APP_ID, TEST_STUDY_ID);
+        
+        CacheKey cacheKey = CacheKey.etag(Study.class, TEST_APP_ID, TEST_STUDY_ID);
+        verify(mockCacheProvider).setObject(cacheKey, MODIFIED_ON);
     }
     
     @Test
@@ -148,6 +155,7 @@ public class StudyServiceTest extends Mockito {
     @Test
     public void getZoneId_defaultZoneReturned() {
         Study study = Study.create();
+        study.setModifiedOn(MODIFIED_ON);
         when(service.getStudy(TEST_APP_ID, TEST_STUDY_ID, false)).thenReturn(study);
         
         doReturn("America/Chicago").when(service).getDefaultTimeZoneId();
@@ -182,6 +190,7 @@ public class StudyServiceTest extends Mockito {
     public void getStudyNotFoundNotThrowingException() {
         Study study = service.getStudy(TEST_APP_ID, TEST_STUDY_ID, false);
         assertNull(study);
+        verify(mockCacheProvider, never()).setObject(any(), any());
     }
 
     @Test
@@ -322,6 +331,9 @@ public class StudyServiceTest extends Mockito {
         assertNotEquals(persisted.getModifiedOn(), timestamp);
         
         verify(mockSponsorService).createStudyWithSponsorship(TEST_APP_ID, TEST_STUDY_ID, TEST_ORG_ID);
+        
+        CacheKey cacheKey = CacheKey.etag(Study.class, TEST_APP_ID, TEST_STUDY_ID);
+        verify(mockCacheProvider).setObject(cacheKey, MODIFIED_ON);
     }
     
     @Test
@@ -405,9 +417,12 @@ public class StudyServiceTest extends Mockito {
         assertEquals(returnedValue.getPhase(), DESIGN);
         assertEquals(returnedValue.getScheduleGuid(), SCHEDULE_GUID);
         assertNotNull(returnedValue.getCreatedOn());
-        assertNotNull(returnedValue.getModifiedOn());
+        assertEquals(returnedValue.getModifiedOn(), MODIFIED_ON);
         
         verify(mockCacheProvider).removeObject(CACHE_KEY);
+        
+        CacheKey cacheKey = CacheKey.etag(Study.class, TEST_APP_ID, TEST_STUDY_ID);
+        verify(mockCacheProvider).setObject(cacheKey, MODIFIED_ON);
     }
     
     @Test
@@ -608,6 +623,9 @@ public class StudyServiceTest extends Mockito {
         assertNotNull(persisted.getModifiedOn());
         
         verify(mockCacheProvider).removeObject(CACHE_KEY);
+        
+        CacheKey cacheKey = CacheKey.etag(Study.class, TEST_APP_ID, TEST_STUDY_ID);
+        verify(mockCacheProvider).removeObject(cacheKey);
     }
     
     @Test(expectedExceptions = BadRequestException.class,
@@ -652,6 +670,9 @@ public class StudyServiceTest extends Mockito {
         verify(mockScheduleService, never()).deleteSchedulePermanently(any(), any());
         verify(mockStudyDao).deleteStudyPermanently(TEST_APP_ID, TEST_STUDY_ID);
         verify(mockCacheProvider).removeObject(CACHE_KEY);
+        
+        CacheKey cacheKey = CacheKey.etag(Study.class, TEST_APP_ID, TEST_STUDY_ID);
+        verify(mockCacheProvider).removeObject(cacheKey);
     }    
 
     @Test
@@ -716,7 +737,8 @@ public class StudyServiceTest extends Mockito {
         service.transitionToDesign(TEST_APP_ID, TEST_STUDY_ID);
         
         verify(mockStudyDao).updateStudy(study);
-        assertEquals(study.getPhase(), DESIGN);        
+        assertEquals(study.getPhase(), DESIGN);     
+        assertEquals(study.getModifiedOn(), MODIFIED_ON);
     }
     
     @Test
@@ -736,6 +758,7 @@ public class StudyServiceTest extends Mockito {
         
         verify(mockStudyDao).updateStudy(study);
         assertEquals(study.getPhase(), RECRUITMENT);
+        assertEquals(study.getModifiedOn(), MODIFIED_ON);
         
         verify(mockScheduleService).publishSchedule(TEST_APP_ID, SCHEDULE_GUID);
     }
@@ -759,6 +782,7 @@ public class StudyServiceTest extends Mockito {
         
         verify(mockStudyDao).updateStudy(study);
         assertEquals(study.getPhase(), RECRUITMENT);
+        assertEquals(study.getModifiedOn(), MODIFIED_ON);
         
         verify(mockScheduleService, never()).publishSchedule(any(), any());
     }
@@ -779,6 +803,7 @@ public class StudyServiceTest extends Mockito {
         
         verify(mockStudyDao).updateStudy(study);
         assertEquals(study.getPhase(), RECRUITMENT);
+        assertEquals(study.getModifiedOn(), MODIFIED_ON);
         assertNull(study.getScheduleGuid());
 
         verifyZeroInteractions(mockScheduleService);
@@ -797,7 +822,8 @@ public class StudyServiceTest extends Mockito {
         service.transitionToInFlight(TEST_APP_ID, TEST_STUDY_ID);
         
         verify(mockStudyDao).updateStudy(study);
-        assertEquals(study.getPhase(), IN_FLIGHT);        
+        assertEquals(study.getPhase(), IN_FLIGHT);    
+        assertEquals(study.getModifiedOn(), MODIFIED_ON);   
     }
     
     @Test
@@ -814,6 +840,7 @@ public class StudyServiceTest extends Mockito {
         
         verify(mockStudyDao).updateStudy(study);
         assertEquals(study.getPhase(), ANALYSIS);
+        assertEquals(study.getModifiedOn(), MODIFIED_ON);
     }
     
     @Test
@@ -830,6 +857,7 @@ public class StudyServiceTest extends Mockito {
         
         verify(mockStudyDao).updateStudy(study);
         assertEquals(study.getPhase(), COMPLETED);
+        assertEquals(study.getModifiedOn(), MODIFIED_ON);
     }
     
     @Test
@@ -847,6 +875,7 @@ public class StudyServiceTest extends Mockito {
         
         verify(mockStudyDao).updateStudy(study);
         assertEquals(study.getPhase(), WITHDRAWN);
+        assertEquals(study.getModifiedOn(), MODIFIED_ON);
         
         verify(mockScheduleService).publishSchedule(TEST_APP_ID, SCHEDULE_GUID);
     }
@@ -868,6 +897,7 @@ public class StudyServiceTest extends Mockito {
         
         verify(mockStudyDao).updateStudy(study);
         assertEquals(study.getPhase(), WITHDRAWN);
+        assertEquals(study.getModifiedOn(), MODIFIED_ON);
         
         verify(mockScheduleService, never()).publishSchedule(any(), any());
     }
@@ -886,6 +916,7 @@ public class StudyServiceTest extends Mockito {
         
         verify(mockStudyDao).updateStudy(study);
         assertEquals(study.getPhase(), WITHDRAWN);
+        assertEquals(study.getModifiedOn(), MODIFIED_ON);
         assertNull(study.getScheduleGuid());
 
         verifyZeroInteractions(mockScheduleService);
@@ -946,6 +977,9 @@ public class StudyServiceTest extends Mockito {
         service.transitionToInFlight(TEST_APP_ID, TEST_STUDY_ID);
         
         verify(mockCacheProvider).removeObject(CACHE_KEY);
+        
+        CacheKey cacheKey = CacheKey.etag(Study.class, TEST_APP_ID, TEST_STUDY_ID);
+        verify(mockCacheProvider).setObject(cacheKey, MODIFIED_ON);
     }
     
     @Test

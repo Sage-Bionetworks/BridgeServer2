@@ -8,6 +8,8 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.services.ParticipantDataService;
+import org.sagebionetworks.bridge.spring.util.EtagCacheKey;
+import org.sagebionetworks.bridge.spring.util.EtagSupport;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -57,6 +59,9 @@ public class ParticipantDataController extends BaseController {
     /**
      * User API to get a single participant data with the given identifier.
      */
+    @EtagSupport({
+        @EtagCacheKey(model=ParticipantData.class, keys={"userId", "identifier"})
+    })
     @GetMapping("/v3/users/self/data/{identifier}")
     public ParticipantData getDataByIdentifierForSelf(@PathVariable String identifier) {
         UserSession session = getAuthenticatedAndConsentedSession();
