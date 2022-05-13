@@ -200,7 +200,7 @@ public class AdminAccountService {
         // None of these values should be changeable by the user.
         account.setAppId(persistedAccount.getAppId());
         account.setAdmin(persistedAccount.isAdmin());
-        account.setDataGroups(persistedAccount.getDataGroups());
+        account.setDataGroups(addToSet(persistedAccount.getDataGroups(), TEST_USER_GROUP));
         account.setCreatedOn(persistedAccount.getCreatedOn());
         account.setHealthCode(persistedAccount.getHealthCode());
         account.setPasswordAlgorithm(persistedAccount.getPasswordAlgorithm());
@@ -208,7 +208,6 @@ public class AdminAccountService {
         account.setPasswordModifiedOn(persistedAccount.getPasswordModifiedOn());
         account.setOrgMembership(persistedAccount.getOrgMembership());
         account.setMigrationVersion(persistedAccount.getMigrationVersion());
-        account.setDataGroups(addToSet(account.getDataGroups(), TEST_USER_GROUP));
         account.setModifiedOn(getModifiedOn());
         account.setPhoneVerified(persistedAccount.getPhoneVerified());
         account.setEmailVerified(persistedAccount.getEmailVerified());

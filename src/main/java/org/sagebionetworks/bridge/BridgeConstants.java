@@ -115,6 +115,12 @@ public class BridgeConstants {
     
     public static final String TEST_USER_GROUP = "test_user";
     
+    /** 
+     * This kind of test user is deleted when a study is moved from design to recruitment. Once tagged
+     * with this tag, the account cannot remove it, and the account cannot be enrolled in a second study.
+     */
+    public static final String PREVIEW_USER_GROUP = "preview_user";
+    
     public static final String EXPIRATION_PERIOD_KEY = "expirationPeriod";
     
     public static final String CONSENT_URL = "consentUrl";

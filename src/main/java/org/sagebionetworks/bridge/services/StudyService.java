@@ -63,6 +63,8 @@ public class StudyService {
     private CacheProvider cacheProvider;
     @Autowired
     private Schedule2Service scheduleService;
+    @Autowired
+    private AccountService accountService;
     
     protected String getDefaultTimeZoneId() { 
         return DateTimeZone.getDefault().getID();
@@ -308,6 +310,7 @@ public class StudyService {
      */
     public Study transitionToRecruitment(String appId, String studyId) {
         return phaseTransition(appId, studyId, RECRUITMENT, (study) -> {
+            accountService.deleteAllPreviewAccounts(appId, studyId);
             if (study.getScheduleGuid() != null) {
                 Schedule2 schedule = scheduleService.getSchedule(appId, study.getScheduleGuid());
                 if (!schedule.isPublished()) {

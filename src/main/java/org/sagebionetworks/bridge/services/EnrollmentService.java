@@ -10,6 +10,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
+import static org.sagebionetworks.bridge.BridgeConstants.PREVIEW_USER_GROUP;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.BridgeUtils.addToSet;
 import static org.sagebionetworks.bridge.BridgeUtils.getElement;
@@ -50,30 +51,18 @@ import org.sagebionetworks.bridge.validators.Validate;
 @Component
 public class EnrollmentService {
     
+    static final String PREVIEW_USER_ERROR_MSG = "Preview accounts can only enroll in one study";
+    
     private static class EnrollmentHolder {
         Enrollment enrollment;
     }
     
+    @Autowired
     private AccountService accountService;
-    
+    @Autowired
     private EnrollmentDao enrollmentDao;
-    
+    @Autowired
     private StudyService studyService;
-    
-    @Autowired
-    final void setAccountService(AccountService accountService) {
-        this.accountService = accountService;
-    }
-    
-    @Autowired
-    final void setEnrollmentDao(EnrollmentDao enrollmentDao) {
-        this.enrollmentDao = enrollmentDao;
-    }
-    
-    @Autowired
-    final void setStudyService(StudyService studyService) {
-        this.studyService = studyService;
-    }
     
     protected DateTime getEnrollmentDateTime() {
         return DateTime.now();
@@ -171,6 +160,13 @@ public class EnrollmentService {
         checkNotNull(account);
         checkNotNull(newEnrollment);
         
+        if (account.getDataGroups().contains(PREVIEW_USER_GROUP)) {
+            Set<String> studyIds = BridgeUtils.collectStudyIds(account);
+            Set<String> targetId = ImmutableSet.of(newEnrollment.getStudyId());
+            if (!studyIds.isEmpty() && !studyIds.equals(targetId)) {
+                throw new BadRequestException(PREVIEW_USER_ERROR_MSG);
+            }
+        }
         Validate.entityThrowingException(INSTANCE, newEnrollment);
         
         Study study = studyService.getStudy(newEnrollment.getAppId(), newEnrollment.getStudyId(), true);
@@ -286,6 +282,7 @@ public class EnrollmentService {
             if (accountEnrollment.getStudyId().equals(enrollment.getStudyId())) {
                 accountEnrollment.setNote(enrollment.getNote());
                 accountEnrollment.setWithdrawalNote(enrollment.getWithdrawalNote());
+                accountEnrollment.setConsentRequired(enrollment.isConsentRequired());
                 accountService.updateAccount(account);
                 return;
             }
