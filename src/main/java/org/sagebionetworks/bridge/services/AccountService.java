@@ -297,24 +297,24 @@ public class AccountService {
     public void deleteAllPreviewAccounts(String appId, String studyId) {
         checkNotNull(appId);
         checkNotNull(studyId);
-        
-        Set<String> allOfGroups = ImmutableSet.of(PREVIEW_USER_GROUP);
+
         AccountSummarySearch.Builder searchBuilder = new AccountSummarySearch.Builder()
                 .withPageSize(API_MAXIMUM_PAGE_SIZE)
-                .withAllOfGroups(allOfGroups)
+                .withAllOfGroups(ImmutableSet.of(PREVIEW_USER_GROUP))
                 .withEnrolledInStudyId(studyId);
+        
+        // Retrieve and delete pages from offset 0 until no items are returned. Currently
+        // an error will halt the process, but there are not many (or any) ways for a 
+        // participant to be unremovable in the database
         PagedResourceList<AccountSummary> page = null;
-        int offset = 0;
         do {
-            searchBuilder.withOffsetBy(offset);
             page = getPagedAccountSummaries(appId, searchBuilder.build());
             for (AccountSummary summary : page.getItems()) {
                 // It is too slow to use deleteAccount because it cleans up a ton of
                 // DynamoDB resources. So... we leave all the non-relational data behind.
                 accountDao.deleteAccount(summary.getId());
             }
-            offset += API_MAXIMUM_PAGE_SIZE;
-        } while(offset < page.getTotal());
+        } while(!page.getItems().isEmpty());
     }
 
     /**

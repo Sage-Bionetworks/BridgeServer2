@@ -845,21 +845,20 @@ public class AccountServiceTest extends Mockito {
                 ImmutableList.of(summary1, summary2, summary3), API_MAXIMUM_PAGE_SIZE+1);
         PagedResourceList<AccountSummary> page2 = new PagedResourceList<>(
                 ImmutableList.of(summary4, summary5, summary6), API_MAXIMUM_PAGE_SIZE+1);
-        when(mockAccountDao.getPagedAccountSummaries(eq(TEST_APP_ID), any())).thenReturn(page1, page2);
+        PagedResourceList<AccountSummary> page3 = new PagedResourceList<>(
+                ImmutableList.of(), API_MAXIMUM_PAGE_SIZE+1);
+        when(mockAccountDao.getPagedAccountSummaries(eq(TEST_APP_ID), any())).thenReturn(page1, page2, page3);
         
         service.deleteAllPreviewAccounts(TEST_APP_ID, TEST_STUDY_ID);
         
-        verify(mockAccountDao, times(2)).getPagedAccountSummaries(eq(TEST_APP_ID), searchCaptor.capture());
+        verify(mockAccountDao, times(3)).getPagedAccountSummaries(eq(TEST_APP_ID), searchCaptor.capture());
         
         AccountSummarySearch capturedSearch = searchCaptor.getAllValues().get(0);
         assertEquals(capturedSearch.getPageSize(), API_MAXIMUM_PAGE_SIZE);
         assertEquals(capturedSearch.getAllOfGroups(), ImmutableSet.of(PREVIEW_USER_GROUP));
         assertEquals(capturedSearch.getEnrolledInStudyId(), TEST_STUDY_ID);
         assertEquals(capturedSearch.getOffsetBy(), 0);
-        
-        capturedSearch = searchCaptor.getAllValues().get(1);
-        assertEquals(capturedSearch.getOffsetBy(), 100);
-        
+
         verify(mockAccountDao).deleteAccount("user1");
         verify(mockAccountDao).deleteAccount("user2");
         verify(mockAccountDao).deleteAccount("user3");
