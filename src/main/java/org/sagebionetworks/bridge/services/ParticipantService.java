@@ -147,8 +147,6 @@ public class ParticipantService {
     @Autowired
     private StudyService studyService;
     @Autowired
-    private OrganizationService organizationService;
-    @Autowired
     private EnrollmentService enrollmentService;
     @Autowired
     private BridgeConfig bridgeConfig;
@@ -370,8 +368,7 @@ public class ParticipantService {
             throwExceptionIfLimitMetOrExceeded(app);
         }
         
-        StudyParticipantValidator validator = new StudyParticipantValidator(studyService, organizationService, app,
-                true);
+        StudyParticipantValidator validator = new StudyParticipantValidator(studyService, app, true);
         Validate.entityThrowingException(validator, participant);
         
         // Set basic params from inputs.
@@ -460,8 +457,7 @@ public class ParticipantService {
         checkNotNull(app);
         checkNotNull(participant);
 
-        StudyParticipantValidator validator = new StudyParticipantValidator(studyService, organizationService, app,
-                false);
+        StudyParticipantValidator validator = new StudyParticipantValidator(studyService, app, false);
         Validate.entityThrowingException(validator, participant);
         
         Account account = getAccountThrowingException(app.getIdentifier(), participant.getId());
