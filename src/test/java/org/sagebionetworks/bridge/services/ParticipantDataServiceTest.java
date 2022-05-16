@@ -108,6 +108,7 @@ public class ParticipantDataServiceTest extends Mockito {
                 CacheKey.etag(ParticipantData.class, userId, identifier), MODIFIED_ON);
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     public void testDeleteAllParticipantData() {
         ParticipantData data1 = ParticipantData.create();
@@ -123,12 +124,12 @@ public class ParticipantDataServiceTest extends Mockito {
         ForwardCursorPagedResourceList<ParticipantData> list1 = 
                 new ForwardCursorPagedResourceList<>(ImmutableList.of(data1, data2), "asdf");
         ForwardCursorPagedResourceList<ParticipantData> list2 = 
-                new ForwardCursorPagedResourceList<>(ImmutableList.of(data3, data4), null);
+                new ForwardCursorPagedResourceList<>(ImmutableList.of(data3, data4), "efgh");
+        ForwardCursorPagedResourceList<ParticipantData> list3 = 
+                new ForwardCursorPagedResourceList<>(ImmutableList.of(), null);
 
         when(mockDao.getAllParticipantData(TEST_USER_ID, null, API_MAXIMUM_PAGE_SIZE))
-            .thenReturn(list1);
-        when(mockDao.getAllParticipantData(TEST_USER_ID, "asdf", API_MAXIMUM_PAGE_SIZE))
-            .thenReturn(list2);
+            .thenReturn(list1, list2, list3);
         
         service.deleteAllParticipantData(TEST_USER_ID);
 

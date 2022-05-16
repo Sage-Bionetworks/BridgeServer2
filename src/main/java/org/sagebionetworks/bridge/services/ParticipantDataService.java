@@ -77,15 +77,13 @@ public class ParticipantDataService {
     public void deleteAllParticipantData(String userId) {
         
         ForwardCursorPagedResourceList<ParticipantData> page = null;
-        String offsetKey = null;
         do {
-            page = getAllParticipantData(userId, offsetKey, API_MAXIMUM_PAGE_SIZE);
+            page = getAllParticipantData(userId, null, API_MAXIMUM_PAGE_SIZE);
             for (ParticipantData data : page.getItems()) {
                 CacheKey cacheKey = CacheKey.etag(ParticipantData.class, userId, data.getIdentifier());
                 cacheProvider.removeObject(cacheKey);
             }
-            offsetKey = page.getNextPageOffsetKey();
-        } while(offsetKey != null);
+        } while(!page.getItems().isEmpty());
         
         participantDataDao.deleteAllParticipantData(userId);
     }
