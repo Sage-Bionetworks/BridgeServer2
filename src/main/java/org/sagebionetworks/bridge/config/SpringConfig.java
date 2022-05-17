@@ -5,10 +5,11 @@ import static org.hibernate.event.spi.EventType.DELETE;
 import static org.hibernate.event.spi.EventType.MERGE;
 import static org.hibernate.event.spi.EventType.SAVE_UPDATE;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -43,6 +44,7 @@ import com.google.common.collect.ImmutableMap;
 import com.mchange.v2.c3p0.DriverManagerDataSource;
 
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.io.FileUtils;
 import org.hibernate.SessionFactory;
 import org.hibernate.boot.MetadataSources;
 import org.hibernate.boot.registry.StandardServiceRegistry;
@@ -61,7 +63,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
-
+import org.springframework.core.io.ClassPathResource;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
@@ -591,23 +593,24 @@ public class SpringConfig {
     @Bean
     @Autowired
     public SessionFactory hibernateSessionFactory(TagEventListener listener) {
-        ClassLoader classLoader = getClass().getClassLoader();
-
         // Need to set env vars to find the truststore so we can validate Amazon's RDS SSL certificate. Note that
         // because this truststore only contains public certs (CA certs and Amazon's RDS certs), we can include the
-        // truststore in our source repo and set the password to something public.
+        // truststore in our source repo and set the password to something public. We currently have not found
+        // a way to read it directly from the jar file without copying it to a temporary file first to get a 
+        // viable loading path.
         //
-        // For more information, see
-        // https://stackoverflow.com/questions/32156046/using-java-to-establish-a-secure-connection-to-mysql-amazon-rds-ssl-tls
-        // https://stackoverflow.com/questions/27536380/how-to-connect-to-a-remote-mysql-database-via-ssl-using-play-framework/27536391
-        Path trustStorePath = null;
-        try {
-            trustStorePath = Paths.get(classLoader.getResource("truststore.jks").toURI());
-        } catch (URISyntaxException ex/*IOException ex*/) {
-            throw new RuntimeException("Error loading truststore from classpath: " + ex.getMessage(), ex);
+        // See: https://github.com/viniciusccarvalho/boot-two-way-ssl-example/issues/1
+        //
+        // This happens every start-up, which is not ideal.
+        ClassPathResource classPathResource = new ClassPathResource("truststore.jks");
+        try (InputStream inputStream = classPathResource.getInputStream() ) {
+            File truststore = File.createTempFile("truststore", ".jks");
+            FileUtils.copyInputStreamToFile(inputStream, truststore);
+            System.setProperty("javax.net.ssl.trustStore", truststore.getPath());
+            System.setProperty("javax.net.ssl.trustStorePassword", "public");
+        } catch(IOException ioe) {
+            throw new RuntimeException("Error loading truststore from classpath: " + ioe.getMessage(), ioe);
         }
-        System.setProperty("javax.net.ssl.trustStore", trustStorePath.toString());
-        System.setProperty("javax.net.ssl.trustStorePassword", "public");
 
         // Hibernate configs
         Properties props = new Properties();
