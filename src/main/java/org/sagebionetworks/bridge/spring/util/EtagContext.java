@@ -18,6 +18,7 @@ public class EtagContext {
     private final Class<?> model;
     private final List<EtagCacheKey> cacheKeys;
     private final Map<String,Object> argumentValues;
+    private final boolean authenticationRequired; 
 
     public EtagContext(ProceedingJoinPoint joinPoint) {
         MethodSignature method = (MethodSignature)joinPoint.getSignature();
@@ -25,6 +26,7 @@ public class EtagContext {
         
         EtagSupport[] etag = method.getMethod().getAnnotationsByType(EtagSupport.class);
         cacheKeys = Arrays.asList(etag[0].value());
+        authenticationRequired = etag[0].authenticationRequired();
         
         argumentValues = new HashMap<>();
         int len = joinPoint.getArgs().length;
@@ -43,5 +45,8 @@ public class EtagContext {
     }
     public Map<String,Object> getArgValues() {
         return argumentValues;
+    }
+    public boolean isAuthenticationRequired() {
+        return authenticationRequired;
     }
 }

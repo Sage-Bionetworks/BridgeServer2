@@ -180,7 +180,7 @@ public class StudyController extends BaseController {
 
     // This exists because apps want to get rudimentary study data to show participants before they've created their
     // account. For the worker API, see getStudyForWorker() below.
-    @EtagSupport({
+    @EtagSupport(authenticationRequired=false, value = {
         @EtagCacheKey(model=Study.class, keys={"appId", "studyId"})
     })
     @GetMapping(path = "/v1/apps/{appId}/studies/{studyId}", produces = { APPLICATION_JSON_VALUE })
