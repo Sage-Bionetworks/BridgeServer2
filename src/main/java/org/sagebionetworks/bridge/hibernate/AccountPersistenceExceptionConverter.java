@@ -17,12 +17,14 @@ import org.sagebionetworks.bridge.models.organizations.Organization;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 
 @Component
+@Lazy
 public class AccountPersistenceExceptionConverter implements PersistenceExceptionConverter {
     private static final Logger LOG = LoggerFactory.getLogger(AccountPersistenceExceptionConverter.class);
 
