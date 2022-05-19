@@ -80,6 +80,7 @@ import org.sagebionetworks.bridge.models.apps.SynapseProjectIdTeamIdHolder;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadView;
 import org.sagebionetworks.bridge.services.AccountService;
+import org.sagebionetworks.bridge.services.AdminAccountService;
 import org.sagebionetworks.bridge.services.EmailVerificationService;
 import org.sagebionetworks.bridge.services.AppService;
 import org.sagebionetworks.bridge.services.UploadCertificateService;
@@ -123,6 +124,9 @@ public class AppControllerTest extends Mockito {
     
     @Mock
     AccountService mockAccountService;
+    
+    @Mock
+    AdminAccountService mockAdminAccountService;
     
     @Mock
     BridgeConfig mockBridgeConfig;
@@ -268,23 +272,21 @@ public class AppControllerTest extends Mockito {
         app.setSynapseDataAccessTeamId(null);
         app.setVersion(1L);
 
-        StudyParticipant mockUser1 = new StudyParticipant.Builder()
-                .withEmail(TEST_USER_EMAIL)
-                .withFirstName(TEST_USER_FIRST_NAME)
-                .withLastName(TEST_USER_LAST_NAME)
-                .withRoles(ImmutableSet.of(RESEARCHER, DEVELOPER))
-                .withPassword(TEST_USER_PASSWORD)
-                .build();
+        Account account1 = Account.create();
+        account1.setEmail(TEST_USER_EMAIL);
+        account1.setFirstName(TEST_USER_FIRST_NAME);
+        account1.setLastName(TEST_USER_LAST_NAME);
+        account1.setRoles(ImmutableSet.of(RESEARCHER, DEVELOPER));
+        account1.setPassword(TEST_USER_PASSWORD);
 
-        StudyParticipant mockUser2 = new StudyParticipant.Builder()
-                .withEmail(TEST_USER_EMAIL_2)
-                .withFirstName(TEST_USER_FIRST_NAME)
-                .withLastName(TEST_USER_LAST_NAME)
-                .withRoles(ImmutableSet.of(RESEARCHER))
-                .withPassword(TEST_USER_PASSWORD)
-                .build();
+        Account account2 = Account.create();
+        account2.setEmail(TEST_USER_EMAIL_2);
+        account2.setFirstName(TEST_USER_FIRST_NAME);
+        account2.setLastName(TEST_USER_LAST_NAME);
+        account2.setRoles(ImmutableSet.of(RESEARCHER));
+        account2.setPassword(TEST_USER_PASSWORD);
 
-        List<StudyParticipant> mockUsers = ImmutableList.of(mockUser1, mockUser2);
+        List<Account> mockUsers = ImmutableList.of(account1, account2);
         List<String> adminIds = ImmutableList.of(TEST_ADMIN_ID_1, TEST_ADMIN_ID_2);
 
         AppAndUsers mockAppAndUsers = new AppAndUsers(adminIds, app, mockUsers);
@@ -302,11 +304,11 @@ public class AppControllerTest extends Mockito {
         verify(mockAppService, times(1)).createAppAndUsers(any());
         AppAndUsers capObj = argumentCaptor.getValue();
         assertEquals(capObj.getApp(), app);
-        assertEquals(capObj.getUsers(), mockUsers);
+        assertEquals(capObj.getUsers().get(0).getEmail(), TEST_USER_EMAIL);
+        assertEquals(capObj.getUsers().get(1).getEmail(), TEST_USER_EMAIL_2);
         assertEquals(capObj.getAdminIds(), adminIds);
         assertEquals(result.getVersion(), app.getVersion());
     }
-
 
     @Test
     public void canCreateSynapse() throws Exception {
@@ -749,9 +751,11 @@ public class AppControllerTest extends Mockito {
         App newApp = App.create();
         newApp.setName("some app");
         
+        Account account = Account.create();
+        
         AppAndUsers appAndUsers = new AppAndUsers(
                 ImmutableList.of("admin1", "admin2"), newApp,
-                ImmutableList.of(new StudyParticipant.Builder().build()));
+                ImmutableList.of(account));
         mockRequestBody(mockRequest, appAndUsers);
         
         VersionHolder keys = controller.createAppAndUsers();
@@ -820,7 +824,7 @@ public class AppControllerTest extends Mockito {
         mockApp("App A", "appA", false);
         
         List<String> list = ImmutableList.of("appA", "appB", "appC");
-        when(mockAccountService.getAppIdsForUser(SYNAPSE_USER_ID)).thenReturn(list);
+        when(mockAdminAccountService.getAppIdsForUser(SYNAPSE_USER_ID)).thenReturn(list);
         
         String jsonString = controller.getAppMemberships();
         JsonNode node = BridgeObjectMapper.get().readTree(jsonString).get("items");
@@ -847,7 +851,7 @@ public class AppControllerTest extends Mockito {
         JsonNode node = BridgeObjectMapper.get().readTree(jsonString).get("items");
         
         assertEquals(node.size(), 0);
-        verify(mockAccountService, never()).getAppIdsForUser(SYNAPSE_USER_ID);
+        verify(mockAdminAccountService, never()).getAppIdsForUser(SYNAPSE_USER_ID);
     }
     
     @Test
@@ -869,7 +873,7 @@ public class AppControllerTest extends Mockito {
         
         // This user is only associated to the API app, but they are an admin
         List<String> list = ImmutableList.of(TEST_APP_ID);
-        when(mockAccountService.getAppIdsForUser(SYNAPSE_USER_ID)).thenReturn(list);
+        when(mockAdminAccountService.getAppIdsForUser(SYNAPSE_USER_ID)).thenReturn(list);
         
         String jsonString = controller.getAppMemberships();
         JsonNode node = BridgeObjectMapper.get().readTree(jsonString).get("items");

@@ -55,37 +55,16 @@ import com.google.common.collect.Sets;
 
 @Component
 public class AdminAccountService {
+    @Autowired
     private AppService appService;
+    @Autowired
     private AccountWorkflowService accountWorkflowService;
+    @Autowired
     private SmsService smsService;
+    @Autowired
     private AccountDao accountDao;
+    @Autowired
     private CacheProvider cacheProvider;
-    private RequestInfoService requestInfoService;
-    
-    @Autowired
-    final void setAppService(AppService appService) {
-        this.appService = appService;
-    }
-    @Autowired
-    final void setAccountWorkflowService(AccountWorkflowService accountWorkflowService) {
-        this.accountWorkflowService = accountWorkflowService;
-    }
-    @Autowired
-    final void setSmsService(SmsService smsService) {
-        this.smsService = smsService;
-    }
-    @Autowired
-    final void setAccountDao(AccountDao accountDao) {
-        this.accountDao = accountDao;
-    }
-    @Autowired
-    final void setCacheProvider(CacheProvider cacheProvider) {
-        this.cacheProvider = cacheProvider;
-    }
-    @Autowired
-    final void setRequestInfoService(RequestInfoService requestInfoService) {
-        this.requestInfoService = requestInfoService;
-    }
     
     // accessor for mocking in tests
     protected DateTime getCreatedOn() {
@@ -221,7 +200,7 @@ public class AdminAccountService {
         // None of these values should be changeable by the user.
         account.setAppId(persistedAccount.getAppId());
         account.setAdmin(persistedAccount.isAdmin());
-        account.setDataGroups(persistedAccount.getDataGroups());
+        account.setDataGroups(addToSet(persistedAccount.getDataGroups(), TEST_USER_GROUP));
         account.setCreatedOn(persistedAccount.getCreatedOn());
         account.setHealthCode(persistedAccount.getHealthCode());
         account.setPasswordAlgorithm(persistedAccount.getPasswordAlgorithm());
@@ -229,7 +208,6 @@ public class AdminAccountService {
         account.setPasswordModifiedOn(persistedAccount.getPasswordModifiedOn());
         account.setOrgMembership(persistedAccount.getOrgMembership());
         account.setMigrationVersion(persistedAccount.getMigrationVersion());
-        account.setDataGroups(addToSet(account.getDataGroups(), TEST_USER_GROUP));
         account.setModifiedOn(getModifiedOn());
         account.setPhoneVerified(persistedAccount.getPhoneVerified());
         account.setEmailVerified(persistedAccount.getEmailVerified());
@@ -252,22 +230,7 @@ public class AdminAccountService {
         
         return account;
     }
-    
-    public void deleteAccount(String appId, String userId) {
-        checkNotNull(appId);
-        checkNotNull(userId);
-        
-        AccountId accountId = AccountId.forId(appId,  userId);
-        Optional<Account> opt = accountDao.getAccount(accountId);
-        if (opt.isPresent()) {
-            Account account = opt.get();
-            accountDao.deleteAccount(account.getId());
-            
-            cacheProvider.removeSessionByUserId(account.getId());
-            requestInfoService.removeRequestInfo(account.getId());
-        }
-    }
-    
+
     protected void sendVerificationMessages(App app, Account original, Account update) {
         if (!nullSafeEquals(original.getEmail(), update.getEmail())) {
             update.setEmailVerified(FALSE);

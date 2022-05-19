@@ -96,6 +96,7 @@ import org.sagebionetworks.bridge.models.oauth.OAuthAuthorizationToken;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.AccountWorkflowService;
+import org.sagebionetworks.bridge.services.AdminAccountService;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.AppService;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
@@ -136,6 +137,9 @@ public class AuthenticationControllerTest extends Mockito {
     
     @Mock
     AccountService mockAccountService;
+    
+    @Mock
+    AdminAccountService mockAdminAccountService;
     
     @Mock
     AppService mockAppService;
@@ -1386,7 +1390,7 @@ public class AuthenticationControllerTest extends Mockito {
         userSession.setSynapseAuthenticated(true);
         doReturn(userSession).when(controller).getAuthenticatedSession();
         
-        when(mockAccountService.getAppIdsForUser(SYNAPSE_USER_ID))
+        when(mockAdminAccountService.getAppIdsForUser(SYNAPSE_USER_ID))
             .thenReturn(ImmutableList.of(TEST_APP_ID));
         
         App newApp = App.create();

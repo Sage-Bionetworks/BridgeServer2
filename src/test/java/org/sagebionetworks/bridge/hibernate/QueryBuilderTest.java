@@ -60,20 +60,20 @@ public class QueryBuilderTest {
     }
     
     @Test
-    public void whereClause_adminOnlyRequired() {
+    public void whereClause_booleanField() {
         QueryBuilder builder = new QueryBuilder();
         WhereClauseBuilder where = builder.startWhere(AND);
-        where.adminOnlyRequired(null);
+        where.appendBoolean("admin", null);
         assertEquals(builder.getQuery(), "");
         
         builder = new QueryBuilder();
         where = builder.startWhere(AND);
-        where.adminOnlyRequired(true);
+        where.appendBoolean("admin", true);
         assertEquals(builder.getQuery(), "WHERE admin = 1");
 
         builder = new QueryBuilder();
         where = builder.startWhere(AND);
-        where.adminOnlyRequired(false);
+        where.appendBoolean("admin", false);
         assertEquals(builder.getQuery(), "WHERE admin = 0");
     }
     

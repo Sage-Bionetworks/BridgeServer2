@@ -70,7 +70,9 @@ public class HibernateAdherenceRecordDao implements AdherenceRecordDao {
         builder.append(BASE_QUERY);
         
         WhereClauseBuilder where = builder.startWhere(AND);
-        where.appendRequired("ar.userId = :userId", "userId", search.getUserId());
+        if (search.getUserId() != null) {
+            where.appendRequired("ar.userId = :userId", "userId", search.getUserId());    
+        }
         where.appendRequired("ar.studyId = :studyId", "studyId", search.getStudyId());
         
         // Note that by design, this finds both shared/local assessments with the
@@ -91,6 +93,8 @@ public class HibernateAdherenceRecordDao implements AdherenceRecordDao {
             where.append("tm.timeWindowGuid IN :timeWindowGuids",
                     "timeWindowGuids", search.getTimeWindowGuids());
         }
+        where.appendBoolean("declined", search.isDeclined());
+        
         if (FALSE.equals(search.getIncludeRepeats())) {
             // This only works on records that have startedOn values...declined records can have a null
             // startedOn and will not appear in a search with includeRepeats=false.

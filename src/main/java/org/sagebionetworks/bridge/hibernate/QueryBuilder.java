@@ -107,12 +107,12 @@ class QueryBuilder {
                 whereParams.put(key, value);
             }
         }
-        public void adminOnlyRequired(Boolean isAdmin) {
-            if (isAdmin != null) {
-                if (TRUE.equals(isAdmin)) {
-                    appendRequired("admin = 1");
+        public void appendBoolean(String fieldName, Boolean value) {
+            if (value != null) {
+                if (TRUE.equals(value)) {
+                    appendRequired(fieldName + " = 1");
                 } else {
-                    appendRequired("admin = 0");
+                    appendRequired(fieldName + " = 0");
                 }
             }
         }

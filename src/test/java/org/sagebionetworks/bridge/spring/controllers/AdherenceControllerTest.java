@@ -22,6 +22,7 @@ import static org.sagebionetworks.bridge.models.AccountTestFilter.PRODUCTION;
 import static org.sagebionetworks.bridge.models.AccountTestFilter.TEST;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantStudyProgress.IN_PROGRESS;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
 
 import java.util.List;
@@ -126,9 +127,34 @@ public class AdherenceControllerTest extends Mockito {
         assertGet(AdherenceController.class, "getEventStreamAdherenceReport");
         assertGet(AdherenceController.class, "getEventStreamAdherenceReportForSelf");
         assertPost(AdherenceController.class, "updateAdherenceRecords");
+        assertPost(AdherenceController.class, "searchForAdherenceRecordsForStudy");
         assertPost(AdherenceController.class, "searchForAdherenceRecordsForSelf");
         assertPost(AdherenceController.class, "searchForAdherenceRecords");
         assertDelete(AdherenceController.class, "deleteAdherenceRecord");
+    }
+    
+    @Test
+    public void searchForAdherenceRecordsForStudy() throws Exception {
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_DESIGNER, STUDY_COORDINATOR);
+        
+        AdherenceRecordsSearch search = new AdherenceRecordsSearch.Builder()
+                .withUserId(TEST_USER_ID) // this will be nullified
+                .withAssessmentIds(ImmutableSet.of("A", "B", "C"))
+                .build();
+        TestUtils.mockRequestBody(mockRequest, search);
+        
+        PagedResourceList<AdherenceRecord> page = new PagedResourceList<>(ImmutableList.of(), 0);
+        when(mockService.getAdherenceRecords(any(), any())).thenReturn(page);
+        
+        PagedResourceList<AdherenceRecord> retValue = controller.searchForAdherenceRecordsForStudy(TEST_STUDY_ID);
+        assertSame(retValue, page);
+        
+        verify(mockService).getAdherenceRecords(eq(TEST_APP_ID), searchCaptor.capture());
+        
+        AdherenceRecordsSearch captured = searchCaptor.getValue();
+        assertNull(captured.getUserId());
+        assertEquals(captured.getStudyId(), TEST_STUDY_ID);
+        assertEquals(captured.getAssessmentIds(), ImmutableSet.of("A", "B", "C"));
     }
 
     @Test

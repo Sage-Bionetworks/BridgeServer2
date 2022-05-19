@@ -53,20 +53,11 @@ public class EtagComponent {
     private static final String USER_ID_FIELD = "userId";
     private static final String APP_ID_FIELD = "appId";
     
+    @Autowired
     private CacheProvider cacheProvider;
-    
+    @Autowired
     private DigestUtils md5DigestUtils;
     
-    @Autowired
-    final void setCacheProvider(CacheProvider cacheProvider) {
-        this.cacheProvider = cacheProvider;
-    }
-    
-    @Autowired
-    final void setDigestUtils(DigestUtils md5DigestUtils) {
-        this.md5DigestUtils = md5DigestUtils;
-    }
-
     protected HttpServletRequest request() {
         return ((ServletRequestAttributes) RequestContextHolder
                 .currentRequestAttributes()).getRequest();
@@ -93,12 +84,15 @@ public class EtagComponent {
         // Because this tag executes before security checks, it requires that the caller be 
         // authenticated. We can add a flag if we want to use this code on public endpoints 
         // to skip a check of the session.
-        if (sessionToken == null) {
-            throw new NotAuthenticatedException();
-        }
-        UserSession session = cacheProvider.getUserSession(sessionToken);
-        if (session == null) {
-            throw new NotAuthenticatedException();
+        UserSession session = null;
+        if (context.isAuthenticationRequired()) {
+            if (sessionToken == null) {
+                throw new NotAuthenticatedException();
+            }
+            session = cacheProvider.getUserSession(sessionToken);
+            if (session == null) {
+                throw new NotAuthenticatedException();
+            }
         }
         
         // Etag can be null (until all dependent objects have cached their timestamps, 
@@ -201,6 +195,9 @@ public class EtagComponent {
                 throw new IllegalArgumentException(NO_VALUE_ERROR + fieldName);
             }
             return value;
+        }
+        if (session == null) {
+            throw new IllegalArgumentException("Cannot find value in unauthenticated query: " + fieldName);
         }
         String value = null;
         switch(fieldName) {

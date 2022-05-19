@@ -2,6 +2,8 @@ package org.sagebionetworks.bridge.services;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
+import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
+import static org.sagebionetworks.bridge.BridgeConstants.PREVIEW_USER_GROUP;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.BridgeUtils.getElement;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
@@ -15,7 +17,6 @@ import static org.sagebionetworks.bridge.TestConstants.ACCOUNT_ID;
 import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
-import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
@@ -34,7 +35,6 @@ import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -63,9 +63,9 @@ import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.AccountSecretDao;
-import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
+import org.sagebionetworks.bridge.models.AccountSummarySearch;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
@@ -99,14 +99,11 @@ public class AccountServiceTest extends Mockito {
     AccountSecretDao mockAccountSecretDao;
     
     @Mock
-    AppService appService;
+    AppService mockAppService;
     
     @Mock
-    StudyActivityEventService studyActivityEventService;
+    StudyActivityEventService mockStudyActivityEventService;
 
-    @Mock
-    ActivityEventService activityEventService;
-    
     @Mock
     PagedResourceList<AccountSummary> mockAccountSummaries;
     
@@ -121,6 +118,30 @@ public class AccountServiceTest extends Mockito {
 
     @Mock
     ParticipantVersionService mockParticipantVersionService;
+    
+    @Mock
+    RequestInfoService mockRequestInfoService;
+
+    @Mock
+    HealthDataService mockHealthDataService;
+    
+    @Mock
+    HealthDataEx3Service mockHealthDataEx3Service;
+    
+    @Mock
+    NotificationsService mockNotificationsService;
+    
+    @Mock
+    UploadService mockUploadService;
+    
+    @Mock
+    ScheduledActivityService mockScheduledActivityService;
+    
+    @Mock
+    ActivityEventService mockActivityEventService;
+    
+    @Mock
+    AccountService mockAccountService;
 
     @InjectMocks
     @Spy
@@ -131,6 +152,9 @@ public class AccountServiceTest extends Mockito {
     
     @Captor
     ArgumentCaptor<StudyActivityEvent> eventCaptor;
+    
+    @Captor
+    ArgumentCaptor<AccountSummarySearch> searchCaptor;
 
     @BeforeClass
     public static void mockNow() {
@@ -153,35 +177,7 @@ public class AccountServiceTest extends Mockito {
     public void afterMethod() {
         RequestContext.set(NULL_INSTANCE);
     }
-
-    @Test
-    public void getAppIdsForUser() {
-        List<String> apps = ImmutableList.of("app1", "app2");
-        when(mockAccountDao.getAppIdForUser(SYNAPSE_USER_ID)).thenReturn(apps);
-
-        List<String> returnVal = service.getAppIdsForUser(SYNAPSE_USER_ID);
-        assertEquals(returnVal, apps);
-        verify(mockAccountDao).getAppIdForUser(SYNAPSE_USER_ID);
-    }
-
-    @Test(expectedExceptions = BadRequestException.class, expectedExceptionsMessageRegExp =
-            "Account does not have a Synapse user")
-    public void getAppIdsForUser_NullSynapseUserId() {
-        service.getAppIdsForUser(null);
-    }
-
-    @Test(expectedExceptions = BadRequestException.class, expectedExceptionsMessageRegExp =
-            "Account does not have a Synapse user")
-    public void getAppIdsForUser_EmptySynapseUserId() {
-        service.getAppIdsForUser("");
-    }
-
-    @Test(expectedExceptions = BadRequestException.class, expectedExceptionsMessageRegExp =
-            "Account does not have a Synapse user")
-    public void getAppIdsForUser_BlankSynapseUserId() {
-        service.getAppIdsForUser("   ");
-    }
-
+    
     @Test
     public void createAccount() {
         App app = App.create();
@@ -467,23 +463,6 @@ public class AccountServiceTest extends Mockito {
     }
 
     @Test
-    public void deleteAccount() throws Exception {
-        mockGetAccountById(ACCOUNT_ID, false);
-
-        service.deleteAccount(ACCOUNT_ID);
-        
-        verify(mockAccountDao).deleteAccount(TEST_USER_ID);
-        verify(mockCacheProvider).removeObject(CacheKey.etag(DateTimeZone.class, TEST_USER_ID));
-    }
-    
-    @Test
-    public void deleteAccountNotFound() {
-        service.deleteAccount(ACCOUNT_ID);
-        verify(mockAccountDao, never()).deleteAccount(any());
-        verify(mockCacheProvider, never()).removeObject(any());
-    }
-
-    @Test
     public void getPagedAccountSummaries() {
         when(mockAccountDao.getPagedAccountSummaries(TEST_APP_ID, EMPTY_SEARCH)).thenReturn(mockAccountSummaries);
 
@@ -562,8 +541,8 @@ public class AccountServiceTest extends Mockito {
         assertEquals(createdAccount.getPasswordModifiedOn().getMillis(), MOCK_DATETIME.getMillis());
         assertEquals(createdAccount.getMigrationVersion(), MIGRATION_VERSION);
         
-        verify(activityEventService, never()).publishEnrollmentEvent(any(), any(), any());
-        verify(studyActivityEventService, never()).publishEvent(any(), anyBoolean(), anyBoolean());
+        verify(mockActivityEventService, never()).publishEnrollmentEvent(any(), any(), any());
+        verify(mockStudyActivityEventService, never()).publishEvent(any(), anyBoolean(), anyBoolean());
     }
     
     @Test
@@ -583,8 +562,8 @@ public class AccountServiceTest extends Mockito {
         service.createAccount(app, account);
 
         verify(mockAccountDao).createAccount(account);
-        verify(activityEventService).publishEnrollmentEvent(any(), any(), any());
-        verify(studyActivityEventService, times(2)).publishEvent(eventCaptor.capture(), eq(false), eq(true));
+        verify(mockActivityEventService).publishEnrollmentEvent(any(), any(), any());
+        verify(mockStudyActivityEventService, times(2)).publishEvent(eventCaptor.capture(), eq(false), eq(true));
 
         StudyActivityEvent event1 = getElement(
                 eventCaptor.getAllValues(), StudyActivityEvent::getStudyId, STUDY_A).orElse(null);
@@ -663,8 +642,8 @@ public class AccountServiceTest extends Mockito {
         assertEquals(updatedAccount.getModifiedOn().getMillis(), MOCK_DATETIME.getMillis());
         assertEquals(updatedAccount.getClientTimeZone(), OTHER_CLIENT_TIME_ZONE);
         
-        verify(activityEventService, never()).publishEnrollmentEvent(any(), any(), any());
-        verify(studyActivityEventService, never()).publishEvent(any(), anyBoolean(), anyBoolean());
+        verify(mockActivityEventService, never()).publishEnrollmentEvent(any(), any(), any());
+        verify(mockStudyActivityEventService, never()).publishEvent(any(), anyBoolean(), anyBoolean());
     }
 
     @Test
@@ -692,14 +671,14 @@ public class AccountServiceTest extends Mockito {
         
         App app = App.create();
         app.setIdentifier(TEST_APP_ID);
-        when(appService.getApp(TEST_APP_ID)).thenReturn(app);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
 
         // Execute. Identifiers not allows to change.
         service.updateAccount(account);
         
-        verify(activityEventService).publishEnrollmentEvent(
+        verify(mockActivityEventService).publishEnrollmentEvent(
                 eq(app), eq(HEALTH_CODE), any(DateTime.class));
-        verify(studyActivityEventService).publishEvent(eventCaptor.capture(), eq(false), eq(true));
+        verify(mockStudyActivityEventService).publishEvent(eventCaptor.capture(), eq(false), eq(true));
         StudyActivityEvent event = eventCaptor.getValue();
         assertEquals(event.getAppId(), TEST_APP_ID);
         assertEquals(event.getStudyId(), STUDY_B);
@@ -852,6 +831,42 @@ public class AccountServiceTest extends Mockito {
         verify(mockAccountDao).deleteAllAccounts(TEST_APP_ID);
     }
     
+    @SuppressWarnings("unchecked")
+    @Test
+    public void deleteAllPreviewAccounts() {
+        AccountSummary summary1 = new AccountSummary.Builder().withId("user1").build();
+        AccountSummary summary2 = new AccountSummary.Builder().withId("user2").build();
+        AccountSummary summary3 = new AccountSummary.Builder().withId("user3").build();
+        AccountSummary summary4 = new AccountSummary.Builder().withId("user4").build();
+        AccountSummary summary5 = new AccountSummary.Builder().withId("user5").build();
+        AccountSummary summary6 = new AccountSummary.Builder().withId("user6").build();
+        
+        PagedResourceList<AccountSummary> page1 = new PagedResourceList<>(
+                ImmutableList.of(summary1, summary2, summary3), API_MAXIMUM_PAGE_SIZE+1);
+        PagedResourceList<AccountSummary> page2 = new PagedResourceList<>(
+                ImmutableList.of(summary4, summary5, summary6), API_MAXIMUM_PAGE_SIZE+1);
+        PagedResourceList<AccountSummary> page3 = new PagedResourceList<>(
+                ImmutableList.of(), API_MAXIMUM_PAGE_SIZE+1);
+        when(mockAccountDao.getPagedAccountSummaries(eq(TEST_APP_ID), any())).thenReturn(page1, page2, page3);
+        
+        service.deleteAllPreviewAccounts(TEST_APP_ID, TEST_STUDY_ID);
+        
+        verify(mockAccountDao, times(3)).getPagedAccountSummaries(eq(TEST_APP_ID), searchCaptor.capture());
+        
+        AccountSummarySearch capturedSearch = searchCaptor.getAllValues().get(0);
+        assertEquals(capturedSearch.getPageSize(), API_MAXIMUM_PAGE_SIZE);
+        assertEquals(capturedSearch.getAllOfGroups(), ImmutableSet.of(PREVIEW_USER_GROUP));
+        assertEquals(capturedSearch.getEnrolledInStudyId(), TEST_STUDY_ID);
+        assertEquals(capturedSearch.getOffsetBy(), 0);
+
+        verify(mockAccountDao).deleteAccount("user1");
+        verify(mockAccountDao).deleteAccount("user2");
+        verify(mockAccountDao).deleteAccount("user3");
+        verify(mockAccountDao).deleteAccount("user4");
+        verify(mockAccountDao).deleteAccount("user5");
+        verify(mockAccountDao).deleteAccount("user6");
+    }
+    
     @Test
     public void createAccount_participantNotMarkedAsAdmin( ) {
         App app = App.create();
@@ -922,6 +937,56 @@ public class AccountServiceTest extends Mockito {
         service.updateAccount(account);
         
         assertTrue(account.isAdmin());
+    }
+
+    @Test
+    public void deleteAccount() {
+        Account account = Account.create();
+        account.setAppId(TEST_APP_ID);
+        account.setId(TEST_USER_ID);
+        account.setHealthCode(HEALTH_CODE);
+        AccountId accountId = AccountId.forId(TEST_APP_ID,  TEST_USER_ID);
+
+        Enrollment en1 = Enrollment.create(TEST_APP_ID, "studyA", TEST_USER_ID, "subAextId");
+        Enrollment en2 = Enrollment.create(TEST_APP_ID, "studyB", TEST_USER_ID, "subBextId");
+        Set<Enrollment> enrollments = ImmutableSet.of(en1, en2);
+        account.setEnrollments(enrollments);
+        
+        when(mockAccountDao.getAccount(accountId)).thenReturn(Optional.of(account));
+        
+        service.deleteAccount(accountId);
+        
+        verify(service).deleteAccount(accountId);
+        
+        // Verify a lot of stuff is deleted or removed
+        verify(mockCacheProvider).removeSessionByUserId(TEST_USER_ID);
+        verify(mockRequestInfoService).removeRequestInfo(TEST_USER_ID);
+        verify(mockHealthDataService).deleteRecordsForHealthCode(HEALTH_CODE);
+        verify(mockHealthDataEx3Service).deleteRecordsForHealthCode(HEALTH_CODE);
+        verify(mockNotificationsService).deleteAllRegistrations(TEST_APP_ID, HEALTH_CODE);
+        verify(mockUploadService).deleteUploadsForHealthCode(HEALTH_CODE);
+        verify(mockScheduledActivityService).deleteActivitiesForUser(HEALTH_CODE);
+        verify(mockActivityEventService, atLeastOnce()).deleteActivityEvents(TEST_APP_ID, HEALTH_CODE);
+        verify(mockAccountDao).deleteAccount(TEST_USER_ID);
+        verify(mockCacheProvider).removeObject(CacheKey.etag(DateTimeZone.class, TEST_USER_ID));
+        verify(mockCacheProvider).removeObject(CacheKey.etag(StudyActivityEvent.class, TEST_USER_ID));
+    }
+    
+    @Test
+    public void deleteAccount_notFound() {
+        service.deleteAccount(AccountId.forId(TEST_APP_ID, TEST_USER_ID));
+        
+        // (it very quietly does nothing)
+        verify(mockCacheProvider, never()).removeSessionByUserId(any());
+        verify(mockRequestInfoService, never()).removeRequestInfo(any());
+        verify(mockHealthDataService, never()).deleteRecordsForHealthCode(any());
+        verify(mockHealthDataEx3Service, never()).deleteRecordsForHealthCode(any());
+        verify(mockNotificationsService, never()).deleteAllRegistrations(any(), any());
+        verify(mockUploadService, never()).deleteUploadsForHealthCode(any());
+        verify(mockScheduledActivityService, never()).deleteActivitiesForUser(any());
+        verify(mockActivityEventService, never()).deleteActivityEvents(any(), any());
+        verify(mockAccountDao, never()).deleteAccount(any());
+        verify(mockCacheProvider, never()).removeObject(any());
     }
 
     private Account mockGetAccountById(AccountId accountId, boolean generatePasswordHash) throws Exception {

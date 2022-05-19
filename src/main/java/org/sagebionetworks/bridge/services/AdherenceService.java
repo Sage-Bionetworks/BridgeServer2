@@ -43,7 +43,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.AuthEvaluatorField;
@@ -133,10 +132,6 @@ public class AdherenceService {
     
     protected DateTime getDateTime() {
         return DateTime.now();
-    }
-    
-    protected String getDefaultTimeZoneId() {
-        return DateTimeZone.getDefault().getID();
     }
     
     public void updateAdherenceRecords(String appId, AdherenceRecordList recordList) {
@@ -364,8 +359,10 @@ public class AdherenceService {
 
         Stopwatch watch = Stopwatch.createStarted();
         
+        String zoneId = studyService.getZoneId(appId, studyId, clientTimeZone);
+        
         EventStreamAdherenceReport report = generateReport(appId, studyId, userId, now,
-                clientTimeZone, (state) -> EventStreamAdherenceReportGenerator.INSTANCE.generate(state));
+                zoneId, (state) -> EventStreamAdherenceReportGenerator.INSTANCE.generate(state));
         
         watch.stop();
         LOG.info("Event stream adherence report took " + watch.elapsed(TimeUnit.MILLISECONDS) + "ms");
@@ -380,20 +377,14 @@ public class AdherenceService {
         Stopwatch watch = Stopwatch.createStarted();
         
         DateTime createdOn = getDateTime();
-        
-        String timeZone = null;
-        if (account.getClientTimeZone() != null) {
-            timeZone = account.getClientTimeZone();
-        } else {
-            timeZone = getDefaultTimeZoneId();
-        }
+        String zoneId = studyService.getZoneId(appId, studyId, account.getClientTimeZone());
 
-        StudyAdherenceReport report = generateReport(appId, studyId, account.getId(), createdOn, timeZone,
+        StudyAdherenceReport report = generateReport(appId, studyId, account.getId(), createdOn, zoneId,
                 (state) -> StudyAdherenceReportGenerator.INSTANCE.generate(state));
         report.setParticipant(new AccountRef(account, studyId));
         report.setTestAccount(account.getDataGroups().contains(TEST_USER_GROUP));
         report.setCreatedOn(createdOn);
-        report.setClientTimeZone(timeZone);
+        report.setClientTimeZone(zoneId);
         
         deriveWeeklyAdherenceFromStudyReportWeek(studyId, account, report);
         
@@ -407,20 +398,14 @@ public class AdherenceService {
         Stopwatch watch = Stopwatch.createStarted();
         
         DateTime createdOn = getDateTime();
-        
-        String timeZone = null;
-        if (account.getClientTimeZone() != null) {
-            timeZone = account.getClientTimeZone();
-        } else {
-            timeZone = getDefaultTimeZoneId();
-        }
+        String zoneId = studyService.getZoneId(appId, studyId, account.getClientTimeZone());
 
-        StudyAdherenceReport report = generateReport(appId, studyId, account.getId(), createdOn, timeZone,
+        StudyAdherenceReport report = generateReport(appId, studyId, account.getId(), createdOn, zoneId,
                 (state) -> StudyAdherenceReportGenerator.INSTANCE.generate(state));
         report.setParticipant(new AccountRef(account, studyId));
         report.setTestAccount(account.getDataGroups().contains(TEST_USER_GROUP));
         report.setCreatedOn(createdOn);
-        report.setClientTimeZone(timeZone);
+        report.setClientTimeZone(zoneId);
         
         WeeklyAdherenceReport weeklyReport = deriveWeeklyAdherenceFromStudyReportWeek(studyId, account, report);
         

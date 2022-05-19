@@ -45,13 +45,14 @@ public class AdherenceRecordTest extends Mockito {
         assertEquals(node.get("finishedOn").textValue(), MODIFIED_ON.toString());
         assertEquals(node.get("uploadedOn").textValue(), MODIFIED_ON.plusHours(1).toString());
         assertEquals(node.get("eventTimestamp").textValue(), CREATED_ON.plusHours(1).toString());
-        assertEquals(node.size(), 11);
+        assertEquals(node.size(), 12);
         assertEquals(node.get("clientData").get("intValue").intValue(), 4);
         assertEquals(node.get("instanceGuid").textValue(), GUID);
         assertEquals(node.get("clientTimeZone").textValue(), "America/Los_Angeles");
         assertEquals(node.get("assessmentGuid").textValue(), "assessmentGuid");
         assertEquals(node.get("sessionGuid").textValue(), "sessionGuid");
         assertTrue(node.get("declined").booleanValue());
+        assertEquals(node.get("userId").textValue(), TEST_USER_ID);
         assertEquals(node.get("type").textValue(), "AdherenceRecord");
         
         AdherenceRecord deser = BridgeObjectMapper.get()

@@ -1217,7 +1217,7 @@ public class StudyParticipantControllerTest extends Mockito {
         StatusMessage retValue = controller.deleteTestOrUnusedParticipant(TEST_STUDY_ID, TEST_USER_ID);
         assertEquals(retValue.getMessage(), "User deleted.");
         
-        verify(mockUserManagementService).deleteUser(app, TEST_USER_ID);
+        verify(mockAccountService).deleteAccount(AccountId.forId(TEST_APP_ID, TEST_USER_ID));
     }    
     
     @Test(expectedExceptions = EntityNotFoundException.class)

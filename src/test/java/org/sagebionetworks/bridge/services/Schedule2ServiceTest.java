@@ -1169,6 +1169,7 @@ public class Schedule2ServiceTest extends Mockito {
         study.setIdentifier(TEST_STUDY_ID);
         study.setScheduleGuid(SCHEDULE_GUID);
         when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, false)).thenReturn(study);
+        when(mockStudyService.getZoneId(TEST_APP_ID, TEST_STUDY_ID, "America/Chicago")).thenReturn("America/Chicago");
         
         Schedule2 schedule = Schedule2Test.createValidSchedule();
         when(mockDao.getSchedule(TEST_APP_ID, SCHEDULE_GUID)).thenReturn(Optional.of(schedule));

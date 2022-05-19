@@ -16,6 +16,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.cache.CacheKey;
+import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.hibernate.HibernateAssessmentConfigDao;
@@ -29,19 +31,12 @@ import org.sagebionetworks.bridge.validators.Validate;
 @Component
 public class AssessmentConfigService {
 
+    @Autowired
     private AssessmentService assessmentService;
-    
+    @Autowired
     private HibernateAssessmentConfigDao dao;
-    
     @Autowired
-    public final void setAssessmentService(AssessmentService assessmentService) {
-        this.assessmentService = assessmentService;
-    }
-    
-    @Autowired
-    public final void setHibernateAssessmentConfigDao(HibernateAssessmentConfigDao dao) {
-        this.dao = dao;
-    }
+    private CacheProvider cacheProvider;
     
     // Allow timestamp to be mocked
     DateTime getModifiedOn() {
@@ -62,13 +57,27 @@ public class AssessmentConfigService {
         
         assessmentService.getAssessmentByGuid(appId, null, guid);
         
-        return dao.getAssessmentConfig(guid).orElseThrow(() -> new EntityNotFoundException(AssessmentConfig.class));
+        AssessmentConfig config = dao.getAssessmentConfig(guid)
+                .orElseThrow(() -> new EntityNotFoundException(AssessmentConfig.class));
+        
+        // It hasn't changed, but it will prime the cache faster if we write this value on reads
+        CacheKey cacheKey = CacheKey.etag(AssessmentConfig.class, guid);
+        cacheProvider.setObject(cacheKey, config.getModifiedOn());
+        
+        return config;
     }
     
     public AssessmentConfig getSharedAssessmentConfig(String callerAppId, String guid) {
         checkArgument(isNotBlank(guid));
         
-        return dao.getAssessmentConfig(guid).orElseThrow(() -> new EntityNotFoundException(AssessmentConfig.class));
+        AssessmentConfig config = dao.getAssessmentConfig(guid)
+                .orElseThrow(() -> new EntityNotFoundException(AssessmentConfig.class));
+        
+        // It hasn't changed, but it will prime the cache faster if we write this value on reads
+        CacheKey cacheKey = CacheKey.etag(AssessmentConfig.class, guid);
+        cacheProvider.setObject(cacheKey, config.getModifiedOn());
+        
+        return config;
     }
     
     public AssessmentConfig updateAssessmentConfig(String appId, String ownerId, String guid, AssessmentConfig config) {
@@ -89,7 +98,12 @@ public class AssessmentConfigService {
         // It also needs to be updated to reflect this.
         assessment.setOriginGuid(null);
         
-        return dao.updateAssessmentConfig(appId, assessment, guid, config);
+        AssessmentConfig updatedConfig = dao.updateAssessmentConfig(appId, assessment, guid, config);
+        
+        CacheKey cacheKey = CacheKey.etag(AssessmentConfig.class, assessment.getGuid());
+        cacheProvider.setObject(cacheKey, config.getModifiedOn());
+        
+        return updatedConfig;
     }
     
     public AssessmentConfig customizeAssessmentConfig(String appId, String ownerId,
@@ -117,6 +131,11 @@ public class AssessmentConfigService {
         
         existing.setModifiedOn(getModifiedOn());
         
-        return dao.customizeAssessmentConfig(guid, existing);
+        AssessmentConfig updatedConfig = dao.customizeAssessmentConfig(guid, existing);
+        
+        CacheKey cacheKey = CacheKey.etag(AssessmentConfig.class, assessment.getGuid());
+        cacheProvider.setObject(cacheKey, existing.getModifiedOn());
+        
+        return updatedConfig;
     }
 }

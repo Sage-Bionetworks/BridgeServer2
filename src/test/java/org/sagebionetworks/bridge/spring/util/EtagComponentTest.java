@@ -158,6 +158,7 @@ public class EtagComponentTest extends Mockito {
         doReturn(Timeline.class).when(mockContext).getModel();
         doReturn(ImmutableList.of(STUDY_KEY_ANN, USER_KEY_ANN)).when(mockContext).getCacheKeys();
         doReturn(ImmutableMap.of("studyId", TEST_STUDY_ID)).when(mockContext).getArgValues();
+        doReturn(true).when(mockContext).isAuthenticationRequired();
         when(mockSession.getAppId()).thenReturn(TEST_APP_ID);
         when(mockSession.getId()).thenReturn(TEST_USER_ID);
         when(mockSession.getParticipant()).thenReturn(new StudyParticipant.Builder()
@@ -174,6 +175,30 @@ public class EtagComponentTest extends Mockito {
         when(mockMd5DigestUtils.digest(stringToHash.getBytes())).thenReturn("ETAG".getBytes());
         
         when(mockJoinPoint.proceed()).thenReturn(ACCOUNT_ID);
+    }
+    
+    @Test
+    public void publicApiWorks() throws Throwable {
+        when(mockCacheProvider.getUserSession(any())).thenReturn(null);
+        
+        doReturn(false).when(mockContext).isAuthenticationRequired();
+        doReturn(ImmutableList.of(STUDY_KEY_ANN)).when(mockContext).getCacheKeys();
+        
+        when(mockRequest.getHeader(IF_NONE_MATCH)).thenReturn(ETAG);
+        
+        doReturn(ImmutableMap.of("studyId", TEST_STUDY_ID, "appId", TEST_APP_ID)).when(mockContext).getArgValues();
+
+        CacheKey studyKey = CacheKey.etag(Study.class, TEST_APP_ID, TEST_STUDY_ID);
+        when(mockCacheProvider.getObject(studyKey, DateTime.class)).thenReturn(MODIFIED_ON);
+        
+        String stringToHash = MODIFIED_ON.toString();
+        when(mockMd5DigestUtils.digest(stringToHash.getBytes())).thenReturn("ETAG".getBytes());
+
+        Object retValue = component.checkEtag(mockJoinPoint);
+        
+        assertNull(retValue);
+        verify(mockResponse).addHeader(HttpHeaders.ETAG, ETAG);
+        verify(mockResponse).setStatus(304);
     }
     
     @Test

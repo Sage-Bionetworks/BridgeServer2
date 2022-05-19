@@ -22,7 +22,6 @@ public class AdherenceRecord implements BridgeEntity {
     @JsonIgnore
     private String appId;
     @Id
-    @JsonIgnore
     private String userId;
     @Id
     @JsonIgnore
