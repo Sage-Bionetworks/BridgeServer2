@@ -66,12 +66,14 @@ public class DefaultAppBootstrapper implements ApplicationListener<ContextRefres
     private final DynamoInitializer dynamoInitializer;
     private final AnnotationBasedTableCreator annotationBasedTableCreator;
     private final S3Initializer s3Initializer;
+    private final SqsInitializer sqsInitializer;
+    private final SnsInitializer snsInitializer;
 
     @Autowired
     public DefaultAppBootstrapper(BridgeConfig bridgeConfig, AdminAccountService adminAccountService,
             AppService appService, OrganizationService orgService,
             AnnotationBasedTableCreator annotationBasedTableCreator, DynamoInitializer dynamoInitializer,
-            S3Initializer s3Initializer) {
+            S3Initializer s3Initializer, SqsInitializer sqsInitializer, SnsInitializer snsInitializer) {
         this.bridgeConfig = bridgeConfig;
         this.adminAccountService = adminAccountService;
         this.appService = appService;
@@ -79,15 +81,18 @@ public class DefaultAppBootstrapper implements ApplicationListener<ContextRefres
         this.dynamoInitializer = dynamoInitializer;
         this.annotationBasedTableCreator = annotationBasedTableCreator;
         this.s3Initializer = s3Initializer;
+        this.sqsInitializer = sqsInitializer;
+        this.snsInitializer = snsInitializer;
     }
 
     @Override
     public void onApplicationEvent(ContextRefreshedEvent event) {
         List<TableDescription> tables = annotationBasedTableCreator.getTables("org.sagebionetworks.bridge.dynamodb");
         dynamoInitializer.init(tables);
-        
         s3Initializer.initBuckets();
-        
+        sqsInitializer.initQueues();
+        snsInitializer.initTopics();
+
         RequestContext.set(new RequestContext.Builder().withCallerAppId(API_APP_ID)
                 .withCallerRoles(ImmutableSet.of(SUPERADMIN))
                 .withCallerUserId("DefaultStudyBootstrapper").build());

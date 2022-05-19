@@ -66,7 +66,13 @@ public class DefaultAppBootstrapperTest extends Mockito {
     
     @Mock
     S3Initializer mockS3Initializer;
-    
+
+    @Mock
+    SqsInitializer mockSqsInitializer;
+
+    @Mock
+    SnsInitializer mockSnsInitializer;
+
     @Mock
     OrganizationService mockOrgService;
 
@@ -102,10 +108,12 @@ public class DefaultAppBootstrapperTest extends Mockito {
         
         // We don't care about the context
         bootstrapper.onApplicationEvent(null);
-        
+
         verify(mockDynamoInitializer).init(tables);
         verify(mockS3Initializer).initBuckets();
-        
+        verify(mockSqsInitializer).initQueues();
+        verify(mockSnsInitializer).initTopics();
+
         verify(mockAppService, times(3)).createApp(appCaptor.capture());
         
         App retApi = appCaptor.getAllValues().get(0);
