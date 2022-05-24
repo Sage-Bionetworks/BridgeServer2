@@ -54,10 +54,7 @@ public class SnsInitializer {
 
     // For testing purposes, we want to subscribe an SQS queue to each SNS topic. This map has SNS topic configs as the
     // key and SQS queue url configs as the values.
-    private static final Map<String, String> SNS_TOPIC_PROPERTIES = ImmutableMap.<String, String>builder()
-            .put("study.creation.sns.topic", "integ.test.sqs.queue.url")
-            .put("upload.sns.topic", "integ.test.sqs.queue.url")
-            .build();
+    private static final Map<String, String> SNS_TOPIC_PROPERTIES = ImmutableMap.of();
 
     // Package-scoped so we can mock this in unit tests.
     Map<String, String> getSnsTopicProperties() {
