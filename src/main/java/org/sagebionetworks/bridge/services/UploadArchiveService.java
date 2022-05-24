@@ -26,6 +26,7 @@ import org.bouncycastle.cms.CMSException;
 
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.crypto.CmsEncryptor;
+import org.sagebionetworks.bridge.crypto.WrongEncryptionKeyException;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.util.DuplicateZipEntryException;
@@ -150,7 +151,7 @@ public class UploadArchiveService {
         // decrypt
         try {
             return encryptor.decrypt(source);
-        } catch (CertificateEncodingException | CMSException | IOException ex) {
+        } catch (CertificateEncodingException | CMSException | IOException | WrongEncryptionKeyException ex) {
             throw new BridgeServiceException(ex);
         }
     }

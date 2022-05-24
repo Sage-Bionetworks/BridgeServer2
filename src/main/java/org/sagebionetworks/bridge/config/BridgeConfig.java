@@ -61,6 +61,11 @@ public class BridgeConfig implements Config {
     }
 
     @Override
+    public void set(String key, String value) {
+        config.set(key, value);
+    }
+
+    @Override
     public int getInt(String key) {
         return config.getInt(key);
     }
