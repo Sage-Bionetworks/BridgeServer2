@@ -1,6 +1,11 @@
 package org.sagebionetworks.bridge.services;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.Base64;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -14,6 +19,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.client.SynapseClient;
 import org.sagebionetworks.client.exceptions.SynapseException;
@@ -23,6 +29,8 @@ import org.sagebionetworks.repo.model.Project;
 import org.sagebionetworks.repo.model.Team;
 import org.sagebionetworks.repo.model.dao.WikiPageKey;
 import org.sagebionetworks.repo.model.dao.WikiPageKeyHelper;
+import org.sagebionetworks.repo.model.file.CloudProviderFileHandleInterface;
+import org.sagebionetworks.repo.model.file.FileHandle;
 import org.sagebionetworks.repo.model.file.S3FileHandle;
 import org.sagebionetworks.repo.model.project.ExternalS3StorageLocationSetting;
 import org.sagebionetworks.repo.model.table.ColumnModel;
@@ -49,6 +57,7 @@ import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.Exporter3Configuration;
+import org.sagebionetworks.bridge.models.files.FileMetadata;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordEx3;
 import org.sagebionetworks.bridge.models.schedules2.timelines.Timeline;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -178,6 +187,7 @@ public class Exporter3Service {
     private SynapseHelper synapseHelper;
     private Schedule2Service schedule2Service;
     private SynapseClient synapseClient;
+    private FileService fileService;
 
     @Autowired
     public final void setConfig(BridgeConfig config) {
@@ -252,6 +262,11 @@ public class Exporter3Service {
     @Autowired
     final void setSchedule2Service(Schedule2Service schedule2Service) {
         this.schedule2Service = schedule2Service;
+    }
+
+    @Autowired
+    public final void setFileService(FileService fileService) {
+        this.fileService = fileService;
     }
 
     /**
@@ -562,15 +577,40 @@ public class Exporter3Service {
         // Export the study's Timeline to Synapse as a wiki page in JSON format.
         JsonNode node = BridgeObjectMapper.get().valueToTree(timeline);
 
-        S3FileHandle markdown = new S3FileHandle();
-        markdown.setStorageLocationId(exporter3Config.getStorageLocationId());
-        markdown.setContentMd5(node.toString());
-        markdown.setId("exportedTimelinefor" + studyId);
+//        File file = File.createTempFile("timelinefor" + studyId, ".txt");
+//        FileWriter fileWriter = new FileWriter(file);
+//        PrintWriter printWriter = new PrintWriter(fileWriter);
+//        printWriter.print(node.toString());
+//        printWriter.close();
+        PrintWriter pw = null;
+        File file = File.createTempFile("timelinefor" + studyId, ".txt");
+        try {
+            FileOutputStream fos = new FileOutputStream(file);
+            pw = new PrintWriter(fos);
+            pw.print(node.toString());
+            pw.close();
+            pw = null;
+        } finally {
+            if (pw != null) {
+                pw.close();
+            }
+        }
+        CloudProviderFileHandleInterface markdown = synapseClient.multipartUpload(file,
+                null, false, false);
+        System.out.println(markdown);
+
+//        markdown.setStorageLocationId(exporter3Config.getStorageLocationId());
+//        markdown.setBucketName(rawHealthDataBucket);
+//        markdown.setKey(appId + '/' + studyId + '/' + "timeline");
+//        byte[] md5 = Base64.getUrlDecoder().decode(node.toString());
+//        String hexMd5 = Hex.encodeHexString(md5);
+//        markdown.setContentMd5(hexMd5);
+//        markdown = synapseHelper.createS3FileHandleWithRetry(markdown);
 
         // If first time exporting the timeline for the study:
         if (exporter3Config.getWikiPageId() == null) {
             V2WikiPage wiki = new V2WikiPage();
-            wiki.setId("wikiFor" + studyId);
+//            wiki.setId("wikiFor" + studyId);
             wiki.setTitle("Exported Timeline for " + studyId);
             exporter3Config.setWikiPageId(wiki.getId());
             wiki.setMarkdownFileHandleId(markdown.getId());

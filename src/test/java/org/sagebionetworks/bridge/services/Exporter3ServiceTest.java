@@ -15,11 +15,15 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -32,6 +36,7 @@ import com.google.common.collect.ImmutableSet;
 
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
+import org.mockito.Matchers;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
@@ -43,6 +48,7 @@ import org.sagebionetworks.repo.model.ObjectType;
 import org.sagebionetworks.repo.model.Project;
 import org.sagebionetworks.repo.model.Team;
 import org.sagebionetworks.repo.model.dao.WikiPageKey;
+import org.sagebionetworks.repo.model.file.CloudProviderFileHandleInterface;
 import org.sagebionetworks.repo.model.file.S3FileHandle;
 import org.sagebionetworks.repo.model.project.ExternalS3StorageLocationSetting;
 import org.sagebionetworks.repo.model.table.EntityView;
@@ -644,6 +650,7 @@ public class Exporter3ServiceTest {
         // Study has no exporter3config.
         study.setExporter3Configuration(null);
         study.setExporter3Enabled(false);
+
         mockSynapseResourceCreation();
 
         // Mock Timeline
@@ -652,11 +659,15 @@ public class Exporter3ServiceTest {
 
         when(mockSchedule2Service.getTimelineForSchedule(eq(TEST_APP_ID), eq(TestConstants.SCHEDULE_GUID)))
                 .thenReturn(timeline);
-        //Mock S3FileHandle
-        S3FileHandle markdown = new S3FileHandle();
+        // Mock File
+
+        //Mock FileHandle
+        CloudProviderFileHandleInterface markdown = new S3FileHandle();
         markdown.setStorageLocationId(STORAGE_LOCATION_ID);
-        markdown.setContentMd5(BridgeObjectMapper.get().valueToTree(timeline).toString());
         markdown.setId("exportedTimelinefor" + TestConstants.TEST_STUDY_ID);
+        // How to test file is created correctly? Should be file, not any()
+        when(mockSynapseClient.multipartUpload(any(), eq(STORAGE_LOCATION_ID), eq(false), eq(false)))
+                .thenReturn(markdown);
         // Mock Wiki
         V2WikiPage wiki = new V2WikiPage();
         wiki.setId("wikiFor"  + TestConstants.TEST_STUDY_ID);
@@ -689,11 +700,11 @@ public class Exporter3ServiceTest {
         Timeline timeline = builder.withSchedule(mockSchedule2Service.getSchedule(TEST_APP_ID, TestConstants.SCHEDULE_GUID)).build();
         when(mockSchedule2Service.getTimelineForSchedule(eq(TEST_APP_ID), eq(TestConstants.SCHEDULE_GUID)))
                 .thenReturn(timeline);
+        // Mock File
        //Mock S3FileHandle
-        S3FileHandle markdown = new S3FileHandle();
+        CloudProviderFileHandleInterface markdown = new S3FileHandle();
         markdown.setStorageLocationId(STORAGE_LOCATION_ID);
-        markdown.setContentMd5(BridgeObjectMapper.get().valueToTree(timeline).toString());
-        markdown.setId("exportedTimelinefor" + TestConstants.TEST_STUDY_ID);
+        when(mockSynapseClient.multipartUpload(any(), eq(STORAGE_LOCATION_ID), eq(false), eq(false))).thenReturn(markdown);
         // Mock Wiki
         V2WikiPage wiki = new V2WikiPage();
         wiki.setId("wikiFor"  + TestConstants.TEST_STUDY_ID);
