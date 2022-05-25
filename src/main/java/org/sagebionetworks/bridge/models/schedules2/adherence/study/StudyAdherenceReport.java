@@ -108,6 +108,7 @@ public class StudyAdherenceReport {
     public void setWeekReport(StudyReportWeek weekReport) {
         this.weekReport = weekReport;
     }
+    @JsonIgnore
     public NextActivity getNextActivity() {
         return nextActivity;
     }

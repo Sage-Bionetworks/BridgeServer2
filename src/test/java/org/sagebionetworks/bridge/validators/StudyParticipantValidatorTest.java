@@ -1,9 +1,7 @@
 package org.sagebionetworks.bridge.validators;
 
-import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
-import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
+import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
-import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_CLIENT_TIME_ZONE;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
@@ -19,7 +17,6 @@ import static org.testng.Assert.assertNull;
 import static org.mockito.Mockito.when;
 
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -31,16 +28,13 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
-import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
-import org.sagebionetworks.bridge.models.organizations.Organization;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.services.OrganizationService;
 import org.sagebionetworks.bridge.services.StudyService;
 
 import com.google.common.collect.ImmutableMap;
@@ -58,9 +52,6 @@ public class StudyParticipantValidatorTest {
     
     @Mock
     private StudyService studyService;
-    
-    @Mock
-    private OrganizationService mockOrganizationService;
     
     @BeforeMethod
     public void before() {
@@ -93,7 +84,7 @@ public class StudyParticipantValidatorTest {
                 .withAttributes(attrs)
                 .withPassword("bad")
                 .build();
-        assertValidatorMessage(validator, participant, "StudyParticipant", "email, phone, synapseUserId or externalId is required");
+        assertValidatorMessage(validator, participant, "StudyParticipant", "email, phone, or externalId is required");
         assertValidatorMessage(validator, participant, "externalId", "is required");
         assertValidatorMessage(validator, participant, "dataGroups", "'badGroup' is not defined for app (use group1, group2, bluebell)");
         assertValidatorMessage(validator, participant, "attributes", "'badValue' is not defined for app (use attr1, attr2, phone)");
@@ -101,6 +92,30 @@ public class StudyParticipantValidatorTest {
         assertValidatorMessage(validator, participant, "password", "must contain at least one number (0-9)");
         assertValidatorMessage(validator, participant, "password", "must contain at least one symbol ( !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~ )");
         assertValidatorMessage(validator, participant, "password", "must contain at least one uppercase letter (A-Z)");
+    }
+    
+    @Test
+    public void orgMembershipInvalid() {
+        validator = makeValidator(false);
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withOrgMembership("*").build();
+        assertValidatorMessage(validator, participant, "orgMembership", "is prohibited for study participants");
+    }
+    
+    @Test
+    public void rolesInvalid() {
+        validator = makeValidator(false);
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withRoles(ImmutableSet.of(DEVELOPER)).build();
+        assertValidatorMessage(validator, participant, "roles", "are prohibited for study participants");
+    }
+    
+    @Test
+    public void synapseUserIdInvalid() {
+        validator = makeValidator(false);
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withSynapseUserId(TestConstants.SYNAPSE_USER_ID).build();
+        assertValidatorMessage(validator, participant, "synapseUserId", "is prohibited for study participants");
     }
     
     // Password, email address, and externalId (if being validated) cannot be updated, so these don't need to be validated.
@@ -147,13 +162,13 @@ public class StudyParticipantValidatorTest {
         validator = makeValidator(true);
         Validate.entityThrowingException(validator, withEmail("email@email.com"));
         Validate.entityThrowingException(validator, withDataGroup("bluebell"));
-        Validate.entityThrowingException(validator, withSynapseUserId(SYNAPSE_USER_ID));
+        Validate.entityThrowingException(validator, withPhone(TestConstants.PHONE));
     }
     
     @Test
-    public void emailPhoneSynapseUserIdOrExternalIdRequired() {
+    public void emailPhoneOrExternalIdRequired() {
         validator = makeValidator(true);
-        assertValidatorMessage(validator, withEmail(null), "StudyParticipant", "email, phone, synapseUserId or externalId is required");
+        assertValidatorMessage(validator, withEmail(null), "StudyParticipant", "email, phone, or externalId is required");
     }
     
     @Test
@@ -203,23 +218,9 @@ public class StudyParticipantValidatorTest {
     }
     
     @Test
-    public void synapseUserIdOnlyOK() {
-        StudyParticipant participant = new StudyParticipant.Builder().withSynapseUserId(SYNAPSE_USER_ID).build();
-
-        validator = makeValidator(true);
-        Validate.entityThrowingException(validator, participant);
-    }
-    
-    @Test
     public void emptyStringPasswordRequired() {
         validator = makeValidator(true);
         assertValidatorMessage(validator, withPassword(""), "password", "is required");
-    }
-    
-    @Test
-    public void emptyStringUserSynapseIdRequired() {
-        validator = makeValidator(true);
-        assertValidatorMessage(validator, withSynapseUserId(""), "synapseUserId", CANNOT_BE_BLANK);
     }
     
     @Test
@@ -331,16 +332,6 @@ public class StudyParticipantValidatorTest {
         assertValidatorMessage(validator, participant, "externalId", "is required");
     }
     @Test
-    public void createWithoutExternalIdManagedButHasRolesOK() {
-        app.setExternalIdRequiredOnSignup(true);
-        
-        StudyParticipant participant = new StudyParticipant.Builder().withEmail("email@email.com")
-                .withRoles(Sets.newHashSet(Roles.DEVELOPER)).build();
-        
-        validator = makeValidator(true);
-        Validate.entityThrowingException(validator, participant);
-    }
-    @Test
     public void updateWithExternalIdManagedOk() {
         StudyParticipant participant = withExternalIdAndId("foo");
         
@@ -353,20 +344,6 @@ public class StudyParticipantValidatorTest {
         
         validator = makeValidator(true);
         assertValidatorMessage(validator, participant, "externalIds[test-study].externalId", CANNOT_BE_BLANK);
-    }
-    @Test
-    public void emptySynapseUserIdOnCreate() {
-        StudyParticipant participant = withSynapseUserId(" ");
-        
-        validator = makeValidator(true);
-        assertValidatorMessage(validator, participant, "synapseUserId", CANNOT_BE_BLANK);
-    }
-    @Test
-    public void emptySynapseUserIdOnUpdate() {
-        StudyParticipant participant = withSynapseUserId(" ");
-        
-        validator = makeValidator(false);
-        assertValidatorMessage(validator, participant, "synapseUserId", CANNOT_BE_BLANK);
     }
     @Test
     public void validateStudyIdInvalid() {
@@ -382,51 +359,6 @@ public class StudyParticipantValidatorTest {
             RequestContext.set(RequestContext.NULL_INSTANCE);
         }
     }    
-    @Test
-    public void validateOrganization() {
-        when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, TEST_ORG_ID)).thenReturn(Optional.empty());
-        
-        StudyParticipant participant = withMemberOrganization(TEST_ORG_ID);
-        validator = makeValidator(true);
-        assertValidatorMessage(validator, participant, "orgMembership", "is not a valid organization");
-    }
-    @Test
-    public void validateOrgIsSameAsCallers() {
-        when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, TEST_ORG_ID))
-            .thenReturn(Optional.of(Organization.create()));
-        
-        StudyParticipant participant = withMemberOrganization(TEST_ORG_ID);
-        validator = makeValidator(true);
-        assertValidatorMessage(validator, participant, "orgMembership", "cannot be set by caller");
-    }
-    @Test
-    public void validateOrgCanBeDifferentFromSuperadmin() {
-        RequestContext.set(new RequestContext.Builder()
-                .withCallerOrgMembership("someOtherOrgId")
-                .withCallerRoles(ImmutableSet.of(Roles.SUPERADMIN))
-                .build());
-        
-        when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, TEST_ORG_ID))
-            .thenReturn(Optional.of(Organization.create()));
-        
-        StudyParticipant participant = withMemberOrganization(TEST_ORG_ID);
-        validator = makeValidator(true);
-        Validate.entityThrowingException(validator, participant);
-    }
-    @Test
-    public void organizationOK() {
-        RequestContext.set(new RequestContext.Builder()
-                .withCallerRoles(ImmutableSet.of(ORG_ADMIN))
-                .withCallerOrgMembership(TEST_ORG_ID).build());
-        
-        when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, TEST_ORG_ID))
-            .thenReturn(Optional.of(Organization.create()));
-        
-        StudyParticipant participant = withMemberOrganization(TEST_ORG_ID);
-        validator = makeValidator(true);
-        Validate.entityThrowingException(validator, participant);
-    }
-
     @Test
     public void validateInvalidClientTimeZoneFails() {
         validator = makeValidator(true);
@@ -474,12 +406,9 @@ public class StudyParticipantValidatorTest {
     }
     
     private StudyParticipantValidator makeValidator(boolean isNew) {
-        return new StudyParticipantValidator(studyService, mockOrganizationService, app, isNew);
+        return new StudyParticipantValidator(studyService, app, isNew);
     }
 
-    private StudyParticipant withMemberOrganization(String orgId) {
-        return new StudyParticipant.Builder().withEmail("email@email.com").withOrgMembership(orgId).build();
-    }
     private StudyParticipant withPhone(String phone, String phoneRegion) {
         return new StudyParticipant.Builder().withPhone(new Phone(phone, phoneRegion)).build();
     }
@@ -492,8 +421,8 @@ public class StudyParticipantValidatorTest {
         return new StudyParticipant.Builder().withEmail(email).withPassword("aAz1%_aAz1%").build();
     }
     
-    private StudyParticipant withSynapseUserId(String synapseUserId) {
-        return new StudyParticipant.Builder().withSynapseUserId(synapseUserId).build();
+    private StudyParticipant withPhone(Phone phone) {
+        return new StudyParticipant.Builder().withPhone(phone).withPassword("aAz1%_aAz1%").build();
     }
     
     private StudyParticipant withExternalId(String externalId) {

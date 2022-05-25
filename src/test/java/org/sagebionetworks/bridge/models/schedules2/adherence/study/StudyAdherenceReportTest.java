@@ -86,8 +86,6 @@ public class StudyAdherenceReportTest {
         
         assertEquals(node.get("eventTimestamps").get("event3").textValue(), MODIFIED_ON.toString());
         
-        assertEquals(node.get("nextActivity").get("label").textValue(), "label");
-        assertEquals(node.get("nextActivity").get("type").textValue(), "NextActivity");
         assertEquals(node.get("type").textValue(), "StudyAdherenceReport");
     }
     

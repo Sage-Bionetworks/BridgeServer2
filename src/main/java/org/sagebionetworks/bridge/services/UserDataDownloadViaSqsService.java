@@ -22,7 +22,7 @@ public class UserDataDownloadViaSqsService implements UserDataDownloadService {
 
     private static final ObjectMapper JSON_OBJECT_MAPPER = new ObjectMapper();
     // constants - these are package scoped so unit tests can access them
-    static final String CONFIG_KEY_UDD_SQS_QUEUE_URL = "udd.sqs.queue.url";
+    static final String CONFIG_KEY_UDD_SQS_QUEUE_URL = "workerPlatform.request.sqs.queue.url";
     static final String REQUEST_KEY_BODY = "body";
     static final String REQUEST_KEY_END_DATE = "endDate";
     static final String REQUEST_KEY_START_DATE = "startDate";

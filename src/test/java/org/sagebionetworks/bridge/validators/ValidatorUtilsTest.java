@@ -106,12 +106,6 @@ public class ValidatorUtilsTest extends Mockito {
     }
 
     @Test
-    public void participantHasValidIdentifierValidSynapseUserId() {
-        StudyParticipant participant = new StudyParticipant.Builder().withSynapseUserId(SYNAPSE_USER_ID).build();
-        assertTrue(ValidatorUtils.participantHasValidIdentifier(participant));
-    }
-    
-    @Test
     public void participantHasValidIdentifierInvalid() {
         StudyParticipant participant = new StudyParticipant.Builder().withExternalIds(ImmutableMap.of()).build();
         assertFalse(ValidatorUtils.participantHasValidIdentifier(participant));

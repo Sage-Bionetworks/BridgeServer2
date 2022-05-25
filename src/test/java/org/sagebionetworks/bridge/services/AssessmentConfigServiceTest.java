@@ -40,6 +40,8 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.cache.CacheKey;
+import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
@@ -60,6 +62,9 @@ public class AssessmentConfigServiceTest extends Mockito {
     @Mock
     HibernateAssessmentConfigDao mockDao;
     
+    @Mock
+    CacheProvider mockCacheProvider;
+    
     @InjectMocks
     @Spy
     AssessmentConfigService service;
@@ -69,6 +74,9 @@ public class AssessmentConfigServiceTest extends Mockito {
     
     @Captor
     ArgumentCaptor<Assessment> assessmentCaptor;
+    
+    @Captor
+    ArgumentCaptor<CacheKey> cacheKeyCaptor;
     
     @BeforeMethod
     public void beforeMethod( ) {
@@ -88,12 +96,16 @@ public class AssessmentConfigServiceTest extends Mockito {
             .thenReturn(assessment);
         
         AssessmentConfig existing = new AssessmentConfig();
+        existing.setModifiedOn(MODIFIED_ON);
         when(mockDao.getAssessmentConfig(GUID)).thenReturn(Optional.of(existing));
         
         AssessmentConfig retValue = service.getAssessmentConfig(TEST_APP_ID, GUID);
         assertSame(retValue, existing);
         
         verify(mockDao).getAssessmentConfig(GUID);
+        
+        verify(mockCacheProvider).setObject(cacheKeyCaptor.capture(), eq(MODIFIED_ON));
+        assertEquals(cacheKeyCaptor.getValue().toString(), "oneGuid:AssessmentConfig:Etag");
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class, 
@@ -120,12 +132,16 @@ public class AssessmentConfigServiceTest extends Mockito {
     @Test
     public void getSharedAssessmentConfig() {
         AssessmentConfig existing = new AssessmentConfig();
+        existing.setModifiedOn(MODIFIED_ON);
         when(mockDao.getAssessmentConfig(GUID)).thenReturn(Optional.of(existing));
         
         AssessmentConfig retValue = service.getSharedAssessmentConfig(TEST_APP_ID, GUID);
         assertSame(retValue, existing);
         
         verify(mockDao).getAssessmentConfig(GUID);
+        
+        verify(mockCacheProvider).setObject(cacheKeyCaptor.capture(), eq(MODIFIED_ON));
+        assertEquals(cacheKeyCaptor.getValue().toString(), "oneGuid:AssessmentConfig:Etag");
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class,
@@ -177,6 +193,9 @@ public class AssessmentConfigServiceTest extends Mockito {
         assertEquals(captured.getConfig(), configNode);
         assertEquals(captured.getVersion(), 3L);
         assertNull(assessment.getOriginGuid());
+        
+        verify(mockCacheProvider).setObject(cacheKeyCaptor.capture(), eq(MODIFIED_ON));
+        assertEquals(cacheKeyCaptor.getValue().toString(), "oneGuid:AssessmentConfig:Etag");
     }
     
     @Test(expectedExceptions = InvalidEntityException.class, 
@@ -240,6 +259,9 @@ public class AssessmentConfigServiceTest extends Mockito {
         assertEquals(existing.getConfig().get("identifier").textValue(), "anIdentifier");
         
         assertEquals(assessment.getModifiedOn(), MODIFIED_ON);
+        
+        verify(mockCacheProvider).setObject(cacheKeyCaptor.capture(), eq(MODIFIED_ON));
+        assertEquals(cacheKeyCaptor.getValue().toString(), "oneGuid:AssessmentConfig:Etag");
     }
     
     @Test(expectedExceptions = InvalidEntityException.class, 

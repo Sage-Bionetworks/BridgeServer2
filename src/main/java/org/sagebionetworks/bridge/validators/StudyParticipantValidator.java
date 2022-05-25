@@ -2,8 +2,6 @@ package org.sagebionetworks.bridge.validators;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import static org.sagebionetworks.bridge.AuthEvaluatorField.ORG_ID;
-import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_MEMBERS;
 import static org.sagebionetworks.bridge.BridgeUtils.isValidTimeZoneID;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_EMAIL_ERROR;
@@ -15,21 +13,17 @@ import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateJsonL
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateStringLength;
 
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
-import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
-import org.sagebionetworks.bridge.models.organizations.Organization;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.services.OrganizationService;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,14 +32,11 @@ public class StudyParticipantValidator implements Validator {
     private static final Logger LOG = LoggerFactory.getLogger(StudyParticipantValidator.class);
 
     private final StudyService studyService;
-    private final OrganizationService organizationService;
     private final App app;
     private final boolean isNew;
     
-    public StudyParticipantValidator(StudyService studyService, OrganizationService organizationService, App app,
-            boolean isNew) {
+    public StudyParticipantValidator(StudyService studyService, App app, boolean isNew) {
         this.studyService = studyService;
-        this.organizationService = organizationService;
         this.app = app;
         this.isNew = isNew;
     }
@@ -62,17 +53,24 @@ public class StudyParticipantValidator implements Validator {
         // This is an intermediary step to outright preventing these values from 
         // being supplied via our participant APIs (such accounts should be managed
         // through the /v1/accounts APIs for administrative accounts).
-        if (StringUtils.isNotBlank(participant.getOrgMembership())) {
+        if (participant.getOrgMembership() != null) {
             LOG.warn("Study participant created with an org membership by caller "
                     + RequestContext.get().getCallerUserId());
+            errors.rejectValue("orgMembership", "is prohibited for study participants");
         }
         if (!participant.getRoles().isEmpty()) {
             LOG.warn("Study participant created with roles by caller "
                     + RequestContext.get().getCallerUserId());
+            errors.rejectValue("roles", "are prohibited for study participants");
+        }
+        if (participant.getSynapseUserId() != null) {
+            LOG.warn("Study participant created with an synapseUserId by caller "
+                    + RequestContext.get().getCallerUserId());
+            errors.rejectValue("synapseUserId", "is prohibited for study participants");
         }
         if (isNew) {
             if (!ValidatorUtils.participantHasValidIdentifier(participant)) {
-                errors.reject("email, phone, synapseUserId or externalId is required");
+                errors.reject("email, phone, or externalId is required");
             }
             // If provided, phone must be valid
             Phone phone = participant.getPhone();
@@ -88,7 +86,7 @@ public class StudyParticipantValidator implements Validator {
                 errors.rejectValue("email", INVALID_EMAIL_ERROR);
             }
             // External ID is required for non-administrative accounts when it is required on sign-up.
-            if (participant.getRoles().isEmpty() && app.isExternalIdRequiredOnSignup() && participant.getExternalIds().isEmpty()) {
+            if (app.isExternalIdRequiredOnSignup() && participant.getExternalIds().isEmpty()) {
                 errors.rejectValue("externalId", "is required");
             }
             // Password is optional, but validation is applied if supplied, any time it is 
@@ -99,17 +97,6 @@ public class StudyParticipantValidator implements Validator {
                 ValidatorUtils.password(errors, passwordPolicy, password);
             }
             
-            // After account creation, organizational membership cannot be changed by updating an account
-            // Instead, use the OrganizationService
-            if (isNotBlank(participant.getOrgMembership())) {
-                String orgId = participant.getOrgMembership();
-                Optional<Organization> opt = organizationService.getOrganizationOpt(app.getIdentifier(), orgId);
-                if (!opt.isPresent()) {
-                    errors.rejectValue("orgMembership", "is not a valid organization");
-                } else if (!CAN_EDIT_MEMBERS.check(ORG_ID, orgId)) {
-                    errors.rejectValue("orgMembership", "cannot be set by caller");
-                }
-            }
             // External IDs can be updated during creation or on update. If it's already assigned to another user, 
             // the database constraints will prevent this record's persistence.
             if (isNotBlank(participant.getExternalId()) && participant.getExternalIds().isEmpty()) {
@@ -134,11 +121,6 @@ public class StudyParticipantValidator implements Validator {
                 errors.rejectValue("id", "is required");
             }
         }
-
-        if (participant.getSynapseUserId() != null && isBlank(participant.getSynapseUserId())) {
-            errors.rejectValue("synapseUserId", CANNOT_BE_BLANK);
-        }
-
         for (String dataGroup : participant.getDataGroups()) {
             if (!app.getDataGroups().contains(dataGroup)) {
                 errors.rejectValue("dataGroups", messageForSet(app.getDataGroups(), dataGroup));
