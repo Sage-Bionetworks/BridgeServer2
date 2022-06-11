@@ -158,10 +158,10 @@ public class Exporter3Service {
     private String exporterSynapseUser;
     private String rawHealthDataBucket;
     private String synapseTrackingViewId;
-    private String workerQueueUrl;
 
     private AccountService accountService;
     private AppService appService;
+    private BridgeConfig config;
     private HealthDataEx3Service healthDataEx3Service;
     private ParticipantVersionService participantVersionService;
     private S3Helper s3Helper;
@@ -171,13 +171,14 @@ public class Exporter3Service {
 
     @Autowired
     public final void setConfig(BridgeConfig config) {
+        this.config = config;
+
         bridgeAdminTeamId = (long) config.getInt(CONFIG_KEY_TEAM_BRIDGE_ADMIN);
         bridgeStaffTeamId = (long) config.getInt(CONFIG_KEY_TEAM_BRIDGE_STAFF);
         exporterSynapseId = (long) config.getInt(CONFIG_KEY_EXPORTER_SYNAPSE_ID);
         exporterSynapseUser = config.getProperty(CONFIG_KEY_EXPORTER_SYNAPSE_USER);
         rawHealthDataBucket = config.getProperty(CONFIG_KEY_RAW_HEALTH_DATA_BUCKET);
         synapseTrackingViewId = config.getProperty(CONFIG_KEY_SYNAPSE_TRACKING_VIEW);
-        workerQueueUrl = config.getProperty(BridgeConstants.CONFIG_KEY_WORKER_SQS_URL);
 
         String adminSynapseIdStr = config.get(CONFIG_KEY_ADMIN_SYNAPSE_ID);
         if (StringUtils.isNotBlank(adminSynapseIdStr)) {
@@ -517,6 +518,9 @@ public class Exporter3Service {
             throw new BridgeServiceException("Error creating export request for app " + appId + " record " + recordId,
                     ex);
         }
+
+        // Note: SqsInitializer runs after Spring, so we need to grab the queue URL dynamically.
+        String workerQueueUrl = config.getProperty(BridgeConstants.CONFIG_KEY_WORKER_SQS_URL);
 
         // Sent to SQS.
         SendMessageResult sqsResult = sqsClient.sendMessage(workerQueueUrl, requestJson);
