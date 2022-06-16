@@ -39,9 +39,9 @@ public class ParticipantVersionService {
     static final String WORKER_NAME_EX_3_PARTICIPANT_VERSION = "Ex3ParticipantVersionWorker";
 
     private AppService appService;
+    private BridgeConfig config;
     private ParticipantVersionDao participantVersionDao;
     private AmazonSQS sqsClient;
-    private String workerQueueUrl;
 
     @Autowired
     public final void setAppService(AppService appService) {
@@ -50,7 +50,7 @@ public class ParticipantVersionService {
 
     @Autowired
     public final void setConfig(BridgeConfig config) {
-        workerQueueUrl = config.getProperty(BridgeConstants.CONFIG_KEY_WORKER_SQS_URL);
+        this.config = config;
     }
 
     @Autowired
@@ -197,6 +197,9 @@ public class ParticipantVersionService {
             throw new BridgeServiceException("Error creating export participant version request for app " + appId +
                     " healthcode " + healthCode + " version " + versionNum, ex);
         }
+
+        // Note: SqsInitializer runs after Spring, so we need to grab the queue URL dynamically.
+        String workerQueueUrl = config.getProperty(BridgeConstants.CONFIG_KEY_WORKER_SQS_URL);
 
         // Sent to SQS.
         SendMessageResult sqsResult = sqsClient.sendMessage(workerQueueUrl, requestJson);
