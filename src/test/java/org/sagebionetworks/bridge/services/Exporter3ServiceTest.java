@@ -27,7 +27,9 @@ import java.util.Set;
 
 import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.model.CreateTopicResult;
+import com.amazonaws.services.sns.model.PublishResult;
 import com.amazonaws.services.sns.model.SubscribeRequest;
+import com.amazonaws.services.sns.model.SubscribeResult;
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.model.SendMessageResult;
 import com.google.common.collect.ImmutableList;
@@ -65,6 +67,7 @@ import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.Exporter3Configuration;
 import org.sagebionetworks.bridge.models.exporter.ExporterCreateStudyNotification;
 import org.sagebionetworks.bridge.models.exporter.ExporterSubscriptionRequest;
+import org.sagebionetworks.bridge.models.exporter.ExporterSubscriptionResult;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordEx3;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.upload.Upload;
@@ -94,6 +97,7 @@ public class Exporter3ServiceTest {
     private static final long STORAGE_LOCATION_ID = 7777L;
     private static final Map<String, String> SUBSCRIPTION_ATTRIBUTES = ImmutableMap.of("test-attr-name",
             "test-attr-value");
+    private static final String SUBSCRIPTION_ARN = "arn:aws:sns:us-east-1:111111111111:create-study-topic:subscription-id";
     private static final String SUBSCRIPTION_ENDPOINT = "arn:aws:sqs:us-east-1:222222222222:subscription-queue";
     private static final String SUBSCRIPTION_PROTOCOL = "sqs";
     private static final String SYNAPSE_TRACKING_VIEW_ID = "syn8888";
@@ -413,6 +417,9 @@ public class Exporter3ServiceTest {
 
         mockSynapseResourceCreation();
 
+        // Mock SNS publish.
+        when(mockSnsClient.publish(any(), any())).thenReturn(new PublishResult());
+
         // Execute. We only care about the notification (or lack thereof).
         exporter3Service.initExporter3ForStudy(TestConstants.TEST_APP_ID, TestConstants.TEST_STUDY_ID);
 
@@ -568,8 +575,14 @@ public class Exporter3ServiceTest {
         createTopicResult.setTopicArn(CREATE_STUDY_TOPIC_ARN);
         when(mockSnsClient.createTopic(topicName)).thenReturn(createTopicResult);
 
+        SubscribeResult subscribeResult = new SubscribeResult();
+        subscribeResult.setSubscriptionArn(SUBSCRIPTION_ARN);
+        when(mockSnsClient.subscribe(any())).thenReturn(subscribeResult);
+
         // Execute.
-        exporter3Service.subscribeToCreateStudyNotifications(TestConstants.TEST_APP_ID, makeSubscriptionRequest());
+        ExporterSubscriptionResult exporterSubscriptionResult = exporter3Service.subscribeToCreateStudyNotifications(
+                TestConstants.TEST_APP_ID, makeSubscriptionRequest());
+        assertEquals(exporterSubscriptionResult.getSubscriptionArn(), SUBSCRIPTION_ARN);
 
         // Verify backends.
         verify(mockSnsClient).createTopic(topicName);
@@ -595,8 +608,15 @@ public class Exporter3ServiceTest {
         ex3Config.setCreateStudyNotificationTopicArn(CREATE_STUDY_TOPIC_ARN);
         app.setExporter3Configuration(ex3Config);
 
+        // Mock SNS.
+        SubscribeResult subscribeResult = new SubscribeResult();
+        subscribeResult.setSubscriptionArn(SUBSCRIPTION_ARN);
+        when(mockSnsClient.subscribe(any())).thenReturn(subscribeResult);
+
         // Execute.
-        exporter3Service.subscribeToCreateStudyNotifications(TestConstants.TEST_APP_ID, makeSubscriptionRequest());
+        ExporterSubscriptionResult exporterSubscriptionResult = exporter3Service.subscribeToCreateStudyNotifications(
+                TestConstants.TEST_APP_ID, makeSubscriptionRequest());
+        assertEquals(exporterSubscriptionResult.getSubscriptionArn(), SUBSCRIPTION_ARN);
 
         // Verify backends.
         verify(mockSnsClient, never()).createTopic(anyString());

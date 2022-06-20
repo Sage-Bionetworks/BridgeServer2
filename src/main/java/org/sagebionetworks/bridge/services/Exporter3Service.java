@@ -9,7 +9,9 @@ import javax.annotation.Resource;
 
 import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.model.CreateTopicResult;
+import com.amazonaws.services.sns.model.PublishResult;
 import com.amazonaws.services.sns.model.SubscribeRequest;
+import com.amazonaws.services.sns.model.SubscribeResult;
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.model.SendMessageResult;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -47,6 +49,7 @@ import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.Exporter3Configuration;
 import org.sagebionetworks.bridge.models.exporter.ExporterCreateStudyNotification;
 import org.sagebionetworks.bridge.models.exporter.ExporterSubscriptionRequest;
+import org.sagebionetworks.bridge.models.exporter.ExporterSubscriptionResult;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordEx3;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.upload.Upload;
@@ -343,7 +346,9 @@ public class Exporter3Service {
                 String notificationJson;
                 try {
                     notificationJson = BridgeObjectMapper.get().writeValueAsString(notification);
-                    snsClient.publish(createStudyNotificationTopicArn, notificationJson);
+                    PublishResult publishResult = snsClient.publish(createStudyNotificationTopicArn, notificationJson);
+                    LOG.info("Sent notification for initializing study " + studyId + " in app " + appId +
+                            ", message ID " + publishResult.getMessageId());
                 } catch (JsonProcessingException ex) {
                     // This should never happen, but catch it and log.
                     LOG.error("Error creating notification for initializing study " + studyId + " in app " + appId, ex);
@@ -499,7 +504,8 @@ public class Exporter3Service {
     }
 
     /** Subscribe to be notified when a study is initialized for Exporter 3.0 in the given app. */
-    public void subscribeToCreateStudyNotifications(String appId, ExporterSubscriptionRequest subscriptionRequest) {
+    public ExporterSubscriptionResult subscribeToCreateStudyNotifications(String appId,
+            ExporterSubscriptionRequest subscriptionRequest) {
         Validate.entityThrowingException(ExporterSubscriptionRequestValidator.INSTANCE, subscriptionRequest);
 
         boolean isAppModified = false;
@@ -536,8 +542,13 @@ public class Exporter3Service {
         snsSubscribeRequest.setAttributes(subscriptionRequest.getAttributes());
         snsSubscribeRequest.setEndpoint(subscriptionRequest.getEndpoint());
         snsSubscribeRequest.setProtocol(subscriptionRequest.getProtocol());
+        snsSubscribeRequest.setReturnSubscriptionArn(true);
         snsSubscribeRequest.setTopicArn(topicArn);
-        snsClient.subscribe(snsSubscribeRequest);
+        SubscribeResult snsSubscribeResult = snsClient.subscribe(snsSubscribeRequest);
+
+        ExporterSubscriptionResult subscriptionResult = new ExporterSubscriptionResult();
+        subscriptionResult.setSubscriptionArn(snsSubscribeResult.getSubscriptionArn());
+        return subscriptionResult;
     }
 
     /** Complete an upload for Exporter 3.0, and also export that upload. */

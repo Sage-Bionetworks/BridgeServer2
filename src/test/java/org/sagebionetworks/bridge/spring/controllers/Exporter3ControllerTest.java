@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
@@ -28,10 +29,10 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestConstants;
-import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.apps.Exporter3Configuration;
 import org.sagebionetworks.bridge.models.exporter.ExporterSubscriptionRequest;
+import org.sagebionetworks.bridge.models.exporter.ExporterSubscriptionResult;
 import org.sagebionetworks.bridge.services.Exporter3Service;
 
 public class Exporter3ControllerTest {
@@ -97,9 +98,13 @@ public class Exporter3ControllerTest {
         controllerInput.setProtocol(SUBSCRIBE_PROTOCOL);
         mockRequestBody(mockRequest, controllerInput);
 
+        // Mock service.
+        ExporterSubscriptionResult svcResult = new ExporterSubscriptionResult();
+        when(mockSvc.subscribeToCreateStudyNotifications(any(), any())).thenReturn(svcResult);
+
         // Execute.
-        StatusMessage result = controller.subscribeToCreateStudyNotifications();
-        assertEquals(result.getMessage(), Exporter3Controller.MESSAGE_SUBSCRIPTION_CREATED.getMessage());
+        ExporterSubscriptionResult result = controller.subscribeToCreateStudyNotifications();
+        assertSame(result, svcResult);
 
         // Verify service call.
         ArgumentCaptor<ExporterSubscriptionRequest> svcInputCaptor = ArgumentCaptor.forClass(
