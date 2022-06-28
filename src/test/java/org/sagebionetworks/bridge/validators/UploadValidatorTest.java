@@ -18,7 +18,7 @@ public class UploadValidatorTest {
     @Test
     public void testValidateRequest() {
         Validator validator = UploadValidator.INSTANCE;
-        
+
         // A valid case
         {
             UploadRequest uploadRequest = makeValidUploadRequestBuilder().build();
@@ -58,6 +58,57 @@ public class UploadValidatorTest {
             Validate.entityThrowingException(validator, uploadRequest);
         } catch (BridgeServiceException e) {
             assertEquals(e.getStatusCode(), HttpStatus.SC_BAD_REQUEST, "MD5 not base64 encoded");
+        }
+
+        try {
+            UploadRequest uploadRequest = makeValidUploadRequestBuilder().withContentMd5(null).build();
+            Validate.entityThrowingException(validator, uploadRequest);
+        } catch (BridgeServiceException e) {
+            assertEquals(e.getStatusCode(), HttpStatus.SC_BAD_REQUEST, "MD5 must not be empty.");
+        }
+
+        try {
+            UploadRequest uploadRequest = makeValidUploadRequestBuilder().withContentMd5("").build();
+            Validate.entityThrowingException(validator, uploadRequest);
+        } catch (BridgeServiceException e) {
+            assertEquals(e.getStatusCode(), HttpStatus.SC_BAD_REQUEST, "MD5 must not be empty.");
+        }
+
+        // 17 byte MD5 hash (still 24 characters)
+        try {
+            UploadRequest uploadRequest = makeValidUploadRequestBuilder().withContentMd5("AAAAAAAAAAAAAAAAAAAAAAA=")
+                    .build();
+            Validate.entityThrowingException(validator, uploadRequest);
+        } catch (BridgeServiceException e) {
+            assertEquals(e.getStatusCode(), HttpStatus.SC_BAD_REQUEST, "MD5 hash must be 16 bytes.");
+        }
+
+        // 18 byte MD5 hash (still 24 characters)
+        try {
+            UploadRequest uploadRequest = makeValidUploadRequestBuilder().withContentMd5("AAAAAAAAAAAAAAAAAAAAAAAA")
+                    .build();
+            Validate.entityThrowingException(validator, uploadRequest);
+        } catch (BridgeServiceException e) {
+            assertEquals(e.getStatusCode(), HttpStatus.SC_BAD_REQUEST, "MD5 hash must be 16 bytes.");
+        }
+
+        // <24 character MD5 hash
+        try {
+            UploadRequest uploadRequest = makeValidUploadRequestBuilder().withContentMd5("AAAA")
+                    .build();
+            Validate.entityThrowingException(validator, uploadRequest);
+        } catch (BridgeServiceException e) {
+            assertEquals(e.getStatusCode(), HttpStatus.SC_BAD_REQUEST, "MD5 hash must be 16 bytes.");
+        }
+
+        // <24 character MD5 hash
+        try {
+            UploadRequest uploadRequest = makeValidUploadRequestBuilder()
+                    .withContentMd5("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+                    .build();
+            Validate.entityThrowingException(validator, uploadRequest);
+        } catch (BridgeServiceException e) {
+            assertEquals(e.getStatusCode(), HttpStatus.SC_BAD_REQUEST, "MD5 hash must be 16 bytes.");
         }
     }
 
