@@ -20,8 +20,8 @@ public class UploadValidator implements Validator {
 
     @Override
     public void validate(Object object, Errors errors) {
-        UploadRequest uploadRequest = (UploadRequest)object;
-        
+        UploadRequest uploadRequest = (UploadRequest) object;
+
         final String name = uploadRequest.getName();
         if (name == null || name.isEmpty()) {
             errors.rejectValue("name", CANNOT_BE_BLANK);
@@ -35,11 +35,13 @@ public class UploadValidator implements Validator {
             errors.rejectValue("contentLength", "Invalid content length. Must be > 0.");
         }
         if (length > MAX_UPLOAD_SIZE) {
-            errors.rejectValue("contentLength", "Content length is above the allowed maximum.");   
+            errors.rejectValue("contentLength", "Content length is above the allowed maximum.");
         }
         final String base64md5 = uploadRequest.getContentMd5();
         if (base64md5 == null || base64md5.isEmpty()) {
             errors.rejectValue("contentMd5", "MD5 must not be empty.");
+        } else if (base64md5.length() != 24) {
+            errors.rejectValue("contentMd5", "MD5 must be 24 characters");
         } else {
             try {
                 Base64.decodeBase64(base64md5.getBytes(defaultCharset()));
