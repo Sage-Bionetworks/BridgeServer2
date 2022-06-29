@@ -112,7 +112,7 @@ public class UploadValidatorTest {
             assertEquals(e.getStatusCode(), HttpStatus.SC_BAD_REQUEST, "MD5 hash must be 16 bytes.");
         }
 
-        // <24 character MD5 hash
+        // >24 character MD5 hash
         try {
             UploadRequest uploadRequest = makeValidUploadRequestBuilder()
                     .withContentMd5("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
