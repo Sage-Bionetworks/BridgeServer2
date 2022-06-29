@@ -40,7 +40,7 @@ public class UploadServiceCreateUploadTest {
     private static final String TEST_ORIGINAL_UPLOAD_ID = "original-upload";
     private static final String TEST_PRESIGNED_URL = "http://www.example.com/";
     private static final String TEST_UPLOAD_ID = "test-upload-id";
-    private static final String TEST_UPLOAD_MD5 = Base64.encodeBase64String("test-md5".getBytes());
+    private static final String TEST_UPLOAD_MD5 = "AAAAAAAAAAAAAAAAAAAAAA==";
 
     // Timezone matters. UploadService pulls the DateTime in UTC, and the equals() check (which is used by Mockito)
     // checks for timezone as well.
