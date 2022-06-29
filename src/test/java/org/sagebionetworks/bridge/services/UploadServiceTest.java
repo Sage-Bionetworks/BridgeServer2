@@ -432,7 +432,7 @@ public class UploadServiceTest {
         verify(mockS3UploadClient).generatePresignedUrl(requestCaptor.capture());
         GeneratePresignedUrlRequest request = requestCaptor.getValue();
         assertEquals(request.getBucketName(), UPLOAD_BUCKET_NAME);
-        assertEquals(request.getContentMd5(), "md5-value");
+        assertEquals(request.getContentMd5(), "AAAAAAAAAAAAAAAAAAAAAA==");
         assertEquals(request.getContentType(), "application/binary");
         assertEquals(request.getExpiration(), new Date(TIMESTAMP.getMillis() + UploadService.EXPIRATION));
         assertEquals(request.getMethod(), HttpMethod.PUT);
@@ -462,7 +462,8 @@ public class UploadServiceTest {
         UploadRequest uploadRequest = constructUploadRequest();
         Upload upload = new DynamoUpload2(uploadRequest, HEALTH_CODE);
         
-        when(mockUploadDedupeDao.getDuplicate(eq(HEALTH_CODE), eq("md5-value"), any())).thenReturn(ORIGINAL_UPLOAD_ID);
+        when(mockUploadDedupeDao.getDuplicate(eq(HEALTH_CODE), eq("AAAAAAAAAAAAAAAAAAAAAA=="), any()))
+                .thenReturn(ORIGINAL_UPLOAD_ID);
         when(mockUploadDao.getUpload(ORIGINAL_UPLOAD_ID)).thenReturn(upload);
         when(mockUploadDao.createUpload(uploadRequest, TEST_APP_ID, HEALTH_CODE, ORIGINAL_UPLOAD_ID)).thenReturn(upload);
         when(mockS3UploadClient.generatePresignedUrl(any())).thenReturn(new URL("https://ws.com/some-link"));
@@ -475,7 +476,7 @@ public class UploadServiceTest {
         verify(mockS3UploadClient).generatePresignedUrl(requestCaptor.capture());
         GeneratePresignedUrlRequest request = requestCaptor.getValue();
         assertEquals(request.getBucketName(), UPLOAD_BUCKET_NAME);
-        assertEquals(request.getContentMd5(), "md5-value");
+        assertEquals(request.getContentMd5(), "AAAAAAAAAAAAAAAAAAAAAA==");
         assertEquals(request.getContentType(), "application/binary");
         assertEquals(request.getExpiration(), new Date(TIMESTAMP.getMillis() + UploadService.EXPIRATION));
         assertEquals(request.getMethod(), HttpMethod.PUT);
@@ -631,7 +632,8 @@ public class UploadServiceTest {
     }
     
     UploadRequest constructUploadRequest() {
-        return new UploadRequest.Builder().withName("oneUpload").withContentLength(1048L).withContentMd5("md5-value")
+        return new UploadRequest.Builder().withName("oneUpload").withContentLength(1048L)
+                .withContentMd5("AAAAAAAAAAAAAAAAAAAAAA==")
                 .withContentType("application/binary").build();
-    }    
+    }
 }
