@@ -16,7 +16,7 @@ public class UploadValidatorTest {
     private static final String UPLOAD_CONTENT = "testValidateRequest";
 
     @Test
-    public void testValidateRequest() {
+    public void testValidateRequest() throws IllegalStateException {
         Validator validator = UploadValidator.INSTANCE;
 
         // A valid case
