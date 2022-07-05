@@ -165,7 +165,6 @@ public class ParticipantFileServiceTest {
             }
         }
         service.getParticipantFile("userid", "fileid");
-        System.out.println("bar");
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
