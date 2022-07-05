@@ -166,7 +166,7 @@ public class BridgeConstants {
     public static final long PARTICIPANT_FILE_RATE_LIMITER_REFILL_BYTES_PROD = 1_000_000; // 1 MB
 
     public static final long PARTICIPANT_FILE_RATE_LIMITER_INITIAL_BYTES_TEST = 1_000; // 1 KB
-    public static final long PARTICIPANT_FILE_RATE_LIMITER_MAXIMUM_BYTES_TEST = 10_000; // 10 KB
+    public static final long PARTICIPANT_FILE_RATE_LIMITER_MAXIMUM_BYTES_TEST = 1_000; // 1 KB
     public static final long PARTICIPANT_FILE_RATE_LIMITER_REFILL_INTERVAL_SECONDS_TEST = 5; // every 5 seconds
     public static final long PARTICIPANT_FILE_RATE_LIMITER_REFILL_BYTES_TEST = 1_000; // 1 MB
 }
