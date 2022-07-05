@@ -63,7 +63,7 @@ public class ByteRateLimiter {
      * @return A boolean determining whether the specified number of bytes can be
      *         consumed on the resource (true if it can, false if it cannot).
      */
-    public boolean tryAcquireResource(long bytesToConsume) {
+    public boolean tryConsumeBytes(long bytesToConsume) {
         updateCurrentBytes();
 
         if (currentBytes >= bytesToConsume) {

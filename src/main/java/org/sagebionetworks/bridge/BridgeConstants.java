@@ -158,4 +158,10 @@ public class BridgeConstants {
             "102", "203", "556", "692", "790", "821", "823", "830", "831", "878", "879", "884", 
             "890", "893");
 
+    public static final String PARTICIPANT_FILE_RATE_LIMIT_ERROR = "User requested to download too much data";
+
+    public static final long PARTICIPANT_FILE_RATE_LIMITER_INITIAL_BYTES = 1_000_000; // 1 MB
+    public static final long PARTICIPANT_FILE_RATE_LIMITER_MAXIMUM_BYTES = 10_000_000; // 10 MB
+    public static final long PARTICIPANT_FILE_RATE_LIMITER_REFILL_INTERVAL_SECONDS = 3600; // every hr
+    public static final long PARTICIPANT_FILE_RATE_LIMITER_REFILL_BYTES =  1_000_000; // 1 MB
 }

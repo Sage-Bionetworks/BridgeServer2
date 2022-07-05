@@ -10,8 +10,10 @@ import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.ParticipantFileDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.LimitExceededException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.files.ParticipantFile;
+import org.sagebionetworks.bridge.util.ByteRateLimiter;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -19,6 +21,8 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 
 import java.net.URL;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static com.amazonaws.HttpMethod.GET;
 import static com.amazonaws.HttpMethod.PUT;
@@ -27,7 +31,13 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
+import static org.sagebionetworks.bridge.BridgeConstants.PARTICIPANT_FILE_RATE_LIMIT_ERROR;
+import static org.sagebionetworks.bridge.BridgeConstants.PARTICIPANT_FILE_RATE_LIMITER_INITIAL_BYTES;
+import static org.sagebionetworks.bridge.BridgeConstants.PARTICIPANT_FILE_RATE_LIMITER_MAXIMUM_BYTES;
+import static org.sagebionetworks.bridge.BridgeConstants.PARTICIPANT_FILE_RATE_LIMITER_REFILL_INTERVAL_SECONDS;
+import static org.sagebionetworks.bridge.BridgeConstants.PARTICIPANT_FILE_RATE_LIMITER_REFILL_BYTES;
 import static org.sagebionetworks.bridge.validators.ParticipantFileValidator.INSTANCE;
+
 
 @Component
 public class ParticipantFileService {
@@ -41,6 +51,8 @@ public class ParticipantFileService {
     private AmazonS3 s3Client;
 
     private String bucketName;
+
+    private Map<String, ByteRateLimiter> userByteRateLimiters = new ConcurrentHashMap<>();
 
     @Autowired
     final void setParticipantFileDao(ParticipantFileDao dao) {
@@ -58,24 +70,50 @@ public class ParticipantFileService {
     }
 
     /**
-     * Get a ForwardCursorPagedResourceList of ParticipantFiles from the given userId, with nextPageOffsetKey set.
-     * If nextPageOffsetKey is null, then the list reached the end and there does not exist next page.
+     * Get a ForwardCursorPagedResourceList of ParticipantFiles from the given
+     * userId, with nextPageOffsetKey set.
+     * If nextPageOffsetKey is null, then the list reached the end and there does
+     * not exist next page.
      *
-     * @param userId the id of the StudyParticipant
+     * @param userId    the id of the StudyParticipant
      * @param offsetKey the nextPageOffsetKey.
-     *                  (the exclusive starting offset of the query, if null, then query from the start)
-     * @param pageSize the number of items in the result page
+     *                  (the exclusive starting offset of the query, if null, then
+     *                  query from the start)
+     * @param pageSize  the number of items in the result page
      * @return a ForwardCursorPagedResourceList of ParticipantFiles
-     * @throws BadRequestException if pageSize is less than API_MINIMUM_PAGE_SIZE or greater
-     *         than API_MAXIMUM_PAGE_SIZE
+     * @throws BadRequestException    if pageSize is less than API_MINIMUM_PAGE_SIZE
+     *                                or greater
+     *                                than API_MAXIMUM_PAGE_SIZE
+     * @throws LimitExceededException if the user has requested to download too
+     *                                much data too frequently
      */
-    public ForwardCursorPagedResourceList<ParticipantFile> getParticipantFiles(String userId, String offsetKey, int pageSize) {
+    public ForwardCursorPagedResourceList<ParticipantFile> getParticipantFiles(String userId, String offsetKey,
+            int pageSize) throws BadRequestException, LimitExceededException {
         checkArgument(isNotBlank(userId));
 
         if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
             throw new BadRequestException(PAGE_SIZE_ERROR);
         }
-        return participantFileDao.getParticipantFiles(userId, offsetKey, pageSize);
+        ForwardCursorPagedResourceList<ParticipantFile> files = participantFileDao.getParticipantFiles(userId,
+                offsetKey, pageSize);
+        if (files == null) {
+            return null;
+        }
+
+        long totalFileSizesBytes = 0;
+        for (ParticipantFile file : files.getItems()) {
+            totalFileSizesBytes += s3Client.getObjectMetadata(bucketName, getFilePath(file)).getContentLength();
+        }
+        ByteRateLimiter rateLimiter = userByteRateLimiters.computeIfAbsent(userId,
+                (u) -> new ByteRateLimiter(PARTICIPANT_FILE_RATE_LIMITER_INITIAL_BYTES,
+                        PARTICIPANT_FILE_RATE_LIMITER_MAXIMUM_BYTES,
+                        PARTICIPANT_FILE_RATE_LIMITER_REFILL_INTERVAL_SECONDS,
+                        PARTICIPANT_FILE_RATE_LIMITER_REFILL_BYTES));
+        if (!rateLimiter.tryConsumeBytes(totalFileSizesBytes)) {
+            throw new LimitExceededException(PARTICIPANT_FILE_RATE_LIMIT_ERROR);
+        }
+
+        return files;
     }
 
     /**
@@ -86,13 +124,29 @@ public class ParticipantFileService {
      * @param fileId the fileId of the file
      * @return the ParticipantFile with the pre-signed S3 download URL if this file exists
      * @throws EntityNotFoundException if the file does not exist.
+     * @throws LimitExceededException  if the user has requested to download too
+     *                                 much data too frequently
      */
-    public ParticipantFile getParticipantFile(String userId, String fileId) {
+    public ParticipantFile getParticipantFile(String userId, String fileId)
+            throws EntityNotFoundException, LimitExceededException {
         checkArgument(isNotBlank(userId));
         checkArgument(isNotBlank(fileId));
 
         ParticipantFile file = participantFileDao.getParticipantFile(userId, fileId)
                 .orElseThrow(() -> new EntityNotFoundException(ParticipantFile.class));
+
+        ObjectMetadata metadata = s3Client.getObjectMetadata(bucketName, getFilePath(file));
+        if (metadata != null) {
+            long fileSizeBytes = metadata.getContentLength();
+            ByteRateLimiter rateLimiter = userByteRateLimiters.computeIfAbsent(userId,
+                    (u) -> new ByteRateLimiter(PARTICIPANT_FILE_RATE_LIMITER_INITIAL_BYTES,
+                            PARTICIPANT_FILE_RATE_LIMITER_MAXIMUM_BYTES,
+                            PARTICIPANT_FILE_RATE_LIMITER_REFILL_INTERVAL_SECONDS,
+                            PARTICIPANT_FILE_RATE_LIMITER_REFILL_BYTES));
+            if (!rateLimiter.tryConsumeBytes(fileSizeBytes)) {
+                throw new LimitExceededException(PARTICIPANT_FILE_RATE_LIMIT_ERROR);
+            }
+        }
 
         file.setDownloadUrl(generatePresignedRequest(file, GET).toExternalForm());
         return file;
