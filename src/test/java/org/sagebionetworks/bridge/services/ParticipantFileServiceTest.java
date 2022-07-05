@@ -72,7 +72,7 @@ public class ParticipantFileServiceTest {
 
         when(mockS3Client.getObjectMetadata(any(), any())).thenAnswer(invocation -> {
             ObjectMetadata metadata = new ObjectMetadata();
-            metadata.setContentLength(100_000); // 100 KB
+            metadata.setContentLength(100); // 100 B
             return metadata;
         });
 
