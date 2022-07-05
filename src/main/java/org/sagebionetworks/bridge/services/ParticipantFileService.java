@@ -32,10 +32,14 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.PARTICIPANT_FILE_RATE_LIMIT_ERROR;
-import static org.sagebionetworks.bridge.BridgeConstants.PARTICIPANT_FILE_RATE_LIMITER_INITIAL_BYTES;
-import static org.sagebionetworks.bridge.BridgeConstants.PARTICIPANT_FILE_RATE_LIMITER_MAXIMUM_BYTES;
-import static org.sagebionetworks.bridge.BridgeConstants.PARTICIPANT_FILE_RATE_LIMITER_REFILL_INTERVAL_SECONDS;
-import static org.sagebionetworks.bridge.BridgeConstants.PARTICIPANT_FILE_RATE_LIMITER_REFILL_BYTES;
+import static org.sagebionetworks.bridge.BridgeConstants.PARTICIPANT_FILE_RATE_LIMITER_INITIAL_BYTES_PROD;
+import static org.sagebionetworks.bridge.BridgeConstants.PARTICIPANT_FILE_RATE_LIMITER_MAXIMUM_BYTES_PROD;
+import static org.sagebionetworks.bridge.BridgeConstants.PARTICIPANT_FILE_RATE_LIMITER_REFILL_INTERVAL_SECONDS_PROD;
+import static org.sagebionetworks.bridge.BridgeConstants.PARTICIPANT_FILE_RATE_LIMITER_REFILL_BYTES_PROD;
+import static org.sagebionetworks.bridge.BridgeConstants.PARTICIPANT_FILE_RATE_LIMITER_INITIAL_BYTES_TEST;
+import static org.sagebionetworks.bridge.BridgeConstants.PARTICIPANT_FILE_RATE_LIMITER_MAXIMUM_BYTES_TEST;
+import static org.sagebionetworks.bridge.BridgeConstants.PARTICIPANT_FILE_RATE_LIMITER_REFILL_INTERVAL_SECONDS_TEST;
+import static org.sagebionetworks.bridge.BridgeConstants.PARTICIPANT_FILE_RATE_LIMITER_REFILL_BYTES_TEST;
 import static org.sagebionetworks.bridge.validators.ParticipantFileValidator.INSTANCE;
 
 
@@ -52,6 +56,8 @@ public class ParticipantFileService {
 
     private String bucketName;
 
+    private boolean isProduction;
+
     private Map<String, ByteRateLimiter> userByteRateLimiters = new ConcurrentHashMap<>();
 
     @Autowired
@@ -62,11 +68,32 @@ public class ParticipantFileService {
     @Autowired
     final void setConfig(BridgeConfig config) {
         bucketName = config.get(PARTICIPANT_FILE_BUCKET);
+        isProduction = config.isProduction();
     }
 
     @Resource(name = "s3Client")
     final void setS3client(AmazonS3 s3) {
         this.s3Client = s3;
+    }
+
+    /**
+     * Creates and returns a ByteRateLimiter with different settings depending on
+     * the environment.
+     * 
+     * @return a ByteRateLimiter
+     */
+    private ByteRateLimiter createByteRateLimiter() {
+        if (isProduction) {
+            return new ByteRateLimiter(PARTICIPANT_FILE_RATE_LIMITER_INITIAL_BYTES_PROD,
+                    PARTICIPANT_FILE_RATE_LIMITER_MAXIMUM_BYTES_PROD,
+                    PARTICIPANT_FILE_RATE_LIMITER_REFILL_INTERVAL_SECONDS_PROD,
+                    PARTICIPANT_FILE_RATE_LIMITER_REFILL_BYTES_PROD);
+        } else {
+            return new ByteRateLimiter(PARTICIPANT_FILE_RATE_LIMITER_INITIAL_BYTES_TEST,
+                    PARTICIPANT_FILE_RATE_LIMITER_MAXIMUM_BYTES_TEST,
+                    PARTICIPANT_FILE_RATE_LIMITER_REFILL_INTERVAL_SECONDS_TEST,
+                    PARTICIPANT_FILE_RATE_LIMITER_REFILL_BYTES_TEST);
+        }
     }
 
     /**
@@ -104,11 +131,7 @@ public class ParticipantFileService {
         for (ParticipantFile file : files.getItems()) {
             totalFileSizesBytes += s3Client.getObjectMetadata(bucketName, getFilePath(file)).getContentLength();
         }
-        ByteRateLimiter rateLimiter = userByteRateLimiters.computeIfAbsent(userId,
-                (u) -> new ByteRateLimiter(PARTICIPANT_FILE_RATE_LIMITER_INITIAL_BYTES,
-                        PARTICIPANT_FILE_RATE_LIMITER_MAXIMUM_BYTES,
-                        PARTICIPANT_FILE_RATE_LIMITER_REFILL_INTERVAL_SECONDS,
-                        PARTICIPANT_FILE_RATE_LIMITER_REFILL_BYTES));
+        ByteRateLimiter rateLimiter = userByteRateLimiters.computeIfAbsent(userId, (u) -> createByteRateLimiter());
         if (!rateLimiter.tryConsumeBytes(totalFileSizesBytes)) {
             throw new LimitExceededException(PARTICIPANT_FILE_RATE_LIMIT_ERROR);
         }
@@ -117,12 +140,14 @@ public class ParticipantFileService {
     }
 
     /**
-     * Returns this ParticipantFile metadata for download. If this file does not exist,
+     * Returns this ParticipantFile metadata for download. If this file does not
+     * exist,
      * throws EntityNotFoundException.
      *
      * @param userId the userId to be queried
      * @param fileId the fileId of the file
-     * @return the ParticipantFile with the pre-signed S3 download URL if this file exists
+     * @return the ParticipantFile with the pre-signed S3 download URL if this file
+     *         exists
      * @throws EntityNotFoundException if the file does not exist.
      * @throws LimitExceededException  if the user has requested to download too
      *                                 much data too frequently
@@ -138,11 +163,7 @@ public class ParticipantFileService {
         ObjectMetadata metadata = s3Client.getObjectMetadata(bucketName, getFilePath(file));
         if (metadata != null) {
             long fileSizeBytes = metadata.getContentLength();
-            ByteRateLimiter rateLimiter = userByteRateLimiters.computeIfAbsent(userId,
-                    (u) -> new ByteRateLimiter(PARTICIPANT_FILE_RATE_LIMITER_INITIAL_BYTES,
-                            PARTICIPANT_FILE_RATE_LIMITER_MAXIMUM_BYTES,
-                            PARTICIPANT_FILE_RATE_LIMITER_REFILL_INTERVAL_SECONDS,
-                            PARTICIPANT_FILE_RATE_LIMITER_REFILL_BYTES));
+            ByteRateLimiter rateLimiter = userByteRateLimiters.computeIfAbsent(userId, (u) -> createByteRateLimiter());
             if (!rateLimiter.tryConsumeBytes(fileSizeBytes)) {
                 throw new LimitExceededException(PARTICIPANT_FILE_RATE_LIMIT_ERROR);
             }

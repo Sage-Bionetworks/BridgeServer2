@@ -160,8 +160,13 @@ public class BridgeConstants {
 
     public static final String PARTICIPANT_FILE_RATE_LIMIT_ERROR = "User requested to download too much data";
 
-    public static final long PARTICIPANT_FILE_RATE_LIMITER_INITIAL_BYTES = 1_000_000; // 1 MB
-    public static final long PARTICIPANT_FILE_RATE_LIMITER_MAXIMUM_BYTES = 10_000_000; // 10 MB
-    public static final long PARTICIPANT_FILE_RATE_LIMITER_REFILL_INTERVAL_SECONDS = 3600; // every hr
-    public static final long PARTICIPANT_FILE_RATE_LIMITER_REFILL_BYTES =  1_000_000; // 1 MB
+    public static final long PARTICIPANT_FILE_RATE_LIMITER_INITIAL_BYTES_PROD = 1_000_000; // 1 MB
+    public static final long PARTICIPANT_FILE_RATE_LIMITER_MAXIMUM_BYTES_PROD = 10_000_000; // 10 MB
+    public static final long PARTICIPANT_FILE_RATE_LIMITER_REFILL_INTERVAL_SECONDS_PROD = 3600; // every hr
+    public static final long PARTICIPANT_FILE_RATE_LIMITER_REFILL_BYTES_PROD = 1_000_000; // 1 MB
+
+    public static final long PARTICIPANT_FILE_RATE_LIMITER_INITIAL_BYTES_TEST = 1_000; // 1 KB
+    public static final long PARTICIPANT_FILE_RATE_LIMITER_MAXIMUM_BYTES_TEST = 10_000; // 10 KB
+    public static final long PARTICIPANT_FILE_RATE_LIMITER_REFILL_INTERVAL_SECONDS_TEST = 5; // every 5 seconds
+    public static final long PARTICIPANT_FILE_RATE_LIMITER_REFILL_BYTES_TEST = 1_000; // 1 MB
 }
