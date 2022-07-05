@@ -3,8 +3,10 @@ package org.sagebionetworks.bridge.services;
 import com.amazonaws.HttpMethod;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.Headers;
+import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
+import org.apache.http.HttpStatus;
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.ParticipantFileDao;
@@ -97,6 +99,29 @@ public class ParticipantFileService {
     }
 
     /**
+     * Retrieves the file size of a file stored on S3 in bytes. If the file has not
+     * yet been uploaded or does not exist, 0 is returned.
+     * 
+     * @param file the file to get the size of
+     * @return the size of the file in bytes (0 if not found)
+     */
+    private long getS3FileSize(ParticipantFile file) {
+        try {
+            ObjectMetadata metadata = s3Client.getObjectMetadata(bucketName, getFilePath(file));
+            if (metadata != null) {
+                return metadata.getContentLength();
+            }
+            return 0;
+        } catch (AmazonS3Exception e) {
+            // file may not have been uploaded yet
+            if (e.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
+                return 0;
+            }
+            throw e;
+        }
+    }
+
+    /**
      * Get a ForwardCursorPagedResourceList of ParticipantFiles from the given
      * userId, with nextPageOffsetKey set.
      * If nextPageOffsetKey is null, then the list reached the end and there does
@@ -129,7 +154,7 @@ public class ParticipantFileService {
 
         long totalFileSizesBytes = 0;
         for (ParticipantFile file : files.getItems()) {
-            totalFileSizesBytes += s3Client.getObjectMetadata(bucketName, getFilePath(file)).getContentLength();
+            totalFileSizesBytes += getS3FileSize(file);
         }
         ByteRateLimiter rateLimiter = userByteRateLimiters.computeIfAbsent(userId, (u) -> createByteRateLimiter());
         if (!rateLimiter.tryConsumeBytes(totalFileSizesBytes)) {
@@ -160,13 +185,10 @@ public class ParticipantFileService {
         ParticipantFile file = participantFileDao.getParticipantFile(userId, fileId)
                 .orElseThrow(() -> new EntityNotFoundException(ParticipantFile.class));
 
-        ObjectMetadata metadata = s3Client.getObjectMetadata(bucketName, getFilePath(file));
-        if (metadata != null) {
-            long fileSizeBytes = metadata.getContentLength();
-            ByteRateLimiter rateLimiter = userByteRateLimiters.computeIfAbsent(userId, (u) -> createByteRateLimiter());
-            if (!rateLimiter.tryConsumeBytes(fileSizeBytes)) {
-                throw new LimitExceededException(PARTICIPANT_FILE_RATE_LIMIT_ERROR);
-            }
+        long fileSizeBytes = getS3FileSize(file);
+        ByteRateLimiter rateLimiter = userByteRateLimiters.computeIfAbsent(userId, (u) -> createByteRateLimiter());
+        if (!rateLimiter.tryConsumeBytes(fileSizeBytes)) {
+            throw new LimitExceededException(PARTICIPANT_FILE_RATE_LIMIT_ERROR);
         }
 
         file.setDownloadUrl(generatePresignedRequest(file, GET).toExternalForm());
