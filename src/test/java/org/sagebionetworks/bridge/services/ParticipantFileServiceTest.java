@@ -17,12 +17,16 @@ import org.sagebionetworks.bridge.dao.ParticipantFileDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.exceptions.LimitExceededException;
+import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.files.ParticipantFile;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -32,6 +36,7 @@ import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
+import static org.testng.Assert.fail;
 
 public class ParticipantFileServiceTest {
 
@@ -63,6 +68,12 @@ public class ParticipantFileServiceTest {
             GeneratePresignedUrlRequest request = i.getArgument(0);
             String filePath = request.getKey();
             return new URL("https://" + UPLOAD_BUCKET + "/" + filePath);
+        });
+
+        when(mockS3Client.getObjectMetadata(any(), any())).thenAnswer(invocation -> {
+            ObjectMetadata metadata = new ObjectMetadata();
+            metadata.setContentLength(100_000); // 100 KB
+            return metadata;
         });
 
         DateTimeUtils.setCurrentMillisFixed(TestConstants.TIMESTAMP.getMillis());
@@ -97,6 +108,19 @@ public class ParticipantFileServiceTest {
         service.getParticipantFiles("test_user", null, 5000);
     }
 
+    @Test(expectedExceptions = {LimitExceededException.class})
+    public void getParticipantFilesRateLimited() {
+        when(mockFileDao.getParticipantFiles("userid", null, 100)).thenAnswer(invocation -> {
+            List<ParticipantFile> files = new ArrayList<>();
+            for (int i = 0; i < 11; i++) {
+                files.add(ParticipantFile.create());
+            }
+            return new ForwardCursorPagedResourceList<>(files, null, true);
+        });
+
+        service.getParticipantFiles("userid", null, 100);
+    }
+
     @Test
     public void getParticipantFile() {
         String downloadUrl = "https://" + UPLOAD_BUCKET + "/test_user/file_id";
@@ -125,6 +149,23 @@ public class ParticipantFileServiceTest {
         assertEquals(request.getMethod(), HttpMethod.GET);
         assertEquals(request.getKey(), "test_user/file_id");
         assertEquals(request.getExpiration(), TestConstants.TIMESTAMP.plusDays(1).toDate());
+    }
+
+    @Test(expectedExceptions = { LimitExceededException.class })
+    public void getParticipantFileRateLimited() {
+        ParticipantFile file = ParticipantFile.create();
+        when(mockFileDao.getParticipantFile("userid", "fileid")).thenReturn(Optional.of(file));
+
+        for (int i = 0; i < 10; i++) {
+            try {
+                service.getParticipantFile("userid", "fileid");
+            } catch (LimitExceededException e) {
+                fail(String.format(
+                        "RateLimiter should not have rejected download %d of 100 KB with initial of 1 MB", i + 1));
+            }
+        }
+        service.getParticipantFile("userid", "fileid");
+        System.out.println("bar");
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
