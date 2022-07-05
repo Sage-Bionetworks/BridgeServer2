@@ -107,11 +107,7 @@ public class ParticipantFileService {
      */
     private long getS3FileSize(ParticipantFile file) {
         try {
-            ObjectMetadata metadata = s3Client.getObjectMetadata(bucketName, getFilePath(file));
-            if (metadata != null) {
-                return metadata.getContentLength();
-            }
-            return 0;
+            return s3Client.getObjectMetadata(bucketName, getFilePath(file)).getContentLength();
         } catch (AmazonS3Exception e) {
             // file may not have been uploaded yet
             if (e.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
