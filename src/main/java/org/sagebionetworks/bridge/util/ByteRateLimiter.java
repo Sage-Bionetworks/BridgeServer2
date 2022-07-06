@@ -8,7 +8,7 @@ import java.time.Instant;
  */
 public class ByteRateLimiter {
     // The maximum number of bytes that can be accumulated.
-    private long maximumTokens;
+    private long maximumBytes;
     // The time between byte refills in seconds.
     private long refillIntervalSeconds;
     // The number of bytes that is refilled every refillIntervalSeconds.
@@ -32,7 +32,7 @@ public class ByteRateLimiter {
      *                              refillIntervalSeconds.
      */
     public ByteRateLimiter(long initialBytes, long maximumBytes, long refillIntervalSeconds, long refillAmount) {
-        this.maximumTokens = maximumBytes;
+        this.maximumBytes = maximumBytes;
         this.refillIntervalSeconds = refillIntervalSeconds;
         this.refillAmount = refillAmount;
 
@@ -49,7 +49,7 @@ public class ByteRateLimiter {
         long refillsCount = secondsSinceLastRefill / refillIntervalSeconds;
         long bytesToRefill = (long) refillsCount * refillAmount;
 
-        currentBytes = Math.min(maximumTokens, currentBytes + bytesToRefill);
+        currentBytes = Math.min(maximumBytes, currentBytes + bytesToRefill);
         // It's not just Instant.now() because we want to save the time between the last
         // refill and now.
         lastRefill = lastRefill.plusSeconds(refillsCount * refillIntervalSeconds);
