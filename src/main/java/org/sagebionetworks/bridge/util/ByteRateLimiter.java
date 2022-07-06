@@ -20,7 +20,7 @@ public class ByteRateLimiter {
     private long currentBytes;
 
     /**
-     * Class constructor specifying initialTokens, maximumTokens,
+     * Class constructor specifying initialBytes, maximumBytes,
      * refillIntervalSeconds, and refillAmount.
      * 
      * @param initialBytes          The initial number of bytes allowed to be
