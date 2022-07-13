@@ -14,7 +14,6 @@ public class DemographicDeserializer extends JsonDeserializer<Demographic> {
     @Override
     public Demographic deserialize(JsonParser p, DeserializationContext ctxt)
             throws IOException, JsonProcessingException {
-        // TODO Auto-generated method stub
         return null;
     }
 }
