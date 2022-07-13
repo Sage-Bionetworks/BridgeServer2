@@ -4,6 +4,7 @@ import java.util.Objects;
 
 /** This class holds Exporter 3.0 configuration for a given app. */
 public final class Exporter3Configuration {
+    private String createStudyNotificationTopicArn;
     private Long dataAccessTeamId;
     private String participantVersionTableId;
     private String projectId;
@@ -14,6 +15,15 @@ public final class Exporter3Configuration {
     public boolean isConfigured() {
         return dataAccessTeamId != null && participantVersionTableId != null && projectId != null &&
                 rawDataFolderId != null && storageLocationId != null;
+    }
+
+    /** SNS topic to publish to when a study is initialized in this app. (This is not used for study configs.) */
+    public String getCreateStudyNotificationTopicArn() {
+        return createStudyNotificationTopicArn;
+    }
+
+    public void setCreateStudyNotificationTopicArn(String createStudyNotificationTopicArn) {
+        this.createStudyNotificationTopicArn = createStudyNotificationTopicArn;
     }
 
     /**
@@ -78,7 +88,8 @@ public final class Exporter3Configuration {
             return false;
         }
         Exporter3Configuration that = (Exporter3Configuration) o;
-        return Objects.equals(dataAccessTeamId, that.dataAccessTeamId) &&
+        return Objects.equals(createStudyNotificationTopicArn, that.createStudyNotificationTopicArn) &&
+                Objects.equals(dataAccessTeamId, that.dataAccessTeamId) &&
                 Objects.equals(participantVersionTableId, that.participantVersionTableId) &&
                 Objects.equals(projectId, that.projectId) &&
                 Objects.equals(rawDataFolderId, that.rawDataFolderId) &&
@@ -87,15 +98,15 @@ public final class Exporter3Configuration {
 
     @Override
     public int hashCode() {
-        return Objects.hash(dataAccessTeamId, participantVersionTableId, projectId, rawDataFolderId,
+        return Objects.hash(createStudyNotificationTopicArn, dataAccessTeamId, participantVersionTableId, projectId, rawDataFolderId,
                 storageLocationId);
     }
 
     @Override
     public String toString() {
         return String.format(
-                "Exporter3Configuration [dataAccessTeamId=%s, participantVersionTableId=%s, projectId=%s, " +
+                "Exporter3Configuration [createStudyNotificationTopicArn=%s, dataAccessTeamId=%s, participantVersionTableId=%s, projectId=%s, " +
                         "rawDataFolderId=%s, storageLocationId=%s]",
-                dataAccessTeamId, projectId, participantVersionTableId, rawDataFolderId, storageLocationId);
+                createStudyNotificationTopicArn, dataAccessTeamId, projectId, participantVersionTableId, rawDataFolderId, storageLocationId);
     }
 }

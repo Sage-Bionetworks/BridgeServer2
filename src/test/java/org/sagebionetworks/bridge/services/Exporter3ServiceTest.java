@@ -21,12 +21,19 @@ import static org.testng.Assert.fail;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import com.amazonaws.services.sns.AmazonSNS;
+import com.amazonaws.services.sns.model.CreateTopicResult;
+import com.amazonaws.services.sns.model.PublishResult;
+import com.amazonaws.services.sns.model.SubscribeRequest;
+import com.amazonaws.services.sns.model.SubscribeResult;
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.model.SendMessageResult;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import org.mockito.ArgumentCaptor;
@@ -50,6 +57,7 @@ import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
@@ -57,6 +65,9 @@ import org.sagebionetworks.bridge.models.accounts.ParticipantVersion;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.Exporter3Configuration;
+import org.sagebionetworks.bridge.models.exporter.ExporterCreateStudyNotification;
+import org.sagebionetworks.bridge.models.exporter.ExporterSubscriptionRequest;
+import org.sagebionetworks.bridge.models.exporter.ExporterSubscriptionResult;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordEx3;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.upload.Upload;
@@ -66,11 +77,11 @@ import org.sagebionetworks.bridge.s3.S3Helper;
 import org.sagebionetworks.bridge.synapse.SynapseHelper;
 
 public class Exporter3ServiceTest {
-
     private static final String APP_NAME = "Test App";
     private static final long ADMIN_SYNAPSE_ID = 555L;
     private static final long BRIDGE_ADMIN_TEAM_ID = 1111L;
     private static final long BRIDGE_STAFF_TEAM_ID = 2222L;
+    private static final String CREATE_STUDY_TOPIC_ARN = "arn:aws:sns:us-east-1:111111111111:create-study-topic";
     private static final long DATA_ACCESS_TEAM_ID = 3333L;
     private static final long DOWNSTREAM_ETL_SYNAPSE_ID = 3888L;
     private static final long EXPORTER_SYNAPSE_ID = 4444L;
@@ -84,6 +95,11 @@ public class Exporter3ServiceTest {
     private static final String RAW_HEALTH_DATA_BUCKET = "raw-health-data-bucket";
     private static final String RECORD_ID = "test-record";
     private static final long STORAGE_LOCATION_ID = 7777L;
+    private static final Map<String, String> SUBSCRIPTION_ATTRIBUTES = ImmutableMap.of("test-attr-name",
+            "test-attr-value");
+    private static final String SUBSCRIPTION_ARN = "arn:aws:sns:us-east-1:111111111111:create-study-topic:subscription-id";
+    private static final String SUBSCRIPTION_ENDPOINT = "arn:aws:sqs:us-east-1:222222222222:subscription-queue";
+    private static final String SUBSCRIPTION_PROTOCOL = "sqs";
     private static final String SYNAPSE_TRACKING_VIEW_ID = "syn8888";
     private static final String WORKER_QUEUE_URL = "http://example.com/dummy-sqs-url";
 
@@ -114,6 +130,9 @@ public class Exporter3ServiceTest {
 
     @Mock
     private S3Helper mockS3Helper;
+
+    @Mock
+    private AmazonSNS mockSnsClient;
 
     @Mock
     private AmazonSQS mockSqsClient;
@@ -338,6 +357,84 @@ public class Exporter3ServiceTest {
         verify(mockAppService, never()).updateApp(any(), anyBoolean());
     }
 
+    // branch coverage
+    @Test
+    public void initExporter3ForStudy_PartialInit_NoNotification() throws Exception {
+        // Study has an ex3Config, but it's blank.
+        study.setExporter3Configuration(new Exporter3Configuration());
+        study.setExporter3Enabled(false);
+
+        mockSynapseResourceCreation();
+
+        // Execute. We only care about the notification (or lack thereof).
+        exporter3Service.initExporter3ForStudy(TestConstants.TEST_APP_ID, TestConstants.TEST_STUDY_ID);
+        verifyZeroInteractions(mockSnsClient);
+    }
+
+    // branch coverage
+    @Test
+    public void initExporter3ForStudy_NoAppEx3Config_NoNotification() throws Exception {
+        // Study has no exporter3config, and neither does app.
+        study.setExporter3Configuration(null);
+        study.setExporter3Enabled(false);
+
+        app.setExporter3Configuration(null);
+
+        mockSynapseResourceCreation();
+
+        // Execute. We only care about the notification (or lack thereof).
+        exporter3Service.initExporter3ForStudy(TestConstants.TEST_APP_ID, TestConstants.TEST_STUDY_ID);
+        verifyZeroInteractions(mockSnsClient);
+    }
+
+    // branch coverage
+    @Test
+    public void initExporter3ForStudy_NoTopicArn_NoNotification() throws Exception {
+        // Study has no exporter3config. App has one, but it doesn't have the topic arn.
+        study.setExporter3Configuration(null);
+        study.setExporter3Enabled(false);
+
+        Exporter3Configuration appEx3Config = new Exporter3Configuration();
+        appEx3Config.setCreateStudyNotificationTopicArn(null);
+        app.setExporter3Configuration(appEx3Config);
+
+        mockSynapseResourceCreation();
+
+        // Execute. We only care about the notification (or lack thereof).
+        exporter3Service.initExporter3ForStudy(TestConstants.TEST_APP_ID, TestConstants.TEST_STUDY_ID);
+        verifyZeroInteractions(mockSnsClient);
+    }
+
+    @Test
+    public void initExporter3ForStudy_SendNotification() throws Exception {
+        // Study has no exporter3config. App has one, and it also has a topic arn.
+        study.setExporter3Configuration(null);
+        study.setExporter3Enabled(false);
+
+        Exporter3Configuration appEx3Config = new Exporter3Configuration();
+        appEx3Config.setCreateStudyNotificationTopicArn(CREATE_STUDY_TOPIC_ARN);
+        app.setExporter3Configuration(appEx3Config);
+
+        mockSynapseResourceCreation();
+
+        // Mock SNS publish.
+        when(mockSnsClient.publish(any(), any())).thenReturn(new PublishResult());
+
+        // Execute. We only care about the notification (or lack thereof).
+        exporter3Service.initExporter3ForStudy(TestConstants.TEST_APP_ID, TestConstants.TEST_STUDY_ID);
+
+        ArgumentCaptor<String> notificationJsonTextCaptor = ArgumentCaptor.forClass(String.class);
+        verify(mockSnsClient).publish(eq(CREATE_STUDY_TOPIC_ARN), notificationJsonTextCaptor.capture());
+
+        String notificationJsonText = notificationJsonTextCaptor.getValue();
+        ExporterCreateStudyNotification notification = BridgeObjectMapper.get().readValue(notificationJsonText,
+                ExporterCreateStudyNotification.class);
+        assertEquals(notification.getAppId(), TestConstants.TEST_APP_ID);
+        assertEquals(notification.getParentProjectId(), PROJECT_ID);
+        assertEquals(notification.getRawFolderId(), RAW_FOLDER_ID);
+        assertEquals(notification.getStudyId(), TestConstants.TEST_STUDY_ID);
+    }
+
     private static BridgeConfig mockConfig() {
         BridgeConfig mockConfig = mock(BridgeConfig.class);
         when(mockConfig.get(Exporter3Service.CONFIG_KEY_ADMIN_SYNAPSE_ID))
@@ -459,6 +556,87 @@ public class Exporter3ServiceTest {
         ex3Config.setRawDataFolderId(RAW_FOLDER_ID);
         ex3Config.setStorageLocationId(STORAGE_LOCATION_ID);
         return ex3Config;
+    }
+
+    @Test(expectedExceptions = InvalidEntityException.class)
+    public void subscribeToCreateStudyNotifications_InvalidSubscription() {
+        exporter3Service.subscribeToCreateStudyNotifications(TestConstants.TEST_APP_ID,
+                new ExporterSubscriptionRequest());
+    }
+
+    @Test
+    public void subscribeToCreateStudyNotifications_ConfigureTopic() {
+        // App has no exporter3config.
+        app.setExporter3Configuration(null);
+
+        // Mock SNS.
+        String topicName = String.format(Exporter3Service.FORMAT_CREATE_STUDY_TOPIC_NAME, TestConstants.TEST_APP_ID);
+        CreateTopicResult createTopicResult = new CreateTopicResult();
+        createTopicResult.setTopicArn(CREATE_STUDY_TOPIC_ARN);
+        when(mockSnsClient.createTopic(topicName)).thenReturn(createTopicResult);
+
+        SubscribeResult subscribeResult = new SubscribeResult();
+        subscribeResult.setSubscriptionArn(SUBSCRIPTION_ARN);
+        when(mockSnsClient.subscribe(any())).thenReturn(subscribeResult);
+
+        // Execute.
+        ExporterSubscriptionResult exporterSubscriptionResult = exporter3Service.subscribeToCreateStudyNotifications(
+                TestConstants.TEST_APP_ID, makeSubscriptionRequest());
+        assertEquals(exporterSubscriptionResult.getSubscriptionArn(), SUBSCRIPTION_ARN);
+
+        // Verify backends.
+        verify(mockSnsClient).createTopic(topicName);
+
+        ArgumentCaptor<App> updatedAppCaptor = ArgumentCaptor.forClass(App.class);
+        verify(mockAppService).updateApp(updatedAppCaptor.capture(), eq(true));
+        assertEquals(updatedAppCaptor.getValue().getExporter3Configuration().getCreateStudyNotificationTopicArn(),
+                CREATE_STUDY_TOPIC_ARN);
+
+        ArgumentCaptor<SubscribeRequest> snsSubscribeRequestCaptor = ArgumentCaptor.forClass(SubscribeRequest.class);
+        verify(mockSnsClient).subscribe(snsSubscribeRequestCaptor.capture());
+        SubscribeRequest snsSubscribeRequest = snsSubscribeRequestCaptor.getValue();
+        assertEquals(snsSubscribeRequest.getAttributes(), SUBSCRIPTION_ATTRIBUTES);
+        assertEquals(snsSubscribeRequest.getEndpoint(), SUBSCRIPTION_ENDPOINT);
+        assertEquals(snsSubscribeRequest.getProtocol(), SUBSCRIPTION_PROTOCOL);
+        assertEquals(snsSubscribeRequest.getTopicArn(), CREATE_STUDY_TOPIC_ARN);
+    }
+
+    @Test
+    public void subscribeToCreateStudyNotifications_ExistingTopic() {
+        // App has an exporter3config with a topic arn.
+        Exporter3Configuration ex3Config = new Exporter3Configuration();
+        ex3Config.setCreateStudyNotificationTopicArn(CREATE_STUDY_TOPIC_ARN);
+        app.setExporter3Configuration(ex3Config);
+
+        // Mock SNS.
+        SubscribeResult subscribeResult = new SubscribeResult();
+        subscribeResult.setSubscriptionArn(SUBSCRIPTION_ARN);
+        when(mockSnsClient.subscribe(any())).thenReturn(subscribeResult);
+
+        // Execute.
+        ExporterSubscriptionResult exporterSubscriptionResult = exporter3Service.subscribeToCreateStudyNotifications(
+                TestConstants.TEST_APP_ID, makeSubscriptionRequest());
+        assertEquals(exporterSubscriptionResult.getSubscriptionArn(), SUBSCRIPTION_ARN);
+
+        // Verify backends.
+        verify(mockSnsClient, never()).createTopic(anyString());
+        verify(mockAppService, never()).updateApp(any(), anyBoolean());
+
+        ArgumentCaptor<SubscribeRequest> snsSubscribeRequestCaptor = ArgumentCaptor.forClass(SubscribeRequest.class);
+        verify(mockSnsClient).subscribe(snsSubscribeRequestCaptor.capture());
+        SubscribeRequest snsSubscribeRequest = snsSubscribeRequestCaptor.getValue();
+        assertEquals(snsSubscribeRequest.getAttributes(), SUBSCRIPTION_ATTRIBUTES);
+        assertEquals(snsSubscribeRequest.getEndpoint(), SUBSCRIPTION_ENDPOINT);
+        assertEquals(snsSubscribeRequest.getProtocol(), SUBSCRIPTION_PROTOCOL);
+        assertEquals(snsSubscribeRequest.getTopicArn(), CREATE_STUDY_TOPIC_ARN);
+    }
+
+    private static ExporterSubscriptionRequest makeSubscriptionRequest() {
+        ExporterSubscriptionRequest request = new ExporterSubscriptionRequest();
+        request.setAttributes(SUBSCRIPTION_ATTRIBUTES);
+        request.setEndpoint(SUBSCRIPTION_ENDPOINT);
+        request.setProtocol(SUBSCRIPTION_PROTOCOL);
+        return request;
     }
 
     @Test
