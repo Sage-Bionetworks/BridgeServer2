@@ -988,3 +988,23 @@ MODIFY COLUMN `uploadURL` VARCHAR(1536) DEFAULT NULL;
 
 ALTER TABLE `FileRevisions`
 MODIFY COLUMN `uploadURL` VARCHAR(2048) DEFAULT NULL;
+
+-- changeset bridge:72
+
+CREATE TABLE `Demographics` (
+    `id` varchar(255) NOT NULL,
+    `studyId` varchar(60) NOT NULL,
+    `userId` varchar(255) NOT NULL,
+    `categoryName` varchar(1024) NOT NULL,
+    `multipleSelect` boolean NOT NULl,
+    `units` varchar(512) NULL,
+    PRIMARY KEY (`id`),
+    CONSTRAINT `Demographic-Account-Constraint` FOREIGN KEY (`userId`) REFERENCES `Accounts` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `Demographic-Study-Constraint` FOREIGN KEY (`studyId`) REFERENCES `Substudies` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+CREATE TABLE `DemographicsValues` (
+    `demographicsId` varchar(255) NOT NULL,
+    `value` varchar(1024) NOT NULL,
+    CONSTRAINT `DemographicValue-Demographic-Constraint` FOREIGN KEY (`demographicsId`) REFERENCES `Demographics` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;

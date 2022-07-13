@@ -1,33 +1,74 @@
 package org.sagebionetworks.bridge.models.studies;
 
+import java.util.List;
+
+import javax.persistence.CollectionTable;
+import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
+import javax.persistence.Id;
 import javax.persistence.Table;
+import javax.validation.constraints.NotNull;
+import javax.persistence.JoinColumn;
+
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
+import org.sagebionetworks.bridge.json.DemographicDeserializer;
+import org.sagebionetworks.bridge.json.DemographicSerializer;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 @Entity
 @Table(name = "Demographics")
+// @JsonSerialize(using = DemographicSerializer.class)
+// @JsonDeserialize(using = DemographicDeserializer.class)
 public class Demographic {
+    @Id
+    @NotNull
     @JsonIgnore
-    private String studyId; // future-proofing against userId not being unique to study
+    private String id;
+    @NotNull
     @JsonIgnore
+    private String studyId;
+    @NotNull
     private String userId;
+    @NotNull
     @JsonIgnore
     private String categoryName;
-    private String value;
+    @NotNull
+    @JsonIgnore
+    private boolean multipleSelect;
+    @ElementCollection
+    // @Fetch(value = FetchMode.SELECT)
+    @CollectionTable(name = "DemographicsValues", joinColumns = @JoinColumn(name = "demographicsId"))
+    private List<DemographicValue> values;
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private String units;
 
     public Demographic() {
     }
 
-    public Demographic(String studyId, String userId, String categoryName, String value, String units) {
+    public Demographic(@NotNull String id, @NotNull String studyId, @NotNull String userId,
+            @NotNull String categoryName, @NotNull boolean multipleSelect, List<DemographicValue> values,
+            String units) {
+        this.id = id;
         this.studyId = studyId;
         this.userId = userId;
         this.categoryName = categoryName;
-        this.value = value;
+        this.multipleSelect = multipleSelect;
+        this.values = values;
         this.units = units;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 
     public String getStudyId() {
@@ -54,12 +95,20 @@ public class Demographic {
         this.categoryName = categoryName;
     }
 
-    public String getValue() {
-        return value;
+    public boolean isMultipleSelect() {
+        return multipleSelect;
     }
 
-    public void setValue(String value) {
-        this.value = value;
+    public void setMultipleSelect(boolean multipleSelect) {
+        this.multipleSelect = multipleSelect;
+    }
+
+    public List<DemographicValue> getValues() {
+        return values;
+    }
+
+    public void setValues(List<DemographicValue> values) {
+        this.values = values;
     }
 
     public String getUnits() {
@@ -72,7 +121,8 @@ public class Demographic {
 
     @Override
     public String toString() {
-        return "Demographic [categoryName=" + categoryName + ", studyId=" + studyId + ", units=" + units + ", userId="
-                + userId + ", value=" + value + "]";
+        return "Demographic [categoryName=" + categoryName + ", id=" + id + ", multipleSelect=" + multipleSelect
+                + ", studyId=" + studyId + ", units=" + units + ", userId=" + userId + ", values=" + values + "]";
     }
+
 }
