@@ -12,6 +12,7 @@ public class UploadValidator implements Validator {
     public static final UploadValidator INSTANCE = new UploadValidator();
 
     private static final long MAX_UPLOAD_SIZE = 50L * 1000L * 1000L; // 50 MB
+    private static final int MD5_BYTE_LENGTH = 16; // 16 bytes
 
     @Override
     public boolean supports(Class<?> clazz) {
@@ -20,8 +21,8 @@ public class UploadValidator implements Validator {
 
     @Override
     public void validate(Object object, Errors errors) {
-        UploadRequest uploadRequest = (UploadRequest)object;
-        
+        UploadRequest uploadRequest = (UploadRequest) object;
+
         final String name = uploadRequest.getName();
         if (name == null || name.isEmpty()) {
             errors.rejectValue("name", CANNOT_BE_BLANK);
@@ -35,14 +36,17 @@ public class UploadValidator implements Validator {
             errors.rejectValue("contentLength", "Invalid content length. Must be > 0.");
         }
         if (length > MAX_UPLOAD_SIZE) {
-            errors.rejectValue("contentLength", "Content length is above the allowed maximum.");   
+            errors.rejectValue("contentLength", "Content length is above the allowed maximum.");
         }
         final String base64md5 = uploadRequest.getContentMd5();
         if (base64md5 == null || base64md5.isEmpty()) {
             errors.rejectValue("contentMd5", "MD5 must not be empty.");
         } else {
             try {
-                Base64.decodeBase64(base64md5.getBytes(defaultCharset()));
+                final byte[] md5Bytes = Base64.decodeBase64(base64md5.getBytes(defaultCharset()));
+                if (md5Bytes.length != MD5_BYTE_LENGTH) {
+                    errors.rejectValue("contentMd5", "MD5 hash must be 16 bytes.");
+                }
             } catch (Exception e) {
                 errors.rejectValue("contentMd5", "MD5 is not base64 encoded.");
             }
