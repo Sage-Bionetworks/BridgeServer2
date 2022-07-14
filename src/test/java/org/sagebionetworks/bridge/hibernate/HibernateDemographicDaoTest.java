@@ -16,9 +16,12 @@ import org.sagebionetworks.bridge.models.studies.Demographic;
 import org.sagebionetworks.bridge.models.studies.DemographicValue;
 import org.testng.annotations.Test;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 public class HibernateDemographicDaoTest {
     @Test
-    public void foo() {
+    public void foo() throws JsonProcessingException {
         // List<DemographicValue> values = new ArrayList<>();
         // Demographic d = new Demographic("id1", "api-study", "wZpd8tqNLNlWj2jF3pSOtYdv", "category1", true, values, "units1");
         
@@ -64,7 +67,9 @@ public class HibernateDemographicDaoTest {
         // query.
         List<Demographic> results = query.list();
         System.out.println(results);
-        System.out.println(query.list().get(0).toString());
+        Demographic foo = query.list().get(0);
+        System.out.println(foo.toString());
+        System.out.println(new ObjectMapper().writeValueAsString(foo));
 
 
         // System.out.println(new HibernateDemographicDao().foo());

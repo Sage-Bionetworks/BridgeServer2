@@ -3,6 +3,8 @@ package org.sagebionetworks.bridge.models.studies;
 import javax.persistence.Embeddable;
 import javax.validation.constraints.NotNull;
 
+import com.fasterxml.jackson.annotation.JsonValue;
+
 // @Embeddable
 // public class DemographicValue {
 //     @NotNull
@@ -52,6 +54,7 @@ public class DemographicValue {
         this.value = value;
     }
 
+    @JsonValue
     public String getValue() {
         return value;
     }
