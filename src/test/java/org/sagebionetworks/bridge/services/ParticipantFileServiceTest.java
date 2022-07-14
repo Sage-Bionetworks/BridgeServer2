@@ -62,6 +62,10 @@ public class ParticipantFileServiceTest {
         MockitoAnnotations.initMocks(this);
 
         when(mockConfig.get("participant-file.bucket")).thenReturn(UPLOAD_BUCKET);
+        when(mockConfig.getInt("participant-file.rate-limiter.test.initial-bytes")).thenReturn(1000);
+        when(mockConfig.getInt("participant-file.rate-limiter.test.maximum-bytes")).thenReturn(1000);
+        when(mockConfig.getInt("participant-file.rate-limiter.test.refill-interval-seconds")).thenReturn(5);
+        when(mockConfig.getInt("participant-file.rate-limiter.test.refill-bytes")).thenReturn(1000);
         service.setConfig(mockConfig);
 
         when(mockS3Client.generatePresignedUrl(any())).thenAnswer(i -> {

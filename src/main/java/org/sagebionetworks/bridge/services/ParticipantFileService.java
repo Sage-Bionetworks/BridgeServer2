@@ -34,14 +34,6 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.PARTICIPANT_FILE_RATE_LIMIT_ERROR;
-import static org.sagebionetworks.bridge.BridgeConstants.PARTICIPANT_FILE_RATE_LIMITER_INITIAL_BYTES_PROD;
-import static org.sagebionetworks.bridge.BridgeConstants.PARTICIPANT_FILE_RATE_LIMITER_MAXIMUM_BYTES_PROD;
-import static org.sagebionetworks.bridge.BridgeConstants.PARTICIPANT_FILE_RATE_LIMITER_REFILL_INTERVAL_SECONDS_PROD;
-import static org.sagebionetworks.bridge.BridgeConstants.PARTICIPANT_FILE_RATE_LIMITER_REFILL_BYTES_PROD;
-import static org.sagebionetworks.bridge.BridgeConstants.PARTICIPANT_FILE_RATE_LIMITER_INITIAL_BYTES_TEST;
-import static org.sagebionetworks.bridge.BridgeConstants.PARTICIPANT_FILE_RATE_LIMITER_MAXIMUM_BYTES_TEST;
-import static org.sagebionetworks.bridge.BridgeConstants.PARTICIPANT_FILE_RATE_LIMITER_REFILL_INTERVAL_SECONDS_TEST;
-import static org.sagebionetworks.bridge.BridgeConstants.PARTICIPANT_FILE_RATE_LIMITER_REFILL_BYTES_TEST;
 import static org.sagebionetworks.bridge.validators.ParticipantFileValidator.INSTANCE;
 
 
@@ -58,7 +50,7 @@ public class ParticipantFileService {
 
     private String bucketName;
 
-    private boolean isProduction;
+    private BridgeConfig config;
 
     private Map<String, ByteRateLimiter> userByteRateLimiters = new ConcurrentHashMap<>();
 
@@ -70,7 +62,7 @@ public class ParticipantFileService {
     @Autowired
     final void setConfig(BridgeConfig config) {
         bucketName = config.get(PARTICIPANT_FILE_BUCKET);
-        isProduction = config.isProduction();
+        this.config = config;
     }
 
     @Resource(name = "s3Client")
@@ -85,16 +77,16 @@ public class ParticipantFileService {
      * @return a ByteRateLimiter
      */
     private ByteRateLimiter createByteRateLimiter() {
-        if (isProduction) {
-            return new ByteRateLimiter(PARTICIPANT_FILE_RATE_LIMITER_INITIAL_BYTES_PROD,
-                    PARTICIPANT_FILE_RATE_LIMITER_MAXIMUM_BYTES_PROD,
-                    PARTICIPANT_FILE_RATE_LIMITER_REFILL_INTERVAL_SECONDS_PROD,
-                    PARTICIPANT_FILE_RATE_LIMITER_REFILL_BYTES_PROD);
+        if (config.isProduction()) {
+            return new ByteRateLimiter(config.getInt("participant-file.rate-limiter.prod.initial-bytes"),
+                    config.getInt("participant-file.rate-limiter.prod.maximum-bytes"),
+                    config.getInt("participant-file.rate-limiter.prod.refill-interval-seconds"),
+                    config.getInt("participant-file.rate-limiter.prod.refill-bytes"));
         } else {
-            return new ByteRateLimiter(PARTICIPANT_FILE_RATE_LIMITER_INITIAL_BYTES_TEST,
-                    PARTICIPANT_FILE_RATE_LIMITER_MAXIMUM_BYTES_TEST,
-                    PARTICIPANT_FILE_RATE_LIMITER_REFILL_INTERVAL_SECONDS_TEST,
-                    PARTICIPANT_FILE_RATE_LIMITER_REFILL_BYTES_TEST);
+            return new ByteRateLimiter(config.getInt("participant-file.rate-limiter.test.initial-bytes"),
+                    config.getInt("participant-file.rate-limiter.test.maximum-bytes"),
+                    config.getInt("participant-file.rate-limiter.test.refill-interval-seconds"),
+                    config.getInt("participant-file.rate-limiter.test.refill-bytes"));
         }
     }
 
