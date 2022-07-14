@@ -75,11 +75,9 @@ public class ParticipantFileServiceTest {
             return new URL("https://" + UPLOAD_BUCKET + "/" + filePath);
         });
 
-        when(mockS3Client.getObjectMetadata(any(), any())).thenAnswer(invocation -> {
-            ObjectMetadata metadata = new ObjectMetadata();
-            metadata.setContentLength(100); // 100 B
-            return metadata;
-        });
+        ObjectMetadata metadata = new ObjectMetadata();
+        metadata.setContentLength(100); // 100 B
+        when(mockS3Client.getObjectMetadata(any(), any())).thenReturn(metadata);
 
         DateTimeUtils.setCurrentMillisFixed(TestConstants.TIMESTAMP.getMillis());
     }
@@ -115,13 +113,12 @@ public class ParticipantFileServiceTest {
 
     @Test(expectedExceptions = {LimitExceededException.class})
     public void getParticipantFilesRateLimited() {
-        when(mockFileDao.getParticipantFiles("userid", null, 100)).thenAnswer(invocation -> {
-            List<ParticipantFile> files = new ArrayList<>();
-            for (int i = 0; i < 11; i++) {
-                files.add(ParticipantFile.create());
-            }
-            return new ForwardCursorPagedResourceList<>(files, null, true);
-        });
+        List<ParticipantFile> files = new ArrayList<>();
+        for (int i = 0; i < 11; i++) {
+            files.add(ParticipantFile.create());
+        }
+        when(mockFileDao.getParticipantFiles("userid", null, 100))
+                .thenReturn(new ForwardCursorPagedResourceList<>(files, null, true));
 
         service.getParticipantFiles("userid", null, 100);
     }
