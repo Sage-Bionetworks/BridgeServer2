@@ -32,6 +32,7 @@ import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
@@ -156,6 +157,8 @@ public class ParticipantFileServiceTest {
     @Test(expectedExceptions = { LimitExceededException.class })
     public void getParticipantFileRateLimited() {
         ParticipantFile file = ParticipantFile.create();
+        file.setFileId("fileid");
+        file.setUserId("userid");
         when(mockFileDao.getParticipantFile("userid", "fileid")).thenReturn(Optional.of(file));
 
         for (int i = 0; i < 10; i++) {
@@ -166,6 +169,7 @@ public class ParticipantFileServiceTest {
                         "RateLimiter should not have rejected download %d of 100 KB with initial of 1 MB", i + 1));
             }
         }
+        verify(mockS3Client, times(10)).getObjectMetadata(UPLOAD_BUCKET, "userid/fileid");
         service.getParticipantFile("userid", "fileid");
     }
 
@@ -176,9 +180,12 @@ public class ParticipantFileServiceTest {
         when(mockS3Client.getObjectMetadata(any(), any())).thenThrow(notFoundException);
 
         ParticipantFile file = ParticipantFile.create();
+        file.setFileId("fileid");
+        file.setUserId("userid");
         when(mockFileDao.getParticipantFile("userid", "fileid")).thenReturn(Optional.of(file));
         // should be allowed because 404 from S3 = 0 bytes uploaded = 0 bytes to download
         service.getParticipantFile("userid", "fileid");
+        verify(mockS3Client).getObjectMetadata(UPLOAD_BUCKET, "userid/fileid");
     }
 
     @Test(expectedExceptions = AmazonS3Exception.class)
