@@ -184,6 +184,18 @@ public class ParticipantFileServiceTest {
         service.getParticipantFile("userid", "fileid");
     }
 
+    @Test(expectedExceptions = AmazonS3Exception.class)
+    public void getParticipantFileS3UnknownException() {
+        AmazonS3Exception notFoundException = new AmazonS3Exception("500 internal server error");
+        notFoundException.setStatusCode(500);
+        when(mockS3Client.getObjectMetadata(any(), any())).thenThrow(notFoundException);
+
+        ParticipantFile file = ParticipantFile.create();
+        when(mockFileDao.getParticipantFile("userid", "fileid")).thenReturn(Optional.of(file));
+        // should throw AmazonS3Exception
+        service.getParticipantFile("userid", "fileid");
+    }
+
 
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void getParticipantFileNoSuchFile() {
