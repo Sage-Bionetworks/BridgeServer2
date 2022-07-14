@@ -2,12 +2,12 @@ package org.sagebionetworks.bridge.models.studies;
 
 import java.util.List;
 
+import javax.annotation.Nonnull;
 import javax.persistence.CollectionTable;
 import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
-import javax.validation.constraints.NotNull;
 import javax.persistence.JoinColumn;
 
 import org.sagebionetworks.bridge.json.DemographicDeserializer;
@@ -21,30 +21,28 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 @JsonDeserialize(using = DemographicDeserializer.class)
 public class Demographic {
     @Id
-    @NotNull
+    @Nonnull
     @JsonIgnore
     private String id;
-    @NotNull
+    @Nonnull
     @JsonIgnore
     private String studyId;
-    @NotNull
+    @Nonnull
     private String userId;
-    @NotNull
+    @Nonnull
+    @JsonIgnore
     private String categoryName;
-    @NotNull
+    @Nonnull
     private boolean multipleSelect;
+    @Nonnull
     @ElementCollection
     @CollectionTable(name = "DemographicsValues", joinColumns = @JoinColumn(name = "demographicsId"))
     private List<DemographicValue> values;
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private String units;
 
-    public Demographic() {
-    }
-
-    public Demographic(@NotNull String id, @NotNull String studyId, @NotNull String userId,
-            @NotNull String categoryName, @NotNull boolean multipleSelect, List<DemographicValue> values,
-            String units) {
+    public Demographic(String id, String studyId, String userId, String categoryName, boolean multipleSelect,
+            List<DemographicValue> values, String units) {
         this.id = id;
         this.studyId = studyId;
         this.userId = userId;
@@ -52,6 +50,9 @@ public class Demographic {
         this.multipleSelect = multipleSelect;
         this.values = values;
         this.units = units;
+    }
+
+    public Demographic() {
     }
 
     public String getId() {
