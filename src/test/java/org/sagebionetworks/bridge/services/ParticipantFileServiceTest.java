@@ -96,6 +96,18 @@ public class ParticipantFileServiceTest {
     }
 
     @Test
+    public void getParticipantFilesNullDao() {
+        when(mockFileDao.getParticipantFiles("test_user", "dummy-key", 20)).thenReturn(null);
+
+        ForwardCursorPagedResourceList<ParticipantFile> files = service.getParticipantFiles("test_user", "dummy-key",
+                20);
+        // should be null when dao returns null
+        assertNull(files);
+
+        verify(mockFileDao).getParticipantFiles("test_user", "dummy-key", 20);
+    }
+
+    @Test
     public void getParticipantFilesNoOffsetKey() {
         service.getParticipantFiles("test_user", null, 20);
 
