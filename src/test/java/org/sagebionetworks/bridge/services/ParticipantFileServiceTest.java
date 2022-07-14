@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.services;
 import com.amazonaws.HttpMethod;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.Headers;
+import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import org.joda.time.DateTimeUtils;
@@ -170,6 +171,19 @@ public class ParticipantFileServiceTest {
         }
         service.getParticipantFile("userid", "fileid");
     }
+
+    @Test
+    public void getParticipantFileS3NotFound() {
+        AmazonS3Exception notFoundException = new AmazonS3Exception("404 not found");
+        notFoundException.setStatusCode(404);
+        when(mockS3Client.getObjectMetadata(any(), any())).thenThrow(notFoundException);
+
+        ParticipantFile file = ParticipantFile.create();
+        when(mockFileDao.getParticipantFile("userid", "fileid")).thenReturn(Optional.of(file));
+        // should be allowed because 404 from S3 = 0 bytes uploaded = 0 bytes to download
+        service.getParticipantFile("userid", "fileid");
+    }
+
 
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void getParticipantFileNoSuchFile() {
