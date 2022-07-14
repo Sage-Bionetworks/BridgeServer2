@@ -3,10 +3,12 @@ package org.sagebionetworks.bridge;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 
+import java.util.List;
 import java.util.Map;
 
 import com.amazonaws.services.sqs.AmazonSQS;
@@ -14,7 +16,8 @@ import com.amazonaws.services.sqs.model.CreateQueueRequest;
 import com.amazonaws.services.sqs.model.CreateQueueResult;
 import com.amazonaws.services.sqs.model.ListQueuesResult;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -38,6 +41,11 @@ public class SqsInitializerTest {
     private static final String EXISTING_QUEUE_PROPERTY = "prop.existing.queue";
     private static final String EXISTING_QUEUE_URL = "https://example.com/existing-queue";
     private static final String EXISTING_QUEUE_URL_PROPERTY = "prop.existing.queue.url";
+
+    private static final String RECEIVE_SNS_QUEUE_NAME = "receive-sns-queue";
+    private static final String RECEIVE_SNS_QUEUE_PROPERTY = "prop.receive.sns.queue";
+    private static final String RECEIVE_SNS_QUEUE_URL = "https://example.com/receive-sns-queue";
+    private static final String RECEIVE_SNS_QUEUE_URL_PROPERTY = "prop.receive.sns.queue.url";
 
     @Mock
     private AmazonSQS mockSqsClient;
@@ -64,32 +72,54 @@ public class SqsInitializerTest {
         // Test cases:
         // 1. create-this-queue (We need to create this queue.)
         // 2. existing-queue (Already exists.)
+        // 3. receive-sns-queue (Enabled for SNS.)
 
         // Mock BridgeConfig.
         when(mockBridgeConfig.get(CREATE_THIS_QUEUE_PROPERTY)).thenReturn(CREATE_THIS_QUEUE_NAME);
         when(mockBridgeConfig.get(EXISTING_QUEUE_PROPERTY)).thenReturn(EXISTING_QUEUE_NAME);
+        when(mockBridgeConfig.get(RECEIVE_SNS_QUEUE_PROPERTY)).thenReturn(RECEIVE_SNS_QUEUE_NAME);
 
         // Mock SQS client.
         ListQueuesResult listQueuesResult = new ListQueuesResult();
         listQueuesResult.withQueueUrls(EXISTING_QUEUE_URL);
         when(mockSqsClient.listQueues()).thenReturn(listQueuesResult);
 
-        when(mockSqsClient.createQueue(any(CreateQueueRequest.class))).thenReturn(new CreateQueueResult()
-                .withQueueUrl(CREATE_THIS_QUEUE_URL));
+        when(mockSqsClient.createQueue(any(CreateQueueRequest.class))).thenAnswer(invocationOnMock -> {
+            CreateQueueRequest request = invocationOnMock.getArgument(0);
+            String queueName = request.getQueueName();
+            String queueUrl = null;
+            switch (queueName) {
+                case CREATE_THIS_QUEUE_NAME:
+                    queueUrl = CREATE_THIS_QUEUE_URL;
+                    break;
+                case RECEIVE_SNS_QUEUE_NAME:
+                    queueUrl = RECEIVE_SNS_QUEUE_URL;
+                    break;
+            }
+            return new CreateQueueResult().withQueueUrl(queueUrl);
+        });
 
         // Spy getQueueProperties().
-        doReturn(ImmutableSet.of(CREATE_THIS_QUEUE_PROPERTY, EXISTING_QUEUE_PROPERTY)).when(initializer)
-                .getQueueProperties();
+        Map<String, Boolean> queueProperties = ImmutableMap.<String, Boolean>builder()
+                .put(CREATE_THIS_QUEUE_PROPERTY, false)
+                .put(EXISTING_QUEUE_PROPERTY, false)
+                .put(RECEIVE_SNS_QUEUE_PROPERTY, true)
+                .build();
+        doReturn(queueProperties).when(initializer).getQueueProperties();
 
         // Execute.
         initializer.initQueues();
 
-        // Verify 1 queue was created.
+        // Verify 2 queues were created.
         ArgumentCaptor<CreateQueueRequest> createQueueRequestCaptor = ArgumentCaptor.forClass(
                 CreateQueueRequest.class);
-        verify(mockSqsClient).createQueue(createQueueRequestCaptor.capture());
+        verify(mockSqsClient, times(2)).createQueue(createQueueRequestCaptor.capture());
 
-        CreateQueueRequest createQueueRequest = createQueueRequestCaptor.getValue();
+        List<CreateQueueRequest> createQueueRequestList = createQueueRequestCaptor.getAllValues();
+        Map<String, CreateQueueRequest> createQueueRequestsByName = Maps.uniqueIndex(createQueueRequestList,
+                CreateQueueRequest::getQueueName);
+
+        CreateQueueRequest createQueueRequest = createQueueRequestsByName.get(CREATE_THIS_QUEUE_NAME);
         assertEquals(createQueueRequest.getQueueName(), CREATE_THIS_QUEUE_NAME);
 
         Map<String, String> createQueueRequestAttrs = createQueueRequest.getAttributes();
@@ -106,8 +136,16 @@ public class SqsInitializerTest {
         assertEquals(redrivePolicyNode.get("deadLetterTargetArn").textValue(), DEAD_LETTER_QUEUE_ARN);
         assertEquals(redrivePolicyNode.get("maxReceiveCount").textValue(), "5");
 
-        // Verify both queues have URL entries in config.
+        CreateQueueRequest receiveSnsCreateQueueRequest = createQueueRequestsByName.get(RECEIVE_SNS_QUEUE_NAME);
+        assertEquals(receiveSnsCreateQueueRequest.getQueueName(), RECEIVE_SNS_QUEUE_NAME);
+
+        Map<String, String> receiveSnsCreateQueueRequestAttrs = receiveSnsCreateQueueRequest.getAttributes();
+        assertEquals(receiveSnsCreateQueueRequestAttrs.size(), 7);
+        assertEquals(receiveSnsCreateQueueRequestAttrs.get("Policy"), SqsInitializer.POLICY_SNS_ALLOWED);
+
+        // Verify all queues have URL entries in config.
         verify(mockBridgeConfig).set(CREATE_THIS_QUEUE_URL_PROPERTY, CREATE_THIS_QUEUE_URL);
         verify(mockBridgeConfig).set(EXISTING_QUEUE_URL_PROPERTY, EXISTING_QUEUE_URL);
+        verify(mockBridgeConfig).set(RECEIVE_SNS_QUEUE_URL_PROPERTY, RECEIVE_SNS_QUEUE_URL);
     }
 }
