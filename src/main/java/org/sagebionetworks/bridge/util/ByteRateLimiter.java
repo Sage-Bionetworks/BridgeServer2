@@ -8,11 +8,11 @@ import java.time.Instant;
  */
 public class ByteRateLimiter {
     // The maximum number of bytes that can be accumulated.
-    private long maximumBytes;
+    private final long maximumBytes;
     // The time between byte refills in seconds.
-    private long refillIntervalSeconds;
+    private final long refillIntervalSeconds;
     // The number of bytes that is refilled every refillIntervalSeconds.
-    private long refillAmount;
+    private final long refillAmount;
 
     // The last time a refill occurred.
     private Instant lastRefill;
