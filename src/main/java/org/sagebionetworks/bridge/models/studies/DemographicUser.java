@@ -26,16 +26,20 @@ public class DemographicUser {
     @Id
     @JsonIgnore
     private String id;
+
     @Nonnull
     @JsonIgnore
     private String appId;
+
     @Nullable
     @JsonIgnore
     private String studyId;
+
     @Nonnull
     private String userId;
+
     @Nonnull
-    // @OneToMany(mappedBy = "demographicUserIdFoo")
+    @OneToMany(mappedBy = "demographicUser")
     // @OneToMany
     // @JoinColumn(name = "demographicUserId")
     private List<Demographic> demographics;

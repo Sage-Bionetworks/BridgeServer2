@@ -63,4 +63,9 @@ public class DemographicId implements Serializable {
             return false;
         return true;
     }
+
+    @Override
+    public String toString() {
+        return "DemographicId [categoryName=" + categoryName + ", demographicUserId=" + demographicUserId + "]";
+    }
 }

@@ -5,6 +5,7 @@ import java.util.List;
 import javax.annotation.Nonnull;
 import javax.persistence.CollectionTable;
 import javax.persistence.ElementCollection;
+import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.IdClass;
@@ -12,6 +13,7 @@ import javax.persistence.Table;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinColumns;
 import javax.persistence.ManyToOne;
+import javax.persistence.MapsId;
 
 import org.sagebionetworks.bridge.json.DemographicDeserializer;
 
@@ -21,19 +23,29 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 @Entity
 @Table(name = "Demographics")
-@IdClass(DemographicId.class)
+// @IdClass(DemographicId.class)
 // @JsonDeserialize(using = DemographicDeserializer.class)
 public class Demographic {
-    @Id
-    // @ManyToOne
-    // @JoinColumn(name = "demographicUserId")
-    private String demographicUserId;
-    @Id
-    @Nonnull
-    @JsonIgnore
-    private String categoryName;
+    @EmbeddedId
+    DemographicId demographicId;
+
+    @MapsId("demographicUserId")
+    @ManyToOne
+    @JoinColumn(name = "demographicUserId")
+    DemographicUser demographicUser;
+
+    // @Id
+    // @Nonnull
+    // private String demographicUserId;
+
+    // @Id
+    // @Nonnull
+    // @JsonIgnore
+    // private String categoryName;
+
     @Nonnull
     private boolean multipleSelect;
+
     @Nonnull
     @ElementCollection
     @CollectionTable(name = "DemographicsValues", joinColumns = {@JoinColumn(name = "demographicUserId", referencedColumnName = "demographicUserId"), @JoinColumn(name = "categoryName", referencedColumnName = "categoryName")})
@@ -41,6 +53,7 @@ public class Demographic {
     //         @JoinColumn(name = "categoryName", referencedColumnName = "categoryName") })
     // private List<String> values;
     private List<DemographicValue> values;
+
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private String units;
 
@@ -56,6 +69,7 @@ public class Demographic {
     // public Demographic() {
     // }
 
+    // @MapsId("demographicUserId")
     // public String getDemographicUserId() {
     //     return demographicUserId;
     // }
@@ -98,7 +112,12 @@ public class Demographic {
 
     @Override
     public String toString() {
-        return "Demographic [categoryName=" + categoryName + ", demographicUserId=" + demographicUserId
-                + ", multipleSelect=" + multipleSelect + ", units=" + units + ", values=" + values + "]";
+        return "Demographic [demographicId=" + demographicId + ", multipleSelect=" + multipleSelect + ", units=" + units + ", values=" + values + "]";
     }
+
+    // @Override
+    // public String toString() {
+    //     return "Demographic [categoryName=" + categoryName + ", demographicUserId=" + demographicUserId
+    //             + ", multipleSelect=" + multipleSelect + ", units=" + units + ", values=" + values + "]";
+    // }
 }

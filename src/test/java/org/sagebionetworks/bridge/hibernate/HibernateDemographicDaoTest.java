@@ -62,17 +62,17 @@ public class HibernateDemographicDaoTest {
         MetadataSources metadataSources = new MetadataSources(reg);
         metadataSources.addAnnotatedClass(Demographic.class);
         // metadataSources.addAnnotatedClass(DemographicValue.class);
-        // metadataSources.addAnnotatedClass(DemographicUser.class);
+        metadataSources.addAnnotatedClass(DemographicUser.class);
         metadataSources.addAnnotatedClass(DemographicId.class);
         SessionFactory factory = metadataSources.buildMetadata().buildSessionFactory();
 
         Session session = factory.openSession();
-        Query<Demographic> query = session.createQuery("from Demographic", Demographic.class);
-        List<Demographic> results = query.list();
-        System.out.println(results);
-        // Query<DemographicUser> query = session.createQuery("from DemographicUser", DemographicUser.class);
-        // List<DemographicUser> results = query.list();
+        // Query<Demographic> query = session.createQuery("from Demographic", Demographic.class);
+        // List<Demographic> results = query.list();
         // System.out.println(results);
+        Query<DemographicUser> query = session.createQuery("from DemographicUser", DemographicUser.class);
+        List<DemographicUser> results = query.list();
+        System.out.println(results);
         // Demographic foo = query.list().get(0);
         // System.out.println(foo.toString());
         // System.out.println(new ObjectMapper().writeValueAsString(foo));
