@@ -13,7 +13,9 @@ import org.hibernate.query.Query;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.models.studies.Demographic;
-import org.sagebionetworks.bridge.models.studies.DemographicValue;
+import org.sagebionetworks.bridge.models.studies.DemographicId;
+import org.sagebionetworks.bridge.models.studies.DemographicUser;
+// import org.sagebionetworks.bridge.models.studies.DemographicValue;
 import org.testng.annotations.Test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -59,17 +61,21 @@ public class HibernateDemographicDaoTest {
         // For whatever reason, we need to list each Hibernate-enabled class individually.
         MetadataSources metadataSources = new MetadataSources(reg);
         metadataSources.addAnnotatedClass(Demographic.class);
-        metadataSources.addAnnotatedClass(DemographicValue.class);
+        // metadataSources.addAnnotatedClass(DemographicValue.class);
+        // metadataSources.addAnnotatedClass(DemographicUser.class);
+        metadataSources.addAnnotatedClass(DemographicId.class);
         SessionFactory factory = metadataSources.buildMetadata().buildSessionFactory();
 
         Session session = factory.openSession();
         Query<Demographic> query = session.createQuery("from Demographic", Demographic.class);
-        // query.
         List<Demographic> results = query.list();
         System.out.println(results);
-        Demographic foo = query.list().get(0);
-        System.out.println(foo.toString());
-        System.out.println(new ObjectMapper().writeValueAsString(foo));
+        // Query<DemographicUser> query = session.createQuery("from DemographicUser", DemographicUser.class);
+        // List<DemographicUser> results = query.list();
+        // System.out.println(results);
+        // Demographic foo = query.list().get(0);
+        // System.out.println(foo.toString());
+        // System.out.println(new ObjectMapper().writeValueAsString(foo));
 
 
         // System.out.println(new HibernateDemographicDao().foo());

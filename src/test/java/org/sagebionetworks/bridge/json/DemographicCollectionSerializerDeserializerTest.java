@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.sagebionetworks.bridge.models.studies.Demographic;
-import org.sagebionetworks.bridge.models.studies.DemographicCollection;
+import org.sagebionetworks.bridge.models.studies.DemographicUser;
 import org.testng.annotations.Test;
 import static org.testng.Assert.assertEquals;
 
