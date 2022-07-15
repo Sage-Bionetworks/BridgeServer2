@@ -77,17 +77,10 @@ public class ParticipantFileService {
      * @return a ByteRateLimiter
      */
     private ByteRateLimiter createByteRateLimiter() {
-        if (config.isProduction()) {
-            return new ByteRateLimiter(config.getInt("participant-file.rate-limiter.prod.initial-bytes"),
-                    config.getInt("participant-file.rate-limiter.prod.maximum-bytes"),
-                    config.getInt("participant-file.rate-limiter.prod.refill-interval-seconds"),
-                    config.getInt("participant-file.rate-limiter.prod.refill-bytes"));
-        } else {
-            return new ByteRateLimiter(config.getInt("participant-file.rate-limiter.test.initial-bytes"),
-                    config.getInt("participant-file.rate-limiter.test.maximum-bytes"),
-                    config.getInt("participant-file.rate-limiter.test.refill-interval-seconds"),
-                    config.getInt("participant-file.rate-limiter.test.refill-bytes"));
-        }
+        return new ByteRateLimiter(config.getInt("participant-file.rate-limiter.initial-bytes"),
+                config.getInt("participant-file.rate-limiter.maximum-bytes"),
+                config.getInt("participant-file.rate-limiter.refill-interval-seconds"),
+                config.getInt("participant-file.rate-limiter.refill-bytes"));
     }
 
     /**
