@@ -19,6 +19,7 @@ import org.sagebionetworks.bridge.json.DemographicDeserializer;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 @Entity
@@ -27,6 +28,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 // @JsonDeserialize(using = DemographicDeserializer.class)
 public class Demographic {
     @EmbeddedId
+    @JsonUnwrapped
     DemographicId demographicId;
 
     @MapsId("demographicUserId")
