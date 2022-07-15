@@ -7,11 +7,8 @@ import javax.persistence.CollectionTable;
 import javax.persistence.ElementCollection;
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.IdClass;
 import javax.persistence.Table;
 import javax.persistence.JoinColumn;
-import javax.persistence.JoinColumns;
 import javax.persistence.ManyToOne;
 import javax.persistence.MapsId;
 
@@ -24,102 +21,86 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 @Entity
 @Table(name = "Demographics")
-// @IdClass(DemographicId.class)
 // @JsonDeserialize(using = DemographicDeserializer.class)
 public class Demographic {
     @EmbeddedId
     @JsonUnwrapped
     DemographicId demographicId;
 
+    @JsonIgnore
     @MapsId("demographicUserId")
     @ManyToOne
     @JoinColumn(name = "demographicUserId")
     DemographicUser demographicUser;
-
-    // @Id
-    // @Nonnull
-    // private String demographicUserId;
-
-    // @Id
-    // @Nonnull
-    // @JsonIgnore
-    // private String categoryName;
 
     @Nonnull
     private boolean multipleSelect;
 
     @Nonnull
     @ElementCollection
-    @CollectionTable(name = "DemographicsValues", joinColumns = {@JoinColumn(name = "demographicUserId", referencedColumnName = "demographicUserId"), @JoinColumn(name = "categoryName", referencedColumnName = "categoryName")})
-    // @JoinColumns({ @JoinColumn(name = "demographicUserId", referencedColumnName = "demographicUserId"),
-    //         @JoinColumn(name = "categoryName", referencedColumnName = "categoryName") })
-    // private List<String> values;
+    @CollectionTable(name = "DemographicsValues", joinColumns = {
+            @JoinColumn(name = "demographicUserId", referencedColumnName = "demographicUserId"),
+            @JoinColumn(name = "categoryName", referencedColumnName = "categoryName") })
     private List<DemographicValue> values;
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private String units;
 
-    // public Demographic(String demographicUserId, String categoryName, boolean multipleSelect, List<String> values,
-    //         String units) {
-    //     this.demographicUserId = demographicUserId;
-    //     this.categoryName = categoryName;
-    //     this.multipleSelect = multipleSelect;
-    //     this.values = values;
-    //     this.units = units;
-    // }
+    public Demographic(DemographicId demographicId, DemographicUser demographicUser, boolean multipleSelect,
+            List<DemographicValue> values, String units) {
+        this.demographicId = demographicId;
+        this.demographicUser = demographicUser;
+        this.multipleSelect = multipleSelect;
+        this.values = values;
+        this.units = units;
+    }
 
-    // public Demographic() {
-    // }
+    public Demographic() {
+    }
 
-    // @MapsId("demographicUserId")
-    // public String getDemographicUserId() {
-    //     return demographicUserId;
-    // }
+    public DemographicId getDemographicId() {
+        return demographicId;
+    }
 
-    // public void setDemographicUserId(String demographicUserId) {
-    //     this.demographicUserId = demographicUserId;
-    // }
+    public void setDemographicId(DemographicId demographicId) {
+        this.demographicId = demographicId;
+    }
 
-    // public String getCategoryName() {
-    //     return categoryName;
-    // }
+    public DemographicUser getDemographicUser() {
+        return demographicUser;
+    }
 
-    // public void setCategoryName(String categoryName) {
-    //     this.categoryName = categoryName;
-    // }
+    public void setDemographicUser(DemographicUser demographicUser) {
+        this.demographicUser = demographicUser;
+    }
 
-    // public boolean isMultipleSelect() {
-    //     return multipleSelect;
-    // }
+    public boolean isMultipleSelect() {
+        return multipleSelect;
+    }
 
-    // public void setMultipleSelect(boolean multipleSelect) {
-    //     this.multipleSelect = multipleSelect;
-    // }
+    public void setMultipleSelect(boolean multipleSelect) {
+        this.multipleSelect = multipleSelect;
+    }
 
-    // public List<String> getValues() {
-    //     return values;
-    // }
+    public List<DemographicValue> getValues() {
+        return values;
+    }
 
-    // public void setValues(List<String> values) {
-    //     this.values = values;
-    // }
+    public void setValues(List<DemographicValue> values) {
+        this.values = values;
+    }
 
-    // public String getUnits() {
-    //     return units;
-    // }
+    public String getUnits() {
+        return units;
+    }
 
-    // public void setUnits(String units) {
-    //     this.units = units;
-    // }
+    public void setUnits(String units) {
+        this.units = units;
+    }
 
     @Override
     public String toString() {
-        return "Demographic [demographicId=" + demographicId + ", multipleSelect=" + multipleSelect + ", units=" + units + ", values=" + values + "]";
+        return "Demographic [demographicId=" + demographicId + ", multipleSelect=" + multipleSelect + ", units=" + units
+                + ", values=" + values + "]";
     }
-
-    // @Override
-    // public String toString() {
-    //     return "Demographic [categoryName=" + categoryName + ", demographicUserId=" + demographicUserId
-    //             + ", multipleSelect=" + multipleSelect + ", units=" + units + ", values=" + values + "]";
-    // }
 }

@@ -6,20 +6,16 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.persistence.Entity;
 import javax.persistence.Id;
-import javax.persistence.JoinColumn;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
 import org.sagebionetworks.bridge.json.DemographicCollectionDeserializer;
-import org.sagebionetworks.bridge.json.DemographicCollectionSerializer;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 @Entity
 @Table(name = "DemographicsUsers")
-// @JsonSerialize(using = DemographicCollectionSerializer.class)
 // @JsonDeserialize(using = DemographicCollectionDeserializer.class)
 public class DemographicUser {
     @Nonnull
@@ -40,19 +36,14 @@ public class DemographicUser {
 
     @Nonnull
     @OneToMany(mappedBy = "demographicUser")
-    // @OneToMany
-    // @JoinColumn(name = "demographicUserId")
     private List<Demographic> demographics;
 
-    // public DemographicUser(String id, String appId, String studyId, String userId, List<Demographic> demographics) {
-    //     this.id = id;
-    //     this.appId = appId;
-    //     this.studyId = studyId;
-    //     this.userId = userId;
-    //     this.demographics = demographics;
-    // }
-
-    public DemographicUser() {
+    public DemographicUser(String id, String appId, String studyId, String userId, List<Demographic> demographics) {
+        this.id = id;
+        this.appId = appId;
+        this.studyId = studyId;
+        this.userId = userId;
+        this.demographics = demographics;
     }
 
     public String getId() {
@@ -87,13 +78,13 @@ public class DemographicUser {
         this.userId = userId;
     }
 
-    // public List<Demographic> getDemographics() {
-    //     return demographics;
-    // }
+    public List<Demographic> getDemographics() {
+        return demographics;
+    }
 
-    // public void setDemographics(List<Demographic> demographics) {
-    //     this.demographics = demographics;
-    // }
+    public void setDemographics(List<Demographic> demographics) {
+        this.demographics = demographics;
+    }
 
     @Override
     public String toString() {

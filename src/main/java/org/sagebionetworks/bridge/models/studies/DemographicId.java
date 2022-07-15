@@ -4,8 +4,11 @@ import java.io.Serializable;
 
 import javax.persistence.Embeddable;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @Embeddable
 public class DemographicId implements Serializable {
+    @JsonIgnore
     private String demographicUserId;
     private String categoryName;
 
