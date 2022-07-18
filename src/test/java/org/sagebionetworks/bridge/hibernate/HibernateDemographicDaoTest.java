@@ -15,6 +15,7 @@ import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.models.studies.Demographic;
 import org.sagebionetworks.bridge.models.studies.DemographicId;
 import org.sagebionetworks.bridge.models.studies.DemographicUser;
+import org.sagebionetworks.bridge.models.studies.DemographicValue;
 // import org.sagebionetworks.bridge.models.studies.DemographicValue;
 import org.testng.annotations.Test;
 
@@ -25,14 +26,15 @@ public class HibernateDemographicDaoTest {
     @Test
     public void foo() throws JsonProcessingException {
         // List<DemographicValue> values = new ArrayList<>();
-        // Demographic d = new Demographic("id1", "api-study", "wZpd8tqNLNlWj2jF3pSOtYdv", "category1", true, values, "units1");
-        
+        // Demographic d = new Demographic("id1", "api-study",
+        // "wZpd8tqNLNlWj2jF3pSOtYdv", "category1", true, values, "units1");
+
         // MetadataSources metadataSources = new MetadataSources();
         // metadataSources.addAnnotatedClass(Demographic.class);
         // metadataSources.addAnnotatedClass(DemographicValue.class);
-        // SessionFactory factory = metadataSources.buildMetadata().buildSessionFactory();
+        // SessionFactory factory =
+        // metadataSources.buildMetadata().buildSessionFactory();
 
-        
         // Hibernate configs
         Properties props = new Properties();
         props.put("hibernate.connection.characterEncoding", "UTF-8");
@@ -53,12 +55,14 @@ public class HibernateDemographicDaoTest {
         String url = config.get("hibernate.connection.url");
         // Append SSL props to URL
         boolean useSsl = Boolean.valueOf(config.get("hibernate.connection.useSSL"));
-        url += "?rewriteBatchedStatements=true&serverTimezone=UTC&requireSSL="+useSsl+"&useSSL="+useSsl+"&verifyServerCertificate="+useSsl;
+        url += "?rewriteBatchedStatements=true&serverTimezone=UTC&requireSSL=" + useSsl + "&useSSL=" + useSsl
+                + "&verifyServerCertificate=" + useSsl;
         props.put("hibernate.connection.url", url);
 
         StandardServiceRegistry reg = new StandardServiceRegistryBuilder().applySettings(props).build();
-        
-        // For whatever reason, we need to list each Hibernate-enabled class individually.
+
+        // For whatever reason, we need to list each Hibernate-enabled class
+        // individually.
         MetadataSources metadataSources = new MetadataSources(reg);
         metadataSources.addAnnotatedClass(Demographic.class);
         // metadataSources.addAnnotatedClass(DemographicValue.class);
@@ -69,19 +73,48 @@ public class HibernateDemographicDaoTest {
         HibernateHelper helper = new HibernateHelper(factory, new OrganizationPersistenceExceptionConverter());
         HibernateDemographicDao h = new HibernateDemographicDao();
         h.setHibernateHelper(helper);
-        System.out.println(h.getDemographicUser("api", "api-study", "tU5DPbVQmKXpTEcOvy5t6RVY"));
+        // System.out.println(h.getDemographicUser("api", "api-study", "tU5DPbVQmKXpTEcOvy5t6RVY"));
+
+        System.out.println("creating user");
+        DemographicUser du = new DemographicUser("testid", "api", "api-study", "cw1gLb-hiOMb6kfCrmhUqJhX",
+                new ArrayList<>());
+        du.getDemographics().add(new Demographic(new DemographicId("testid", "testcategory1"), du, false,
+                new ArrayList<>(), "testunits"));
+        du.getDemographics().get(0).getValues().add(new DemographicValue("testvalue1"));
+        h.saveDemographicUser(du);
+        System.out.println(h.getDemographicUser("api", "api-study", "cw1gLb-hiOMb6kfCrmhUqJhX"));
+
+        System.out.println("creating demographic");
+        // du.getDemographics().add(new Demographic(new DemographicId("testid", "testcategory2"), du, true,
+        //         new ArrayList<>(), null));
+        // du.getDemographics().get(1).getValues().add(new DemographicValue("testvalue2"));
+        // h.saveDemographicUser(du);
+        Demographic d = new Demographic(new DemographicId("testid", "testcategory2"), du, true, new ArrayList<>(), null);
+        d.getValues().add(new DemographicValue("testvalue2"));
+        h.saveDemographic(d);
+        System.out.println(h.getDemographicUsers("api", "api-study", 0, 10).getItems());
+
+        System.out.println("deleting demographic");
+        h.deleteDemographic("api", "api-study", "cw1gLb-hiOMb6kfCrmhUqJhX", "testcategory2");
+        System.out.println(h.getDemographicUser("api", "api-study", "cw1gLb-hiOMb6kfCrmhUqJhX"));
+
+        System.out.println("deleting user");
+        h.deleteDemographicUser("api", "api-study", "cw1gLb-hiOMb6kfCrmhUqJhX");
+        System.out.println(h.getDemographicUsers("api", "api-study", 0, 10).getItems());
 
         /*
-        Session session = factory.openSession();
-        Query<Demographic> query = session.createQuery("from Demographic", Demographic.class);
-        List<Demographic> results = query.list();
-        System.out.println(results);
-        */
+         * Session session = factory.openSession();
+         * Query<Demographic> query = session.createQuery("from Demographic",
+         * Demographic.class);
+         * List<Demographic> results = query.list();
+         * System.out.println(results);
+         */
         /*
-        Session session = factory.openSession();
-        Query<DemographicUser> query = session.createQuery("from DemographicUser", DemographicUser.class);
-        List<DemographicUser> results = query.list();
-        System.out.println(results);
+         * Session session = factory.openSession();
+         * Query<DemographicUser> query = session.createQuery("from DemographicUser",
+         * DemographicUser.class);
+         * List<DemographicUser> results = query.list();
+         * System.out.println(results);
          */
     }
 }

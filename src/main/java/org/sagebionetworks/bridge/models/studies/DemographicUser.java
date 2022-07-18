@@ -4,6 +4,7 @@ import java.util.List;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.Id;
@@ -36,7 +37,7 @@ public class DemographicUser {
     private String userId;
 
     @Nonnull
-    @OneToMany(mappedBy = "demographicUser", fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "demographicUser", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     private List<Demographic> demographics;
 
     public DemographicUser() {

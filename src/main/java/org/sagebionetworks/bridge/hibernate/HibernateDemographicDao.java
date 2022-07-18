@@ -11,12 +11,13 @@ import org.sagebionetworks.bridge.hibernate.QueryBuilder.WhereClauseBuilder;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.SearchTermPredicate;
 import org.sagebionetworks.bridge.models.studies.Demographic;
+import org.sagebionetworks.bridge.models.studies.DemographicId;
 import org.sagebionetworks.bridge.models.studies.DemographicUser;
 import org.springframework.stereotype.Component;
 
 @Component
 public class HibernateDemographicDao implements DemographicDao {
-    private static final String SELECT_COUNT = "SELECT COUNT(*) "; 
+    private static final String SELECT_COUNT = "SELECT COUNT(*) ";
 
     private HibernateHelper hibernateHelper;
 
@@ -27,21 +28,24 @@ public class HibernateDemographicDao implements DemographicDao {
 
     @Override
     public void saveDemographic(Demographic demographic) {
-        // TODO Auto-generated method stub
-
+        hibernateHelper.saveOrUpdate(demographic);
     }
 
     @Override
-    public void saveDemographics(DemographicUser demographicUser) {
-        // TODO Auto-generated method stub
-
-        // if 
+    public void saveDemographicUser(DemographicUser demographicUser) {
+        hibernateHelper.saveOrUpdate(demographicUser);
     }
 
     @Override
-    public void deleteDemographic(String studyId, String userId, String categoryName) {
-        // TODO Auto-generated method stub
+    public void deleteDemographic(String appId, String studyId, String userId, String categoryName) {
+        DemographicUser demographicUser = getDemographicUser(appId, studyId, userId);
+        hibernateHelper.deleteById(Demographic.class, new DemographicId(demographicUser.getId(), categoryName));
+    }
 
+    @Override
+    public void deleteDemographicUser(String appId, String studyId, String userId) {
+        DemographicUser demographicUser = getDemographicUser(appId, studyId, userId);
+        hibernateHelper.deleteById(DemographicUser.class, demographicUser.getId());
     }
 
     @Override
