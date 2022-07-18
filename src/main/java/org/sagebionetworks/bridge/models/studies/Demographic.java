@@ -25,7 +25,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 // @JsonDeserialize(using = DemographicDeserializer.class)
 public class Demographic {
     @EmbeddedId
-    @JsonUnwrapped
+    @JsonIgnore
     DemographicId demographicId;
 
     @JsonIgnore

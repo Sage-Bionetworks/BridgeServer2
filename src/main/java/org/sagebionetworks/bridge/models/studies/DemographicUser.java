@@ -38,9 +38,9 @@ public class DemographicUser {
     @Nonnull
     private String userId;
 
+    // use Map for easy JSON serialization and O(1) getDemographic
     @Nonnull
     @OneToMany(mappedBy = "demographicUser", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
-    // private List<Demographic> demographics;
     @MapKey(name = "demographicId.categoryName")
     private Map<String, Demographic> demographics;
 
@@ -55,14 +55,6 @@ public class DemographicUser {
         this.userId = userId;
         this.demographics = demographics;
     }
-
-    // public DemographicUser(String id, String appId, String studyId, String userId, List<Demographic> demographics) {
-    //     this.id = id;
-    //     this.appId = appId;
-    //     this.studyId = studyId;
-    //     this.userId = userId;
-    //     this.demographics = demographics;
-    // }
 
     public String getId() {
         return id;
@@ -95,14 +87,6 @@ public class DemographicUser {
     public void setUserId(String userId) {
         this.userId = userId;
     }
-
-    // public List<Demographic> getDemographics() {
-    //     return demographics;
-    // }
-
-    // public void setDemographics(List<Demographic> demographics) {
-    //     this.demographics = demographics;
-    // }
 
     public Map<String, Demographic> getDemographics() {
         return demographics;

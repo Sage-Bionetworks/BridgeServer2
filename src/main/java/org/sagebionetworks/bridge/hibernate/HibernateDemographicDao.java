@@ -38,6 +38,7 @@ public class HibernateDemographicDao implements DemographicDao {
 
     @Override
     public void deleteDemographic(String appId, String studyId, String userId, String categoryName) {
+        // need to get user first for demographicUserId
         DemographicUser demographicUser = getDemographicUser(appId, studyId, userId);
         hibernateHelper.deleteById(Demographic.class, new DemographicId(demographicUser.getId(), categoryName));
     }
