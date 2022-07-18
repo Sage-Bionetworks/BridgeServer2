@@ -1,12 +1,93 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
-// import org.sagebionetworks.bridge.services.DemographicService;
+import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 
-// import org.springframework.web.bind.annotation.CrossOrigin;
-// import org.springframework.web.bind.annotation.RestController;
+import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.studies.Demographic;
+import org.sagebionetworks.bridge.models.studies.DemographicUser;
+import org.sagebionetworks.bridge.models.studies.Enrollment;
+import org.sagebionetworks.bridge.services.DemographicService;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-// @CrossOrigin
-// @RestController
-// public class DemographicController extends BaseController {
-//     private DemographicService demographicService;
-// }
+@CrossOrigin
+@RestController
+public class DemographicController extends BaseController {
+    private DemographicService demographicService;
+
+    @PostMapping("/v5/studies/{studyId}/participants/{userId}/demographics/{categoryName}")
+    public void saveDemographic(@PathVariable String studyId, @PathVariable String userId,
+            @PathVariable String categoryName) {
+        UserSession session = getAdministrativeSession();
+        checkAccountExistsInStudy(session.getAppId(), studyId, userId);
+
+        Demographic demographic = parseJson(Demographic.class);
+        demographic.getDemographicId().setCategoryName(categoryName);
+        demographicService.saveDemographic(demographic, session.getAppId(), studyId, userId);
+    }
+
+    @PostMapping("/v5/studies/{studyId}/participants/{userId}/demographics")
+    public void saveDemographicUser(@PathVariable String studyId, @PathVariable String userId) {
+        UserSession session = getAdministrativeSession();
+        checkAccountExistsInStudy(session.getAppId(), studyId, userId);
+
+        DemographicUser demographicUser = parseJson(DemographicUser.class);
+        demographicUser.setAppId(session.getAppId());
+        demographicUser.setStudyId(studyId);
+        demographicUser.setUserId(userId);
+        demographicService.saveDemographicUser(demographicUser);
+    }
+
+    @DeleteMapping("/v5/studies/{studyId}/participants/{userId}/demographics/{categoryName}")
+    public void deleteDemographic(@PathVariable String studyId, @PathVariable String userId,
+            @PathVariable String categoryName) {
+        UserSession session = getAdministrativeSession();
+        checkAccountExistsInStudy(session.getAppId(), studyId, userId);
+
+        demographicService.deleteDemographic(session.getAppId(), studyId, userId, categoryName);
+    }
+
+    @DeleteMapping("/v5/studies/{studyId}/participants/{userId}/demographics")
+    public void deleteDemographicUser(@PathVariable String studyId, @PathVariable String userId) {
+        UserSession session = getAdministrativeSession();
+        checkAccountExistsInStudy(session.getAppId(), studyId, userId);
+
+        demographicService.deleteDemographicUser(session.getAppId(), studyId, userId);
+    }
+
+    @GetMapping("/v5/studies/{studyId}/participants/{userId}/demographics")
+    public DemographicUser getDemographicUser(@PathVariable String studyId, @PathVariable String userId) {
+        UserSession session = getAdministrativeSession();
+        checkAccountExistsInStudy(session.getAppId(), studyId, userId);
+
+        return demographicService.getDemographicUser(session.getAppId(), studyId, userId);
+    }
+
+    @GetMapping("/v5/studies/{studyId}/participants/demographics")
+    public PagedResourceList<DemographicUser> getDemographicUsers(@PathVariable String studyId,
+            @RequestParam(required = false) String offsetBy, @RequestParam(required = false) String pageSize) {
+        UserSession session = getAdministrativeSession();
+        int offsetInt = BridgeUtils.getIntOrDefault(offsetBy, 0);
+        int pageSizeInt = BridgeUtils.getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
+
+        return demographicService.getDemographicUsers(session.getAppId(), studyId, offsetInt, pageSizeInt);
+    }
+
+    private void checkAccountExistsInStudy(String appId, String studyId, String userId) throws EntityNotFoundException {
+        AccountId accountId = BridgeUtils.parseAccountId(appId, userId);
+        Account account = accountService.getAccount(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+        BridgeUtils.getElement(account.getEnrollments(), Enrollment::getStudyId, studyId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+    }
+}
