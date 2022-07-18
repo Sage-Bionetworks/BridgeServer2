@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.hibernate;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
 
@@ -77,10 +78,10 @@ public class HibernateDemographicDaoTest {
 
         System.out.println("creating user");
         DemographicUser du = new DemographicUser("testid", "api", "api-study", "cw1gLb-hiOMb6kfCrmhUqJhX",
-                new ArrayList<>());
-        du.getDemographics().add(new Demographic(new DemographicId("testid", "testcategory1"), du, false,
+                new HashMap<>());
+        du.getDemographics().put("testcategory1", new Demographic(new DemographicId("testid", "testcategory1"), du, false,
                 new ArrayList<>(), "testunits"));
-        du.getDemographics().get(0).getValues().add(new DemographicValue("testvalue1"));
+        du.getDemographics().get("testcategory1").getValues().add(new DemographicValue("testvalue1"));
         h.saveDemographicUser(du);
         System.out.println(h.getDemographicUser("api", "api-study", "cw1gLb-hiOMb6kfCrmhUqJhX"));
 

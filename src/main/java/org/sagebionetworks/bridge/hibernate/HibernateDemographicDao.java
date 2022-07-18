@@ -49,6 +49,12 @@ public class HibernateDemographicDao implements DemographicDao {
     }
 
     @Override
+    public Demographic getDemographic(String appId, String studyId, String userId, String categoryName) {
+        DemographicUser demographicUser = getDemographicUser(appId, studyId, userId);
+        return demographicUser.getDemographics().get(categoryName);
+    }
+
+    @Override
     public DemographicUser getDemographicUser(String appId, String studyId, String userId) {
         QueryBuilder builder = new QueryBuilder();
         builder.append("from DemographicUser du");
@@ -56,6 +62,7 @@ public class HibernateDemographicDao implements DemographicDao {
         where.append("du.appId = :appId", "appId", appId);
         where.append("du.studyId = :studyId", "studyId", studyId);
         where.append("du.userId = :userId", "userId", userId);
+        // manually execute to use query.uniqueResult
         DemographicUser existingDemographicUser = hibernateHelper.executeWithExceptionHandling(null, session -> {
             Query<DemographicUser> query = session.createQuery(builder.getQuery(), DemographicUser.class);
             for (Map.Entry<String, Object> entry : builder.getParameters().entrySet()) {

@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.models.studies;
 
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -8,6 +9,7 @@ import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.Id;
+import javax.persistence.MapKey;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
@@ -38,18 +40,29 @@ public class DemographicUser {
 
     @Nonnull
     @OneToMany(mappedBy = "demographicUser", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
-    private List<Demographic> demographics;
+    // private List<Demographic> demographics;
+    @MapKey(name = "demographicId.categoryName")
+    private Map<String, Demographic> demographics;
 
     public DemographicUser() {
     }
 
-    public DemographicUser(String id, String appId, String studyId, String userId, List<Demographic> demographics) {
+    public DemographicUser(String id, String appId, String studyId, String userId,
+            Map<String, Demographic> demographics) {
         this.id = id;
         this.appId = appId;
         this.studyId = studyId;
         this.userId = userId;
         this.demographics = demographics;
     }
+
+    // public DemographicUser(String id, String appId, String studyId, String userId, List<Demographic> demographics) {
+    //     this.id = id;
+    //     this.appId = appId;
+    //     this.studyId = studyId;
+    //     this.userId = userId;
+    //     this.demographics = demographics;
+    // }
 
     public String getId() {
         return id;
@@ -83,11 +96,19 @@ public class DemographicUser {
         this.userId = userId;
     }
 
-    public List<Demographic> getDemographics() {
+    // public List<Demographic> getDemographics() {
+    //     return demographics;
+    // }
+
+    // public void setDemographics(List<Demographic> demographics) {
+    //     this.demographics = demographics;
+    // }
+
+    public Map<String, Demographic> getDemographics() {
         return demographics;
     }
 
-    public void setDemographics(List<Demographic> demographics) {
+    public void setDemographics(Map<String, Demographic> demographics) {
         this.demographics = demographics;
     }
 

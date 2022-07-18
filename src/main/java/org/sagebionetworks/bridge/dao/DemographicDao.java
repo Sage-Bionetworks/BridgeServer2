@@ -13,6 +13,8 @@ public interface DemographicDao {
 
     void deleteDemographicUser(String appId, String studyId, String userId);
 
+    Demographic getDemographic(String appId, String studyId, String userId, String categoryName);
+
     DemographicUser getDemographicUser(String appId, String studyId, String userId);
 
     PagedResourceList<DemographicUser> getDemographicUsers(String appId, String studyId, int offsetBy, int pageSize);
