@@ -25,17 +25,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class DemographicController extends BaseController {
     private DemographicService demographicService;
 
-    @PostMapping("/v5/studies/{studyId}/participants/{userId}/demographics/{categoryName}")
-    public void saveDemographic(@PathVariable String studyId, @PathVariable String userId,
-            @PathVariable String categoryName) {
-        UserSession session = getAdministrativeSession();
-        checkAccountExistsInStudy(session.getAppId(), studyId, userId);
-
-        Demographic demographic = parseJson(Demographic.class);
-        demographic.getDemographicId().setCategoryName(categoryName);
-        demographicService.saveDemographic(demographic, session.getAppId(), studyId, userId);
-    }
-
     @PostMapping("/v5/studies/{studyId}/participants/{userId}/demographics")
     public void saveDemographicUser(@PathVariable String studyId, @PathVariable String userId) {
         UserSession session = getAdministrativeSession();

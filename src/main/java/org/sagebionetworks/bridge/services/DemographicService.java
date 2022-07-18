@@ -27,21 +27,6 @@ public class DemographicService {
         this.demographicDao = demographicDao;
     }
 
-    public void saveDemographic(Demographic demographic, String appId, String studyId, String userId) {
-        DemographicUser demographicUser = demographicDao.getDemographicUser(appId, studyId, userId);
-        if (null == demographicUser) {
-            demographicUser = new DemographicUser(generateGuid(), appId, studyId, userId,
-                    new HashMap<>());
-            demographicUser.getDemographics().put(demographic.getDemographicId().getCategoryName(), demographic);
-            Validate.entityThrowingException(DemographicUserValidator.INSTANCE, demographicUser);
-            demographicDao.saveDemographicUser(demographicUser);
-        } else {
-            demographic.getDemographicId().setDemographicUserId(demographicUser.getId());
-            Validate.entityThrowingException(DemographicValidator.INSTANCE, demographic);
-            demographicDao.saveDemographic(demographic);
-        }
-    }
-
     public void saveDemographicUser(DemographicUser demographicUser) {
         DemographicUser existingDemographicUser = demographicDao.getDemographicUser(demographicUser.getAppId(),
                 demographicUser.getStudyId(), demographicUser.getUserId());

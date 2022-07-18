@@ -74,25 +74,25 @@ public class HibernateDemographicDaoTest {
         HibernateHelper helper = new HibernateHelper(factory, new OrganizationPersistenceExceptionConverter());
         HibernateDemographicDao h = new HibernateDemographicDao();
         h.setHibernateHelper(helper);
-        // System.out.println(h.getDemographicUser("api", "api-study", "tU5DPbVQmKXpTEcOvy5t6RVY"));
+        // System.out.println(h.getDemographicUser("api", "api-study",
+        // "tU5DPbVQmKXpTEcOvy5t6RVY"));
 
         System.out.println("creating user");
         DemographicUser du = new DemographicUser("testid", "api", "api-study", "cw1gLb-hiOMb6kfCrmhUqJhX",
                 new HashMap<>());
-        du.getDemographics().put("testcategory1", new Demographic(new DemographicId("testid", "testcategory1"), du, false,
-                new ArrayList<>(), "testunits"));
+        du.getDemographics().put("testcategory1",
+                new Demographic(new DemographicId("testid", "testcategory1"), du, false,
+                        new ArrayList<>(), "testunits"));
         du.getDemographics().get("testcategory1").getValues().add(new DemographicValue("testvalue1"));
         h.saveDemographicUser(du);
         System.out.println(h.getDemographicUser("api", "api-study", "cw1gLb-hiOMb6kfCrmhUqJhX"));
 
         System.out.println("creating demographic");
-        // du.getDemographics().add(new Demographic(new DemographicId("testid", "testcategory2"), du, true,
-        //         new ArrayList<>(), null));
-        // du.getDemographics().get(1).getValues().add(new DemographicValue("testvalue2"));
-        // h.saveDemographicUser(du);
-        Demographic d = new Demographic(new DemographicId("testid", "testcategory2"), du, true, new ArrayList<>(), null);
-        d.getValues().add(new DemographicValue("testvalue2"));
-        h.saveDemographic(d);
+        du.getDemographics().put("testcategory2",
+                new Demographic(new DemographicId("testid", "testcategory2"), du, true,
+                        new ArrayList<>(), null));
+        du.getDemographics().get("testcategory2").getValues().add(new DemographicValue("testvalue2"));
+        h.saveDemographicUser(du);
         System.out.println(h.getDemographicUsers("api", "api-study", 0, 10).getItems());
 
         System.out.println("deleting demographic");

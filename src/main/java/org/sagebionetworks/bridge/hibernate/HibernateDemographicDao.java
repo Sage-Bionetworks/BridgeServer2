@@ -27,11 +27,6 @@ public class HibernateDemographicDao implements DemographicDao {
     }
 
     @Override
-    public void saveDemographic(Demographic demographic) {
-        hibernateHelper.saveOrUpdate(demographic);
-    }
-
-    @Override
     public void saveDemographicUser(DemographicUser demographicUser) {
         hibernateHelper.saveOrUpdate(demographicUser);
     }
