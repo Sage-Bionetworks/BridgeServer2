@@ -5,6 +5,7 @@ import java.util.List;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.Id;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
@@ -35,8 +36,11 @@ public class DemographicUser {
     private String userId;
 
     @Nonnull
-    @OneToMany(mappedBy = "demographicUser")
+    @OneToMany(mappedBy = "demographicUser", fetch = FetchType.EAGER)
     private List<Demographic> demographics;
+
+    public DemographicUser() {
+    }
 
     public DemographicUser(String id, String appId, String studyId, String userId, List<Demographic> demographics) {
         this.id = id;

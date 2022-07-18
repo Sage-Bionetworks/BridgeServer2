@@ -7,6 +7,7 @@ import javax.persistence.CollectionTable;
 import javax.persistence.ElementCollection;
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.Table;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
@@ -37,7 +38,7 @@ public class Demographic {
     private boolean multipleSelect;
 
     @Nonnull
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "DemographicsValues", joinColumns = {
             @JoinColumn(name = "demographicUserId", referencedColumnName = "demographicUserId"),
             @JoinColumn(name = "categoryName", referencedColumnName = "categoryName") })
