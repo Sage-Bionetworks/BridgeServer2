@@ -34,20 +34,33 @@ public class HibernateDemographicDao implements DemographicDao {
     @Override
     public void deleteDemographic(String appId, String studyId, String userId, String categoryName) {
         // need to get user first for demographicUserId
-        DemographicUser demographicUser = getDemographicUser(appId, studyId, userId);
-        hibernateHelper.deleteById(Demographic.class, new DemographicId(demographicUser.getId(), categoryName));
+        String demographicUserId = getDemographicUserId(appId, studyId, userId);
+        hibernateHelper.deleteById(Demographic.class, new DemographicId(demographicUserId, categoryName));
     }
 
     @Override
     public void deleteDemographicUser(String appId, String studyId, String userId) {
-        DemographicUser demographicUser = getDemographicUser(appId, studyId, userId);
-        hibernateHelper.deleteById(DemographicUser.class, demographicUser.getId());
+        String demographicUserId = getDemographicUserId(appId, studyId, userId);
+        hibernateHelper.deleteById(DemographicUser.class, demographicUserId);
     }
 
     @Override
-    public Demographic getDemographic(String appId, String studyId, String userId, String categoryName) {
-        DemographicUser demographicUser = getDemographicUser(appId, studyId, userId);
-        return demographicUser.getDemographics().get(categoryName);
+    public String getDemographicUserId(String appId, String studyId, String userId) {
+        QueryBuilder builder = new QueryBuilder();
+        builder.append("select du.id from DemographicUser du");
+        WhereClauseBuilder where = builder.startWhere(SearchTermPredicate.AND);
+        where.append("du.appId = :appId", "appId", appId);
+        where.append("du.studyId = :studyId", "studyId", studyId);
+        where.append("du.userId = :userId", "userId", userId);
+        // manually execute to use query.uniqueResult
+        String existingDemographicUserId = hibernateHelper.executeWithExceptionHandling(null, session -> {
+            Query<String> query = session.createQuery(builder.getQuery(), String.class);
+            for (Map.Entry<String, Object> entry : builder.getParameters().entrySet()) {
+                query.setParameter(entry.getKey(), entry.getValue());
+            }
+            return query.uniqueResult();
+        });
+        return existingDemographicUserId;
     }
 
     @Override

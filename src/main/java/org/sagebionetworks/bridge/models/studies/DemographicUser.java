@@ -13,6 +13,7 @@ import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
 import org.sagebionetworks.bridge.json.DemographicUserDeserializer;
+import org.sagebionetworks.bridge.models.BridgeEntity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -20,7 +21,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 @Entity
 @Table(name = "DemographicsUsers")
 @JsonDeserialize(using = DemographicUserDeserializer.class)
-public class DemographicUser {
+public class DemographicUser implements BridgeEntity {
     @Nonnull
     @Id
     @JsonIgnore
@@ -37,7 +38,7 @@ public class DemographicUser {
     @Nonnull
     private String userId;
 
-    // use Map for easy JSON serialization and O(1) getDemographic
+    // use Map for easy JSON serialization
     @Nonnull
     @OneToMany(mappedBy = "demographicUser", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     @MapKey(name = "demographicId.categoryName")

@@ -19,17 +19,17 @@ public class DemographicService {
     private DemographicDao demographicDao;
 
     @Autowired
-    final void setDemographicDao(DemographicDao demographicDao) {
+    public final void setDemographicDao(DemographicDao demographicDao) {
         this.demographicDao = demographicDao;
     }
 
     public void saveDemographicUser(DemographicUser demographicUser) {
-        DemographicUser existingDemographicUser = demographicDao.getDemographicUser(demographicUser.getAppId(),
+        String existingDemographicUserId = demographicDao.getDemographicUserId(demographicUser.getAppId(),
                 demographicUser.getStudyId(), demographicUser.getUserId());
-        if (null == existingDemographicUser) {
+        if (null == existingDemographicUserId) {
             demographicUser.setId(generateGuid());
         } else {
-            demographicUser.setId(existingDemographicUser.getId());
+            demographicUser.setId(existingDemographicUserId);
         }
         Validate.entityThrowingException(DemographicUserValidator.INSTANCE, demographicUser);
         demographicDao.saveDemographicUser(demographicUser);

@@ -18,6 +18,7 @@ import org.sagebionetworks.bridge.models.studies.Demographic;
 import org.sagebionetworks.bridge.models.studies.DemographicId;
 import org.sagebionetworks.bridge.models.studies.DemographicUser;
 import org.sagebionetworks.bridge.models.studies.DemographicValue;
+import org.sagebionetworks.bridge.services.DemographicService;
 // import org.sagebionetworks.bridge.models.studies.DemographicValue;
 import org.testng.annotations.Test;
 
@@ -75,6 +76,8 @@ public class HibernateDemographicDaoTest {
         HibernateHelper helper = new HibernateHelper(factory, new OrganizationPersistenceExceptionConverter());
         HibernateDemographicDao h = new HibernateDemographicDao();
         h.setHibernateHelper(helper);
+        DemographicService ds = new DemographicService();
+        ds.setDemographicDao(h);
         // System.out.println(h.getDemographicUser("api", "api-study",
         // "tU5DPbVQmKXpTEcOvy5t6RVY"));
 
@@ -85,27 +88,29 @@ public class HibernateDemographicDaoTest {
                 new Demographic(new DemographicId("testid", "testcategory1"), du, false,
                         new ArrayList<>(), "testunits"));
         du.getDemographics().get("testcategory1").getValues().add(new DemographicValue("testvalue1"));
-        h.saveDemographicUser(du);
-        System.out.println(h.getDemographicUser("api", "api-study", "cw1gLb-hiOMb6kfCrmhUqJhX"));
+        ds.saveDemographicUser(du);
+        System.out.println(h.getDemographicUserId("api", "api-study", "cw1gLb-hiOMb6kfCrmhUqJhX"));
+        System.out.println(ds.getDemographicUser("api", "api-study", "cw1gLb-hiOMb6kfCrmhUqJhX"));
 
         System.out.println("creating demographic");
-        du.getDemographics().put("testcategory2",
-                new Demographic(new DemographicId("testid", "testcategory2"), du, true,
+        DemographicUser du2 = ds.getDemographicUser("api", "api-study", "cw1gLb-hiOMb6kfCrmhUqJhX");
+        du2.getDemographics().put("testcategory2",
+                new Demographic(new DemographicId("testid", "testcategory2"), du2, true,
                         new ArrayList<>(), null));
-        du.getDemographics().get("testcategory2").getValues().add(new DemographicValue("testvalue2"));
-        h.saveDemographicUser(du);
+        du2.getDemographics().get("testcategory2").getValues().add(new DemographicValue("testvalue2"));
+        ds.saveDemographicUser(du2);
         ResourceList<DemographicUser> demographicUsers = h.getDemographicUsers("api", "api-study", 0, 10);
         System.out.println(demographicUsers.getItems());
         System.out.println("json");
         System.out.println(new ObjectMapper().writeValueAsString(demographicUsers));
 
         System.out.println("deleting demographic");
-        h.deleteDemographic("api", "api-study", "cw1gLb-hiOMb6kfCrmhUqJhX", "testcategory2");
-        System.out.println(h.getDemographicUser("api", "api-study", "cw1gLb-hiOMb6kfCrmhUqJhX"));
+        ds.deleteDemographic("api", "api-study", "cw1gLb-hiOMb6kfCrmhUqJhX", "testcategory2");
+        System.out.println(ds.getDemographicUser("api", "api-study", "cw1gLb-hiOMb6kfCrmhUqJhX"));
 
         System.out.println("deleting user");
-        h.deleteDemographicUser("api", "api-study", "cw1gLb-hiOMb6kfCrmhUqJhX");
-        System.out.println(h.getDemographicUsers("api", "api-study", 0, 10).getItems());
+        ds.deleteDemographicUser("api", "api-study", "cw1gLb-hiOMb6kfCrmhUqJhX");
+        System.out.println(ds.getDemographicUsers("api", "api-study", 0, 10).getItems());
 
         /*
          * Session session = factory.openSession();

@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.dao;
 
 import org.sagebionetworks.bridge.models.PagedResourceList;
-import org.sagebionetworks.bridge.models.studies.Demographic;
 import org.sagebionetworks.bridge.models.studies.DemographicUser;
 
 public interface DemographicDao {
@@ -11,7 +10,7 @@ public interface DemographicDao {
 
     void deleteDemographicUser(String appId, String studyId, String userId);
 
-    Demographic getDemographic(String appId, String studyId, String userId, String categoryName);
+    String getDemographicUserId(String appId, String studyId, String userId);
 
     DemographicUser getDemographicUser(String appId, String studyId, String userId);
 
