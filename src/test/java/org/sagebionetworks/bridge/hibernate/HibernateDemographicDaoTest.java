@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.hibernate;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -27,7 +29,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class HibernateDemographicDaoTest {
     @Test
-    public void foo() throws JsonProcessingException {
+    public void foo() throws JsonProcessingException, IOException {
         // List<DemographicValue> values = new ArrayList<>();
         // Demographic d = new Demographic("id1", "api-study",
         // "wZpd8tqNLNlWj2jF3pSOtYdv", "category1", true, values, "units1");
@@ -111,6 +113,9 @@ public class HibernateDemographicDaoTest {
         System.out.println("deleting user");
         ds.deleteDemographicUser("api", "api-study", "cw1gLb-hiOMb6kfCrmhUqJhX");
         System.out.println(ds.getDemographicUsers("api", "api-study", 0, 10).getItems());
+
+        System.out.println(new File("~/Desktop/bridge notes/demographic_results.json").exists());
+        System.out.println(new ObjectMapper().readValue(new File("/Users/imajeed/Desktop/bridgenotes/demographic_results.json"), DemographicUser.class));
 
         /*
          * Session session = factory.openSession();

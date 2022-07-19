@@ -19,6 +19,21 @@ public class DemographicValue {
         this.value = value;
     }
 
+    @JsonCreator
+    public DemographicValue(long value) {
+        this.value = String.valueOf(value);
+    }
+
+    @JsonCreator
+    public DemographicValue(double value) {
+        this.value = String.valueOf(value);
+    }
+
+    @JsonCreator
+    public DemographicValue(boolean value) {
+        this.value = String.valueOf(value);
+    }
+
     @JsonValue
     public String getValue() {
         return value;

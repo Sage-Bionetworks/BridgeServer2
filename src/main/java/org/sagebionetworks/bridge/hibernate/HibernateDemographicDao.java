@@ -17,8 +17,6 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class HibernateDemographicDao implements DemographicDao {
-    private static final String SELECT_COUNT = "SELECT COUNT(*) ";
-
     private HibernateHelper hibernateHelper;
 
     @Resource(name = "mysqlHibernateHelper")
@@ -47,7 +45,7 @@ public class HibernateDemographicDao implements DemographicDao {
     @Override
     public String getDemographicUserId(String appId, String studyId, String userId) {
         QueryBuilder builder = new QueryBuilder();
-        builder.append("select du.id from DemographicUser du");
+        builder.append("SELECT du.id FROM DemographicUser du");
         WhereClauseBuilder where = builder.startWhere(SearchTermPredicate.AND);
         where.append("du.appId = :appId", "appId", appId);
         where.append("du.studyId = :studyId", "studyId", studyId);
@@ -66,7 +64,7 @@ public class HibernateDemographicDao implements DemographicDao {
     @Override
     public DemographicUser getDemographicUser(String appId, String studyId, String userId) {
         QueryBuilder builder = new QueryBuilder();
-        builder.append("from DemographicUser du");
+        builder.append("FROM DemographicUser du");
         WhereClauseBuilder where = builder.startWhere(SearchTermPredicate.AND);
         where.append("du.appId = :appId", "appId", appId);
         where.append("du.studyId = :studyId", "studyId", studyId);
@@ -86,11 +84,11 @@ public class HibernateDemographicDao implements DemographicDao {
     public PagedResourceList<DemographicUser> getDemographicUsers(String appId, String studyId, int offsetBy,
             int pageSize) {
         QueryBuilder builder = new QueryBuilder();
-        builder.append("from DemographicUser du");
+        builder.append("FROM DemographicUser du");
         WhereClauseBuilder where = builder.startWhere(SearchTermPredicate.AND);
         where.append("du.appId = :appId", "appId", appId);
         where.append("du.studyId = :studyId", "studyId", studyId);
-        int count = hibernateHelper.queryCount(SELECT_COUNT + builder.getQuery(), builder.getParameters());
+        int count = hibernateHelper.queryCount("SELECT COUNT(*) " + builder.getQuery(), builder.getParameters());
         List<DemographicUser> existingDemographicUsers = hibernateHelper.queryGet(builder.getQuery(),
                 builder.getParameters(), offsetBy, pageSize, DemographicUser.class);
         return new PagedResourceList<>(existingDemographicUsers, count)
