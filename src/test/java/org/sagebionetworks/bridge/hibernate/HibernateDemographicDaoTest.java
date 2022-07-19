@@ -13,6 +13,7 @@ import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.query.Query;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
+import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.studies.Demographic;
 import org.sagebionetworks.bridge.models.studies.DemographicId;
 import org.sagebionetworks.bridge.models.studies.DemographicUser;
@@ -93,7 +94,10 @@ public class HibernateDemographicDaoTest {
                         new ArrayList<>(), null));
         du.getDemographics().get("testcategory2").getValues().add(new DemographicValue("testvalue2"));
         h.saveDemographicUser(du);
-        System.out.println(h.getDemographicUsers("api", "api-study", 0, 10).getItems());
+        ResourceList<DemographicUser> demographicUsers = h.getDemographicUsers("api", "api-study", 0, 10);
+        System.out.println(demographicUsers.getItems());
+        System.out.println("json");
+        System.out.println(new ObjectMapper().writeValueAsString(demographicUsers));
 
         System.out.println("deleting demographic");
         h.deleteDemographic("api", "api-study", "cw1gLb-hiOMb6kfCrmhUqJhX", "testcategory2");

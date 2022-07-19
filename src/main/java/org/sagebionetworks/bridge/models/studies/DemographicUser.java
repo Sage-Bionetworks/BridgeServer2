@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.models.studies;
 
-import java.util.List;
 import java.util.Map;
 
 import javax.annotation.Nonnull;
@@ -13,14 +12,14 @@ import javax.persistence.MapKey;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
-import org.sagebionetworks.bridge.json.DemographicCollectionDeserializer;
+import org.sagebionetworks.bridge.json.DemographicUserDeserializer;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 @Entity
 @Table(name = "DemographicsUsers")
-// @JsonDeserialize(using = DemographicCollectionDeserializer.class)
+@JsonDeserialize(using = DemographicUserDeserializer.class)
 public class DemographicUser {
     @Nonnull
     @Id

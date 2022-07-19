@@ -13,16 +13,11 @@ import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.MapsId;
 
-import org.sagebionetworks.bridge.json.DemographicDeserializer;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonUnwrapped;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 @Entity
 @Table(name = "Demographics")
-// @JsonDeserialize(using = DemographicDeserializer.class)
 public class Demographic {
     @EmbeddedId
     @JsonIgnore

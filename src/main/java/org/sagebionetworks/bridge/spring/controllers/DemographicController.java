@@ -8,7 +8,6 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.studies.Demographic;
 import org.sagebionetworks.bridge.models.studies.DemographicUser;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.services.DemographicService;
@@ -25,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class DemographicController extends BaseController {
     private DemographicService demographicService;
 
+    // Save/update all demographics for a user
     @PostMapping("/v5/studies/{studyId}/participants/{userId}/demographics")
     public void saveDemographicUser(@PathVariable String studyId, @PathVariable String userId) {
         UserSession session = getAdministrativeSession();
@@ -37,6 +37,7 @@ public class DemographicController extends BaseController {
         demographicService.saveDemographicUser(demographicUser);
     }
 
+    // Delete a specific demographic for a user
     @DeleteMapping("/v5/studies/{studyId}/participants/{userId}/demographics/{categoryName}")
     public void deleteDemographic(@PathVariable String studyId, @PathVariable String userId,
             @PathVariable String categoryName) {
@@ -46,6 +47,7 @@ public class DemographicController extends BaseController {
         demographicService.deleteDemographic(session.getAppId(), studyId, userId, categoryName);
     }
 
+    // Delete all demographics for a user
     @DeleteMapping("/v5/studies/{studyId}/participants/{userId}/demographics")
     public void deleteDemographicUser(@PathVariable String studyId, @PathVariable String userId) {
         UserSession session = getAdministrativeSession();
@@ -54,6 +56,7 @@ public class DemographicController extends BaseController {
         demographicService.deleteDemographicUser(session.getAppId(), studyId, userId);
     }
 
+    // Get all demographics for a user
     @GetMapping("/v5/studies/{studyId}/participants/{userId}/demographics")
     public DemographicUser getDemographicUser(@PathVariable String studyId, @PathVariable String userId) {
         UserSession session = getAdministrativeSession();
@@ -62,6 +65,8 @@ public class DemographicController extends BaseController {
         return demographicService.getDemographicUser(session.getAppId(), studyId, userId);
     }
 
+    // Get all demographics for all users in the study
+    // Paged with offset
     @GetMapping("/v5/studies/{studyId}/participants/demographics")
     public PagedResourceList<DemographicUser> getDemographicUsers(@PathVariable String studyId,
             @RequestParam(required = false) String offsetBy, @RequestParam(required = false) String pageSize) {
