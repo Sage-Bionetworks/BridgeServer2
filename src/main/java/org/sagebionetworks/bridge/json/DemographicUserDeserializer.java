@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.json;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 
 import org.sagebionetworks.bridge.models.studies.Demographic;
@@ -28,11 +29,25 @@ public class DemographicUserDeserializer extends JsonDeserializer<DemographicUse
         DemographicAssessmentResults results = p.readValueAs(DemographicAssessmentResults.class);
         Map<String, Demographic> demographics = new HashMap<>();
         DemographicUser demographicUser = new DemographicUser(null, null, null, null, demographics);
-        for (DemographicAssessmentResultStep resultStep : results.getStepHistory()) {
-            demographics.put(resultStep.getIdentifier(),
-                    new Demographic(new DemographicId(null, resultStep.getIdentifier()), demographicUser,
-                            resultStep.getAnswerType().toLowerCase().equals(MULTIPLE_SELECT_STEP_TYPE),
-                            resultStep.getValue(), null));
+        if (null != results.getStepHistory()) {
+            for (DemographicAssessmentResultStep resultStep : results.getStepHistory()) {
+                if (null == resultStep) {
+                    continue;
+                }
+                if (null != resultStep.getValue()) {
+                    // replace null with DemographicValue(null)
+                    for (ListIterator<DemographicValue> iter = resultStep.getValue().listIterator(); iter.hasNext();) {
+                        if (null == iter.next()) {
+                            iter.set(new DemographicValue(null));
+                        }
+                    }
+                }
+                demographics.put(resultStep.getIdentifier(),
+                        new Demographic(new DemographicId(null, resultStep.getIdentifier()), demographicUser,
+                                null != resultStep.getAnswerType()
+                                        && resultStep.getAnswerType().equalsIgnoreCase(MULTIPLE_SELECT_STEP_TYPE),
+                                resultStep.getValue(), null));
+            }
         }
         return demographicUser;
     }

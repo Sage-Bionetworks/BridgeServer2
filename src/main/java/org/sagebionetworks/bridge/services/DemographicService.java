@@ -43,7 +43,7 @@ public class DemographicService {
         demographicDao.deleteDemographicUser(appId, studyId, userId);
     }
 
-    public DemographicUser getDemographicUser(String appId, String studyId, String userId) {
+    public DemographicUser getDemographicUser(String appId, String studyId, String userId) throws BadRequestException {
         return demographicDao.getDemographicUser(appId, studyId, userId);
     }
 

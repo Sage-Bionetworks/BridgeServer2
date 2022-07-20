@@ -7,6 +7,7 @@ import javax.annotation.Resource;
 
 import org.hibernate.query.Query;
 import org.sagebionetworks.bridge.dao.DemographicDao;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.hibernate.QueryBuilder.WhereClauseBuilder;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.SearchTermPredicate;
@@ -42,6 +43,7 @@ public class HibernateDemographicDao implements DemographicDao {
         hibernateHelper.deleteById(DemographicUser.class, demographicUserId);
     }
 
+    // can return null
     @Override
     public String getDemographicUserId(String appId, String studyId, String userId) {
         QueryBuilder builder = new QueryBuilder();
@@ -62,7 +64,7 @@ public class HibernateDemographicDao implements DemographicDao {
     }
 
     @Override
-    public DemographicUser getDemographicUser(String appId, String studyId, String userId) {
+    public DemographicUser getDemographicUser(String appId, String studyId, String userId) throws BadRequestException {
         QueryBuilder builder = new QueryBuilder();
         builder.append("FROM DemographicUser du");
         WhereClauseBuilder where = builder.startWhere(SearchTermPredicate.AND);
@@ -77,6 +79,9 @@ public class HibernateDemographicDao implements DemographicDao {
             }
             return query.uniqueResult();
         });
+        if (null == existingDemographicUser) {
+            throw new BadRequestException("no user demographics were found with the specified parameters");
+        }
         return existingDemographicUser;
     }
 

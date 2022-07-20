@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.spring.controllers;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -31,6 +32,9 @@ public class DemographicController extends BaseController {
         checkAccountExistsInStudy(session.getAppId(), studyId, userId);
 
         DemographicUser demographicUser = parseJson(DemographicUser.class);
+        if (null == demographicUser) {
+            throw new BadRequestException("invalid JSON for user demographics");
+        }
         demographicUser.setAppId(session.getAppId());
         demographicUser.setStudyId(studyId);
         demographicUser.setUserId(userId);

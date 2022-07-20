@@ -39,6 +39,9 @@ public class DemographicUserValidator implements Validator {
             if (!entry.getKey().equals(entry.getValue().getDemographicId().getCategoryName())) {
                 errors.reject("keys in demographics must match the corresponding Demographic's categoryName");
             }
+            if (!entry.getValue().getDemographicId().getDemographicUserId().equals(demographicUser.getId())) {
+                errors.reject("child Demographic must have demographicUserId matching id of parent DemographicUser");
+            }
             Validate.entity(DemographicValidator.INSTANCE, errors, entry.getValue());
         }
     }

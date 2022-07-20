@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.dao;
 
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.studies.DemographicUser;
 
@@ -12,7 +13,7 @@ public interface DemographicDao {
 
     String getDemographicUserId(String appId, String studyId, String userId);
 
-    DemographicUser getDemographicUser(String appId, String studyId, String userId);
+    DemographicUser getDemographicUser(String appId, String studyId, String userId) throws BadRequestException;
 
     PagedResourceList<DemographicUser> getDemographicUsers(String appId, String studyId, int offsetBy, int pageSize);
 }
