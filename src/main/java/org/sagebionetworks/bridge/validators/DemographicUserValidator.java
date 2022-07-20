@@ -27,10 +27,10 @@ public class DemographicUserValidator implements Validator {
             errors.rejectValue("id", CANNOT_BE_NULL_OR_EMPTY);
         }
         if (StringUtils.isBlank(demographicUser.getAppId())) {
-            errors.rejectValue("id", CANNOT_BE_NULL_OR_EMPTY);
+            errors.rejectValue("appId", CANNOT_BE_NULL_OR_EMPTY);
         }
         if (StringUtils.isBlank(demographicUser.getUserId())) {
-            errors.rejectValue("id", CANNOT_BE_NULL_OR_EMPTY);
+            errors.rejectValue("userId", CANNOT_BE_NULL_OR_EMPTY);
         }
         if (demographicUser.getDemographics() == null) {
             errors.rejectValue("values", CANNOT_BE_NULL);
