@@ -1,4 +1,4 @@
- package org.sagebionetworks.bridge.services;
+package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.Boolean.FALSE;
@@ -61,6 +61,8 @@ public class AdminAccountService {
     private AccountWorkflowService accountWorkflowService;
     @Autowired
     private SmsService smsService;
+    @Autowired
+    private PermissionService permissionService;
     @Autowired
     private AccountDao accountDao;
     @Autowired
@@ -175,6 +177,11 @@ public class AdminAccountService {
 
         accountDao.createAccount(account);
         
+        // If roles are provided then permissions also need to be created
+        if (!account.getRoles().isEmpty()) {
+            permissionService.updatePermissionsFromRoles(account, Account.create());
+        }
+        
         sendVerificationMessages(app, Account.create(), account);
         return account;
     }
@@ -219,6 +226,11 @@ public class AdminAccountService {
         account.setRoles(finalRoles);
 
         accountDao.updateAccount(account);
+        
+        // If roles have changed, then permissions need to be adjusted as well
+        if (!persistedAccount.getRoles().equals(account.getRoles())) {
+            permissionService.updatePermissionsFromRoles(account, persistedAccount);
+        }
         
         // If the Synapse account ID on this account is changed, sign out the account and make the 
         // user confirm that they control this new Synapse ID by signing in again. This does not 
