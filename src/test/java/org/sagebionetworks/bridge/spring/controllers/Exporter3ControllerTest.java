@@ -66,6 +66,7 @@ public class Exporter3ControllerTest {
     public void verifyAnnotations() throws Exception {
         assertCrossOrigin(Exporter3Controller.class);
         assertPost(Exporter3Controller.class, "initExporter3");
+        assertPost(Exporter3Controller.class, "subscribeToCreateStudyNotifications");
         assertPost(Exporter3Controller.class, "initExporter3ForStudy");
     }
 
