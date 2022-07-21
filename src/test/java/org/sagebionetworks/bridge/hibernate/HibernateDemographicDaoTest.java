@@ -17,11 +17,10 @@ import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.studies.Demographic;
-import org.sagebionetworks.bridge.models.studies.DemographicId;
 import org.sagebionetworks.bridge.models.studies.DemographicUser;
 import org.sagebionetworks.bridge.models.studies.DemographicValue;
 import org.sagebionetworks.bridge.services.DemographicService;
-// import org.sagebionetworks.bridge.models.studies.DemographicValue;
+import org.sagebionetworks.bridge.models.studies.DemographicValue;
 import org.testng.annotations.Test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -70,9 +69,8 @@ public class HibernateDemographicDaoTest {
         // individually.
         MetadataSources metadataSources = new MetadataSources(reg);
         metadataSources.addAnnotatedClass(Demographic.class);
-        // metadataSources.addAnnotatedClass(DemographicValue.class);
+        metadataSources.addAnnotatedClass(DemographicValue.class);
         metadataSources.addAnnotatedClass(DemographicUser.class);
-        metadataSources.addAnnotatedClass(DemographicId.class);
         SessionFactory factory = metadataSources.buildMetadata().buildSessionFactory();
 
         HibernateHelper helper = new HibernateHelper(factory, new OrganizationPersistenceExceptionConverter());
@@ -80,15 +78,12 @@ public class HibernateDemographicDaoTest {
         h.setHibernateHelper(helper);
         DemographicService ds = new DemographicService();
         ds.setDemographicDao(h);
-        // System.out.println(h.getDemographicUser("api", "api-study",
-        // "tU5DPbVQmKXpTEcOvy5t6RVY"));
 
         System.out.println("creating user");
-        DemographicUser du = new DemographicUser("testid", "api", "api-study", "cw1gLb-hiOMb6kfCrmhUqJhX",
+        DemographicUser du = new DemographicUser(null, "api", "api-study", "cw1gLb-hiOMb6kfCrmhUqJhX",
                 new HashMap<>());
         du.getDemographics().put("testcategory1",
-                new Demographic(new DemographicId("testid", "testcategory1"), du, false,
-                        new ArrayList<>(), "testunits"));
+                new Demographic(null, du, "testcategory1", false, new ArrayList<>(), "testunits"));
         du.getDemographics().get("testcategory1").getValues().add(new DemographicValue("testvalue1"));
         ds.saveDemographicUser(du);
         System.out.println(h.getDemographicUserId("api", "api-study", "cw1gLb-hiOMb6kfCrmhUqJhX"));
@@ -97,24 +92,22 @@ public class HibernateDemographicDaoTest {
         System.out.println("creating demographic");
         DemographicUser du2 = ds.getDemographicUser("api", "api-study", "cw1gLb-hiOMb6kfCrmhUqJhX");
         du2.getDemographics().put("testcategory2",
-                new Demographic(new DemographicId("testid", "testcategory2"), du2, true,
-                        new ArrayList<>(), null));
+                new Demographic(null, du2, "testcategory2", true, new ArrayList<>(), null));
         du2.getDemographics().get("testcategory2").getValues().add(new DemographicValue("testvalue2"));
-        ds.saveDemographicUser(du2);
+        du2 = ds.saveDemographicUser(du2);
         ResourceList<DemographicUser> demographicUsers = h.getDemographicUsers("api", "api-study", 0, 10);
         System.out.println(demographicUsers.getItems());
         System.out.println("json");
         System.out.println(new ObjectMapper().writeValueAsString(demographicUsers));
 
         System.out.println("deleting demographic");
-        ds.deleteDemographic("api", "api-study", "cw1gLb-hiOMb6kfCrmhUqJhX", "testcategory2");
+        ds.deleteDemographic("api", "api-study", "cw1gLb-hiOMb6kfCrmhUqJhX", du2.getDemographics().get("testcategory2").getId());
         System.out.println(ds.getDemographicUser("api", "api-study", "cw1gLb-hiOMb6kfCrmhUqJhX"));
 
         System.out.println("deleting user");
         ds.deleteDemographicUser("api", "api-study", "cw1gLb-hiOMb6kfCrmhUqJhX");
         System.out.println(ds.getDemographicUsers("api", "api-study", 0, 10).getItems());
 
-        System.out.println(new File("~/Desktop/bridge notes/demographic_results.json").exists());
         System.out.println(new ObjectMapper().readValue(new File("/Users/imajeed/Desktop/bridgenotes/demographic_results.json"), DemographicUser.class));
 
         /*
@@ -124,12 +117,15 @@ public class HibernateDemographicDaoTest {
          * List<Demographic> results = query.list();
          * System.out.println(results);
          */
+
         /*
          * Session session = factory.openSession();
          * Query<DemographicUser> query = session.createQuery("from DemographicUser",
          * DemographicUser.class);
          * List<DemographicUser> results = query.list();
-         * System.out.println(results);
+         * for (DemographicUser d : results) {
+         * System.out.println(d);
+         * }
          */
     }
 }

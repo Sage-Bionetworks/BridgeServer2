@@ -12,7 +12,6 @@ import org.sagebionetworks.bridge.hibernate.QueryBuilder.WhereClauseBuilder;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.SearchTermPredicate;
 import org.sagebionetworks.bridge.models.studies.Demographic;
-import org.sagebionetworks.bridge.models.studies.DemographicId;
 import org.sagebionetworks.bridge.models.studies.DemographicUser;
 import org.springframework.stereotype.Component;
 
@@ -26,15 +25,13 @@ public class HibernateDemographicDao implements DemographicDao {
     }
 
     @Override
-    public void saveDemographicUser(DemographicUser demographicUser) {
-        hibernateHelper.saveOrUpdate(demographicUser);
+    public DemographicUser saveDemographicUser(DemographicUser demographicUser) {
+        return hibernateHelper.saveOrUpdate(demographicUser);
     }
 
     @Override
-    public void deleteDemographic(String appId, String studyId, String userId, String categoryName) {
-        // need to get user first for demographicUserId
-        String demographicUserId = getDemographicUserId(appId, studyId, userId);
-        hibernateHelper.deleteById(Demographic.class, new DemographicId(demographicUserId, categoryName));
+    public void deleteDemographic(String demographicId) {
+        hibernateHelper.deleteById(Demographic.class, demographicId);
     }
 
     @Override
@@ -64,7 +61,24 @@ public class HibernateDemographicDao implements DemographicDao {
     }
 
     @Override
-    public DemographicUser getDemographicUser(String appId, String studyId, String userId) throws BadRequestException {
+    public Demographic getDemographic(String demographicId) {
+        QueryBuilder builder = new QueryBuilder();
+        builder.append("FROM Demographic d");
+        WhereClauseBuilder where = builder.startWhere(SearchTermPredicate.AND);
+        where.append("d.id = :demographicId", "demographicId", demographicId);
+        // manually execute to use query.uniqueResult
+        Demographic existingDemographic = hibernateHelper.executeWithExceptionHandling(null, session -> {
+            Query<Demographic> query = session.createQuery(builder.getQuery(), Demographic.class);
+            for (Map.Entry<String, Object> entry : builder.getParameters().entrySet()) {
+                query.setParameter(entry.getKey(), entry.getValue());
+            }
+            return query.uniqueResult();
+        });
+        return existingDemographic;
+    }
+
+    @Override
+    public DemographicUser getDemographicUser(String appId, String studyId, String userId) {
         QueryBuilder builder = new QueryBuilder();
         builder.append("FROM DemographicUser du");
         WhereClauseBuilder where = builder.startWhere(SearchTermPredicate.AND);
@@ -79,9 +93,6 @@ public class HibernateDemographicDao implements DemographicDao {
             }
             return query.uniqueResult();
         });
-        if (existingDemographicUser == null) {
-            throw new BadRequestException("no user demographics were found with the specified parameters");
-        }
         return existingDemographicUser;
     }
 

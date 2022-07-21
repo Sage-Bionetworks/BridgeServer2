@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.sagebionetworks.bridge.models.studies.Demographic;
-import org.sagebionetworks.bridge.models.studies.DemographicId;
 import org.sagebionetworks.bridge.models.studies.DemographicUser;
 import org.sagebionetworks.bridge.models.studies.DemographicValue;
 
@@ -43,7 +42,7 @@ public class DemographicUserDeserializer extends JsonDeserializer<DemographicUse
                     }
                 }
                 demographics.put(resultStep.getIdentifier(),
-                        new Demographic(new DemographicId(null, resultStep.getIdentifier()), demographicUser,
+                        new Demographic(null, demographicUser, resultStep.getIdentifier(),
                                 resultStep.getAnswerType() != null
                                         && resultStep.getAnswerType().equalsIgnoreCase(MULTIPLE_SELECT_STEP_TYPE),
                                 resultStep.getValue(), null));

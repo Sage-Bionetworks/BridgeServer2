@@ -46,12 +46,12 @@ public class DemographicUserValidator implements Validator {
             }
             Validate.entity(DemographicValidator.INSTANCE, errors, entry.getValue());
             // null check error for demographicId itself occurs in DemographicValidator
-            if (entry.getValue().getDemographicId() != null) {
-                if (!entry.getKey().equals(entry.getValue().getDemographicId().getCategoryName())) {
+            if (entry.getValue().getId() != null) {
+                if (!entry.getKey().equals(entry.getValue().getCategoryName())) {
                     errors.reject("keys in demographics must match the corresponding Demographic's categoryName");
                 }
-                if (!entry.getValue().getDemographicId().getDemographicUserId().equals(demographicUser.getId())) {
-                    errors.reject("child Demographic must have demographicUserId matching id of parent DemographicUser");
+                if (!entry.getValue().getDemographicUser().equals(demographicUser)) {
+                    errors.reject("child Demographic must store correct parent");
                 }
             }
         }

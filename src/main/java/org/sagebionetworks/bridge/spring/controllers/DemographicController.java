@@ -54,16 +54,16 @@ public class DemographicController extends BaseController {
     }
 
     // Delete a specific demographic for a user
-    @DeleteMapping({ "/v5/studies/{studyId}/participants/{userId}/demographics/{categoryName}",
-            "/v1/apps/self/participants/{userId}/demographics/{categoryName}" })
+    @DeleteMapping({ "/v5/studies/{studyId}/participants/{userId}/demographics/{demographicId}",
+            "/v1/apps/self/participants/{userId}/demographics/{demographicId}" })
     public void deleteDemographic(@PathVariable(required = false) Optional<String> studyId, @PathVariable String userId,
-            @PathVariable String categoryName) {
+            @PathVariable String demographicId) {
         String studyIdNull = studyId.orElse(null);
 
         UserSession session = getAdministrativeSession();
         checkAccountExistsInStudy(session.getAppId(), studyIdNull, userId);
 
-        demographicService.deleteDemographic(session.getAppId(), studyIdNull, userId, categoryName);
+        demographicService.deleteDemographic(session.getAppId(), studyIdNull, userId, demographicId);
     }
 
     // Delete all demographics for a user

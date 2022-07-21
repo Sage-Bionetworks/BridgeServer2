@@ -5,12 +5,11 @@ import java.util.List;
 import javax.annotation.Nonnull;
 import javax.persistence.CollectionTable;
 import javax.persistence.ElementCollection;
-import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
+import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
-import javax.persistence.MapsId;
 import javax.persistence.Table;
 
 import org.sagebionetworks.bridge.models.BridgeEntity;
@@ -21,33 +20,34 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 @Entity
 @Table(name = "Demographics")
 public class Demographic implements BridgeEntity {
-    @EmbeddedId
-    @JsonIgnore
-    DemographicId demographicId;
+    @Nonnull
+    @Id
+    String id;
 
     @JsonIgnore
-    @MapsId("demographicUserId")
     @ManyToOne
     @JoinColumn(name = "demographicUserId")
     DemographicUser demographicUser;
+
+    @Nonnull
+    String categoryName;
 
     @Nonnull
     private boolean multipleSelect;
 
     @Nonnull
     @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(name = "DemographicsValues", joinColumns = {
-            @JoinColumn(name = "demographicUserId", referencedColumnName = "demographicUserId"),
-            @JoinColumn(name = "categoryName", referencedColumnName = "categoryName") })
+    @CollectionTable(name = "DemographicsValues", joinColumns = @JoinColumn(name = "demographicId", referencedColumnName = "id"))
     private List<DemographicValue> values;
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private String units;
 
-    public Demographic(DemographicId demographicId, DemographicUser demographicUser, boolean multipleSelect,
+    public Demographic(String id, DemographicUser demographicUser, String categoryName, boolean multipleSelect,
             List<DemographicValue> values, String units) {
-        this.demographicId = demographicId;
+        this.id = id;
         this.demographicUser = demographicUser;
+        this.categoryName = categoryName;
         this.multipleSelect = multipleSelect;
         this.values = values;
         this.units = units;
@@ -56,12 +56,12 @@ public class Demographic implements BridgeEntity {
     public Demographic() {
     }
 
-    public DemographicId getDemographicId() {
-        return demographicId;
+    public String getId() {
+        return id;
     }
 
-    public void setDemographicId(DemographicId demographicId) {
-        this.demographicId = demographicId;
+    public void setId(String id) {
+        this.id = id;
     }
 
     public DemographicUser getDemographicUser() {
@@ -70,6 +70,14 @@ public class Demographic implements BridgeEntity {
 
     public void setDemographicUser(DemographicUser demographicUser) {
         this.demographicUser = demographicUser;
+    }
+
+    public String getCategoryName() {
+        return categoryName;
+    }
+
+    public void setCategoryName(String categoryName) {
+        this.categoryName = categoryName;
     }
 
     public boolean isMultipleSelect() {
@@ -98,7 +106,7 @@ public class Demographic implements BridgeEntity {
 
     @Override
     public String toString() {
-        return "Demographic [demographicId=" + demographicId + ", multipleSelect=" + multipleSelect + ", units=" + units
-                + ", values=" + values + "]";
+        return "Demographic [categoryName=" + categoryName + ", id=" + id + ", multipleSelect=" + multipleSelect
+                + ", units=" + units + ", values=" + values + "]";
     }
 }

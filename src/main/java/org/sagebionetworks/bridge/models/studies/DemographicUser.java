@@ -40,8 +40,8 @@ public class DemographicUser implements BridgeEntity {
 
     // use Map for easy JSON serialization
     @Nonnull
-    @OneToMany(mappedBy = "demographicUser", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
-    @MapKey(name = "demographicId.categoryName")
+    @OneToMany(mappedBy = "demographicUser", fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
+    @MapKey(name = "categoryName")
     private Map<String, Demographic> demographics;
 
     public DemographicUser() {
