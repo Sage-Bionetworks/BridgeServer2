@@ -79,7 +79,7 @@ public class HibernateDemographicDao implements DemographicDao {
             }
             return query.uniqueResult();
         });
-        if (null == existingDemographicUser) {
+        if (existingDemographicUser == null) {
             throw new BadRequestException("no user demographics were found with the specified parameters");
         }
         return existingDemographicUser;

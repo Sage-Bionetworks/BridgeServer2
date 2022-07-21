@@ -36,17 +36,17 @@ public class DemographicUserValidator implements Validator {
             errors.rejectValue("values", CANNOT_BE_NULL);
         }
         for (Map.Entry<String, Demographic> entry : demographicUser.getDemographics().entrySet()) {
-            if (null == entry.getKey()) {
+            if (entry.getKey() == null) {
                 errors.reject("keys in demographics must not be null");
                 continue;
             }
-            if (null == entry.getValue()) {
+            if (entry.getValue() == null) {
                 errors.reject("child Demographics must not be null");
                 continue;
             }
             Validate.entity(DemographicValidator.INSTANCE, errors, entry.getValue());
             // null check error for demographicId itself occurs in DemographicValidator
-            if (null != entry.getValue().getDemographicId()) {
+            if (entry.getValue().getDemographicId() != null) {
                 if (!entry.getKey().equals(entry.getValue().getDemographicId().getCategoryName())) {
                     errors.reject("keys in demographics must match the corresponding Demographic's categoryName");
                 }

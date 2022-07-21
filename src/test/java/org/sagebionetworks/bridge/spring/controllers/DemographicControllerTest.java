@@ -11,6 +11,7 @@ import static org.testng.Assert.assertNull;
 import static org.testng.Assert.fail;
 
 import java.io.IOException;
+import java.util.Optional;
 
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -70,7 +71,7 @@ public class DemographicControllerTest {
         DemographicUser demographicUser = new DemographicUser();
         when(controller.parseJson(DemographicUser.class)).thenReturn(demographicUser);
 
-        controller.saveDemographicUser("study1", "user1");
+        controller.saveDemographicUser(Optional.of("study1"), "user1");
 
         verify(controller).parseJson(DemographicUser.class);
         verify(demographicService).saveDemographicUser(demographicUser);
@@ -84,7 +85,7 @@ public class DemographicControllerTest {
         when(controller.parseJson(DemographicUser.class)).thenReturn(null);
 
         try {
-            controller.saveDemographicUser("study1", "user1");
+            controller.saveDemographicUser(Optional.of("study1"), "user1");
             fail("should have thrown a JSON parsing exception");
         } catch (BadRequestException e) {
         }
@@ -99,6 +100,6 @@ public class DemographicControllerTest {
                 .thenThrow(MismatchedInputException.from(new JsonFactory().createParser("[]"), DemographicUser.class,
                         "bad json"));
 
-        controller.saveDemographicUser("study1", "user1");
+        controller.saveDemographicUser(Optional.of("study1"), "user1");
     }
 }

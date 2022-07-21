@@ -19,7 +19,7 @@ public class DemographicValidator implements Validator {
     @Override
     public void validate(Object target, Errors errors) {
         Demographic demographic = (Demographic) target;
-        if (null == demographic.getDemographicId()) {
+        if (demographic.getDemographicId() == null) {
             errors.rejectValue("demographicId", CANNOT_BE_NULL);
         } else {
             if (StringUtils.isBlank(demographic.getDemographicId().getDemographicUserId())) {

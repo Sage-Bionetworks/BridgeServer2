@@ -29,22 +29,22 @@ public class DemographicUserDeserializer extends JsonDeserializer<DemographicUse
         DemographicAssessmentResults results = p.readValueAs(DemographicAssessmentResults.class);
         Map<String, Demographic> demographics = new ConcurrentHashMap<>();
         DemographicUser demographicUser = new DemographicUser(null, null, null, null, demographics);
-        if (null != results.getStepHistory()) {
+        if (results.getStepHistory() != null) {
             for (DemographicAssessmentResultStep resultStep : results.getStepHistory()) {
-                if (null == resultStep) {
+                if (resultStep == null) {
                     continue;
                 }
-                if (null != resultStep.getValue()) {
+                if (resultStep.getValue() != null) {
                     // replace null with DemographicValue(null)
                     for (ListIterator<DemographicValue> iter = resultStep.getValue().listIterator(); iter.hasNext();) {
-                        if (null == iter.next()) {
+                        if (iter.next() == null) {
                             iter.set(new DemographicValue(null));
                         }
                     }
                 }
                 demographics.put(resultStep.getIdentifier(),
                         new Demographic(new DemographicId(null, resultStep.getIdentifier()), demographicUser,
-                                null != resultStep.getAnswerType()
+                                resultStep.getAnswerType() != null
                                         && resultStep.getAnswerType().equalsIgnoreCase(MULTIPLE_SELECT_STEP_TYPE),
                                 resultStep.getValue(), null));
             }

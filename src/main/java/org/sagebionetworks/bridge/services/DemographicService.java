@@ -26,7 +26,7 @@ public class DemographicService {
     public void saveDemographicUser(DemographicUser demographicUser) {
         String existingDemographicUserId = demographicDao.getDemographicUserId(demographicUser.getAppId(),
                 demographicUser.getStudyId(), demographicUser.getUserId());
-        if (null == existingDemographicUserId) {
+        if (existingDemographicUserId == null) {
             demographicUser.setId(generateGuid());
         } else {
             demographicUser.setId(existingDemographicUserId);
