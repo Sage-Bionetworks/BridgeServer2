@@ -36,13 +36,24 @@ public class DemographicUserValidator implements Validator {
             errors.rejectValue("values", CANNOT_BE_NULL);
         }
         for (Map.Entry<String, Demographic> entry : demographicUser.getDemographics().entrySet()) {
-            if (!entry.getKey().equals(entry.getValue().getDemographicId().getCategoryName())) {
-                errors.reject("keys in demographics must match the corresponding Demographic's categoryName");
+            if (null == entry.getKey()) {
+                errors.reject("keys in demographics must not be null");
+                continue;
             }
-            if (!entry.getValue().getDemographicId().getDemographicUserId().equals(demographicUser.getId())) {
-                errors.reject("child Demographic must have demographicUserId matching id of parent DemographicUser");
+            if (null == entry.getValue()) {
+                errors.reject("child Demographics must not be null");
+                continue;
             }
             Validate.entity(DemographicValidator.INSTANCE, errors, entry.getValue());
+            // null check error for demographicId itself occurs in DemographicValidator
+            if (null != entry.getValue().getDemographicId()) {
+                if (!entry.getKey().equals(entry.getValue().getDemographicId().getCategoryName())) {
+                    errors.reject("keys in demographics must match the corresponding Demographic's categoryName");
+                }
+                if (!entry.getValue().getDemographicId().getDemographicUserId().equals(demographicUser.getId())) {
+                    errors.reject("child Demographic must have demographicUserId matching id of parent DemographicUser");
+                }
+            }
         }
     }
 }

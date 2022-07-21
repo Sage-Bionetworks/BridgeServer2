@@ -12,6 +12,7 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.DemographicUser;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.services.DemographicService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,6 +25,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class DemographicController extends BaseController {
     private DemographicService demographicService;
+
+    @Autowired
+    public final void setDemographicService(DemographicService demographicService) {
+        this.demographicService = demographicService;
+    }
 
     // Save/update all demographics for a user
     @PostMapping("/v5/studies/{studyId}/participants/{userId}/demographics")

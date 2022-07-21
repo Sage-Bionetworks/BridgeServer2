@@ -19,11 +19,15 @@ public class DemographicValidator implements Validator {
     @Override
     public void validate(Object target, Errors errors) {
         Demographic demographic = (Demographic) target;
-        if (StringUtils.isBlank(demographic.getDemographicId().getDemographicUserId())) {
-            errors.rejectValue("demographicUserId", CANNOT_BE_NULL_OR_EMPTY);
-        }
-        if (StringUtils.isBlank(demographic.getDemographicId().getCategoryName())) {
-            errors.rejectValue("categoryName", CANNOT_BE_NULL_OR_EMPTY);
+        if (null == demographic.getDemographicId()) {
+            errors.rejectValue("demographicId", CANNOT_BE_NULL);
+        } else {
+            if (StringUtils.isBlank(demographic.getDemographicId().getDemographicUserId())) {
+                errors.rejectValue("demographicUserId", CANNOT_BE_NULL_OR_EMPTY);
+            }
+            if (StringUtils.isBlank(demographic.getDemographicId().getCategoryName())) {
+                errors.rejectValue("categoryName", CANNOT_BE_NULL_OR_EMPTY);
+            }
         }
         if (demographic.getValues() == null) {
             errors.rejectValue("values", CANNOT_BE_NULL);

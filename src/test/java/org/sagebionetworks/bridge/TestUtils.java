@@ -161,7 +161,7 @@ public class TestUtils {
         for (Method method : methods) {
             if (method.getName().equals(methodName)) {
                 A ann = AnnotationUtils.findAnnotation(method, annClazz);
-                assertNotNull(ann);
+                assertNotNull(ann, "could not find annotation " + annClazz.getSimpleName() + " on method " + method);
                 // If this is a rest controller and the method returns a String, then it 
                 // should be annotated with a produces property that sets the mime type to 
                 // JSON. Otherwise it won't return JSON unless the client sends the correct

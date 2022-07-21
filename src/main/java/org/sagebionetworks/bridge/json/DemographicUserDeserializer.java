@@ -1,10 +1,10 @@
 package org.sagebionetworks.bridge.json;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.sagebionetworks.bridge.models.studies.Demographic;
 import org.sagebionetworks.bridge.models.studies.DemographicId;
@@ -27,7 +27,7 @@ public class DemographicUserDeserializer extends JsonDeserializer<DemographicUse
     public DemographicUser deserialize(JsonParser p, DeserializationContext ctxt)
             throws IOException, JsonProcessingException {
         DemographicAssessmentResults results = p.readValueAs(DemographicAssessmentResults.class);
-        Map<String, Demographic> demographics = new HashMap<>();
+        Map<String, Demographic> demographics = new ConcurrentHashMap<>();
         DemographicUser demographicUser = new DemographicUser(null, null, null, null, demographics);
         if (null != results.getStepHistory()) {
             for (DemographicAssessmentResultStep resultStep : results.getStepHistory()) {
