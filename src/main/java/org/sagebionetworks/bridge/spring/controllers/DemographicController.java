@@ -23,6 +23,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.fasterxml.jackson.databind.exc.MismatchedInputException;
+
 @CrossOrigin
 @RestController
 public class DemographicController extends BaseController {
@@ -33,13 +35,15 @@ public class DemographicController extends BaseController {
         this.demographicService = demographicService;
     }
 
+    // TODO convert this endpoint to normal model
     // Save/update all demographics for a user
-    @PostMapping({ "/v5/studies/{studyId}/participants/{userId}/demographics",
+    @PostMapping({ "/v5/studies/{studyId}/participants/{userId}/demographics", // TODO check version
             "/v1/apps/self/participants/{userId}/demographics" })
     public void saveDemographicUser(@PathVariable(required = false) Optional<String> studyId,
-            @PathVariable String userId) {
+            @PathVariable String userId) throws MismatchedInputException, BadRequestException {
         String studyIdNull = studyId.orElse(null);
 
+        // TODO researchers, study coordinators
         UserSession session = getAdministrativeSession();
         checkAccountExistsInStudy(session.getAppId(), studyIdNull, userId);
 
@@ -53,11 +57,13 @@ public class DemographicController extends BaseController {
         demographicService.saveDemographicUser(demographicUser);
     }
 
+    // TODO separate endpoint for assessment model
+
     // Delete a specific demographic for a user
     @DeleteMapping({ "/v5/studies/{studyId}/participants/{userId}/demographics/{demographicId}",
             "/v1/apps/self/participants/{userId}/demographics/{demographicId}" })
     public void deleteDemographic(@PathVariable(required = false) Optional<String> studyId, @PathVariable String userId,
-            @PathVariable String demographicId) {
+            @PathVariable String demographicId) throws EntityNotFoundException {
         String studyIdNull = studyId.orElse(null);
 
         UserSession session = getAdministrativeSession();
@@ -70,7 +76,7 @@ public class DemographicController extends BaseController {
     @DeleteMapping({ "/v5/studies/{studyId}/participants/{userId}/demographics",
             "/v1/apps/self/participants/{userId}/demographics" })
     public void deleteDemographicUser(@PathVariable(required = false) Optional<String> studyId,
-            @PathVariable String userId) {
+            @PathVariable String userId) throws EntityNotFoundException {
         String studyIdNull = studyId.orElse(null);
 
         UserSession session = getAdministrativeSession();
@@ -83,7 +89,7 @@ public class DemographicController extends BaseController {
     @GetMapping({ "/v5/studies/{studyId}/participants/{userId}/demographics",
             "/v1/apps/self/participants/{userId}/demographics" })
     public DemographicUser getDemographicUser(@PathVariable(required = false) Optional<String> studyId,
-            @PathVariable String userId) {
+            @PathVariable String userId) throws EntityNotFoundException {
         String studyIdNull = studyId.orElse(null);
 
         UserSession session = getAdministrativeSession();
@@ -97,7 +103,7 @@ public class DemographicController extends BaseController {
     @GetMapping({ "/v5/studies/{studyId}/participants/demographics", "/v1/apps/self/participants/demographics" })
     public PagedResourceList<DemographicUser> getDemographicUsers(
             @PathVariable(required = false) Optional<String> studyId,
-            @RequestParam(required = false) String offsetBy, @RequestParam(required = false) String pageSize) {
+            @RequestParam(required = false) String offsetBy, @RequestParam(required = false) String pageSize) throws BadRequestException {
         String studyIdNull = studyId.orElse(null);
 
         UserSession session = getAdministrativeSession();
@@ -107,7 +113,7 @@ public class DemographicController extends BaseController {
         return demographicService.getDemographicUsers(session.getAppId(), studyIdNull, offsetInt, pageSizeInt);
     }
 
-    private void checkAccountExistsInStudy(String appId, String studyId, String userId) throws EntityNotFoundException {
+    public void checkAccountExistsInStudy(String appId, String studyId, String userId) throws EntityNotFoundException {
         AccountId accountId = BridgeUtils.parseAccountId(appId, userId);
         Account account = accountService.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));

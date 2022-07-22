@@ -1,4 +1,4 @@
-package org.sagebionetworks.bridge.services;
+package org.sagebionetworks.bridge.validators;
 
 public class DemographicValidatorTest {
     
