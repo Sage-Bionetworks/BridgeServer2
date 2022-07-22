@@ -12,6 +12,7 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.DemographicUser;
+import org.sagebionetworks.bridge.models.studies.DemographicUserAssessment;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.services.DemographicService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,11 +36,10 @@ public class DemographicController extends BaseController {
         this.demographicService = demographicService;
     }
 
-    // TODO convert this endpoint to normal model
     // Save/update all demographics for a user
     @PostMapping({ "/v5/studies/{studyId}/participants/{userId}/demographics", // TODO check version
             "/v1/apps/self/participants/{userId}/demographics" })
-    public void saveDemographicUser(@PathVariable(required = false) Optional<String> studyId,
+    public DemographicUser saveDemographicUser(@PathVariable(required = false) Optional<String> studyId,
             @PathVariable String userId) throws MismatchedInputException, BadRequestException {
         String studyIdNull = studyId.orElse(null);
 
@@ -54,10 +54,30 @@ public class DemographicController extends BaseController {
         demographicUser.setAppId(session.getAppId());
         demographicUser.setStudyId(studyIdNull);
         demographicUser.setUserId(userId);
-        demographicService.saveDemographicUser(demographicUser);
+        return demographicService.saveDemographicUser(demographicUser);
     }
 
-    // TODO separate endpoint for assessment model
+    // TODO convert this endpoint to normal model
+    // Save/update all demographics for a user
+    @PostMapping({ "/v5/studies/{studyId}/participants/{userId}/demographics/assessment", // TODO check version
+            "/v1/apps/self/participants/{userId}/demographics/assessment" })
+    public DemographicUser saveDemographicUserAssessment(@PathVariable(required = false) Optional<String> studyId,
+            @PathVariable String userId) throws MismatchedInputException, BadRequestException {
+        String studyIdNull = studyId.orElse(null);
+
+        // TODO researchers, study coordinators
+        UserSession session = getAdministrativeSession();
+        checkAccountExistsInStudy(session.getAppId(), studyIdNull, userId);
+
+        DemographicUser demographicUser = parseJson(DemographicUserAssessment.class).getDemographicUser();
+        if (demographicUser == null) {
+            throw new BadRequestException("invalid JSON for user demographics");
+        }
+        demographicUser.setAppId(session.getAppId());
+        demographicUser.setStudyId(studyIdNull);
+        demographicUser.setUserId(userId);
+        return demographicService.saveDemographicUser(demographicUser);
+    }
 
     // Delete a specific demographic for a user
     @DeleteMapping({ "/v5/studies/{studyId}/participants/{userId}/demographics/{demographicId}",
@@ -103,7 +123,8 @@ public class DemographicController extends BaseController {
     @GetMapping({ "/v5/studies/{studyId}/participants/demographics", "/v1/apps/self/participants/demographics" })
     public PagedResourceList<DemographicUser> getDemographicUsers(
             @PathVariable(required = false) Optional<String> studyId,
-            @RequestParam(required = false) String offsetBy, @RequestParam(required = false) String pageSize) throws BadRequestException {
+            @RequestParam(required = false) String offsetBy, @RequestParam(required = false) String pageSize)
+            throws BadRequestException {
         String studyIdNull = studyId.orElse(null);
 
         UserSession session = getAdministrativeSession();

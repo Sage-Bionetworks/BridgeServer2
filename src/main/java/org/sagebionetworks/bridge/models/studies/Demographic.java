@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.models.studies;
 
 import java.util.List;
+import java.util.ListIterator;
 
 import javax.annotation.Nonnull;
 import javax.persistence.CollectionTable;
@@ -16,6 +17,7 @@ import org.sagebionetworks.bridge.models.BridgeEntity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @Entity
 @Table(name = "Demographics")
@@ -30,6 +32,7 @@ public class Demographic implements BridgeEntity {
     DemographicUser demographicUser;
 
     @Nonnull
+    @JsonIgnore // used as key to parent DemographicUser map instead
     String categoryName;
 
     @Nonnull
@@ -92,7 +95,16 @@ public class Demographic implements BridgeEntity {
         return values;
     }
 
+    @JsonProperty("values")
     public void setValues(List<DemographicValue> values) {
+        if (values != null) {
+            // replace null with DemographicValue(null)
+            for (ListIterator<DemographicValue> iter = values.listIterator(); iter.hasNext();) {
+                if (iter.next() == null) {
+                    iter.set(new DemographicValue(null));
+                }
+            }
+        }
         this.values = values;
     }
 

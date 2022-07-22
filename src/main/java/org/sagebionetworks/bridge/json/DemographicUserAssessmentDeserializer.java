@@ -8,6 +8,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.sagebionetworks.bridge.models.studies.Demographic;
 import org.sagebionetworks.bridge.models.studies.DemographicUser;
+import org.sagebionetworks.bridge.models.studies.DemographicUserAssessment;
 import org.sagebionetworks.bridge.models.studies.DemographicValue;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -17,13 +18,14 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonMappingException;
 
 // deserializes from assessment format
-public class DemographicUserDeserializer extends JsonDeserializer<DemographicUser> {
+public class DemographicUserAssessmentDeserializer extends JsonDeserializer<DemographicUserAssessment> {
     private final String MULTIPLE_SELECT_STEP_TYPE = "array";
 
     @Override
-    public DemographicUser deserialize(JsonParser p, DeserializationContext ctxt)
+    public DemographicUserAssessment deserialize(JsonParser p, DeserializationContext ctxt)
             throws IOException, JsonProcessingException {
         DemographicAssessmentResults results = p.readValueAs(DemographicAssessmentResults.class);
         Map<String, Demographic> demographics = new ConcurrentHashMap<>();
@@ -41,14 +43,17 @@ public class DemographicUserDeserializer extends JsonDeserializer<DemographicUse
                         }
                     }
                 }
+                if (resultStep.getAnswerType() == null) {
+                    throw new JsonMappingException(p, "answerType containing type must be included");
+                }
                 demographics.put(resultStep.getIdentifier(),
                         new Demographic(null, demographicUser, resultStep.getIdentifier(),
-                                resultStep.getAnswerType() != null
-                                        && resultStep.getAnswerType().equalsIgnoreCase(MULTIPLE_SELECT_STEP_TYPE),
+                                resultStep.getAnswerType().equalsIgnoreCase(MULTIPLE_SELECT_STEP_TYPE),
                                 resultStep.getValue(), null));
             }
         }
-        return demographicUser;
+        DemographicUserAssessment demographicUserAssessment = new DemographicUserAssessment(demographicUser);
+        return demographicUserAssessment;
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)

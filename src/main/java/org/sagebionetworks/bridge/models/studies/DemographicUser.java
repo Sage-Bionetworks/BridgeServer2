@@ -12,15 +12,13 @@ import javax.persistence.MapKey;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
-import org.sagebionetworks.bridge.json.DemographicUserDeserializer;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @Entity
 @Table(name = "DemographicsUsers")
-@JsonDeserialize(using = DemographicUserDeserializer.class)
 public class DemographicUser implements BridgeEntity {
     @Nonnull
     @Id
@@ -92,7 +90,15 @@ public class DemographicUser implements BridgeEntity {
         return demographics;
     }
 
+    @JsonProperty("demographics")
     public void setDemographics(Map<String, Demographic> demographics) {
+        if (demographics != null) {
+            for (Map.Entry<String, Demographic> entry : demographics.entrySet()) {
+                if (entry.getValue() != null) {
+                    entry.getValue().setCategoryName(entry.getKey());
+                }
+            }
+        }
         this.demographics = demographics;
     }
 
