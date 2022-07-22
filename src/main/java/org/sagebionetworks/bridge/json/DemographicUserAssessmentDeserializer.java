@@ -36,10 +36,11 @@ public class DemographicUserAssessmentDeserializer extends JsonDeserializer<Demo
                     continue;
                 }
                 if (resultStep.getValue() != null) {
-                    // replace null with DemographicValue(null)
+                    // remove null
                     for (ListIterator<DemographicValue> iter = resultStep.getValue().listIterator(); iter.hasNext();) {
-                        if (iter.next() == null) {
-                            iter.set(new DemographicValue(null));
+                        DemographicValue next = iter.next();
+                        if (next == null || next.getValue() == null) {
+                            iter.remove();
                         }
                     }
                 }

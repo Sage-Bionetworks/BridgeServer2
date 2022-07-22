@@ -98,10 +98,11 @@ public class Demographic implements BridgeEntity {
     @JsonProperty("values")
     public void setValues(List<DemographicValue> values) {
         if (values != null) {
-            // replace null with DemographicValue(null)
+            // remove null
             for (ListIterator<DemographicValue> iter = values.listIterator(); iter.hasNext();) {
-                if (iter.next() == null) {
-                    iter.set(new DemographicValue(null));
+                DemographicValue next = iter.next();
+                if (next == null || next.getValue() == null) {
+                    iter.remove();
                 }
             }
         }

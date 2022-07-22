@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.json;
 
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNull;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -109,7 +108,6 @@ public class DemographicUserSerializerDeserializerTest {
         demographicUser.getDemographics().put("category2", demographic2);
         Demographic demographic3 = new Demographic(null, demographicUser, "category3", true, new ArrayList<>(),
                 "testunits");
-        demographic3.getValues().add(new DemographicValue(null));
         demographicUser.getDemographics().put("category3", demographic3);
 
         assertEquals(new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false).readValue(
@@ -138,9 +136,7 @@ public class DemographicUserSerializerDeserializerTest {
                         "        \"category3\": {" +
                         "            \"unknown field\": null," +
                         "            \"multipleSelect\": true," +
-                        "            \"values\": [" +
-                        "                null" +
-                        "            ]," +
+                        "            \"values\": []," +
                         "            \"units\": \"testunits\"" +
                         "        }" +
                         "    }" +

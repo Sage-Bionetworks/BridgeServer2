@@ -5,8 +5,10 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import java.util.Optional;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
@@ -38,14 +40,23 @@ public class DemographicController extends BaseController {
 
     // Save/update all demographics for a user
     @PostMapping({ "/v5/studies/{studyId}/participants/{userId}/demographics", // TODO check version
-            "/v1/apps/self/participants/{userId}/demographics" })
+            "/v5/studies/{studyId}/participants/self/demographics",
+            "/v1/apps/self/participants/{userId}/demographics",
+            "/v1/apps/self/participants/self/demographics" })
     public DemographicUser saveDemographicUser(@PathVariable(required = false) Optional<String> studyId,
-            @PathVariable String userId) throws MismatchedInputException, BadRequestException {
+            @PathVariable(required = false) Optional<String> userId) throws MismatchedInputException, BadRequestException {
         String studyIdNull = studyId.orElse(null);
 
-        // TODO researchers, study coordinators
-        UserSession session = getAdministrativeSession();
-        checkAccountExistsInStudy(session.getAppId(), studyIdNull, userId);
+        UserSession session;
+        String userIdUnwrapped;
+        if (userId.isPresent()) {
+            session = getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
+            userIdUnwrapped = userId.get();
+        } else {
+            session = getAuthenticatedAndConsentedSession();
+            userIdUnwrapped = session.getId();
+        }
+        checkAccountExistsInStudy(session.getAppId(), studyIdNull, userIdUnwrapped);
 
         DemographicUser demographicUser = parseJson(DemographicUser.class);
         if (demographicUser == null) {
@@ -53,29 +64,38 @@ public class DemographicController extends BaseController {
         }
         demographicUser.setAppId(session.getAppId());
         demographicUser.setStudyId(studyIdNull);
-        demographicUser.setUserId(userId);
+        demographicUser.setUserId(userIdUnwrapped);
         return demographicService.saveDemographicUser(demographicUser);
     }
 
-    // TODO convert this endpoint to normal model
     // Save/update all demographics for a user
     @PostMapping({ "/v5/studies/{studyId}/participants/{userId}/demographics/assessment", // TODO check version
-            "/v1/apps/self/participants/{userId}/demographics/assessment" })
+            "/v5/studies/{studyId}/participants/self/demographics/assessment",
+            "/v1/apps/self/participants/{userId}/demographics/assessment",
+            "/v1/apps/self/participants/self/demographics/assessment" })
     public DemographicUser saveDemographicUserAssessment(@PathVariable(required = false) Optional<String> studyId,
-            @PathVariable String userId) throws MismatchedInputException, BadRequestException {
+            @PathVariable(required = false) Optional<String> userId) throws MismatchedInputException, BadRequestException {
         String studyIdNull = studyId.orElse(null);
 
-        // TODO researchers, study coordinators
-        UserSession session = getAdministrativeSession();
-        checkAccountExistsInStudy(session.getAppId(), studyIdNull, userId);
+        UserSession session;
+        String userIdUnwrapped;
+        if (userId.isPresent()) {
+            session = getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
+            userIdUnwrapped = userId.get();
+        } else {
+            session = getAuthenticatedAndConsentedSession();
+            userIdUnwrapped = session.getId();
+        }
+        checkAccountExistsInStudy(session.getAppId(), studyIdNull, userIdUnwrapped);
 
-        DemographicUser demographicUser = parseJson(DemographicUserAssessment.class).getDemographicUser();
-        if (demographicUser == null) {
+        DemographicUserAssessment demographicUserAssessment = parseJson(DemographicUserAssessment.class);
+        if (demographicUserAssessment == null) {
             throw new BadRequestException("invalid JSON for user demographics");
         }
+        DemographicUser demographicUser = demographicUserAssessment.getDemographicUser();
         demographicUser.setAppId(session.getAppId());
         demographicUser.setStudyId(studyIdNull);
-        demographicUser.setUserId(userId);
+        demographicUser.setUserId(userIdUnwrapped);
         return demographicService.saveDemographicUser(demographicUser);
     }
 
@@ -86,7 +106,7 @@ public class DemographicController extends BaseController {
             @PathVariable String demographicId) throws EntityNotFoundException {
         String studyIdNull = studyId.orElse(null);
 
-        UserSession session = getAdministrativeSession();
+        UserSession session = getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
         checkAccountExistsInStudy(session.getAppId(), studyIdNull, userId);
 
         demographicService.deleteDemographic(session.getAppId(), studyIdNull, userId, demographicId);
@@ -99,7 +119,7 @@ public class DemographicController extends BaseController {
             @PathVariable String userId) throws EntityNotFoundException {
         String studyIdNull = studyId.orElse(null);
 
-        UserSession session = getAdministrativeSession();
+        UserSession session = getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
         checkAccountExistsInStudy(session.getAppId(), studyIdNull, userId);
 
         demographicService.deleteDemographicUser(session.getAppId(), studyIdNull, userId);
@@ -112,7 +132,7 @@ public class DemographicController extends BaseController {
             @PathVariable String userId) throws EntityNotFoundException {
         String studyIdNull = studyId.orElse(null);
 
-        UserSession session = getAdministrativeSession();
+        UserSession session = getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
         checkAccountExistsInStudy(session.getAppId(), studyIdNull, userId);
 
         return demographicService.getDemographicUser(session.getAppId(), studyIdNull, userId);
@@ -134,7 +154,8 @@ public class DemographicController extends BaseController {
         return demographicService.getDemographicUsers(session.getAppId(), studyIdNull, offsetInt, pageSizeInt);
     }
 
-    public void checkAccountExistsInStudy(String appId, String studyId, String userId) throws EntityNotFoundException {
+    public void checkAccountExistsInStudy(String appId, String studyId, String userId)
+            throws EntityNotFoundException {
         AccountId accountId = BridgeUtils.parseAccountId(appId, userId);
         Account account = accountService.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));

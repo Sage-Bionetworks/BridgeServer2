@@ -73,7 +73,6 @@ public class DemographicUserAssessmentDeserializerTest {
         demographicUser.getDemographics().put("category2", demographic2);
         Demographic demographic3 = new Demographic(null, demographicUser, "category3", true, new ArrayList<>(),
                 null);
-        demographic3.getValues().add(new DemographicValue(null));
         demographicUser.getDemographics().put("category3", demographic3);
 
         assertEquals(new ObjectMapper().readValue(
@@ -110,9 +109,7 @@ public class DemographicUserAssessmentDeserializerTest {
                         "                \"type\": \"ArRaY\"," +
                         "                \"unknown field\": null" +
                         "            }," +
-                        "            \"value\": [" +
-                        "                null" +
-                        "            ]" +
+                        "            \"value\": []" +
                         "        }" +
                         "    ]" +
                         "}",
