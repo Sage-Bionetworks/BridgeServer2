@@ -12,7 +12,6 @@ import java.util.ArrayList;
 import org.sagebionetworks.bridge.models.studies.Demographic;
 import org.sagebionetworks.bridge.models.studies.DemographicUser;
 import org.sagebionetworks.bridge.models.studies.DemographicValue;
-import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -20,12 +19,7 @@ public class DemographicValidatorTest {
     private Demographic demographicMultipleSelect;
     private Demographic demographicNotMultipleSelect;
 
-    private DemographicValidator demographicValidator;
-
-    @BeforeClass
-    public void beforeClass() {
-        demographicValidator = new DemographicValidator();
-    }
+    private DemographicValidator demographicValidator = new DemographicValidator();
 
     @BeforeMethod
     public void beforeMethod() {
