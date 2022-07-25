@@ -45,7 +45,7 @@ public class DemographicController extends BaseController {
             "/v1/apps/self/participants/self/demographics" })
     public DemographicUser saveDemographicUser(@PathVariable(required = false) Optional<String> studyId,
             @PathVariable(required = false) Optional<String> userId) throws MismatchedInputException, BadRequestException {
-        String studyIdNull = studyId.orElse(null);
+        String studyIdNullable = studyId.orElse(null);
 
         UserSession session;
         String userIdUnwrapped;
@@ -56,14 +56,14 @@ public class DemographicController extends BaseController {
             session = getAuthenticatedAndConsentedSession();
             userIdUnwrapped = session.getId();
         }
-        checkAccountExistsInStudy(session.getAppId(), studyIdNull, userIdUnwrapped);
+        checkAccountExistsInStudy(session.getAppId(), studyIdNullable, userIdUnwrapped);
 
         DemographicUser demographicUser = parseJson(DemographicUser.class);
         if (demographicUser == null) {
             throw new BadRequestException("invalid JSON for user demographics");
         }
         demographicUser.setAppId(session.getAppId());
-        demographicUser.setStudyId(studyIdNull);
+        demographicUser.setStudyId(studyIdNullable);
         demographicUser.setUserId(userIdUnwrapped);
         return demographicService.saveDemographicUser(demographicUser);
     }
@@ -75,7 +75,7 @@ public class DemographicController extends BaseController {
             "/v1/apps/self/participants/self/demographics/assessment" })
     public DemographicUser saveDemographicUserAssessment(@PathVariable(required = false) Optional<String> studyId,
             @PathVariable(required = false) Optional<String> userId) throws MismatchedInputException, BadRequestException {
-        String studyIdNull = studyId.orElse(null);
+        String studyIdNullable = studyId.orElse(null);
 
         UserSession session;
         String userIdUnwrapped;
@@ -86,7 +86,7 @@ public class DemographicController extends BaseController {
             session = getAuthenticatedAndConsentedSession();
             userIdUnwrapped = session.getId();
         }
-        checkAccountExistsInStudy(session.getAppId(), studyIdNull, userIdUnwrapped);
+        checkAccountExistsInStudy(session.getAppId(), studyIdNullable, userIdUnwrapped);
 
         DemographicUserAssessment demographicUserAssessment = parseJson(DemographicUserAssessment.class);
         if (demographicUserAssessment == null) {
@@ -94,7 +94,7 @@ public class DemographicController extends BaseController {
         }
         DemographicUser demographicUser = demographicUserAssessment.getDemographicUser();
         demographicUser.setAppId(session.getAppId());
-        demographicUser.setStudyId(studyIdNull);
+        demographicUser.setStudyId(studyIdNullable);
         demographicUser.setUserId(userIdUnwrapped);
         return demographicService.saveDemographicUser(demographicUser);
     }
