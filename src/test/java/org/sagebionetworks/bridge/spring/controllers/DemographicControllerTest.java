@@ -1,24 +1,22 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
-import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
-import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
-import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.sagebionetworks.bridge.TestConstants.GUID;
+import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
+import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
+import static org.sagebionetworks.bridge.TestUtils.assertDelete;
+import static org.sagebionetworks.bridge.TestUtils.assertGet;
+import static org.sagebionetworks.bridge.TestUtils.assertPost;
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertNull;
 import static org.testng.Assert.fail;
 
-import java.io.IOException;
 import java.util.Optional;
 
 import javax.servlet.http.HttpServletRequest;
@@ -31,29 +29,19 @@ import org.mockito.Spy;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Demographic;
 import org.sagebionetworks.bridge.models.studies.DemographicUser;
 import org.sagebionetworks.bridge.models.studies.DemographicUserAssessment;
 import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.DemographicService;
-import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
-
-import static org.sagebionetworks.bridge.TestUtils.assertCreate;
-import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
-import static org.sagebionetworks.bridge.TestUtils.assertDelete;
-import static org.sagebionetworks.bridge.TestUtils.assertGet;
-import static org.sagebionetworks.bridge.TestUtils.assertPost;
-import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
-import org.sagebionetworks.bridge.models.accounts.Account;
-import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 
 public class DemographicControllerTest {
     private static final String TEST_DEMOGRAPHIC_ID = "test-demographic-id";

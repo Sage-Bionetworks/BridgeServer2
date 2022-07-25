@@ -3,11 +3,13 @@ package org.sagebionetworks.bridge.models.studies;
 import javax.persistence.Embeddable;
 import javax.validation.constraints.NotNull;
 
+import org.sagebionetworks.bridge.models.BridgeEntity;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 @Embeddable
-public class DemographicValue {
+public class DemographicValue implements BridgeEntity {
     @NotNull
     private String value;
 
