@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.validators;
 
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL_OR_EMPTY;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateStringLength;
 
 import java.util.Map;
 
@@ -12,6 +13,9 @@ import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
 public class DemographicUserValidator implements Validator {
+    public static final String KEYS_MUST_MATCH = "keys in demographics must match the corresponding Demographic's categoryName";
+    public static final String CHILD_MUST_STORE_PARENT = "child Demographic must store correct parent";
+
     public static final DemographicUserValidator INSTANCE = new DemographicUserValidator();
 
     @Override
@@ -33,27 +37,30 @@ public class DemographicUserValidator implements Validator {
             errors.rejectValue("userId", CANNOT_BE_NULL_OR_EMPTY);
         }
         if (demographicUser.getDemographics() == null) {
-            errors.rejectValue("values", CANNOT_BE_NULL);
-        }
-        for (Map.Entry<String, Demographic> entry : demographicUser.getDemographics().entrySet()) {
-            if (entry.getKey() == null) {
-                errors.reject("keys in demographics must not be null");
-                continue;
-            }
-            if (entry.getValue() == null) {
-                errors.reject("child Demographics must not be null");
-                continue;
-            }
-            Validate.entity(DemographicValidator.INSTANCE, errors, entry.getValue());
-            // null check error for demographicId itself occurs in DemographicValidator
-            if (entry.getValue().getId() != null) {
+            errors.rejectValue("demographics", CANNOT_BE_NULL);
+        } else {
+            for (Map.Entry<String, Demographic> entry : demographicUser.getDemographics().entrySet()) {
+                if (StringUtils.isBlank(entry.getKey())) {
+                    errors.rejectValue("demographics key", CANNOT_BE_NULL_OR_EMPTY);
+                    continue;
+                }
+                if (entry.getValue() == null) {
+                    errors.rejectValue("demographics value", CANNOT_BE_NULL);
+                    continue;
+                }
+                Validate.entity(DemographicValidator.INSTANCE, errors, entry.getValue());
                 if (!entry.getKey().equals(entry.getValue().getCategoryName())) {
-                    errors.reject("keys in demographics must match the corresponding Demographic's categoryName");
+                    errors.reject(KEYS_MUST_MATCH);
                 }
-                if (!entry.getValue().getDemographicUser().equals(demographicUser)) {
-                    errors.reject("child Demographic must store correct parent");
+                if (!demographicUser.equals(entry.getValue().getDemographicUser())) {
+                    errors.reject(CHILD_MUST_STORE_PARENT);
                 }
             }
         }
+
+        validateStringLength(errors, 60, demographicUser.getId(), "id");
+        validateStringLength(errors, 60, demographicUser.getStudyId(), "studyId");
+        validateStringLength(errors, 60, demographicUser.getAppId(), "appId");
+        validateStringLength(errors, 255, demographicUser.getUserId(), "userId");
     }
 }

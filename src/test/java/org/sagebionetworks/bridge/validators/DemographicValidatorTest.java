@@ -19,7 +19,7 @@ public class DemographicValidatorTest {
     private Demographic demographicMultipleSelect;
     private Demographic demographicNotMultipleSelect;
 
-    private DemographicValidator demographicValidator = new DemographicValidator();
+    private final DemographicValidator demographicValidator = new DemographicValidator();
 
     @BeforeMethod
     public void beforeMethod() {
@@ -39,6 +39,12 @@ public class DemographicValidatorTest {
     @Test
     public void supports() {
         assertTrue(demographicValidator.supports(Demographic.class));
+    }
+
+    @Test
+    public void validNullUnits() {
+        demographicMultipleSelect.setUnits(null);
+        Validate.entityThrowingException(demographicValidator, demographicMultipleSelect);
     }
 
     @Test

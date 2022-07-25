@@ -340,11 +340,21 @@ public class TestUtils {
             Validate.entityThrowingException(validator, object);
             fail("Should have thrown exception");
         } catch(InvalidEntityException e) {
+            if (!e.getErrors().containsKey(fieldName)) {
+                fail("Did not find error messages with this fieldName");
+            }
             if (e.getErrors().get(fieldName).contains(error)) {
                 return;
             }
             fail("Did not find error message in errors object");
         }
+    }
+
+    /**
+     * Asserts that on validation, InvalidEntityException has been thrown with the correct error message.
+     */
+    public static void assertValidatorMessage(Validator validator, Object object, String error) {
+        assertValidatorMessage(validator, object, object.getClass().getSimpleName(), error);
     }
 
     public static Map<SubpopulationGuid,ConsentStatus> toMap(ConsentStatus... statuses) {

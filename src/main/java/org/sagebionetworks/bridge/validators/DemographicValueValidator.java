@@ -1,12 +1,12 @@
 package org.sagebionetworks.bridge.validators;
 
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL_OR_EMPTY;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateStringLength;
 
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.models.studies.DemographicValue;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
-import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateStringLength;
 
 public class DemographicValueValidator implements Validator {
     public static final DemographicValueValidator INSTANCE = new DemographicValueValidator();

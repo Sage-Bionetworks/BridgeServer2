@@ -10,7 +10,7 @@ import org.sagebionetworks.bridge.models.studies.DemographicValue;
 import org.testng.annotations.Test;
 
 public class DemographicValueValidatorTest {
-    private DemographicValueValidator demographicValueValidator = new DemographicValueValidator();
+    private final DemographicValueValidator demographicValueValidator = new DemographicValueValidator();
 
     @Test
     public void supports() {
