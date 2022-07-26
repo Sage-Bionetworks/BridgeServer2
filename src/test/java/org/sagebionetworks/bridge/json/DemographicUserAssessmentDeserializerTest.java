@@ -47,14 +47,17 @@ public class DemographicUserAssessmentDeserializerTest {
                 demographicUser.toString());
     }
 
-    @Test
+    @Test(expectedExceptions = JsonMappingException.class)
     public void deserializeNoAnswerType() throws JsonProcessingException, JsonMappingException {
-        
+        new ObjectMapper().readValue("{\"stepHistory\":[{\"identifier\":\"category1\",\"value\":5}]}",
+                DemographicUserAssessment.class);
     }
 
-    @Test
+    @Test(expectedExceptions = JsonMappingException.class)
     public void deserializeNoType() throws JsonProcessingException, JsonMappingException {
-
+        new ObjectMapper().readValue(
+                "{\"stepHistory\": [{\"identifier\":\"category1\",\"value\":5,\"answerType\":{}}]}",
+                DemographicUserAssessment.class);
     }
 
     @Test
