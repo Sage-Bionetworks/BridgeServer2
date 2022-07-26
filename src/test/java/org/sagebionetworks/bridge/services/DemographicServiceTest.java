@@ -11,6 +11,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
@@ -55,7 +56,7 @@ public class DemographicServiceTest {
     public void beforeMethod() {
         MockitoAnnotations.initMocks(this);
 
-        doReturn("0", IntStream.range(1, 10).mapToObj(Integer::toString).toArray()).when(demographicService)
+        doReturn("0", IntStream.range(1, 1000).mapToObj(Integer::toString).toArray()).when(demographicService)
                 .generateGuid();
     }
 
@@ -82,7 +83,7 @@ public class DemographicServiceTest {
         for (int i = 1; iter.hasNext(); i++) {
             assertEquals(Integer.toString(i), iter.next().getId());
         }
-        assertEquals(returnedDemographicUser, demographicUser);
+        assertSame(returnedDemographicUser, demographicUser);
     }
 
     @Test
@@ -116,7 +117,7 @@ public class DemographicServiceTest {
         for (int i = 0; iter.hasNext(); i++) {
             assertEquals(Integer.toString(i), iter.next().getId());
         }
-        assertEquals(returnedDemographicUser, demographicUser);
+        assertSame(returnedDemographicUser, demographicUser);
     }
 
     /**
@@ -195,7 +196,7 @@ public class DemographicServiceTest {
                 TEST_USER_ID);
 
         verify(demographicDao).getDemographicUser(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
-        assertEquals(returnedDemographicUser, demographicUser);
+        assertSame(returnedDemographicUser, demographicUser);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -213,8 +214,7 @@ public class DemographicServiceTest {
         List<DemographicUser> demographicUsers = new ArrayList<>();
         demographicUsers.add(demographicUser1);
         demographicUsers.add(demographicUser2);
-        PagedResourceList<DemographicUser> demographicUsersResourceList = new PagedResourceList<>(
-                demographicUsers, 2,
+        PagedResourceList<DemographicUser> demographicUsersResourceList = new PagedResourceList<>(demographicUsers, 2,
                 false);
         when(demographicDao.getDemographicUsers(TEST_APP_ID, TEST_STUDY_ID, 0, 5))
                 .thenReturn(demographicUsersResourceList);
@@ -223,7 +223,7 @@ public class DemographicServiceTest {
                 .getDemographicUsers(TEST_APP_ID, TEST_STUDY_ID, 0, 5);
 
         verify(demographicDao).getDemographicUsers(TEST_APP_ID, TEST_STUDY_ID, 0, 5);
-        assertEquals(returnedDemographicUsersResourceList, demographicUsersResourceList);
+        assertSame(returnedDemographicUsersResourceList, demographicUsersResourceList);
     }
 
     @Test
