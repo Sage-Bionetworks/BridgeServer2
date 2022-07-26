@@ -8,7 +8,7 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
@@ -44,15 +44,22 @@ public class DemographicController extends BaseController {
             "/v1/apps/self/participants/{userId}/demographics",
             "/v1/apps/self/participants/self/demographics" })
     public DemographicUser saveDemographicUser(@PathVariable(required = false) Optional<String> studyId,
-            @PathVariable(required = false) Optional<String> userId) throws MismatchedInputException, BadRequestException {
+            @PathVariable(required = false) Optional<String> userId)
+            throws MismatchedInputException, BadRequestException, InvalidEntityException {
         String studyIdNullable = studyId.orElse(null);
 
         UserSession session;
         String userIdUnwrapped;
-        if (userId.isPresent()) {
+        if (userId.isPresent() && studyId.isPresent()) {
+            // posted on the user's behalf at a study level
             session = getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
             userIdUnwrapped = userId.get();
+        } else if (userId.isPresent() && !studyId.isPresent()) {
+            // posted on the user's behalf at an app level
+            session = getAdministrativeSession();
+            userIdUnwrapped = userId.get();
         } else {
+            // posted by the user
             session = getAuthenticatedAndConsentedSession();
             userIdUnwrapped = session.getId();
         }
@@ -74,15 +81,22 @@ public class DemographicController extends BaseController {
             "/v1/apps/self/participants/{userId}/demographics/assessment",
             "/v1/apps/self/participants/self/demographics/assessment" })
     public DemographicUser saveDemographicUserAssessment(@PathVariable(required = false) Optional<String> studyId,
-            @PathVariable(required = false) Optional<String> userId) throws MismatchedInputException, BadRequestException {
+            @PathVariable(required = false) Optional<String> userId)
+            throws MismatchedInputException, BadRequestException, InvalidEntityException {
         String studyIdNullable = studyId.orElse(null);
 
         UserSession session;
         String userIdUnwrapped;
-        if (userId.isPresent()) {
+        if (userId.isPresent() && studyId.isPresent()) {
+            // posted on the user's behalf at a study level
             session = getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
             userIdUnwrapped = userId.get();
+        } else if (userId.isPresent() && !studyId.isPresent()) {
+            // posted on the user's behalf at an app level
+            session = getAdministrativeSession();
+            userIdUnwrapped = userId.get();
         } else {
+            // posted by the user, either at an app or study level
             session = getAuthenticatedAndConsentedSession();
             userIdUnwrapped = session.getId();
         }
@@ -106,7 +120,14 @@ public class DemographicController extends BaseController {
             @PathVariable String demographicId) throws EntityNotFoundException {
         String studyIdNull = studyId.orElse(null);
 
-        UserSession session = getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
+        UserSession session;
+        if (studyId.isPresent()) {
+            // study level demographics
+            session = getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
+        } else {
+            // app level demographics
+            session = getAdministrativeSession();
+        }
         checkAccountExistsInStudy(session.getAppId(), studyIdNull, userId);
 
         demographicService.deleteDemographic(session.getAppId(), studyIdNull, userId, demographicId);
@@ -119,7 +140,14 @@ public class DemographicController extends BaseController {
             @PathVariable String userId) throws EntityNotFoundException {
         String studyIdNull = studyId.orElse(null);
 
-        UserSession session = getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
+        UserSession session;
+        if (studyId.isPresent()) {
+            // study level demographics
+            session = getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
+        } else {
+            // app level demographics
+            session = getAdministrativeSession();
+        }
         checkAccountExistsInStudy(session.getAppId(), studyIdNull, userId);
 
         demographicService.deleteDemographicUser(session.getAppId(), studyIdNull, userId);
@@ -132,7 +160,14 @@ public class DemographicController extends BaseController {
             @PathVariable String userId) throws EntityNotFoundException {
         String studyIdNull = studyId.orElse(null);
 
-        UserSession session = getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
+        UserSession session;
+        if (studyId.isPresent()) {
+            // study level demographics
+            session = getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
+        } else {
+            // app level demographics
+            session = getAdministrativeSession();
+        }
         checkAccountExistsInStudy(session.getAppId(), studyIdNull, userId);
 
         return demographicService.getDemographicUser(session.getAppId(), studyIdNull, userId);
@@ -147,7 +182,14 @@ public class DemographicController extends BaseController {
             throws BadRequestException {
         String studyIdNull = studyId.orElse(null);
 
-        UserSession session = getAdministrativeSession();
+        UserSession session;
+        if (studyId.isPresent()) {
+            // study level demographics
+            session = getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
+        } else {
+            // app level demographics
+            session = getAdministrativeSession();
+        }
         int offsetInt = BridgeUtils.getIntOrDefault(offsetBy, 0);
         int pageSizeInt = BridgeUtils.getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
 

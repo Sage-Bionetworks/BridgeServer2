@@ -4,10 +4,13 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 
+import java.util.Optional;
+
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.DemographicDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.studies.Demographic;
 import org.sagebionetworks.bridge.models.studies.DemographicUser;
@@ -25,15 +28,19 @@ public class DemographicService {
         this.demographicDao = demographicDao;
     }
 
-    public DemographicUser saveDemographicUser(DemographicUser demographicUser) {
-        DemographicUser existingDemographicUser = demographicDao.getDemographicUser(demographicUser.getAppId(),
-                demographicUser.getStudyId(), demographicUser.getUserId());
-        if (existingDemographicUser == null) {
+    public DemographicUser saveDemographicUser(DemographicUser demographicUser) throws InvalidEntityException {
+        Optional<DemographicUser> existingDemographicUser = demographicDao.getDemographicUser(
+                demographicUser.getAppId(), demographicUser.getStudyId(), demographicUser.getUserId());
+        if (!existingDemographicUser.isPresent()) {
             demographicUser.setId(generateGuid());
         } else {
-            existingDemographicUser.getDemographics().clear();
-            demographicDao.saveDemographicUser(existingDemographicUser);
-            demographicUser.setId(existingDemographicUser.getId());
+            // need to delete previous demographics first to prevent violation unique
+            // constraint with (demographicUserId, categoryName) since the new demographics
+            // could have a categoryName which already exists
+            DemographicUser existingDemographicUserUnwrapped = existingDemographicUser.get();
+            existingDemographicUserUnwrapped.getDemographics().clear();
+            demographicDao.saveDemographicUser(existingDemographicUserUnwrapped);
+            demographicUser.setId(existingDemographicUserUnwrapped.getId());
         }
         if (demographicUser.getDemographics() != null) {
             for (Demographic demographic : demographicUser.getDemographics().values()) {
@@ -46,31 +53,27 @@ public class DemographicService {
 
     public void deleteDemographic(String appId, String studyId, String userId, String demographicId)
             throws EntityNotFoundException {
-        Demographic existingDemographic = demographicDao.getDemographic(demographicId);
-        if (existingDemographic == null) {
-            throw new EntityNotFoundException(Demographic.class);
-        }
+        Demographic existingDemographic = demographicDao.getDemographic(demographicId)
+                .orElseThrow(() -> new EntityNotFoundException(Demographic.class));
         if (!existingDemographic.getDemographicUser().getUserId().equals(userId)) {
             // user does not own this demographic
-            // just give them a 404 because we don't want to expose the existence of another user's demographic data
+            // just give them a 404 because we don't want to expose the existence of another
+            // user's demographic data
             throw new EntityNotFoundException(Demographic.class);
         }
         demographicDao.deleteDemographic(demographicId);
     }
 
     public void deleteDemographicUser(String appId, String studyId, String userId) throws EntityNotFoundException {
-        String existingDemographicUserId = demographicDao.getDemographicUserId(appId, studyId, userId);
-        if (existingDemographicUserId == null) {
-            throw new EntityNotFoundException(DemographicUser.class);
-        }
-        demographicDao.deleteDemographicUser(appId, studyId, userId);
+        String existingDemographicUserId = demographicDao.getDemographicUserId(appId, studyId, userId)
+                .orElseThrow(() -> new EntityNotFoundException(DemographicUser.class));
+        demographicDao.deleteDemographicUser(existingDemographicUserId);
     }
 
-    public DemographicUser getDemographicUser(String appId, String studyId, String userId) throws EntityNotFoundException {
-        DemographicUser existingDemographicUser = demographicDao.getDemographicUser(appId, studyId, userId);
-        if (existingDemographicUser == null) {
-            throw new EntityNotFoundException(DemographicUser.class);
-        }
+    public DemographicUser getDemographicUser(String appId, String studyId, String userId)
+            throws EntityNotFoundException {
+        DemographicUser existingDemographicUser = demographicDao.getDemographicUser(appId, studyId, userId)
+                .orElseThrow(() -> new EntityNotFoundException(DemographicUser.class));
         return existingDemographicUser;
     }
 

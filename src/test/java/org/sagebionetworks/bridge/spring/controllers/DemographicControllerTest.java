@@ -113,7 +113,7 @@ public class DemographicControllerTest {
 
         controller.saveDemographicUser(Optional.empty(), Optional.of(TEST_USER_ID));
 
-        verify(controller).getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
+        verify(controller).getAdministrativeSession();
         verify(controller).parseJson(DemographicUser.class);
         verify(demographicService).saveDemographicUser(demographicUser);
         assertEquals(demographicUser.getAppId(), TEST_APP_ID);
@@ -214,7 +214,7 @@ public class DemographicControllerTest {
 
         controller.saveDemographicUserAssessment(Optional.empty(), Optional.of(TEST_USER_ID));
 
-        verify(controller).getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
+        verify(controller).getAdministrativeSession();
         verify(controller).parseJson(DemographicUserAssessment.class);
         verify(demographicService).saveDemographicUser(demographicUser);
         assertEquals(demographicUser.getAppId(), TEST_APP_ID);
@@ -328,7 +328,7 @@ public class DemographicControllerTest {
 
         controller.deleteDemographic(Optional.empty(), TEST_USER_ID, TEST_DEMOGRAPHIC_ID);
 
-        verify(controller).getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
+        verify(controller).getAdministrativeSession();
         verify(controller).checkAccountExistsInStudy(TEST_APP_ID, null, TEST_USER_ID);
         verify(demographicService).deleteDemographic(TEST_APP_ID, null, TEST_USER_ID, TEST_DEMOGRAPHIC_ID);
     }
@@ -366,7 +366,7 @@ public class DemographicControllerTest {
 
         controller.deleteDemographicUser(Optional.empty(), TEST_USER_ID);
 
-        verify(controller).getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
+        verify(controller).getAdministrativeSession();
         verify(controller).checkAccountExistsInStudy(TEST_APP_ID, null, TEST_USER_ID);
         verify(demographicService).deleteDemographicUser(TEST_APP_ID, null, TEST_USER_ID);
     }
@@ -404,7 +404,7 @@ public class DemographicControllerTest {
 
         controller.getDemographicUser(Optional.empty(), TEST_USER_ID);
 
-        verify(controller).getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
+        verify(controller).getAdministrativeSession();
         verify(controller).checkAccountExistsInStudy(TEST_APP_ID, null, TEST_USER_ID);
         verify(demographicService).getDemographicUser(TEST_APP_ID, null, TEST_USER_ID);
     }
@@ -415,7 +415,7 @@ public class DemographicControllerTest {
 
         controller.getDemographicUsers(Optional.of(TEST_STUDY_ID), "0", "10");
 
-        verify(controller).getAdministrativeSession();
+        verify(controller).getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
         verify(demographicService).getDemographicUsers(TEST_APP_ID, TEST_STUDY_ID, 0, 10);
     }
 
@@ -435,7 +435,7 @@ public class DemographicControllerTest {
 
         controller.getDemographicUsers(Optional.of(TEST_STUDY_ID), null, null);
 
-        verify(controller).getAdministrativeSession();
+        verify(controller).getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
         verify(demographicService).getDemographicUsers(TEST_APP_ID, TEST_STUDY_ID, 0, API_DEFAULT_PAGE_SIZE);
     }
 

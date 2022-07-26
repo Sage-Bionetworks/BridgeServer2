@@ -2,12 +2,13 @@ package org.sagebionetworks.bridge.hibernate;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import javax.annotation.Resource;
 
 import org.hibernate.query.Query;
 import org.sagebionetworks.bridge.dao.DemographicDao;
-import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.hibernate.QueryBuilder.WhereClauseBuilder;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.SearchTermPredicate;
@@ -35,14 +36,12 @@ public class HibernateDemographicDao implements DemographicDao {
     }
 
     @Override
-    public void deleteDemographicUser(String appId, String studyId, String userId) {
-        String demographicUserId = getDemographicUserId(appId, studyId, userId);
+    public void deleteDemographicUser(String demographicUserId) {
         hibernateHelper.deleteById(DemographicUser.class, demographicUserId);
     }
 
-    // can return null
     @Override
-    public String getDemographicUserId(String appId, String studyId, String userId) {
+    public Optional<String> getDemographicUserId(String appId, String studyId, String userId) {
         QueryBuilder builder = new QueryBuilder();
         builder.append("SELECT du.id FROM DemographicUser du");
         WhereClauseBuilder where = builder.startWhere(SearchTermPredicate.AND);
@@ -57,11 +56,11 @@ public class HibernateDemographicDao implements DemographicDao {
             }
             return query.uniqueResult();
         });
-        return existingDemographicUserId;
+        return Optional.ofNullable(existingDemographicUserId);
     }
 
     @Override
-    public Demographic getDemographic(String demographicId) {
+    public Optional<Demographic> getDemographic(String demographicId) {
         QueryBuilder builder = new QueryBuilder();
         builder.append("FROM Demographic d");
         WhereClauseBuilder where = builder.startWhere(SearchTermPredicate.AND);
@@ -74,11 +73,11 @@ public class HibernateDemographicDao implements DemographicDao {
             }
             return query.uniqueResult();
         });
-        return existingDemographic;
+        return Optional.ofNullable(existingDemographic);
     }
 
     @Override
-    public DemographicUser getDemographicUser(String appId, String studyId, String userId) {
+    public Optional<DemographicUser> getDemographicUser(String appId, String studyId, String userId) {
         QueryBuilder builder = new QueryBuilder();
         builder.append("FROM DemographicUser du");
         WhereClauseBuilder where = builder.startWhere(SearchTermPredicate.AND);
@@ -93,7 +92,7 @@ public class HibernateDemographicDao implements DemographicDao {
             }
             return query.uniqueResult();
         });
-        return existingDemographicUser;
+        return Optional.ofNullable(existingDemographicUser);
     }
 
     @Override

@@ -1,5 +1,9 @@
 package org.sagebionetworks.bridge.dao;
 
+import java.util.Optional;
+
+import javax.persistence.EntityNotFoundException;
+
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.studies.Demographic;
 import org.sagebionetworks.bridge.models.studies.DemographicUser;
@@ -9,13 +13,13 @@ public interface DemographicDao {
 
     void deleteDemographic(String demographicId);
 
-    void deleteDemographicUser(String appId, String studyId, String userId);
+    void deleteDemographicUser(String demographicUserId);
 
-    Demographic getDemographic(String demographicId);
+    Optional<Demographic> getDemographic(String demographicId);
     
-    String getDemographicUserId(String appId, String studyId, String userId);
+    Optional<String> getDemographicUserId(String appId, String studyId, String userId);
 
-    DemographicUser getDemographicUser(String appId, String studyId, String userId);
+    Optional<DemographicUser> getDemographicUser(String appId, String studyId, String userId);
 
     PagedResourceList<DemographicUser> getDemographicUsers(String appId, String studyId, int offsetBy, int pageSize);
 }
