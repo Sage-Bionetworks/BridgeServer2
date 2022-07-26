@@ -1,12 +1,10 @@
 package org.sagebionetworks.bridge.hibernate;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import javax.annotation.Resource;
 
-import org.hibernate.query.Query;
 import org.sagebionetworks.bridge.dao.DemographicDao;
 import org.sagebionetworks.bridge.hibernate.QueryBuilder.WhereClauseBuilder;
 import org.sagebionetworks.bridge.models.PagedResourceList;
@@ -20,7 +18,7 @@ public class HibernateDemographicDao implements DemographicDao {
     private HibernateHelper hibernateHelper;
 
     @Resource(name = "mysqlHibernateHelper")
-    final void setHibernateHelper(HibernateHelper hibernateHelper) {
+    public final void setHibernateHelper(HibernateHelper hibernateHelper) {
         this.hibernateHelper = hibernateHelper;
     }
 
@@ -47,14 +45,8 @@ public class HibernateDemographicDao implements DemographicDao {
         where.append("du.appId = :appId", "appId", appId);
         where.append("du.studyId = :studyId", "studyId", studyId);
         where.append("du.userId = :userId", "userId", userId);
-        // manually execute to use query.uniqueResult
-        String existingDemographicUserId = hibernateHelper.executeWithExceptionHandling(null, session -> {
-            Query<String> query = session.createQuery(builder.getQuery(), String.class);
-            for (Map.Entry<String, Object> entry : builder.getParameters().entrySet()) {
-                query.setParameter(entry.getKey(), entry.getValue());
-            }
-            return query.uniqueResult();
-        });
+        String existingDemographicUserId = hibernateHelper.queryGetOne(builder.getQuery(), builder.getParameters(),
+                String.class);
         return Optional.ofNullable(existingDemographicUserId);
     }
 
@@ -64,14 +56,8 @@ public class HibernateDemographicDao implements DemographicDao {
         builder.append("FROM Demographic d");
         WhereClauseBuilder where = builder.startWhere(SearchTermPredicate.AND);
         where.append("d.id = :demographicId", "demographicId", demographicId);
-        // manually execute to use query.uniqueResult
-        Demographic existingDemographic = hibernateHelper.executeWithExceptionHandling(null, session -> {
-            Query<Demographic> query = session.createQuery(builder.getQuery(), Demographic.class);
-            for (Map.Entry<String, Object> entry : builder.getParameters().entrySet()) {
-                query.setParameter(entry.getKey(), entry.getValue());
-            }
-            return query.uniqueResult();
-        });
+        Demographic existingDemographic = hibernateHelper.queryGetOne(builder.getQuery(), builder.getParameters(),
+                Demographic.class);
         return Optional.ofNullable(existingDemographic);
     }
 
@@ -83,14 +69,8 @@ public class HibernateDemographicDao implements DemographicDao {
         where.append("du.appId = :appId", "appId", appId);
         where.append("du.studyId = :studyId", "studyId", studyId);
         where.append("du.userId = :userId", "userId", userId);
-        // manually execute to use query.uniqueResult
-        DemographicUser existingDemographicUser = hibernateHelper.executeWithExceptionHandling(null, session -> {
-            Query<DemographicUser> query = session.createQuery(builder.getQuery(), DemographicUser.class);
-            for (Map.Entry<String, Object> entry : builder.getParameters().entrySet()) {
-                query.setParameter(entry.getKey(), entry.getValue());
-            }
-            return query.uniqueResult();
-        });
+        DemographicUser existingDemographicUser = hibernateHelper.queryGetOne(builder.getQuery(),
+                builder.getParameters(), DemographicUser.class);
         return Optional.ofNullable(existingDemographicUser);
     }
 
@@ -105,7 +85,7 @@ public class HibernateDemographicDao implements DemographicDao {
         int count = hibernateHelper.queryCount("SELECT COUNT(*) " + builder.getQuery(), builder.getParameters());
         List<DemographicUser> existingDemographicUsers = hibernateHelper.queryGet(builder.getQuery(),
                 builder.getParameters(), offsetBy, pageSize, DemographicUser.class);
-        return new PagedResourceList<>(existingDemographicUsers, count)
+        return new PagedResourceList<>(existingDemographicUsers, count, true)
                 .withRequestParam("offsetBy", offsetBy)
                 .withRequestParam("pageSize", pageSize);
     }

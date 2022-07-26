@@ -122,6 +122,22 @@ public class HibernateHelper {
         });
     }
 
+    /**
+     * Executes the query and returns a single result. Returns null if there is no
+     * result.
+     */
+    public <T> T queryGetOne(String queryString, Map<String, Object> parameters, Class<T> clazz) {
+        return executeWithExceptionHandling(null, session -> {
+            Query<T> query = session.createQuery(queryString, clazz);
+            if (parameters != null) {
+                for (Map.Entry<String, Object> entry : parameters.entrySet()) {
+                    query.setParameter(entry.getKey(), entry.getValue());
+                }
+            }
+            return query.uniqueResult();
+        });
+    }
+
     public <T> List<T> nativeQueryGet(String queryString, Map<String,Object> parameters, Integer offset, Integer limit, Class<T> clazz) {
         return executeWithExceptionHandling(null, session -> {
             Query<T> query = session.createNativeQuery(queryString, clazz);
