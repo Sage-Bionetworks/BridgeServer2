@@ -238,6 +238,37 @@ public class HibernateHelperTest {
     }
 
     @Test
+    public void queryGetOne() {
+        // mock query
+        Object hibernateOutput = new Object();
+        Query<Object> mockQuery = mock(Query.class);
+        when(mockQuery.uniqueResult()).thenReturn(hibernateOutput);
+
+        when(mockSession.createQuery(QUERY, Object.class)).thenReturn(mockQuery);
+
+        // execute and validate
+        Object helperOutput = helper.queryGetOne(QUERY, null, Object.class);
+        assertSame(helperOutput, hibernateOutput);
+    }
+
+    @Test
+    public void queryGetOneWithParameters() {
+        // mock query
+        Object hibernateOutput = new Object();
+        Query<Object> mockQuery = mock(Query.class);
+        when(mockQuery.uniqueResult()).thenReturn(hibernateOutput);
+
+        when(mockSession.createQuery(QUERY, Object.class)).thenReturn(mockQuery);
+
+        // execute and validate
+        Object helperOutput = helper.queryGetOne(QUERY, PARAMETERS, Object.class);
+        assertSame(helperOutput, hibernateOutput);
+
+        verify(mockQuery).setParameter("appId", TEST_APP_ID);
+        verify(mockQuery).setParameter("id", 10L);
+    }
+
+    @Test
     public void queryUpdate() {
         // mock query
         Query<Object> mockQuery = mock(Query.class);
