@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.services;
 
+import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.EMAIL;
@@ -465,8 +467,6 @@ public class PermissionServiceTest extends Mockito {
     
     @Test
     public void updatePermissionsFromRoles_createsAllIfNewAccount() {
-        Account persistedAccount = Account.create();
-        
         Account account = createAccount();
         account.setRoles(ImmutableSet.of(RESEARCHER));
         
@@ -490,7 +490,7 @@ public class PermissionServiceTest extends Mockito {
         
         doReturn(null).when(service).createPermission(eq(TEST_APP_ID), any());
         
-        service.updatePermissionsFromRoles(account, persistedAccount);
+        service.updatePermissionsFromRoles(account, null);
         
         verify(service, times(13)).createPermission(eq(TEST_APP_ID), permissionCaptor.capture());
         
@@ -502,10 +502,10 @@ public class PermissionServiceTest extends Mockito {
     @Test
     public void updatePermissionsFromRoles_deletesPermissions() {
         Account persistedAccount = createAccount();
-        persistedAccount.setRoles(ImmutableSet.of(RESEARCHER));
+        persistedAccount.setRoles(ImmutableSet.of(ADMIN));
         
         Account account = createAccount();
-        account.setRoles(ImmutableSet.of(DEVELOPER));
+        account.setRoles(ImmutableSet.of(ORG_ADMIN));
         
         when(mockSponsorService.getSponsoredStudyIds(eq(TEST_APP_ID), eq(TEST_ORG_ID)))
                 .thenReturn(ImmutableSet.of(TEST_STUDY_ID));
@@ -513,17 +513,29 @@ public class PermissionServiceTest extends Mockito {
         List<Permission> existingPermissionsList = ImmutableList.of(
                 createPermission(AccessLevel.LIST, ORGANIZATION, TEST_ORG_ID, GUID),
                 createPermission(AccessLevel.READ, ORGANIZATION, TEST_ORG_ID, GUID),
+                createPermission(AccessLevel.EDIT, ORGANIZATION, TEST_ORG_ID, GUID),
+                createPermission(AccessLevel.DELETE, ORGANIZATION, TEST_ORG_ID, GUID),
+                createPermission(AccessLevel.ADMIN, ORGANIZATION, TEST_ORG_ID, GUID),
                 createPermission(AccessLevel.LIST, PARTICIPANTS, TEST_STUDY_ID, "delete-guid-1"),
                 createPermission(AccessLevel.READ, PARTICIPANTS, TEST_STUDY_ID, "delete-guid-2"),
                 createPermission(AccessLevel.EDIT, PARTICIPANTS, TEST_STUDY_ID, "delete-guid-3"),
                 createPermission(AccessLevel.DELETE, PARTICIPANTS, TEST_STUDY_ID, "delete-guid-4"),
+                createPermission(AccessLevel.ADMIN, PARTICIPANTS, TEST_STUDY_ID, "delete-guid-5"),
                 createPermission(AccessLevel.LIST, SPONSORED_STUDIES, TEST_ORG_ID, GUID),
                 createPermission(AccessLevel.READ, SPONSORED_STUDIES, TEST_ORG_ID, GUID),
-                createPermission(AccessLevel.EDIT, SPONSORED_STUDIES, TEST_ORG_ID, GUID),
+                createPermission(AccessLevel.EDIT, SPONSORED_STUDIES, TEST_ORG_ID, "delete-guid-6"),
+                createPermission(AccessLevel.DELETE, SPONSORED_STUDIES, TEST_ORG_ID, "delete-guid-7"),
+                createPermission(AccessLevel.ADMIN, SPONSORED_STUDIES, TEST_ORG_ID, GUID),
                 createPermission(AccessLevel.LIST, MEMBERS, TEST_ORG_ID, GUID),
                 createPermission(AccessLevel.READ, MEMBERS, TEST_ORG_ID, GUID),
+                createPermission(AccessLevel.EDIT, MEMBERS, TEST_ORG_ID, GUID),
+                createPermission(AccessLevel.DELETE, MEMBERS, TEST_ORG_ID, GUID),
+                createPermission(AccessLevel.ADMIN, MEMBERS, TEST_ORG_ID, GUID),
                 createPermission(AccessLevel.LIST, ASSESSMENT_LIBRARY, TEST_ORG_ID, GUID),
-                createPermission(AccessLevel.READ, ASSESSMENT_LIBRARY, TEST_ORG_ID, GUID));
+                createPermission(AccessLevel.READ, ASSESSMENT_LIBRARY, TEST_ORG_ID, GUID),
+                createPermission(AccessLevel.EDIT, ASSESSMENT_LIBRARY, TEST_ORG_ID, "delete-guid-8"),
+                createPermission(AccessLevel.DELETE, ASSESSMENT_LIBRARY, TEST_ORG_ID, "delete-guid-9"),
+                createPermission(AccessLevel.ADMIN, ASSESSMENT_LIBRARY, TEST_ORG_ID, GUID));
         
         when(mockDao.getPermissionsForUser(eq(TEST_APP_ID), eq(TEST_USER_ID))).thenReturn(existingPermissionsList);
         
@@ -532,12 +544,13 @@ public class PermissionServiceTest extends Mockito {
         
         service.updatePermissionsFromRoles(account, persistedAccount);
         
-        verify(service, times(4)).deletePermission(eq(TEST_APP_ID), guidCaptor.capture());
+        verify(service, times(9)).deletePermission(eq(TEST_APP_ID), guidCaptor.capture());
         
         List<String> capturedGuids = guidCaptor.getAllValues();
-        assertEquals(capturedGuids.size(), 4);
+        assertEquals(capturedGuids.size(), 9);
         assertTrue(capturedGuids.containsAll(ImmutableSet.of("delete-guid-1", "delete-guid-2",
-                "delete-guid-3", "delete-guid-4")));
+                "delete-guid-3", "delete-guid-4", "delete-guid-5", "delete-guid-6", "delete-guid-7",
+                "delete-guid-8", "delete-guid-9")));
     }
     
     @Test
@@ -600,6 +613,21 @@ public class PermissionServiceTest extends Mockito {
         service.updatePermissionsFromRoles(account, persistedAccount);
         
         verify(service, times(2)).deletePermission(eq(TEST_APP_ID), any());
+    }
+    
+    @Test
+    public void updatePermissionsFromRoles_noOrgInAccount() {
+        Account persistedAccount = Account.create();
+        persistedAccount.setRoles(ImmutableSet.of(ORG_ADMIN));
+        
+        Account account = Account.create();
+        account.setRoles(ImmutableSet.of(RESEARCHER));
+        
+        service.updatePermissionsFromRoles(account, account);
+        
+        verifyZeroInteractions(mockSponsorService);
+        verify(service, times(0)).deletePermission(any(), any());
+        verify(service, times(0)).createPermission(any(), any());
     }
     
     private Account createAccount() {

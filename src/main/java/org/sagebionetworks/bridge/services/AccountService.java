@@ -74,8 +74,6 @@ public class AccountService {
     private UploadService uploadService;
     @Autowired
     private RequestInfoService requestInfoService;
-    @Autowired
-    private PermissionService permissionService;
     
     // Provided to override in tests
     protected String generateGUID() {
@@ -105,11 +103,6 @@ public class AccountService {
 
         // Create account. We don't verify studies because this is handled by validation
         accountDao.createAccount(account);
-        
-        // If roles are provided then permissions also need to be created
-        if (!account.getRoles().isEmpty()) {
-            permissionService.updatePermissionsFromRoles(account, Account.create());
-        }
         
         if (!account.getEnrollments().isEmpty()) {
             activityEventService.publishEnrollmentEvent(
@@ -169,11 +162,6 @@ public class AccountService {
 
         // Update. We don't verify studies because this is handled by validation
         accountDao.updateAccount(account);
-        
-        // If roles have changed, then permissions need to be adjusted as well
-        if (!persistedAccount.getRoles().equals(account.getRoles())) {
-            permissionService.updatePermissionsFromRoles(account, persistedAccount);
-        }
         
         // If any enrollments have been added, then create an enrollment event for that enrollment.
         // We want to create these events only after we're sure the account has been updated to 

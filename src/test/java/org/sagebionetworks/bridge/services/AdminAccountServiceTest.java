@@ -297,7 +297,7 @@ public class AdminAccountServiceTest extends Mockito {
         
         List<Account> capturedAccounts = accountCaptor.getAllValues();
         assertEquals(capturedAccounts.get(0).getRoles(), ImmutableSet.of(DEVELOPER));
-        assertEquals(capturedAccounts.get(1).getRoles(), ImmutableSet.of());
+        assertNull(capturedAccounts.get(1));
     }
     
     @Test

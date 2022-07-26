@@ -35,7 +35,6 @@ import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -133,9 +132,6 @@ public class AccountServiceTest extends Mockito {
     NotificationsService mockNotificationsService;
     
     @Mock
-    PermissionService mockPermissionService;
-    
-    @Mock
     UploadService mockUploadService;
     
     @Mock
@@ -218,38 +214,6 @@ public class AccountServiceTest extends Mockito {
     }
     
     @Test
-    public void createAccount_updatesPermissionsFromRoles() {
-        App app = App.create();
-        app.setIdentifier(TEST_APP_ID);
-        
-        Account account = Account.create();
-        account.setId(TEST_USER_ID);
-        account.setRoles(ImmutableSet.of(DEVELOPER));
-        
-        service.createAccount(app, account);
-        
-        verify(mockPermissionService).updatePermissionsFromRoles(accountCaptor.capture(), accountCaptor.capture());
-        
-        List<Account> capturedAccounts = accountCaptor.getAllValues();
-        assertEquals(capturedAccounts.get(0).getRoles(), ImmutableSet.of(DEVELOPER));
-        assertEquals(capturedAccounts.get(1).getRoles(), ImmutableSet.of());
-    }
-    
-    @Test
-    public void createAccount_permissionsDoNotUpdateWithNoRoles() {
-        App app = App.create();
-        app.setIdentifier(TEST_APP_ID);
-        
-        Account account = Account.create();
-        account.setId(TEST_USER_ID);
-        account.setRoles(ImmutableSet.of());
-        
-        service.createAccount(app, account);
-        
-        verifyZeroInteractions(mockPermissionService);
-    }
-    
-    @Test
     public void createAccountByDevCreatesTestAccount() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId("id")
@@ -302,78 +266,6 @@ public class AccountServiceTest extends Mockito {
 
         // Verify we also create a participant version.
         verify(mockParticipantVersionService).createParticipantVersionFromAccount(same(updated));
-    }
-    
-    @Test
-    public void updateAccount_roleChangeCausesPermissionUpdate() throws Exception {
-        Account persistedAccount = Account.create();
-        persistedAccount.setAppId(TEST_APP_ID);
-        persistedAccount.setId(TEST_USER_ID);
-        persistedAccount.setRoles(ImmutableSet.of(DEVELOPER));
-        when(mockAccountDao.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(persistedAccount));
-        
-        Account updated = Account.create();
-        updated.setAppId(TEST_APP_ID);
-        updated.setId(TEST_USER_ID);
-        updated.setRoles(ImmutableSet.of(RESEARCHER));
-        
-        service.updateAccount(updated);
-        
-        verify(mockPermissionService).updatePermissionsFromRoles(eq(updated), eq(persistedAccount));
-    }
-    
-    @Test
-    public void updateAccount_roleAdditionCausesPermissionUpdate() throws Exception {
-        Account persistedAccount = Account.create();
-        persistedAccount.setAppId(TEST_APP_ID);
-        persistedAccount.setId(TEST_USER_ID);
-        persistedAccount.setRoles(ImmutableSet.of(DEVELOPER));
-        when(mockAccountDao.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(persistedAccount));
-        
-        Account updated = Account.create();
-        updated.setAppId(TEST_APP_ID);
-        updated.setId(TEST_USER_ID);
-        updated.setRoles(ImmutableSet.of(DEVELOPER, RESEARCHER));
-        
-        service.updateAccount(updated);
-        
-        verify(mockPermissionService).updatePermissionsFromRoles(eq(updated), eq(persistedAccount));
-    }
-    
-    @Test
-    public void updateAccount_roleRemovalCausesPermissionUpdate() throws Exception {
-        Account persistedAccount = Account.create();
-        persistedAccount.setAppId(TEST_APP_ID);
-        persistedAccount.setId(TEST_USER_ID);
-        persistedAccount.setRoles(ImmutableSet.of(DEVELOPER));
-        when(mockAccountDao.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(persistedAccount));
-        
-        Account updated = Account.create();
-        updated.setAppId(TEST_APP_ID);
-        updated.setId(TEST_USER_ID);
-        updated.setRoles(ImmutableSet.of());
-        
-        service.updateAccount(updated);
-        
-        verify(mockPermissionService).updatePermissionsFromRoles(eq(updated), eq(persistedAccount));
-    }
-    
-    @Test
-    public void updateAccount_noRoleUpdateDoesNotCausePermissionUpdate() throws Exception {
-        Account persistedAccount = Account.create();
-        persistedAccount.setAppId(TEST_APP_ID);
-        persistedAccount.setId(TEST_USER_ID);
-        persistedAccount.setRoles(ImmutableSet.of(DEVELOPER, RESEARCHER, ORG_ADMIN));
-        when(mockAccountDao.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(persistedAccount));
-        
-        Account updated = Account.create();
-        updated.setAppId(TEST_APP_ID);
-        updated.setId(TEST_USER_ID);
-        updated.setRoles(ImmutableSet.of(RESEARCHER, ORG_ADMIN, DEVELOPER));
-        
-        service.updateAccount(updated);
-        
-        verifyZeroInteractions(mockPermissionService);
     }
     
     @Test

@@ -179,7 +179,7 @@ public class AdminAccountService {
         
         // If roles are provided then permissions also need to be created
         if (!account.getRoles().isEmpty()) {
-            permissionService.updatePermissionsFromRoles(account, Account.create());
+            permissionService.updatePermissionsFromRoles(account, null);
         }
         
         sendVerificationMessages(app, Account.create(), account);
