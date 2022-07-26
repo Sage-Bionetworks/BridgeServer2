@@ -51,8 +51,7 @@ public class DemographicService {
         return demographicDao.saveDemographicUser(demographicUser);
     }
 
-    public void deleteDemographic(String appId, String studyId, String userId, String demographicId)
-            throws EntityNotFoundException {
+    public void deleteDemographic(String userId, String demographicId) throws EntityNotFoundException {
         Demographic existingDemographic = demographicDao.getDemographic(demographicId)
                 .orElseThrow(() -> new EntityNotFoundException(Demographic.class));
         if (!existingDemographic.getDemographicUser().getUserId().equals(userId)) {
@@ -85,7 +84,7 @@ public class DemographicService {
         return demographicDao.getDemographicUsers(appId, studyId, offsetBy, pageSize);
     }
 
-    private String generateGuid() {
+    public String generateGuid() {
         return BridgeUtils.generateGuid();
     }
 }

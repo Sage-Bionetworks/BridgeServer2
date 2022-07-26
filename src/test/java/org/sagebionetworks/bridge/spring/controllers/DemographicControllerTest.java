@@ -303,7 +303,7 @@ public class DemographicControllerTest {
 
         verify(controller).getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
         verify(controller).checkAccountExistsInStudy(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
-        verify(demographicService).deleteDemographic(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, TEST_DEMOGRAPHIC_ID);
+        verify(demographicService).deleteDemographic(TEST_USER_ID, TEST_DEMOGRAPHIC_ID);
     }
 
     @Test(expectedExceptions = { EntityNotFoundException.class })
@@ -316,8 +316,7 @@ public class DemographicControllerTest {
 
     @Test(expectedExceptions = { EntityNotFoundException.class })
     public void deleteDemographicNotFound() {
-        doThrow(new EntityNotFoundException(Demographic.class)).when(demographicService).deleteDemographic(any(), any(),
-                any(), any());
+        doThrow(new EntityNotFoundException(Demographic.class)).when(demographicService).deleteDemographic(any(), any());
 
         controller.deleteDemographic(Optional.of(TEST_STUDY_ID), TEST_USER_ID, TEST_DEMOGRAPHIC_ID);
     }
@@ -330,7 +329,7 @@ public class DemographicControllerTest {
 
         verify(controller).getAdministrativeSession();
         verify(controller).checkAccountExistsInStudy(TEST_APP_ID, null, TEST_USER_ID);
-        verify(demographicService).deleteDemographic(TEST_APP_ID, null, TEST_USER_ID, TEST_DEMOGRAPHIC_ID);
+        verify(demographicService).deleteDemographic(TEST_USER_ID, TEST_DEMOGRAPHIC_ID);
     }
 
     @Test

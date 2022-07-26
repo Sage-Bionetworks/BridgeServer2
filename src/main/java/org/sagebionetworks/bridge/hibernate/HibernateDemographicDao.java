@@ -8,7 +8,6 @@ import javax.annotation.Resource;
 
 import org.hibernate.query.Query;
 import org.sagebionetworks.bridge.dao.DemographicDao;
-import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.hibernate.QueryBuilder.WhereClauseBuilder;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.SearchTermPredicate;

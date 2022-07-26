@@ -130,7 +130,7 @@ public class DemographicController extends BaseController {
         }
         checkAccountExistsInStudy(session.getAppId(), studyIdNull, userId);
 
-        demographicService.deleteDemographic(session.getAppId(), studyIdNull, userId, demographicId);
+        demographicService.deleteDemographic(userId, demographicId);
     }
 
     // Delete all demographics for a user

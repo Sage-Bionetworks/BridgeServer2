@@ -2,8 +2,6 @@ package org.sagebionetworks.bridge.dao;
 
 import java.util.Optional;
 
-import javax.persistence.EntityNotFoundException;
-
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.studies.Demographic;
 import org.sagebionetworks.bridge.models.studies.DemographicUser;
