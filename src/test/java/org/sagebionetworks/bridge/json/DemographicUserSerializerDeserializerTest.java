@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.json;
 
 import static org.testng.Assert.assertEquals;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 
@@ -16,6 +15,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
+import com.google.common.collect.ImmutableList;
 
 public class DemographicUserSerializerDeserializerTest {
     @Test
@@ -23,16 +23,13 @@ public class DemographicUserSerializerDeserializerTest {
         DemographicUser demographicUser = new DemographicUser("id1", "appid1", null, "userid1",
                 new HashMap<>());
         Demographic demographicNullUnitsEmptyValues = new Demographic("id1", demographicUser, "category1", true,
-                new ArrayList<>(), null);
+                ImmutableList.of(), null);
         demographicUser.getDemographics().put("category1", demographicNullUnitsEmptyValues);
         Demographic demographicMultipleValues = new Demographic("id2", demographicUser, "category2", true,
-                new ArrayList<>(), "units1");
-        demographicMultipleValues.getValues().add(new DemographicValue("value1"));
-        demographicMultipleValues.getValues().add(new DemographicValue("value2"));
+                ImmutableList.of(new DemographicValue("value1"), new DemographicValue("value2")), "units1");
         demographicUser.getDemographics().put("category2", demographicMultipleValues);
         Demographic demographicNotMultipleSelect = new Demographic("id3", demographicUser, "category3", false,
-                new ArrayList<>(), "units2");
-        demographicNotMultipleSelect.getValues().add(new DemographicValue("value3"));
+                ImmutableList.of(new DemographicValue("value3")), "units2");
         demographicUser.getDemographics().put("category3", demographicNotMultipleSelect);
 
         // {
@@ -95,18 +92,16 @@ public class DemographicUserSerializerDeserializerTest {
     @Test
     public void deserialize() throws JsonProcessingException, JsonMappingException {
         DemographicUser demographicUser = new DemographicUser(null, null, null, "testuserid", new LinkedHashMap<>());
-        Demographic demographic1 = new Demographic(null, demographicUser, "category1", true, new ArrayList<>(),
+        Demographic demographic1 = new Demographic(null, demographicUser, "category1", true,
+                ImmutableList.of(new DemographicValue(-7), new DemographicValue(-6.3), new DemographicValue(1),
+                        new DemographicValue("foo")),
                 null);
-        demographic1.getValues().add(new DemographicValue(-7));
-        demographic1.getValues().add(new DemographicValue(-6.3));
-        demographic1.getValues().add(new DemographicValue(1));
-        demographic1.getValues().add(new DemographicValue("foo"));
         demographicUser.getDemographics().put("category1", demographic1);
-        Demographic demographic2 = new Demographic(null, demographicUser, "category2", false, new ArrayList<>(),
+        Demographic demographic2 = new Demographic(null, demographicUser, "category2", false,
+                ImmutableList.of(new DemographicValue(5.3)),
                 null);
-        demographic2.getValues().add(new DemographicValue(5.3));
         demographicUser.getDemographics().put("category2", demographic2);
-        Demographic demographic3 = new Demographic(null, demographicUser, "category3", true, new ArrayList<>(),
+        Demographic demographic3 = new Demographic(null, demographicUser, "category3", true, ImmutableList.of(),
                 "testunits");
         demographicUser.getDemographics().put("category3", demographic3);
 

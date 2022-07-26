@@ -7,13 +7,14 @@ import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.generateS
 import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.getInvalidStringLengthMessage;
 import static org.testng.Assert.assertTrue;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 
 import org.sagebionetworks.bridge.models.studies.Demographic;
 import org.sagebionetworks.bridge.models.studies.DemographicUser;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+
+import com.google.common.collect.ImmutableList;
 
 public class DemographicUserValidatorTest {
     private DemographicUser demographicUser;
@@ -25,7 +26,7 @@ public class DemographicUserValidatorTest {
     public void beforeMethod() {
         demographicUser = new DemographicUser("test-id", "test-app-id", "test-study-id", "test-user-id",
                 new HashMap<>());
-        demographic = new Demographic("test-demographic-id", demographicUser, "category-name", true, new ArrayList<>(),
+        demographic = new Demographic("test-demographic-id", demographicUser, "category-name", true, ImmutableList.of(),
                 "test-units");
     }
 

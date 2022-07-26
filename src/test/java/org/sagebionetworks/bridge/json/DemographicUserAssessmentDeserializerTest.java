@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.json;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 
 import org.sagebionetworks.bridge.models.studies.Demographic;
@@ -16,6 +15,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
+import com.google.common.collect.ImmutableList;
 
 @Test
 public class DemographicUserAssessmentDeserializerTest {
@@ -49,29 +49,26 @@ public class DemographicUserAssessmentDeserializerTest {
 
     @Test
     public void deserializeNoAnswerType() throws JsonProcessingException, JsonMappingException {
-
+        
     }
 
     @Test
     public void deserializeNoType() throws JsonProcessingException, JsonMappingException {
-        
+
     }
 
     @Test
     public void deserialize() throws JsonProcessingException, JsonMappingException {
         DemographicUser demographicUser = new DemographicUser(null, null, null, null, new HashMap<>());
-        Demographic demographic1 = new Demographic(null, demographicUser, "category1", true, new ArrayList<>(),
+        Demographic demographic1 = new Demographic(null, demographicUser, "category1", true,
+                ImmutableList.of(new DemographicValue(-7), new DemographicValue(-6.3), new DemographicValue(1),
+                        new DemographicValue("foo")),
                 null);
-        demographic1.getValues().add(new DemographicValue(-7));
-        demographic1.getValues().add(new DemographicValue(-6.3));
-        demographic1.getValues().add(new DemographicValue(1));
-        demographic1.getValues().add(new DemographicValue("foo"));
         demographicUser.getDemographics().put("category1", demographic1);
-        Demographic demographic2 = new Demographic(null, demographicUser, "category2", false, new ArrayList<>(),
-                null);
-        demographic2.getValues().add(new DemographicValue(5.3));
+        Demographic demographic2 = new Demographic(null, demographicUser, "category2", false,
+                ImmutableList.of(new DemographicValue(5.3)), null);
         demographicUser.getDemographics().put("category2", demographic2);
-        Demographic demographic3 = new Demographic(null, demographicUser, "category3", true, new ArrayList<>(),
+        Demographic demographic3 = new Demographic(null, demographicUser, "category3", true, ImmutableList.of(),
                 null);
         demographicUser.getDemographics().put("category3", demographic3);
 

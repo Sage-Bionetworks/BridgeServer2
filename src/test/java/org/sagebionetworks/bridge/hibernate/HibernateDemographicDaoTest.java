@@ -12,7 +12,6 @@ import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +26,7 @@ import org.sagebionetworks.bridge.models.studies.DemographicUser;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 public class HibernateDemographicDaoTest {
@@ -149,13 +149,12 @@ public class HibernateDemographicDaoTest {
         assertTrue(!returnedDemographicUser.isPresent());
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     public void getDemographicUsers() {
         DemographicUser demographicUser1 = new DemographicUser();
         DemographicUser demographicUser2 = new DemographicUser();
-        List<DemographicUser> demographicUsers = new ArrayList<>();
-        demographicUsers.add(demographicUser1);
-        demographicUsers.add(demographicUser2);
+        List<DemographicUser> demographicUsers = ImmutableList.of(demographicUser1, demographicUser2);
         when(hibernateHelper.queryCount(any(), any())).thenReturn(2);
         when(hibernateHelper.queryGet(any(), any(), any(), any(), eq(DemographicUser.class)))
                 .thenReturn(demographicUsers);

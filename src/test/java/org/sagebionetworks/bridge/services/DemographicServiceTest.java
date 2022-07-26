@@ -15,7 +15,6 @@ import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -37,6 +36,8 @@ import org.sagebionetworks.bridge.models.studies.Demographic;
 import org.sagebionetworks.bridge.models.studies.DemographicUser;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+
+import com.google.common.collect.ImmutableList;
 
 public class DemographicServiceTest {
     private static final String DEMOGRAPHIC_ID = "test-demographic-id";
@@ -66,10 +67,10 @@ public class DemographicServiceTest {
                 TEST_USER_ID,
                 new HashMap<>());
         demographicUser.getDemographics().put("category-name1",
-                new Demographic(null, demographicUser, "category-name1", true, new ArrayList<>(),
+                new Demographic(null, demographicUser, "category-name1", true, ImmutableList.of(),
                         null));
         demographicUser.getDemographics().put("category-name2",
-                new Demographic(null, demographicUser, "category-name2", true, new ArrayList<>(),
+                new Demographic(null, demographicUser, "category-name2", true, ImmutableList.of(),
                         null));
         when(demographicDao.getDemographicUser(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID))
                 .thenReturn(Optional.empty());
@@ -97,10 +98,10 @@ public class DemographicServiceTest {
                 TEST_USER_ID,
                 new HashMap<>());
         demographicUser.getDemographics().put("category-name1",
-                new Demographic(null, demographicUser, "category-name1", true, new ArrayList<>(),
+                new Demographic(null, demographicUser, "category-name1", true, ImmutableList.of(),
                         null));
         demographicUser.getDemographics().put("category-name2",
-                new Demographic(null, demographicUser, "category-name2", true, new ArrayList<>(),
+                new Demographic(null, demographicUser, "category-name2", true, ImmutableList.of(),
                         null));
         when(demographicDao.getDemographicUser(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID))
                 .thenReturn(Optional.of(existingDemographicUser));
@@ -211,9 +212,7 @@ public class DemographicServiceTest {
     public void getDemographicUsers() {
         DemographicUser demographicUser1 = new DemographicUser();
         DemographicUser demographicUser2 = new DemographicUser();
-        List<DemographicUser> demographicUsers = new ArrayList<>();
-        demographicUsers.add(demographicUser1);
-        demographicUsers.add(demographicUser2);
+        List<DemographicUser> demographicUsers = ImmutableList.of(demographicUser1, demographicUser2);
         PagedResourceList<DemographicUser> demographicUsersResourceList = new PagedResourceList<>(demographicUsers, 2,
                 false);
         when(demographicDao.getDemographicUsers(TEST_APP_ID, TEST_STUDY_ID, 0, 5))
