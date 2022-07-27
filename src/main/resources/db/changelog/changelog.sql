@@ -1003,17 +1003,18 @@ CREATE TABLE `DemographicsUsers` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 CREATE TABLE `Demographics` (
+    `id` varchar(60) NOT NULL,
     `demographicUserId` varchar(60) NOT NULL,
     `categoryName` varchar(768) NOT NULL,
     `multipleSelect` boolean NOT NULL,
     `units` varchar(512) NULL,
-    PRIMARY KEY (`demographicUserId`, `categoryName`),
+    PRIMARY KEY (`id`),
+    UNIQUE KEY (`demographicUserId`, `categoryName`),
     CONSTRAINT `Demographic-DemographicUser-Constraint` FOREIGN KEY (`demographicUserId`) REFERENCES `DemographicsUsers` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 CREATE TABLE `DemographicsValues` (
-    `demographicUserId` varchar(60) NOT NULL,
-    `categoryName` varchar(768) NOT NULL,
+    `demographicId` varchar(60) NOT NULL,
     `value` varchar(1024) NOT NULL,
-    CONSTRAINT `DemographicValue-Demographic-Constraint` FOREIGN KEY (`demographicUserId`, `categoryName`) REFERENCES `Demographics` (`demographicUserId`, `categoryName`) ON DELETE CASCADE
+    CONSTRAINT `DemographicValue-Demographic-Constraint` FOREIGN KEY (`demographicId`) REFERENCES `Demographics` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
