@@ -78,9 +78,10 @@ public class RolesToPermissionsMapGenerator {
             for (Roles role : roles) {
                 if (referenceMap.containsKey(role)) {
                     Map<EntityType, List<AccessLevel>> roleMap = referenceMap.get(role);
-                    for (EntityType entityType : roleMap.keySet()) {
+                    for (Map.Entry<EntityType, List<AccessLevel>> entry : roleMap.entrySet()) {
+                        EntityType entityType = entry.getKey();
                         Map<String, Set<AccessLevel>> entityMap = permissionsMap.getOrDefault(entityType, new HashMap<>());
-                        for (AccessLevel accessLevel : roleMap.get(entityType)) {
+                        for (AccessLevel accessLevel : entry.getValue()) {
                             if (entityType.equals(PARTICIPANTS)) {
                                 if (!studyIds.isEmpty()) {
                                     for (String studyId : studyIds) {
