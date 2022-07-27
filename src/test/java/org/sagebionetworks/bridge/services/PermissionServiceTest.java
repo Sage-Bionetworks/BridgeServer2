@@ -1,15 +1,28 @@
 package org.sagebionetworks.bridge.services;
 
+import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
-import static org.sagebionetworks.bridge.models.permissions.EntityType.*;
+import static org.sagebionetworks.bridge.models.permissions.EntityType.ASSESSMENT;
+import static org.sagebionetworks.bridge.models.permissions.EntityType.ASSESSMENT_LIBRARY;
+import static org.sagebionetworks.bridge.models.permissions.EntityType.MEMBERS;
+import static org.sagebionetworks.bridge.models.permissions.EntityType.ORGANIZATION;
+import static org.sagebionetworks.bridge.models.permissions.EntityType.PARTICIPANTS;
+import static org.sagebionetworks.bridge.models.permissions.EntityType.SPONSORED_STUDIES;
+import static org.sagebionetworks.bridge.models.permissions.EntityType.STUDY;
+import static org.sagebionetworks.bridge.models.permissions.EntityType.STUDY_PI;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 import com.google.common.collect.ImmutableList;
@@ -23,6 +36,7 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
 import org.sagebionetworks.bridge.dao.PermissionDao;
+import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -63,12 +77,18 @@ public class PermissionServiceTest extends Mockito {
     @Mock
     AssessmentService mockAssessmentService;
     
+    @Mock
+    SponsorService mockSponsorService;
+    
     @InjectMocks
     @Spy
     PermissionService service;
     
     @Captor
     ArgumentCaptor<Permission> permissionCaptor;
+    
+    @Captor
+    ArgumentCaptor<String> guidCaptor;
     
     @BeforeMethod
     public void beforeMethod() {
@@ -83,7 +103,7 @@ public class PermissionServiceTest extends Mockito {
         
         Account account = Account.create();
         account.setEmail("email@email.com");
-        EntityRef entityRef = new EntityRef(EntityType.STUDY, TEST_STUDY_ID, "test-study-name");
+        EntityRef entityRef = new EntityRef(STUDY, TEST_STUDY_ID, "test-study-name");
         PermissionDetail permissionDetail = new PermissionDetail(permission, entityRef, new AccountRef(account));
         
         when(mockDao.createPermission(eq(TEST_APP_ID), any())).thenReturn(permission);
@@ -101,7 +121,7 @@ public class PermissionServiceTest extends Mockito {
         assertEquals(captured.getAppId(), TEST_APP_ID);
         assertEquals(captured.getUserId(), TEST_USER_ID);
         assertEquals(captured.getAccessLevel(), AccessLevel.ADMIN);
-        assertEquals(captured.getEntityType(), EntityType.STUDY);
+        assertEquals(captured.getEntityType(), STUDY);
         assertEquals(captured.getEntityId(), TEST_STUDY_ID);
         assertEquals(captured.getCreatedOn(), CREATED_ON);
         assertEquals(captured.getModifiedOn(), CREATED_ON);
@@ -116,7 +136,7 @@ public class PermissionServiceTest extends Mockito {
         
         Account account = Account.create();
         account.setEmail("email@email.com");
-        EntityRef entityRef = new EntityRef(EntityType.STUDY, TEST_STUDY_ID, "test-study-name");
+        EntityRef entityRef = new EntityRef(STUDY, TEST_STUDY_ID, "test-study-name");
         PermissionDetail permissionDetail = new PermissionDetail(permission, entityRef, new AccountRef(account));
         
         when(mockDao.createPermission(eq(TEST_APP_ID), any())).thenReturn(permission);
@@ -149,7 +169,7 @@ public class PermissionServiceTest extends Mockito {
         
         Account account = Account.create();
         account.setEmail("email@email.com");
-        EntityRef entityRef = new EntityRef(EntityType.STUDY, TEST_STUDY_ID, "test-study-name");
+        EntityRef entityRef = new EntityRef(STUDY, TEST_STUDY_ID, "test-study-name");
         PermissionDetail permissionDetail = new PermissionDetail(permission, entityRef, new AccountRef(account));
         
         when(mockDao.updatePermission(eq(TEST_APP_ID), any())).thenReturn(permission);
@@ -168,7 +188,7 @@ public class PermissionServiceTest extends Mockito {
         assertEquals(captured.getAppId(), TEST_APP_ID);
         assertEquals(captured.getUserId(), TEST_USER_ID);
         assertEquals(captured.getAccessLevel(), AccessLevel.ADMIN);
-        assertEquals(captured.getEntityType(), EntityType.STUDY);
+        assertEquals(captured.getEntityType(), STUDY);
         assertEquals(captured.getEntityId(), TEST_STUDY_ID);
         assertEquals(captured.getCreatedOn(), CREATED_ON);
         assertEquals(captured.getModifiedOn(), MODIFIED_ON);
@@ -192,7 +212,7 @@ public class PermissionServiceTest extends Mockito {
         
         Account account = Account.create();
         account.setEmail("email@email.com");
-        EntityRef entityRef = new EntityRef(EntityType.STUDY, TEST_STUDY_ID, "test-study-name");
+        EntityRef entityRef = new EntityRef(STUDY, TEST_STUDY_ID, "test-study-name");
         PermissionDetail permissionDetail = new PermissionDetail(permission, entityRef, new AccountRef(account));
         
         when(mockDao.updatePermission(eq(TEST_APP_ID), any())).thenReturn(permission);
@@ -210,7 +230,7 @@ public class PermissionServiceTest extends Mockito {
         assertEquals(captured.getAppId(), TEST_APP_ID);
         assertEquals(captured.getUserId(), TEST_USER_ID);
         assertEquals(captured.getAccessLevel(), AccessLevel.ADMIN);
-        assertEquals(captured.getEntityType(), EntityType.STUDY);
+        assertEquals(captured.getEntityType(), STUDY);
         assertEquals(captured.getEntityId(), TEST_STUDY_ID);
         assertEquals(captured.getCreatedOn(), CREATED_ON);
         assertEquals(captured.getModifiedOn(), MODIFIED_ON);
@@ -239,7 +259,7 @@ public class PermissionServiceTest extends Mockito {
         
         Account account = Account.create();
         account.setEmail("email@email.com");
-        EntityRef entityRef = new EntityRef(EntityType.STUDY, TEST_STUDY_ID, "test-study-name");
+        EntityRef entityRef = new EntityRef(STUDY, TEST_STUDY_ID, "test-study-name");
         PermissionDetail permissionDetail = new PermissionDetail(permission, entityRef, new AccountRef(account));
         
         when(mockAccountService.getAccount(any())).thenReturn(Optional.of(account));
@@ -268,19 +288,19 @@ public class PermissionServiceTest extends Mockito {
         
         Account account = Account.create();
         account.setEmail("email@email.com");
-        EntityRef entityRef = new EntityRef(EntityType.STUDY, TEST_STUDY_ID, "test-study-name");
+        EntityRef entityRef = new EntityRef(STUDY, TEST_STUDY_ID, "test-study-name");
         PermissionDetail permissionDetail = new PermissionDetail(permission, entityRef, new AccountRef(account));
         
         Study study = Study.create();
         when(mockStudyService.getStudy(eq(TEST_APP_ID), eq(TEST_STUDY_ID), eq(true))).thenReturn(study);
         
-        when(mockDao.getPermissionsForEntity(eq(TEST_APP_ID), eq(EntityType.STUDY), eq(TEST_STUDY_ID)))
+        when(mockDao.getPermissionsForEntity(eq(TEST_APP_ID), eq(STUDY), eq(TEST_STUDY_ID)))
                 .thenReturn(ImmutableList.of(permission));
         doReturn(permissionDetail).when(service).getPermissionDetail(eq(TEST_APP_ID), any());
         
         List<PermissionDetail> permissionDetails = service.getPermissionsForEntity(TEST_APP_ID, "STUDY", TEST_STUDY_ID);
         
-        verify(mockDao).getPermissionsForEntity(eq(TEST_APP_ID), eq(EntityType.STUDY), eq(TEST_STUDY_ID));
+        verify(mockDao).getPermissionsForEntity(eq(TEST_APP_ID), eq(STUDY), eq(TEST_STUDY_ID));
         assertEquals(permissionDetails.size(), 1);
         PermissionDetail returnedDetail = permissionDetails.stream().findFirst().orElse(null);
         assertEquals(returnedDetail, permissionDetail);
@@ -400,17 +420,256 @@ public class PermissionServiceTest extends Mockito {
         }
     }
     
+    @Test
+    public void updatePermissionsFromRoles_createsPermissions() {
+        Account persistedAccount = createAccount();
+        persistedAccount.setRoles(ImmutableSet.of(RESEARCHER));
+        
+        Account account = createAccount();
+        account.setRoles(ImmutableSet.of(DEVELOPER));
+        
+        List<Permission> expectedPermissionsList = ImmutableList.of(
+                createPermission(AccessLevel.DELETE, SPONSORED_STUDIES, TEST_ORG_ID),
+                createPermission(AccessLevel.DELETE, ASSESSMENT_LIBRARY, TEST_ORG_ID),
+                createPermission(AccessLevel.EDIT, ASSESSMENT_LIBRARY, TEST_ORG_ID));
+        
+        when(mockSponsorService.getSponsoredStudyIds(eq(TEST_APP_ID), eq(TEST_ORG_ID)))
+                .thenReturn(ImmutableSet.of(TEST_STUDY_ID));
+        
+        doReturn(null).when(service).createPermission(eq(TEST_APP_ID), any());
+        
+        service.updatePermissionsFromRoles(account, persistedAccount);
+        
+        verify(service, times(3)).createPermission(eq(TEST_APP_ID), permissionCaptor.capture());
+        
+        List<Permission> capturedPermissions = permissionCaptor.getAllValues();
+        assertEquals(capturedPermissions.size(), 3);
+        assertTrue(capturedPermissions.containsAll(expectedPermissionsList));
+    }
+    
+    @Test
+    public void updatePermissionsFromRoles_handlesExistingDuplicatePermissionsOnCreate() {
+        Account persistedAccount = createAccount();
+        persistedAccount.setRoles(ImmutableSet.of(RESEARCHER));
+        
+        Account account = createAccount();
+        account.setRoles(ImmutableSet.of(DEVELOPER));
+        
+        when(mockSponsorService.getSponsoredStudyIds(eq(TEST_APP_ID), eq(TEST_ORG_ID)))
+                .thenReturn(ImmutableSet.of(TEST_STUDY_ID));
+        
+        doThrow(ConstraintViolationException.class).when(service).createPermission(eq(TEST_APP_ID), any());
+        
+        service.updatePermissionsFromRoles(account, persistedAccount);
+        
+        verify(service, times(3)).createPermission(eq(TEST_APP_ID), any());
+    }
+    
+    @Test
+    public void updatePermissionsFromRoles_createsAllIfNewAccount() {
+        Account account = createAccount();
+        account.setRoles(ImmutableSet.of(RESEARCHER));
+        
+        List<Permission> expectedPermissionsList = ImmutableList.of(
+                createPermission(AccessLevel.LIST, ORGANIZATION, TEST_ORG_ID),
+                createPermission(AccessLevel.READ, ORGANIZATION, TEST_ORG_ID),
+                createPermission(AccessLevel.LIST, PARTICIPANTS, TEST_STUDY_ID),
+                createPermission(AccessLevel.READ, PARTICIPANTS, TEST_STUDY_ID),
+                createPermission(AccessLevel.EDIT, PARTICIPANTS, TEST_STUDY_ID),
+                createPermission(AccessLevel.DELETE, PARTICIPANTS, TEST_STUDY_ID),
+                createPermission(AccessLevel.LIST, SPONSORED_STUDIES, TEST_ORG_ID),
+                createPermission(AccessLevel.READ, SPONSORED_STUDIES, TEST_ORG_ID),
+                createPermission(AccessLevel.EDIT, SPONSORED_STUDIES, TEST_ORG_ID),
+                createPermission(AccessLevel.LIST, MEMBERS, TEST_ORG_ID),
+                createPermission(AccessLevel.READ, MEMBERS, TEST_ORG_ID),
+                createPermission(AccessLevel.LIST, ASSESSMENT_LIBRARY, TEST_ORG_ID),
+                createPermission(AccessLevel.READ, ASSESSMENT_LIBRARY, TEST_ORG_ID));
+        
+        when(mockSponsorService.getSponsoredStudyIds(eq(TEST_APP_ID), eq(TEST_ORG_ID)))
+                .thenReturn(ImmutableSet.of(TEST_STUDY_ID));
+        
+        doReturn(null).when(service).createPermission(eq(TEST_APP_ID), any());
+        
+        service.updatePermissionsFromRoles(account, null);
+        
+        verify(service, times(13)).createPermission(eq(TEST_APP_ID), permissionCaptor.capture());
+        
+        List<Permission> capturedPermissions = permissionCaptor.getAllValues();
+        assertEquals(capturedPermissions.size(), 13);
+        assertTrue(capturedPermissions.containsAll(expectedPermissionsList));
+    }
+    
+    @Test
+    public void updatePermissionsFromRoles_deletesPermissions() {
+        Account persistedAccount = createAccount();
+        persistedAccount.setRoles(ImmutableSet.of(ADMIN));
+        
+        Account account = createAccount();
+        account.setRoles(ImmutableSet.of(ORG_ADMIN));
+        
+        when(mockSponsorService.getSponsoredStudyIds(eq(TEST_APP_ID), eq(TEST_ORG_ID)))
+                .thenReturn(ImmutableSet.of(TEST_STUDY_ID));
+        
+        List<Permission> existingPermissionsList = ImmutableList.of(
+                createPermission(AccessLevel.LIST, ORGANIZATION, TEST_ORG_ID, GUID),
+                createPermission(AccessLevel.READ, ORGANIZATION, TEST_ORG_ID, GUID),
+                createPermission(AccessLevel.EDIT, ORGANIZATION, TEST_ORG_ID, GUID),
+                createPermission(AccessLevel.DELETE, ORGANIZATION, TEST_ORG_ID, GUID),
+                createPermission(AccessLevel.ADMIN, ORGANIZATION, TEST_ORG_ID, GUID),
+                createPermission(AccessLevel.LIST, PARTICIPANTS, TEST_STUDY_ID, "delete-guid-1"),
+                createPermission(AccessLevel.READ, PARTICIPANTS, TEST_STUDY_ID, "delete-guid-2"),
+                createPermission(AccessLevel.EDIT, PARTICIPANTS, TEST_STUDY_ID, "delete-guid-3"),
+                createPermission(AccessLevel.DELETE, PARTICIPANTS, TEST_STUDY_ID, "delete-guid-4"),
+                createPermission(AccessLevel.ADMIN, PARTICIPANTS, TEST_STUDY_ID, "delete-guid-5"),
+                createPermission(AccessLevel.LIST, SPONSORED_STUDIES, TEST_ORG_ID, GUID),
+                createPermission(AccessLevel.READ, SPONSORED_STUDIES, TEST_ORG_ID, GUID),
+                createPermission(AccessLevel.EDIT, SPONSORED_STUDIES, TEST_ORG_ID, "delete-guid-6"),
+                createPermission(AccessLevel.DELETE, SPONSORED_STUDIES, TEST_ORG_ID, "delete-guid-7"),
+                createPermission(AccessLevel.ADMIN, SPONSORED_STUDIES, TEST_ORG_ID, GUID),
+                createPermission(AccessLevel.LIST, MEMBERS, TEST_ORG_ID, GUID),
+                createPermission(AccessLevel.READ, MEMBERS, TEST_ORG_ID, GUID),
+                createPermission(AccessLevel.EDIT, MEMBERS, TEST_ORG_ID, GUID),
+                createPermission(AccessLevel.DELETE, MEMBERS, TEST_ORG_ID, GUID),
+                createPermission(AccessLevel.ADMIN, MEMBERS, TEST_ORG_ID, GUID),
+                createPermission(AccessLevel.LIST, ASSESSMENT_LIBRARY, TEST_ORG_ID, GUID),
+                createPermission(AccessLevel.READ, ASSESSMENT_LIBRARY, TEST_ORG_ID, GUID),
+                createPermission(AccessLevel.EDIT, ASSESSMENT_LIBRARY, TEST_ORG_ID, "delete-guid-8"),
+                createPermission(AccessLevel.DELETE, ASSESSMENT_LIBRARY, TEST_ORG_ID, "delete-guid-9"),
+                createPermission(AccessLevel.ADMIN, ASSESSMENT_LIBRARY, TEST_ORG_ID, GUID));
+        
+        when(mockDao.getPermissionsForUser(eq(TEST_APP_ID), eq(TEST_USER_ID))).thenReturn(existingPermissionsList);
+        
+        doReturn(null).when(service).createPermission(eq(TEST_APP_ID), any());
+        doNothing().when(service).deletePermission(eq(TEST_APP_ID), any());
+        
+        service.updatePermissionsFromRoles(account, persistedAccount);
+        
+        verify(service, times(9)).deletePermission(eq(TEST_APP_ID), guidCaptor.capture());
+        
+        List<String> capturedGuids = guidCaptor.getAllValues();
+        assertEquals(capturedGuids.size(), 9);
+        assertTrue(capturedGuids.containsAll(ImmutableSet.of("delete-guid-1", "delete-guid-2",
+                "delete-guid-3", "delete-guid-4", "delete-guid-5", "delete-guid-6", "delete-guid-7",
+                "delete-guid-8", "delete-guid-9")));
+    }
+    
+    @Test
+    public void updatePermissionsFromRoles_doesNotDeleteNonExistentPermissions() {
+        Account persistedAccount = createAccount();
+        persistedAccount.setRoles(ImmutableSet.of(RESEARCHER));
+        
+        Account account = createAccount();
+        account.setRoles(ImmutableSet.of(DEVELOPER));
+        
+        when(mockSponsorService.getSponsoredStudyIds(eq(TEST_APP_ID), eq(TEST_ORG_ID)))
+                .thenReturn(ImmutableSet.of(TEST_STUDY_ID));
+        
+        List<Permission> existingPermissionsList = ImmutableList.of(
+                createPermission(AccessLevel.READ, ORGANIZATION, TEST_ORG_ID, GUID),
+                createPermission(AccessLevel.LIST, PARTICIPANTS, TEST_STUDY_ID, "delete-guid-1"),
+                createPermission(AccessLevel.DELETE, PARTICIPANTS, TEST_STUDY_ID, "delete-guid-4"),
+                createPermission(AccessLevel.LIST, SPONSORED_STUDIES, TEST_ORG_ID, GUID),
+                createPermission(AccessLevel.LIST, MEMBERS, TEST_ORG_ID, GUID),
+                createPermission(AccessLevel.READ, ASSESSMENT_LIBRARY, TEST_ORG_ID, GUID));
+        
+        when(mockDao.getPermissionsForUser(eq(TEST_APP_ID), eq(TEST_USER_ID))).thenReturn(existingPermissionsList);
+        
+        doReturn(null).when(service).createPermission(eq(TEST_APP_ID), any());
+        doNothing().when(service).deletePermission(eq(TEST_APP_ID), any());
+        
+        service.updatePermissionsFromRoles(account, persistedAccount);
+        
+        verify(service, times(2)).deletePermission(eq(TEST_APP_ID), guidCaptor.capture());
+        
+        List<String> capturedGuids = guidCaptor.getAllValues();
+        assertEquals(capturedGuids.size(), 2);
+        assertTrue(capturedGuids.containsAll(ImmutableSet.of("delete-guid-1", "delete-guid-4")));
+    }
+    
+    @Test
+    public void updatePermissionsFromRoles_deleteIgnoresEntityNotFoundException() {
+        Account persistedAccount = createAccount();
+        persistedAccount.setRoles(ImmutableSet.of(RESEARCHER));
+        
+        Account account = createAccount();
+        account.setRoles(ImmutableSet.of(DEVELOPER));
+        
+        when(mockSponsorService.getSponsoredStudyIds(eq(TEST_APP_ID), eq(TEST_ORG_ID)))
+                .thenReturn(ImmutableSet.of(TEST_STUDY_ID));
+        
+        List<Permission> existingPermissionsList = ImmutableList.of(
+                createPermission(AccessLevel.READ, ORGANIZATION, TEST_ORG_ID, GUID),
+                createPermission(AccessLevel.LIST, PARTICIPANTS, TEST_STUDY_ID, "delete-guid-1"),
+                createPermission(AccessLevel.DELETE, PARTICIPANTS, TEST_STUDY_ID, "delete-guid-4"),
+                createPermission(AccessLevel.LIST, SPONSORED_STUDIES, TEST_ORG_ID, GUID),
+                createPermission(AccessLevel.LIST, MEMBERS, TEST_ORG_ID, GUID),
+                createPermission(AccessLevel.READ, ASSESSMENT_LIBRARY, TEST_ORG_ID, GUID));
+        
+        when(mockDao.getPermissionsForUser(eq(TEST_APP_ID), eq(TEST_USER_ID))).thenReturn(existingPermissionsList);
+        
+        doReturn(null).when(service).createPermission(eq(TEST_APP_ID), any());
+        doThrow(EntityNotFoundException.class).when(service).deletePermission(eq(TEST_APP_ID), any());
+        
+        service.updatePermissionsFromRoles(account, persistedAccount);
+        
+        verify(service, times(2)).deletePermission(eq(TEST_APP_ID), any());
+    }
+    
+    @Test
+    public void updatePermissionsFromRoles_noOrgInAccount() {
+        Account persistedAccount = Account.create();
+        persistedAccount.setRoles(ImmutableSet.of(ORG_ADMIN));
+        
+        Account account = Account.create();
+        account.setRoles(ImmutableSet.of(RESEARCHER));
+        
+        service.updatePermissionsFromRoles(account, account);
+        
+        verifyZeroInteractions(mockSponsorService);
+        verify(service, times(0)).deletePermission(any(), any());
+        verify(service, times(0)).createPermission(any(), any());
+    }
+    
+    private Account createAccount() {
+        Account account = Account.create();
+        account.setAppId(TEST_APP_ID);
+        account.setId(TEST_USER_ID);
+        account.setOrgMembership(TEST_ORG_ID);
+        return account;
+    }
+    
     private Permission createPermission() {
         Permission permission = new Permission();
         permission.setGuid(GUID);
         permission.setAppId(TEST_APP_ID);
         permission.setUserId(TEST_USER_ID);
         permission.setAccessLevel(AccessLevel.ADMIN);
-        permission.setEntityType(EntityType.STUDY);
+        permission.setEntityType(STUDY);
         permission.setEntityId(TEST_STUDY_ID);
         permission.setCreatedOn(CREATED_ON);
         permission.setModifiedOn(CREATED_ON);
         permission.setVersion(1L);
+        return permission;
+    }
+    
+    private Permission createPermission(AccessLevel accessLevel, EntityType entityType, String entityId) {
+        Permission permission = new Permission();
+        permission.setAppId(TEST_APP_ID);
+        permission.setUserId(TEST_USER_ID);
+        permission.setAccessLevel(accessLevel);
+        permission.setEntityType(entityType);
+        permission.setEntityId(entityId);
+        return permission;
+    }
+    
+    private Permission createPermission(AccessLevel accessLevel, EntityType entityType, String entityId, String guid) {
+        Permission permission = new Permission();
+        permission.setAppId(TEST_APP_ID);
+        permission.setUserId(TEST_USER_ID);
+        permission.setAccessLevel(accessLevel);
+        permission.setEntityType(entityType);
+        permission.setEntityId(entityId);
+        permission.setGuid(guid);
         return permission;
     }
 }
