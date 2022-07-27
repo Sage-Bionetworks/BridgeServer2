@@ -1,11 +1,14 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
@@ -30,11 +33,13 @@ import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Demographic;
 import org.sagebionetworks.bridge.models.studies.DemographicUser;
 import org.sagebionetworks.bridge.models.studies.DemographicUserAssessment;
+import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.DemographicService;
 import org.testng.annotations.BeforeMethod;
@@ -42,6 +47,7 @@ import org.testng.annotations.Test;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
+import com.google.common.collect.ImmutableSet;
 
 public class DemographicControllerTest {
     private static final String TEST_DEMOGRAPHIC_ID = "test-demographic-id";
@@ -316,7 +322,8 @@ public class DemographicControllerTest {
 
     @Test(expectedExceptions = { EntityNotFoundException.class })
     public void deleteDemographicNotFound() {
-        doThrow(new EntityNotFoundException(Demographic.class)).when(demographicService).deleteDemographic(any(), any());
+        doThrow(new EntityNotFoundException(Demographic.class)).when(demographicService).deleteDemographic(any(),
+                any());
 
         controller.deleteDemographic(Optional.of(TEST_STUDY_ID), TEST_USER_ID, TEST_DEMOGRAPHIC_ID);
     }
@@ -443,5 +450,46 @@ public class DemographicControllerTest {
         doNothing().when(controller).checkAccountExistsInStudy(any(), any(), any());
 
         controller.getDemographicUsers(Optional.of(TEST_STUDY_ID), "foo", "7.2");
+    }
+
+    @Test
+    public void checkAccountExistsInStudy() {
+        Account account = mock(Account.class);
+        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
+        when(account.getEnrollments())
+                .thenReturn(ImmutableSet.of(Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_APP_ID)));
+
+        controller.checkAccountExistsInStudy(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+
+        verify(accountService).getAccount(eq(AccountId.forId(TEST_APP_ID, TEST_USER_ID)));
+        verify(account).getEnrollments();
+    }
+
+    @Test
+    public void checkAccountExistsInStudyNullStudyId() {
+        Account account = mock(Account.class);
+        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
+        when(account.getEnrollments())
+                .thenReturn(ImmutableSet.of(Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_APP_ID)));
+
+        controller.checkAccountExistsInStudy(TEST_APP_ID, null, TEST_USER_ID);
+
+        verify(accountService).getAccount(eq(AccountId.forId(TEST_APP_ID, TEST_USER_ID)));
+    }
+
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void checkAccountExistsInStudyNotInStudy() {
+        Account account = mock(Account.class);
+        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
+        when(account.getEnrollments()).thenReturn(ImmutableSet.of());
+
+        controller.checkAccountExistsInStudy(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+    }
+
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void checkAccountExistsInStudyNoAccount() {
+        when(accountService.getAccount(any())).thenReturn(Optional.empty());
+
+        controller.checkAccountExistsInStudy(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
     }
 }
