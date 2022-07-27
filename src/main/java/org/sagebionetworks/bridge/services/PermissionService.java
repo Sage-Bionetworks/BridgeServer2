@@ -185,14 +185,16 @@ public class PermissionService {
         Map<EntityType, Map<String, Set<AccessLevel>>> additionalPermissions = new HashMap<>();
         Map<EntityType, Map<String, Set<AccessLevel>>> removablePermissions = new HashMap<>();
         
-        for (EntityType entityType : newPermissions.keySet()) {
+        for (Map.Entry<EntityType, Map<String, Set<AccessLevel>>> newPermissionEntry: newPermissions.entrySet()) {
+            EntityType entityType = newPermissionEntry.getKey();
             if (oldPermissions.containsKey(entityType)) {
                 // check which permissions are already accounted for, add any missing
-                Map<String, Set<AccessLevel>> newPermissionEntityTypeMap = newPermissions.get(entityType);
-                for (String entityId : newPermissionEntityTypeMap.keySet()) {
+                Map<String, Set<AccessLevel>> newPermissionEntityTypeMap = newPermissionEntry.getValue();
+                for (Map.Entry<String, Set<AccessLevel>> entry : newPermissionEntityTypeMap.entrySet()) {
+                    String entityId = entry.getKey();
                     Set<AccessLevel> oldAccessLevels = oldPermissions.get(entityType).get(entityId);
                     Set<AccessLevel> additionalAccessLevels = new HashSet<>();
-                    for (AccessLevel accessLevel : newPermissionEntityTypeMap.get(entityId)) {
+                    for (AccessLevel accessLevel : entry.getValue()) {
                         if (!oldAccessLevels.contains(accessLevel)) {
                             additionalAccessLevels.add(accessLevel);
                         }
@@ -207,13 +209,15 @@ public class PermissionService {
             }
         }
         
-        for (EntityType entityType : oldPermissions.keySet()) {
+        for (Map.Entry<EntityType, Map<String, Set<AccessLevel>>> oldPermissionEntry : oldPermissions.entrySet()) {
+            EntityType entityType = oldPermissionEntry.getKey();
             if (newPermissions.containsKey(entityType)) {
-                Map<String, Set<AccessLevel>> oldPermissionEntityTypeMap = oldPermissions.get(entityType);
-                for (String entityId : oldPermissionEntityTypeMap.keySet()) {
+                Map<String, Set<AccessLevel>> oldPermissionEntityTypeMap = oldPermissionEntry.getValue();
+                for (Map.Entry<String, Set<AccessLevel>> entityTypeEntry : oldPermissionEntityTypeMap.entrySet()) {
+                    String entityId = entityTypeEntry.getKey();
                     Set<AccessLevel> newAccessLevels = newPermissions.get(entityType).get(entityId);
                     Set<AccessLevel> removableAccessLevels = new HashSet<>();
-                    for (AccessLevel accessLevel : oldPermissionEntityTypeMap.get(entityId)) {
+                    for (AccessLevel accessLevel : entityTypeEntry.getValue()) {
                         if (!newAccessLevels.contains(accessLevel)) {
                             removableAccessLevels.add(accessLevel);
                         }
@@ -244,10 +248,12 @@ public class PermissionService {
             }
         }
     
-        for (EntityType entityType : additionalPermissions.keySet()) {
-            Map<String, Set<AccessLevel>> additionalEntityTypeMap = additionalPermissions.get(entityType);
-            for (String entityId : additionalEntityTypeMap.keySet()) {
-                for (AccessLevel accessLevel : additionalEntityTypeMap.get(entityId)) {
+        for (Map.Entry<EntityType, Map<String, Set<AccessLevel>>> additionalPermissionsEntry : additionalPermissions.entrySet()) {
+            EntityType entityType = additionalPermissionsEntry.getKey();
+            Map<String, Set<AccessLevel>> additionalEntityTypeMap = additionalPermissionsEntry.getValue();
+            for (Map.Entry<String, Set<AccessLevel>> entityTypeEntry: additionalEntityTypeMap.entrySet()) {
+                String entityId = entityTypeEntry.getKey();
+                for (AccessLevel accessLevel : entityTypeEntry.getValue()) {
                     Permission newPermission = new Permission();
                     newPermission.setAppId(account.getAppId());
                     newPermission.setUserId(account.getId());
