@@ -19,6 +19,7 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 
 import javax.persistence.OptimisticLockException;
@@ -27,6 +28,7 @@ import javax.persistence.PersistenceException;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
+import org.hibernate.NonUniqueResultException;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
@@ -242,13 +244,13 @@ public class HibernateHelperTest {
         // mock query
         Object hibernateOutput = new Object();
         Query<Object> mockQuery = mock(Query.class);
-        when(mockQuery.uniqueResult()).thenReturn(hibernateOutput);
+        when(mockQuery.uniqueResultOptional()).thenReturn(Optional.of(hibernateOutput));
 
         when(mockSession.createQuery(QUERY, Object.class)).thenReturn(mockQuery);
 
         // execute and validate
-        Object helperOutput = helper.queryGetOne(QUERY, null, Object.class);
-        assertSame(helperOutput, hibernateOutput);
+        Optional<Object> helperOutput = helper.queryGetOne(QUERY, null, Object.class);
+        assertSame(helperOutput.get(), hibernateOutput);
     }
 
     @Test
@@ -256,16 +258,29 @@ public class HibernateHelperTest {
         // mock query
         Object hibernateOutput = new Object();
         Query<Object> mockQuery = mock(Query.class);
-        when(mockQuery.uniqueResult()).thenReturn(hibernateOutput);
+        when(mockQuery.uniqueResultOptional()).thenReturn(Optional.of(hibernateOutput));
 
         when(mockSession.createQuery(QUERY, Object.class)).thenReturn(mockQuery);
 
         // execute and validate
-        Object helperOutput = helper.queryGetOne(QUERY, PARAMETERS, Object.class);
-        assertSame(helperOutput, hibernateOutput);
+        Optional<Object> helperOutput = helper.queryGetOne(QUERY, PARAMETERS, Object.class);
+        assertSame(helperOutput.get(), hibernateOutput);
 
         verify(mockQuery).setParameter("appId", TEST_APP_ID);
         verify(mockQuery).setParameter("id", 10L);
+    }
+
+    @Test(expectedExceptions = BridgeServiceException.class)
+    public void queryGetOneNonUnique() {
+        // mock query
+        Query<Object> mockQuery = mock(Query.class);
+        when(mockQuery.uniqueResultOptional()).thenThrow(new NonUniqueResultException(2));
+        when(mockExceptionConverter.convert(any(), any())).thenAnswer((invocation) -> invocation.getArgument(0));
+
+        when(mockSession.createQuery(QUERY, Object.class)).thenReturn(mockQuery);
+
+        // execute
+        helper.queryGetOne(QUERY, PARAMETERS, Object.class);
     }
 
     @Test

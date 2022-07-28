@@ -45,9 +45,9 @@ public class HibernateDemographicDao implements DemographicDao {
         where.append("du.appId = :appId", "appId", appId);
         where.append("du.studyId = :studyId", "studyId", studyId);
         where.append("du.userId = :userId", "userId", userId);
-        String existingDemographicUserId = hibernateHelper.queryGetOne(builder.getQuery(), builder.getParameters(),
-                String.class);
-        return Optional.ofNullable(existingDemographicUserId);
+        Optional<String> existingDemographicUserId = hibernateHelper.queryGetOne(builder.getQuery(),
+                builder.getParameters(), String.class);
+        return existingDemographicUserId;
     }
 
     @Override
@@ -56,9 +56,9 @@ public class HibernateDemographicDao implements DemographicDao {
         builder.append("FROM Demographic d");
         WhereClauseBuilder where = builder.startWhere(SearchTermPredicate.AND);
         where.append("d.id = :demographicId", "demographicId", demographicId);
-        Demographic existingDemographic = hibernateHelper.queryGetOne(builder.getQuery(), builder.getParameters(),
-                Demographic.class);
-        return Optional.ofNullable(existingDemographic);
+        Optional<Demographic> existingDemographic = hibernateHelper.queryGetOne(builder.getQuery(),
+                builder.getParameters(), Demographic.class);
+        return existingDemographic;
     }
 
     @Override
@@ -69,9 +69,9 @@ public class HibernateDemographicDao implements DemographicDao {
         where.append("du.appId = :appId", "appId", appId);
         where.append("du.studyId = :studyId", "studyId", studyId);
         where.append("du.userId = :userId", "userId", userId);
-        DemographicUser existingDemographicUser = hibernateHelper.queryGetOne(builder.getQuery(),
+        Optional<DemographicUser> existingDemographicUser = hibernateHelper.queryGetOne(builder.getQuery(),
                 builder.getParameters(), DemographicUser.class);
-        return Optional.ofNullable(existingDemographicUser);
+        return existingDemographicUser;
     }
 
     @Override

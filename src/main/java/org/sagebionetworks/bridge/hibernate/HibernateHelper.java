@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 
 import javax.persistence.PersistenceException;
@@ -125,8 +126,13 @@ public class HibernateHelper {
     /**
      * Executes the query and returns a single result. Returns null if there is no
      * result.
+     * 
+     * The documentation for uniqueResult isn't clear but I checked the source code and it
+     * will throw a NonUniqueResultException when it doesn't exist, which will be converted to
+     * a BridgeServiceException.
      */
-    public <T> T queryGetOne(String queryString, Map<String, Object> parameters, Class<T> clazz) {
+    public <T> Optional<T> queryGetOne(String queryString, Map<String, Object> parameters, Class<T> clazz)
+            throws BridgeServiceException {
         return executeWithExceptionHandling(null, session -> {
             Query<T> query = session.createQuery(queryString, clazz);
             if (parameters != null) {
@@ -134,7 +140,7 @@ public class HibernateHelper {
                     query.setParameter(entry.getKey(), entry.getValue());
                 }
             }
-            return query.uniqueResult();
+            return query.uniqueResultOptional();
         });
     }
 

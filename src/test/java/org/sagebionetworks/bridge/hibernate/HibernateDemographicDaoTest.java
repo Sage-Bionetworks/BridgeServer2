@@ -71,34 +71,38 @@ public class HibernateDemographicDaoTest {
 
     @Test
     public void getDemographicUserId() {
-        when(hibernateHelper.queryGetOne(any(), any(), eq(String.class))).thenReturn(DEMOGRAPHIC_USER_ID);
+        when(hibernateHelper.queryGetOne(any(), any(), eq(String.class)))
+                .thenReturn(Optional.of(DEMOGRAPHIC_USER_ID));
 
         Optional<String> returnedDemographicUserId = hibernateDemographicDao.getDemographicUserId(TEST_APP_ID,
                 TEST_STUDY_ID, TEST_USER_ID);
 
         verify(hibernateHelper).queryGetOne(
                 "SELECT du.id FROM DemographicUser du WHERE du.appId = :appId AND du.studyId = :studyId AND du.userId = :userId",
-                ImmutableMap.of("studyId", TEST_STUDY_ID, "userId", TEST_USER_ID, "appId", TEST_APP_ID), String.class);
+                ImmutableMap.of("studyId", TEST_STUDY_ID, "userId", TEST_USER_ID, "appId", TEST_APP_ID),
+                String.class);
         assertEquals(returnedDemographicUserId.get(), DEMOGRAPHIC_USER_ID);
     }
 
     @Test
     public void getDemographicUserIdNull() {
-        when(hibernateHelper.queryGetOne(any(), any(), eq(String.class))).thenReturn(null);
+        when(hibernateHelper.queryGetOne(any(), any(), eq(String.class))).thenReturn(Optional.empty());
 
         Optional<String> returnedDemographicUserId = hibernateDemographicDao.getDemographicUserId(TEST_APP_ID,
                 TEST_STUDY_ID, TEST_USER_ID);
 
         verify(hibernateHelper).queryGetOne(
                 "SELECT du.id FROM DemographicUser du WHERE du.appId = :appId AND du.studyId = :studyId AND du.userId = :userId",
-                ImmutableMap.of("studyId", TEST_STUDY_ID, "userId", TEST_USER_ID, "appId", TEST_APP_ID), String.class);
+                ImmutableMap.of("studyId", TEST_STUDY_ID, "userId", TEST_USER_ID, "appId", TEST_APP_ID),
+                String.class);
         assertTrue(!returnedDemographicUserId.isPresent());
     }
 
     @Test
     public void getDemographic() {
         Demographic demographic = new Demographic();
-        when(hibernateHelper.queryGetOne(any(), any(), eq(Demographic.class))).thenReturn(demographic);
+        when(hibernateHelper.queryGetOne(any(), any(), eq(Demographic.class)))
+                .thenReturn(Optional.of(demographic));
 
         Optional<Demographic> returnedDemographic = hibernateDemographicDao.getDemographic(DEMOGRAPHIC_ID);
 
@@ -110,7 +114,7 @@ public class HibernateDemographicDaoTest {
 
     @Test
     public void getDemographicNull() {
-        when(hibernateHelper.queryGetOne(any(), any(), eq(Demographic.class))).thenReturn(null);
+        when(hibernateHelper.queryGetOne(any(), any(), eq(Demographic.class))).thenReturn(Optional.empty());
 
         Optional<Demographic> returnedDemographic = hibernateDemographicDao.getDemographic(DEMOGRAPHIC_ID);
 
@@ -123,9 +127,11 @@ public class HibernateDemographicDaoTest {
     @Test
     public void getDemographicUser() {
         DemographicUser demographicUser = new DemographicUser();
-        when(hibernateHelper.queryGetOne(any(), any(), eq(DemographicUser.class))).thenReturn(demographicUser);
+        when(hibernateHelper.queryGetOne(any(), any(), eq(DemographicUser.class)))
+                .thenReturn(Optional.of(demographicUser));
 
-        Optional<DemographicUser> returnedDemographicUser = hibernateDemographicDao.getDemographicUser(TEST_APP_ID,
+        Optional<DemographicUser> returnedDemographicUser = hibernateDemographicDao.getDemographicUser(
+                TEST_APP_ID,
                 TEST_STUDY_ID, TEST_USER_ID);
 
         verify(hibernateHelper).queryGetOne(
@@ -137,9 +143,10 @@ public class HibernateDemographicDaoTest {
 
     @Test
     public void getDemographicUserNull() {
-        when(hibernateHelper.queryGetOne(any(), any(), eq(DemographicUser.class))).thenReturn(null);
+        when(hibernateHelper.queryGetOne(any(), any(), eq(DemographicUser.class))).thenReturn(Optional.empty());
 
-        Optional<DemographicUser> returnedDemographicUser = hibernateDemographicDao.getDemographicUser(TEST_APP_ID,
+        Optional<DemographicUser> returnedDemographicUser = hibernateDemographicDao.getDemographicUser(
+                TEST_APP_ID,
                 TEST_STUDY_ID, TEST_USER_ID);
 
         verify(hibernateHelper).queryGetOne(
