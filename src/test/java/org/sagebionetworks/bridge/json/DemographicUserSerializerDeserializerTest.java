@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.json;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -85,8 +86,10 @@ public class DemographicUserSerializerDeserializerTest {
 
     @Test
     public void deserializeNoMultipleSelect() throws JsonProcessingException, JsonMappingException {
-        new ObjectMapper().readValue("{\"userId\":\"testuserid\",\"demographics\":{\"category1\":{\"values\":[5]}}}",
-                DemographicUser.class);
+        DemographicUser demographicUser = new ObjectMapper().readValue(
+                "{\"userId\":\"testuserid\",\"demographics\":{\"category1\":{\"values\":[5]}}}", DemographicUser.class);
+
+        assertFalse(demographicUser.getDemographics().get("category1").isMultipleSelect());
     }
 
     @Test
