@@ -15,6 +15,7 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.fail;
 
+import java.lang.reflect.Method;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
@@ -63,14 +64,17 @@ public class HibernateHelperTest {
     private Transaction mockTransaction;
     
     @BeforeMethod
-    public void setup() {
+    public void setup(Method method) {
         MockitoAnnotations.initMocks(this);
-        // Spy Hibernate helper. This allows us to mock execute() and test it independently later.
+        // Spy Hibernate helper. This allows us to mock execute() and test it
+        // independently later.
         helper = spy(new HibernateHelper(mockSessionFactory, mockExceptionConverter));
-        doAnswer(invocation -> {
-            Function<Session, ?> function = invocation.getArgument(0);
-            return function.apply(mockSession);
-        }).when(helper).execute(any());
+        if (!method.getName().toLowerCase().contains("nosetup")) {
+            doAnswer(invocation -> {
+                Function<Session, ?> function = invocation.getArgument(0);
+                return function.apply(mockSession);
+            }).when(helper).execute(any());
+        }
     }
 
     @Test
@@ -671,5 +675,21 @@ public class HibernateHelperTest {
         verify(mockQuery).setParameter("a", "b");
         verify(mockQuery).setParameter("c", "d");
         verify(mockQuery).getResultList();
+    }
+
+    @Test
+    public void executeRollbackNoSetup() {
+        when(mockSession.beginTransaction()).thenReturn(mockTransaction);
+        when(mockSessionFactory.openSession()).thenReturn(mockSession);
+
+        try {
+            helper.execute((session) -> {
+                throw new PersistenceException();
+            });
+            fail("should have thrown an exception");
+        } catch (PersistenceException e) {
+        }
+
+        verify(mockTransaction).rollback();
     }
 }
