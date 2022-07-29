@@ -1,14 +1,10 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
@@ -33,21 +29,19 @@ import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.accounts.Account;
-import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Demographic;
 import org.sagebionetworks.bridge.models.studies.DemographicUser;
 import org.sagebionetworks.bridge.models.studies.DemographicUserAssessment;
-import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.DemographicService;
+import org.sagebionetworks.bridge.services.ParticipantService;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
-import com.google.common.collect.ImmutableSet;
 
 public class DemographicControllerTest {
     private static final String TEST_DEMOGRAPHIC_ID = "test-demographic-id";
@@ -61,6 +55,9 @@ public class DemographicControllerTest {
 
     @Mock
     AccountService accountService;
+
+    @Mock
+    ParticipantService participantService;
 
     @Mock
     HttpServletRequest mockRequest;
@@ -99,11 +96,11 @@ public class DemographicControllerTest {
     public void saveDemographicUser() throws MismatchedInputException {
         DemographicUser demographicUser = new DemographicUser();
         doReturn(demographicUser).when(controller).parseJson(DemographicUser.class);
-        doNothing().when(controller).checkAccountExistsInStudy(any(), any(), any());
 
         controller.saveDemographicUser(Optional.of(TEST_STUDY_ID), Optional.of(TEST_USER_ID));
 
         verify(controller).getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
+        verify(participantService).getAccountInStudy(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         verify(controller).parseJson(DemographicUser.class);
         verify(demographicService).saveDemographicUser(demographicUser);
         assertEquals(demographicUser.getAppId(), TEST_APP_ID);
@@ -115,12 +112,12 @@ public class DemographicControllerTest {
     public void saveDemographicUserAppLevel() throws MismatchedInputException {
         DemographicUser demographicUser = new DemographicUser();
         doReturn(demographicUser).when(controller).parseJson(DemographicUser.class);
-        doNothing().when(controller).checkAccountExistsInStudy(any(), any(), any());
 
         controller.saveDemographicUser(Optional.empty(), Optional.of(TEST_USER_ID));
 
         verify(controller).getAdministrativeSession();
         verify(controller).parseJson(DemographicUser.class);
+        verify(participantService).getAccountInStudy(TEST_APP_ID, null, TEST_USER_ID);
         verify(demographicService).saveDemographicUser(demographicUser);
         assertEquals(demographicUser.getAppId(), TEST_APP_ID);
         assertEquals(demographicUser.getStudyId(), null);
@@ -129,7 +126,7 @@ public class DemographicControllerTest {
 
     @Test(expectedExceptions = { EntityNotFoundException.class })
     public void saveDemographicUserNotInStudy() throws EntityNotFoundException, MismatchedInputException {
-        doThrow(new EntityNotFoundException(Account.class)).when(controller).checkAccountExistsInStudy(any(), any(),
+        doThrow(new EntityNotFoundException(Account.class)).when(participantService).getAccountInStudy(any(), any(),
                 any());
 
         controller.saveDemographicUser(Optional.of(TEST_STUDY_ID), Optional.of(TEST_USER_ID));
@@ -139,11 +136,11 @@ public class DemographicControllerTest {
     public void saveDemographicUserSelf() throws MismatchedInputException {
         DemographicUser demographicUser = new DemographicUser();
         doReturn(demographicUser).when(controller).parseJson(DemographicUser.class);
-        doNothing().when(controller).checkAccountExistsInStudy(any(), any(), any());
 
         controller.saveDemographicUser(Optional.of(TEST_STUDY_ID), Optional.empty());
 
         verify(controller).getAuthenticatedAndConsentedSession();
+        verify(participantService).getAccountInStudy(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         verify(controller).parseJson(DemographicUser.class);
         verify(demographicService).saveDemographicUser(demographicUser);
         assertEquals(demographicUser.getAppId(), TEST_APP_ID);
@@ -155,11 +152,11 @@ public class DemographicControllerTest {
     public void saveDemographicUserSelfAppLevel() throws MismatchedInputException {
         DemographicUser demographicUser = new DemographicUser();
         doReturn(demographicUser).when(controller).parseJson(DemographicUser.class);
-        doNothing().when(controller).checkAccountExistsInStudy(any(), any(), any());
 
         controller.saveDemographicUser(Optional.empty(), Optional.empty());
 
         verify(controller).getAuthenticatedAndConsentedSession();
+        verify(participantService).getAccountInStudy(TEST_APP_ID, null, TEST_USER_ID);
         verify(controller).parseJson(DemographicUser.class);
         verify(demographicService).saveDemographicUser(demographicUser);
         assertEquals(demographicUser.getAppId(), TEST_APP_ID);
@@ -170,7 +167,6 @@ public class DemographicControllerTest {
     @Test
     public void saveDemographicUserNull() throws MismatchedInputException {
         doReturn(null).when(controller).parseJson(DemographicUser.class);
-        doNothing().when(controller).checkAccountExistsInStudy(any(), any(), any());
 
         try {
             controller.saveDemographicUser(Optional.of(TEST_STUDY_ID), Optional.of(TEST_USER_ID));
@@ -179,6 +175,7 @@ public class DemographicControllerTest {
         }
 
         verify(controller).getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
+        verify(participantService).getAccountInStudy(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         // can't use expectedExceptions because we need to test this after
         verify(controller).parseJson(DemographicUser.class);
     }
@@ -189,7 +186,6 @@ public class DemographicControllerTest {
             throw MismatchedInputException.from(new JsonFactory().createParser("[]"), DemographicUser.class,
                     "bad json");
         }).when(controller).parseJson(DemographicUser.class);
-        doNothing().when(controller).checkAccountExistsInStudy(any(), any(), any());
 
         controller.saveDemographicUser(Optional.empty(), Optional.of(TEST_USER_ID));
     }
@@ -199,11 +195,11 @@ public class DemographicControllerTest {
         DemographicUser demographicUser = new DemographicUser();
         DemographicUserAssessment demographicUserAssessment = new DemographicUserAssessment(demographicUser);
         doReturn(demographicUserAssessment).when(controller).parseJson(DemographicUserAssessment.class);
-        doNothing().when(controller).checkAccountExistsInStudy(any(), any(), any());
 
         controller.saveDemographicUserAssessment(Optional.of(TEST_STUDY_ID), Optional.of(TEST_USER_ID));
 
         verify(controller).getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
+        verify(participantService).getAccountInStudy(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         verify(controller).parseJson(DemographicUserAssessment.class);
         verify(demographicService).saveDemographicUser(demographicUser);
         assertEquals(demographicUser.getAppId(), TEST_APP_ID);
@@ -216,11 +212,11 @@ public class DemographicControllerTest {
         DemographicUser demographicUser = new DemographicUser();
         DemographicUserAssessment demographicUserAssessment = new DemographicUserAssessment(demographicUser);
         doReturn(demographicUserAssessment).when(controller).parseJson(DemographicUserAssessment.class);
-        doNothing().when(controller).checkAccountExistsInStudy(any(), any(), any());
 
         controller.saveDemographicUserAssessment(Optional.empty(), Optional.of(TEST_USER_ID));
 
         verify(controller).getAdministrativeSession();
+        verify(participantService).getAccountInStudy(TEST_APP_ID, null, TEST_USER_ID);
         verify(controller).parseJson(DemographicUserAssessment.class);
         verify(demographicService).saveDemographicUser(demographicUser);
         assertEquals(demographicUser.getAppId(), TEST_APP_ID);
@@ -230,7 +226,7 @@ public class DemographicControllerTest {
 
     @Test(expectedExceptions = { EntityNotFoundException.class })
     public void saveDemographicUserAssessmentNotInStudy() throws EntityNotFoundException, MismatchedInputException {
-        doThrow(new EntityNotFoundException(Account.class)).when(controller).checkAccountExistsInStudy(any(), any(),
+        doThrow(new EntityNotFoundException(Account.class)).when(participantService).getAccountInStudy(any(), any(),
                 any());
 
         controller.saveDemographicUserAssessment(Optional.of(TEST_STUDY_ID), Optional.of(TEST_USER_ID));
@@ -241,11 +237,11 @@ public class DemographicControllerTest {
         DemographicUser demographicUser = new DemographicUser();
         DemographicUserAssessment demographicUserAssessment = new DemographicUserAssessment(demographicUser);
         doReturn(demographicUserAssessment).when(controller).parseJson(DemographicUserAssessment.class);
-        doNothing().when(controller).checkAccountExistsInStudy(any(), any(), any());
 
         controller.saveDemographicUserAssessment(Optional.of(TEST_STUDY_ID), Optional.empty());
 
         verify(controller).getAuthenticatedAndConsentedSession();
+        verify(participantService).getAccountInStudy(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         verify(controller).parseJson(DemographicUserAssessment.class);
         verify(demographicService).saveDemographicUser(demographicUser);
         assertEquals(demographicUser.getAppId(), TEST_APP_ID);
@@ -258,11 +254,11 @@ public class DemographicControllerTest {
         DemographicUser demographicUser = new DemographicUser();
         DemographicUserAssessment demographicUserAssessment = new DemographicUserAssessment(demographicUser);
         doReturn(demographicUserAssessment).when(controller).parseJson(DemographicUserAssessment.class);
-        doNothing().when(controller).checkAccountExistsInStudy(any(), any(), any());
 
         controller.saveDemographicUserAssessment(Optional.empty(), Optional.empty());
 
         verify(controller).getAuthenticatedAndConsentedSession();
+        verify(participantService).getAccountInStudy(TEST_APP_ID, null, TEST_USER_ID);
         verify(controller).parseJson(DemographicUserAssessment.class);
         verify(demographicService).saveDemographicUser(demographicUser);
         assertEquals(demographicUser.getAppId(), TEST_APP_ID);
@@ -273,7 +269,6 @@ public class DemographicControllerTest {
     @Test
     public void saveDemographicUserAssessmentNull() throws MismatchedInputException {
         doReturn(null).when(controller).parseJson(DemographicUserAssessment.class);
-        doNothing().when(controller).checkAccountExistsInStudy(any(), any(), any());
 
         try {
             controller.saveDemographicUserAssessment(Optional.of(TEST_STUDY_ID), Optional.of(TEST_USER_ID));
@@ -282,6 +277,7 @@ public class DemographicControllerTest {
         }
 
         verify(controller).getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
+        verify(participantService).getAccountInStudy(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         // can't use expectedExceptions because we need to test this after
         verify(controller).parseJson(DemographicUserAssessment.class);
     }
@@ -296,25 +292,23 @@ public class DemographicControllerTest {
             throw MismatchedInputException.from(new JsonFactory().createParser("[]"), DemographicUserAssessment.class,
                     "bad json");
         }).when(controller).parseJson(DemographicUserAssessment.class);
-        doNothing().when(controller).checkAccountExistsInStudy(any(), any(), any());
 
         controller.saveDemographicUserAssessment(Optional.empty(), Optional.of(TEST_USER_ID));
     }
 
     @Test
     public void deleteDemographic() {
-        doNothing().when(controller).checkAccountExistsInStudy(any(), any(), any());
 
         controller.deleteDemographic(Optional.of(TEST_STUDY_ID), TEST_USER_ID, TEST_DEMOGRAPHIC_ID);
 
         verify(controller).getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
-        verify(controller).checkAccountExistsInStudy(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+        verify(participantService).getAccountInStudy(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         verify(demographicService).deleteDemographic(TEST_USER_ID, TEST_DEMOGRAPHIC_ID);
     }
 
     @Test(expectedExceptions = { EntityNotFoundException.class })
     public void deleteDemographicNotInStudy() {
-        doThrow(new EntityNotFoundException(Account.class)).when(controller).checkAccountExistsInStudy(any(), any(),
+        doThrow(new EntityNotFoundException(Account.class)).when(participantService).getAccountInStudy(any(), any(),
                 any());
 
         controller.deleteDemographic(Optional.of(TEST_STUDY_ID), TEST_USER_ID, TEST_DEMOGRAPHIC_ID);
@@ -330,29 +324,27 @@ public class DemographicControllerTest {
 
     @Test
     public void deleteDemographicAppLevel() {
-        doNothing().when(controller).checkAccountExistsInStudy(any(), any(), any());
 
         controller.deleteDemographic(Optional.empty(), TEST_USER_ID, TEST_DEMOGRAPHIC_ID);
 
         verify(controller).getAdministrativeSession();
-        verify(controller).checkAccountExistsInStudy(TEST_APP_ID, null, TEST_USER_ID);
+        verify(participantService).getAccountInStudy(TEST_APP_ID, null, TEST_USER_ID);
         verify(demographicService).deleteDemographic(TEST_USER_ID, TEST_DEMOGRAPHIC_ID);
     }
 
     @Test
     public void deleteDemographicUser() {
-        doNothing().when(controller).checkAccountExistsInStudy(any(), any(), any());
 
         controller.deleteDemographicUser(Optional.of(TEST_STUDY_ID), TEST_USER_ID);
 
         verify(controller).getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
-        verify(controller).checkAccountExistsInStudy(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+        verify(participantService).getAccountInStudy(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         verify(demographicService).deleteDemographicUser(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
     }
 
     @Test(expectedExceptions = { EntityNotFoundException.class })
     public void deleteDemographicUserNotInStudy() {
-        doThrow(new EntityNotFoundException(Account.class)).when(controller).checkAccountExistsInStudy(any(), any(),
+        doThrow(new EntityNotFoundException(Account.class)).when(participantService).getAccountInStudy(any(), any(),
                 any());
 
         controller.deleteDemographicUser(Optional.of(TEST_STUDY_ID), TEST_USER_ID);
@@ -368,29 +360,27 @@ public class DemographicControllerTest {
 
     @Test
     public void deleteDemographicUserAppLevel() {
-        doNothing().when(controller).checkAccountExistsInStudy(any(), any(), any());
 
         controller.deleteDemographicUser(Optional.empty(), TEST_USER_ID);
 
         verify(controller).getAdministrativeSession();
-        verify(controller).checkAccountExistsInStudy(TEST_APP_ID, null, TEST_USER_ID);
+        verify(participantService).getAccountInStudy(TEST_APP_ID, null, TEST_USER_ID);
         verify(demographicService).deleteDemographicUser(TEST_APP_ID, null, TEST_USER_ID);
     }
 
     @Test
     public void getDemographicUser() {
-        doNothing().when(controller).checkAccountExistsInStudy(any(), any(), any());
 
         controller.getDemographicUser(Optional.of(TEST_STUDY_ID), TEST_USER_ID);
 
         verify(controller).getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
-        verify(controller).checkAccountExistsInStudy(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+        verify(participantService).getAccountInStudy(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         verify(demographicService).getDemographicUser(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
     }
 
     @Test(expectedExceptions = { EntityNotFoundException.class })
     public void getDemographicUserNotInStudy() {
-        doThrow(new EntityNotFoundException(Account.class)).when(controller).checkAccountExistsInStudy(any(), any(),
+        doThrow(new EntityNotFoundException(Account.class)).when(participantService).getAccountInStudy(any(), any(),
                 any());
 
         controller.getDemographicUser(Optional.of(TEST_STUDY_ID), TEST_USER_ID);
@@ -406,18 +396,16 @@ public class DemographicControllerTest {
 
     @Test
     public void getDemographicUserAppLevel() {
-        doNothing().when(controller).checkAccountExistsInStudy(any(), any(), any());
 
         controller.getDemographicUser(Optional.empty(), TEST_USER_ID);
 
         verify(controller).getAdministrativeSession();
-        verify(controller).checkAccountExistsInStudy(TEST_APP_ID, null, TEST_USER_ID);
+        verify(participantService).getAccountInStudy(TEST_APP_ID, null, TEST_USER_ID);
         verify(demographicService).getDemographicUser(TEST_APP_ID, null, TEST_USER_ID);
     }
 
     @Test
     public void getDemographicUsers() {
-        doNothing().when(controller).checkAccountExistsInStudy(any(), any(), any());
 
         controller.getDemographicUsers(Optional.of(TEST_STUDY_ID), "0", "10");
 
@@ -427,7 +415,6 @@ public class DemographicControllerTest {
 
     @Test
     public void getDemographicUsersAppLevel() {
-        doNothing().when(controller).checkAccountExistsInStudy(any(), any(), any());
 
         controller.getDemographicUsers(Optional.empty(), "0", "10");
 
@@ -437,7 +424,6 @@ public class DemographicControllerTest {
 
     @Test
     public void getDemographicUsersBlankParams() {
-        doNothing().when(controller).checkAccountExistsInStudy(any(), any(), any());
 
         controller.getDemographicUsers(Optional.of(TEST_STUDY_ID), null, null);
 
@@ -447,49 +433,7 @@ public class DemographicControllerTest {
 
     @Test(expectedExceptions = BadRequestException.class)
     public void getDemographicUsersInvalidParams() {
-        doNothing().when(controller).checkAccountExistsInStudy(any(), any(), any());
 
         controller.getDemographicUsers(Optional.of(TEST_STUDY_ID), "foo", "7.2");
-    }
-
-    @Test
-    public void checkAccountExistsInStudy() {
-        Account account = mock(Account.class);
-        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
-        when(account.getEnrollments())
-                .thenReturn(ImmutableSet.of(Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_APP_ID)));
-
-        controller.checkAccountExistsInStudy(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
-
-        verify(accountService).getAccount(eq(AccountId.forId(TEST_APP_ID, TEST_USER_ID)));
-        verify(account).getEnrollments();
-    }
-
-    @Test
-    public void checkAccountExistsInStudyNullStudyId() {
-        Account account = mock(Account.class);
-        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
-        when(account.getEnrollments())
-                .thenReturn(ImmutableSet.of(Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_APP_ID)));
-
-        controller.checkAccountExistsInStudy(TEST_APP_ID, null, TEST_USER_ID);
-
-        verify(accountService).getAccount(eq(AccountId.forId(TEST_APP_ID, TEST_USER_ID)));
-    }
-
-    @Test(expectedExceptions = EntityNotFoundException.class)
-    public void checkAccountExistsInStudyNotInStudy() {
-        Account account = mock(Account.class);
-        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
-        when(account.getEnrollments()).thenReturn(ImmutableSet.of());
-
-        controller.checkAccountExistsInStudy(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
-    }
-
-    @Test(expectedExceptions = EntityNotFoundException.class)
-    public void checkAccountExistsInStudyNoAccount() {
-        when(accountService.getAccount(any())).thenReturn(Optional.empty());
-
-        controller.checkAccountExistsInStudy(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
     }
 }

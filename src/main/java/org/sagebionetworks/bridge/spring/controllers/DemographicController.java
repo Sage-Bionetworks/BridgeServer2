@@ -10,13 +10,11 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
-import org.sagebionetworks.bridge.models.accounts.Account;
-import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.DemographicUser;
 import org.sagebionetworks.bridge.models.studies.DemographicUserAssessment;
-import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.services.DemographicService;
+import org.sagebionetworks.bridge.services.ParticipantService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -33,9 +31,16 @@ import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 public class DemographicController extends BaseController {
     private DemographicService demographicService;
 
+    private ParticipantService participantService;
+
     @Autowired
     public final void setDemographicService(DemographicService demographicService) {
         this.demographicService = demographicService;
+    }
+
+    @Autowired
+    public final void setParticipantService(ParticipantService participantService) {
+        this.participantService = participantService;
     }
 
     // Save/update all demographics for a user
@@ -63,7 +68,7 @@ public class DemographicController extends BaseController {
             session = getAuthenticatedAndConsentedSession();
             userIdUnwrapped = session.getId();
         }
-        checkAccountExistsInStudy(session.getAppId(), studyIdNullable, userIdUnwrapped);
+        participantService.getAccountInStudy(session.getAppId(), studyIdNullable, userIdUnwrapped);
 
         DemographicUser demographicUser = parseJson(DemographicUser.class);
         if (demographicUser == null) {
@@ -100,7 +105,7 @@ public class DemographicController extends BaseController {
             session = getAuthenticatedAndConsentedSession();
             userIdUnwrapped = session.getId();
         }
-        checkAccountExistsInStudy(session.getAppId(), studyIdNullable, userIdUnwrapped);
+        participantService.getAccountInStudy(session.getAppId(), studyIdNullable, userIdUnwrapped);
 
         DemographicUserAssessment demographicUserAssessment = parseJson(DemographicUserAssessment.class);
         if (demographicUserAssessment == null) {
@@ -128,7 +133,7 @@ public class DemographicController extends BaseController {
             // app level demographics
             session = getAdministrativeSession();
         }
-        checkAccountExistsInStudy(session.getAppId(), studyIdNull, userId);
+        participantService.getAccountInStudy(session.getAppId(), studyIdNull, userId);
 
         demographicService.deleteDemographic(userId, demographicId);
     }
@@ -148,7 +153,7 @@ public class DemographicController extends BaseController {
             // app level demographics
             session = getAdministrativeSession();
         }
-        checkAccountExistsInStudy(session.getAppId(), studyIdNull, userId);
+        participantService.getAccountInStudy(session.getAppId(), studyIdNull, userId);
 
         demographicService.deleteDemographicUser(session.getAppId(), studyIdNull, userId);
     }
@@ -168,7 +173,7 @@ public class DemographicController extends BaseController {
             // app level demographics
             session = getAdministrativeSession();
         }
-        checkAccountExistsInStudy(session.getAppId(), studyIdNull, userId);
+        participantService.getAccountInStudy(session.getAppId(), studyIdNull, userId);
 
         return demographicService.getDemographicUser(session.getAppId(), studyIdNull, userId);
     }
@@ -194,16 +199,5 @@ public class DemographicController extends BaseController {
         int pageSizeInt = BridgeUtils.getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
 
         return demographicService.getDemographicUsers(session.getAppId(), studyIdNull, offsetInt, pageSizeInt);
-    }
-
-    public void checkAccountExistsInStudy(String appId, String studyId, String userId)
-            throws EntityNotFoundException {
-        AccountId accountId = BridgeUtils.parseAccountId(appId, userId);
-        Account account = accountService.getAccount(accountId)
-                .orElseThrow(() -> new EntityNotFoundException(Account.class));
-        if (studyId != null) {
-            BridgeUtils.getElement(account.getEnrollments(), Enrollment::getStudyId, studyId)
-                    .orElseThrow(() -> new EntityNotFoundException(Account.class));
-        }
     }
 }
