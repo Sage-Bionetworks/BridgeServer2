@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.services;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
@@ -12,7 +11,6 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
-import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 import java.util.HashMap;
@@ -21,8 +19,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.IntStream;
 
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -50,9 +46,6 @@ public class DemographicServiceTest {
     @Spy
     DemographicService demographicService;
 
-    @Captor
-    ArgumentCaptor<DemographicUser> demographicUserCaptor;
-
     @BeforeMethod
     public void beforeMethod() {
         MockitoAnnotations.initMocks(this);
@@ -66,19 +59,20 @@ public class DemographicServiceTest {
         DemographicUser demographicUser = new DemographicUser("test-id", TEST_APP_ID, TEST_STUDY_ID,
                 TEST_USER_ID,
                 new HashMap<>());
+        Optional<String> existingDemographicUserId = Optional.empty();
         demographicUser.getDemographics().put("category-name1",
                 new Demographic(null, demographicUser, "category-name1", true, ImmutableList.of(),
                         null));
         demographicUser.getDemographics().put("category-name2",
                 new Demographic(null, demographicUser, "category-name2", true, ImmutableList.of(),
                         null));
-        when(demographicDao.getDemographicUser(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID))
-                .thenReturn(Optional.empty());
-        when(demographicDao.saveDemographicUser(any())).thenAnswer((invocation) -> invocation.getArgument(0));
+        when(demographicDao.getDemographicUserId(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID))
+                .thenReturn(existingDemographicUserId);
+        when(demographicDao.saveDemographicUser(any(), any())).thenAnswer((invocation) -> invocation.getArgument(0));
 
         DemographicUser returnedDemographicUser = demographicService.saveDemographicUser(demographicUser);
 
-        verify(demographicDao).saveDemographicUser(demographicUser);
+        verify(demographicDao).saveDemographicUser(demographicUser, existingDemographicUserId);
         assertEquals(returnedDemographicUser.getId(), "0");
         Iterator<Demographic> iter = returnedDemographicUser.getDemographics().values().iterator();
         for (int i = 1; iter.hasNext(); i++) {
@@ -89,11 +83,7 @@ public class DemographicServiceTest {
 
     @Test
     public void saveDemographicUserOverwrite() {
-        DemographicUser existingDemographicUser = new DemographicUser(DEMOGRAPHIC_USER_ID, TEST_APP_ID,
-                TEST_STUDY_ID,
-                TEST_USER_ID,
-                new HashMap<>());
-        existingDemographicUser.getDemographics().put("some key", null);
+        Optional<String> existingDemographicUserId = Optional.of(DEMOGRAPHIC_USER_ID);
         DemographicUser demographicUser = new DemographicUser("test-id", TEST_APP_ID, TEST_STUDY_ID,
                 TEST_USER_ID,
                 new HashMap<>());
@@ -103,16 +93,13 @@ public class DemographicServiceTest {
         demographicUser.getDemographics().put("category-name2",
                 new Demographic(null, demographicUser, "category-name2", true, ImmutableList.of(),
                         null));
-        when(demographicDao.getDemographicUser(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID))
-                .thenReturn(Optional.of(existingDemographicUser));
-        when(demographicDao.saveDemographicUser(any())).thenAnswer((invocation) -> invocation.getArgument(0));
+        when(demographicDao.getDemographicUserId(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID))
+                .thenReturn(existingDemographicUserId);
+        when(demographicDao.saveDemographicUser(any(), any())).thenAnswer((invocation) -> invocation.getArgument(0));
 
         DemographicUser returnedDemographicUser = demographicService.saveDemographicUser(demographicUser);
 
-        assertTrue(existingDemographicUser.getDemographics().isEmpty());
-        verify(demographicDao, times(2)).saveDemographicUser(demographicUserCaptor.capture());
-        assertEquals(demographicUserCaptor.getAllValues().get(0), existingDemographicUser);
-        assertEquals(demographicUserCaptor.getAllValues().get(1), demographicUser);
+        verify(demographicDao).saveDemographicUser(demographicUser, existingDemographicUserId);
         assertEquals(returnedDemographicUser.getId(), DEMOGRAPHIC_USER_ID);
         Iterator<Demographic> iter = returnedDemographicUser.getDemographics().values().iterator();
         for (int i = 0; iter.hasNext(); i++) {

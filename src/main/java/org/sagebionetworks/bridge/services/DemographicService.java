@@ -29,18 +29,12 @@ public class DemographicService {
     }
 
     public DemographicUser saveDemographicUser(DemographicUser demographicUser) throws InvalidEntityException {
-        Optional<DemographicUser> existingDemographicUser = demographicDao.getDemographicUser(
+        Optional<String> existingDemographicUserId = demographicDao.getDemographicUserId(
                 demographicUser.getAppId(), demographicUser.getStudyId(), demographicUser.getUserId());
-        if (!existingDemographicUser.isPresent()) {
+        if (!existingDemographicUserId.isPresent()) {
             demographicUser.setId(generateGuid());
         } else {
-            // need to delete previous demographics first to prevent violation unique
-            // constraint with (demographicUserId, categoryName) since the new demographics
-            // could have a categoryName which already exists
-            DemographicUser existingDemographicUserUnwrapped = existingDemographicUser.get();
-            existingDemographicUserUnwrapped.getDemographics().clear();
-            demographicDao.saveDemographicUser(existingDemographicUserUnwrapped);
-            demographicUser.setId(existingDemographicUserUnwrapped.getId());
+            demographicUser.setId(existingDemographicUserId.get());
         }
         if (demographicUser.getDemographics() != null) {
             for (Demographic demographic : demographicUser.getDemographics().values()) {
@@ -48,7 +42,7 @@ public class DemographicService {
             }
         }
         Validate.entityThrowingException(DemographicUserValidator.INSTANCE, demographicUser);
-        return demographicDao.saveDemographicUser(demographicUser);
+        return demographicDao.saveDemographicUser(demographicUser, existingDemographicUserId);
     }
 
     public void deleteDemographic(String userId, String demographicId) throws EntityNotFoundException {

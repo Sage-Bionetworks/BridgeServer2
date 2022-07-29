@@ -7,14 +7,14 @@ import org.sagebionetworks.bridge.models.studies.Demographic;
 import org.sagebionetworks.bridge.models.studies.DemographicUser;
 
 public interface DemographicDao {
-    DemographicUser saveDemographicUser(DemographicUser demographicUser);
+    DemographicUser saveDemographicUser(DemographicUser demographicUser, Optional<String> existingDemographicUserId);
 
     void deleteDemographic(String demographicId);
 
     void deleteDemographicUser(String demographicUserId);
 
     Optional<Demographic> getDemographic(String demographicId);
-    
+
     Optional<String> getDemographicUserId(String appId, String studyId, String userId);
 
     Optional<DemographicUser> getDemographicUser(String appId, String studyId, String userId);

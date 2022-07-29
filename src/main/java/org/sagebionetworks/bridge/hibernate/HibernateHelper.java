@@ -257,7 +257,6 @@ public class HibernateHelper {
                 retval = function.apply(session);
                 transaction.commit();
             } catch (PersistenceException e) {
-                System.out.println("foo");
                 transaction.rollback();
                 throw e;
             }
