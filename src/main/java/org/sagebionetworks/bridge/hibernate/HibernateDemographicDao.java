@@ -26,6 +26,7 @@ public class HibernateDemographicDao implements DemographicDao {
     public DemographicUser saveDemographicUser(DemographicUser demographicUser,
             Optional<String> existingDemographicUserId) {
         if (existingDemographicUserId.isPresent()) {
+            // perform both deletion and saving in single transaction
             return hibernateHelper.executeWithExceptionHandling(null, (session) -> {
                 session.delete(session.get(DemographicUser.class, existingDemographicUserId.get()));
                 session.saveOrUpdate(demographicUser);

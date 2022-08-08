@@ -7,8 +7,12 @@ import java.util.Optional;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
+import org.sagebionetworks.bridge.exceptions.UnsupportedVersionException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.DemographicUser;
@@ -44,13 +48,14 @@ public class DemographicController extends BaseController {
     }
 
     // Save/update all demographics for a user
-    @PostMapping({ "/v5/studies/{studyId}/participants/{userId}/demographics", // TODO check version
+    @PostMapping({ "/v5/studies/{studyId}/participants/{userId}/demographics",
             "/v5/studies/{studyId}/participants/self/demographics",
             "/v1/apps/self/participants/{userId}/demographics",
             "/v1/apps/self/participants/self/demographics" })
     public DemographicUser saveDemographicUser(@PathVariable(required = false) Optional<String> studyId,
             @PathVariable(required = false) Optional<String> userId)
-            throws MismatchedInputException, BadRequestException, InvalidEntityException {
+            throws MismatchedInputException, BadRequestException, EntityNotFoundException, InvalidEntityException,
+            NotAuthenticatedException, UnauthorizedException, ConsentRequiredException, UnsupportedVersionException {
         String studyIdNullable = studyId.orElse(null);
 
         UserSession session;
@@ -81,13 +86,14 @@ public class DemographicController extends BaseController {
     }
 
     // Save/update all demographics for a user
-    @PostMapping({ "/v5/studies/{studyId}/participants/{userId}/demographics/assessment", // TODO check version
+    @PostMapping({ "/v5/studies/{studyId}/participants/{userId}/demographics/assessment",
             "/v5/studies/{studyId}/participants/self/demographics/assessment",
             "/v1/apps/self/participants/{userId}/demographics/assessment",
             "/v1/apps/self/participants/self/demographics/assessment" })
     public DemographicUser saveDemographicUserAssessment(@PathVariable(required = false) Optional<String> studyId,
             @PathVariable(required = false) Optional<String> userId)
-            throws MismatchedInputException, BadRequestException, InvalidEntityException {
+            throws MismatchedInputException, BadRequestException, EntityNotFoundException, InvalidEntityException,
+            NotAuthenticatedException, UnauthorizedException, ConsentRequiredException, UnsupportedVersionException {
         String studyIdNullable = studyId.orElse(null);
 
         UserSession session;
@@ -122,7 +128,8 @@ public class DemographicController extends BaseController {
     @DeleteMapping({ "/v5/studies/{studyId}/participants/{userId}/demographics/{demographicId}",
             "/v1/apps/self/participants/{userId}/demographics/{demographicId}" })
     public void deleteDemographic(@PathVariable(required = false) Optional<String> studyId, @PathVariable String userId,
-            @PathVariable String demographicId) throws EntityNotFoundException {
+            @PathVariable String demographicId) throws EntityNotFoundException, NotAuthenticatedException,
+            UnauthorizedException, ConsentRequiredException, UnsupportedVersionException {
         String studyIdNull = studyId.orElse(null);
 
         UserSession session;
@@ -142,7 +149,8 @@ public class DemographicController extends BaseController {
     @DeleteMapping({ "/v5/studies/{studyId}/participants/{userId}/demographics",
             "/v1/apps/self/participants/{userId}/demographics" })
     public void deleteDemographicUser(@PathVariable(required = false) Optional<String> studyId,
-            @PathVariable String userId) throws EntityNotFoundException {
+            @PathVariable String userId) throws EntityNotFoundException, NotAuthenticatedException,
+            UnauthorizedException, ConsentRequiredException, UnsupportedVersionException {
         String studyIdNull = studyId.orElse(null);
 
         UserSession session;
@@ -162,7 +170,8 @@ public class DemographicController extends BaseController {
     @GetMapping({ "/v5/studies/{studyId}/participants/{userId}/demographics",
             "/v1/apps/self/participants/{userId}/demographics" })
     public DemographicUser getDemographicUser(@PathVariable(required = false) Optional<String> studyId,
-            @PathVariable String userId) throws EntityNotFoundException {
+            @PathVariable String userId) throws EntityNotFoundException, NotAuthenticatedException,
+            UnauthorizedException, ConsentRequiredException, UnsupportedVersionException {
         String studyIdNull = studyId.orElse(null);
 
         UserSession session;
@@ -184,7 +193,8 @@ public class DemographicController extends BaseController {
     public PagedResourceList<DemographicUser> getDemographicUsers(
             @PathVariable(required = false) Optional<String> studyId,
             @RequestParam(required = false) String offsetBy, @RequestParam(required = false) String pageSize)
-            throws BadRequestException {
+            throws BadRequestException, NotAuthenticatedException,
+            UnauthorizedException, ConsentRequiredException, UnsupportedVersionException {
         String studyIdNull = studyId.orElse(null);
 
         UserSession session;
