@@ -28,8 +28,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.fasterxml.jackson.databind.exc.MismatchedInputException;
-
 @CrossOrigin
 @RestController
 public class DemographicController extends BaseController {
@@ -54,7 +52,7 @@ public class DemographicController extends BaseController {
             "/v1/apps/self/participants/self/demographics" })
     public DemographicUser saveDemographicUser(@PathVariable(required = false) Optional<String> studyId,
             @PathVariable(required = false) Optional<String> userId)
-            throws MismatchedInputException, BadRequestException, EntityNotFoundException, InvalidEntityException,
+            throws BadRequestException, EntityNotFoundException, InvalidEntityException,
             NotAuthenticatedException, UnauthorizedException, ConsentRequiredException, UnsupportedVersionException {
         String studyIdNullable = studyId.orElse(null);
 
@@ -92,7 +90,7 @@ public class DemographicController extends BaseController {
             "/v1/apps/self/participants/self/demographics/assessment" })
     public DemographicUser saveDemographicUserAssessment(@PathVariable(required = false) Optional<String> studyId,
             @PathVariable(required = false) Optional<String> userId)
-            throws MismatchedInputException, BadRequestException, EntityNotFoundException, InvalidEntityException,
+            throws BadRequestException, EntityNotFoundException, InvalidEntityException,
             NotAuthenticatedException, UnauthorizedException, ConsentRequiredException, UnsupportedVersionException {
         String studyIdNullable = studyId.orElse(null);
 
