@@ -39,6 +39,7 @@ public class DemographicService {
         if (demographicUser.getDemographics() != null) {
             for (Demographic demographic : demographicUser.getDemographics().values()) {
                 demographic.setId(generateGuid());
+                demographic.setDemographicUser(demographicUser);
             }
         }
         Validate.entityThrowingException(DemographicUserValidator.INSTANCE, demographicUser);
