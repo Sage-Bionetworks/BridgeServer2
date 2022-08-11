@@ -28,6 +28,7 @@ import org.mockito.Spy;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -299,11 +300,12 @@ public class DemographicControllerTest {
     @Test
     public void deleteDemographic() {
 
-        controller.deleteDemographic(Optional.of(TEST_STUDY_ID), TEST_USER_ID, TEST_DEMOGRAPHIC_ID);
+        StatusMessage message = controller.deleteDemographic(Optional.of(TEST_STUDY_ID), TEST_USER_ID, TEST_DEMOGRAPHIC_ID);
 
         verify(controller).getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
         verify(participantService).getAccountInStudy(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         verify(demographicService).deleteDemographic(TEST_USER_ID, TEST_DEMOGRAPHIC_ID);
+        assertEquals(message.getMessage(), "Demographic successfully deleted");
     }
 
     @Test(expectedExceptions = { EntityNotFoundException.class })
@@ -325,21 +327,23 @@ public class DemographicControllerTest {
     @Test
     public void deleteDemographicAppLevel() {
 
-        controller.deleteDemographic(Optional.empty(), TEST_USER_ID, TEST_DEMOGRAPHIC_ID);
+        StatusMessage message = controller.deleteDemographic(Optional.empty(), TEST_USER_ID, TEST_DEMOGRAPHIC_ID);
 
         verify(controller).getAdministrativeSession();
         verify(participantService).getAccountInStudy(TEST_APP_ID, null, TEST_USER_ID);
         verify(demographicService).deleteDemographic(TEST_USER_ID, TEST_DEMOGRAPHIC_ID);
+        assertEquals(message.getMessage(), "Demographic successfully deleted");
     }
 
     @Test
     public void deleteDemographicUser() {
 
-        controller.deleteDemographicUser(Optional.of(TEST_STUDY_ID), TEST_USER_ID);
+        StatusMessage message = controller.deleteDemographicUser(Optional.of(TEST_STUDY_ID), TEST_USER_ID);
 
         verify(controller).getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
         verify(participantService).getAccountInStudy(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         verify(demographicService).deleteDemographicUser(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+        assertEquals(message.getMessage(), "Demographic user successfully deleted");
     }
 
     @Test(expectedExceptions = { EntityNotFoundException.class })
@@ -361,11 +365,12 @@ public class DemographicControllerTest {
     @Test
     public void deleteDemographicUserAppLevel() {
 
-        controller.deleteDemographicUser(Optional.empty(), TEST_USER_ID);
+        StatusMessage message = controller.deleteDemographicUser(Optional.empty(), TEST_USER_ID);
 
         verify(controller).getAdministrativeSession();
         verify(participantService).getAccountInStudy(TEST_APP_ID, null, TEST_USER_ID);
         verify(demographicService).deleteDemographicUser(TEST_APP_ID, null, TEST_USER_ID);
+        assertEquals(message.getMessage(), "Demographic user successfully deleted");
     }
 
     @Test

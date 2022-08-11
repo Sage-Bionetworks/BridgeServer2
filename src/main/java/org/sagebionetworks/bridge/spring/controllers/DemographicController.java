@@ -14,6 +14,7 @@ import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.exceptions.UnsupportedVersionException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.DemographicUser;
 import org.sagebionetworks.bridge.models.studies.DemographicUserAssessment;
@@ -31,6 +32,9 @@ import org.springframework.web.bind.annotation.RestController;
 @CrossOrigin
 @RestController
 public class DemographicController extends BaseController {
+    private static final StatusMessage DELETE_DEMOGRAPHIC_MESSAGE = new StatusMessage("Demographic successfully deleted");
+    private static final StatusMessage DELETE_DEMOGRAPHIC_USER_MESSAGE = new StatusMessage("Demographic user successfully deleted");
+    
     private DemographicService demographicService;
 
     private ParticipantService participantService;
@@ -125,7 +129,7 @@ public class DemographicController extends BaseController {
     // Delete a specific demographic for a user
     @DeleteMapping({ "/v5/studies/{studyId}/participants/{userId}/demographics/{demographicId}",
             "/v1/apps/self/participants/{userId}/demographics/{demographicId}" })
-    public void deleteDemographic(@PathVariable(required = false) Optional<String> studyId, @PathVariable String userId,
+    public StatusMessage deleteDemographic(@PathVariable(required = false) Optional<String> studyId, @PathVariable String userId,
             @PathVariable String demographicId) throws EntityNotFoundException, NotAuthenticatedException,
             UnauthorizedException, ConsentRequiredException, UnsupportedVersionException {
         String studyIdNull = studyId.orElse(null);
@@ -141,12 +145,13 @@ public class DemographicController extends BaseController {
         participantService.getAccountInStudy(session.getAppId(), studyIdNull, userId);
 
         demographicService.deleteDemographic(userId, demographicId);
+        return DELETE_DEMOGRAPHIC_MESSAGE;
     }
 
     // Delete all demographics for a user
     @DeleteMapping({ "/v5/studies/{studyId}/participants/{userId}/demographics",
             "/v1/apps/self/participants/{userId}/demographics" })
-    public void deleteDemographicUser(@PathVariable(required = false) Optional<String> studyId,
+    public StatusMessage deleteDemographicUser(@PathVariable(required = false) Optional<String> studyId,
             @PathVariable String userId) throws EntityNotFoundException, NotAuthenticatedException,
             UnauthorizedException, ConsentRequiredException, UnsupportedVersionException {
         String studyIdNull = studyId.orElse(null);
@@ -162,6 +167,7 @@ public class DemographicController extends BaseController {
         participantService.getAccountInStudy(session.getAppId(), studyIdNull, userId);
 
         demographicService.deleteDemographicUser(session.getAppId(), studyIdNull, userId);
+        return DELETE_DEMOGRAPHIC_USER_MESSAGE;
     }
 
     // Get all demographics for a user
