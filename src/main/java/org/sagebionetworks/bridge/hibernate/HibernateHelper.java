@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.function.Function;
 
 import javax.persistence.PersistenceException;
+import javax.persistence.RollbackException;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -256,7 +257,7 @@ public class HibernateHelper {
             try {
                 retval = function.apply(session);
                 transaction.commit();
-            } catch (PersistenceException e) {
+            } catch (RollbackException e) {
                 transaction.rollback();
                 throw e;
             }

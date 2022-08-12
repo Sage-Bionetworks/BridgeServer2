@@ -4,8 +4,6 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 
-import java.util.Optional;
-
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.DemographicDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -29,13 +27,7 @@ public class DemographicService {
     }
 
     public DemographicUser saveDemographicUser(DemographicUser demographicUser) throws InvalidEntityException {
-        Optional<String> existingDemographicUserId = demographicDao.getDemographicUserId(
-                demographicUser.getAppId(), demographicUser.getStudyId(), demographicUser.getUserId());
-        if (!existingDemographicUserId.isPresent()) {
-            demographicUser.setId(generateGuid());
-        } else {
-            demographicUser.setId(existingDemographicUserId.get());
-        }
+        demographicUser.setId(generateGuid());
         if (demographicUser.getDemographics() != null) {
             for (Demographic demographic : demographicUser.getDemographics().values()) {
                 demographic.setId(generateGuid());
@@ -43,7 +35,7 @@ public class DemographicService {
             }
         }
         Validate.entityThrowingException(DemographicUserValidator.INSTANCE, demographicUser);
-        return demographicDao.saveDemographicUser(demographicUser, existingDemographicUserId);
+        return demographicDao.saveDemographicUser(demographicUser, demographicUser.getAppId(), demographicUser.getStudyId(), demographicUser.getUserId());
     }
 
     public void deleteDemographic(String userId, String demographicId) throws EntityNotFoundException {

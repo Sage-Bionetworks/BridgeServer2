@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.hibernate;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -23,6 +24,7 @@ import org.hibernate.Session;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.mockito.Spy;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.studies.Demographic;
 import org.sagebionetworks.bridge.models.studies.DemographicUser;
@@ -39,6 +41,7 @@ public class HibernateDemographicDaoTest {
     @Mock
     HibernateHelper hibernateHelper;
 
+    @Spy
     @InjectMocks
     HibernateDemographicDao hibernateDemographicDao;
 
@@ -50,10 +53,11 @@ public class HibernateDemographicDaoTest {
     @Test
     public void saveDemographicUserNew() {
         DemographicUser demographicUser = new DemographicUser();
+        doReturn(Optional.empty()).when(hibernateDemographicDao).getDemographicUser(any(), any(), any());
         when(hibernateHelper.saveOrUpdate(demographicUser)).thenReturn(demographicUser);
 
         DemographicUser returnedDemographicUser = hibernateDemographicDao.saveDemographicUser(demographicUser,
-                Optional.empty());
+                TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
 
         verify(hibernateHelper).saveOrUpdate(demographicUser);
         assertSame(returnedDemographicUser, demographicUser);
@@ -65,18 +69,19 @@ public class HibernateDemographicDaoTest {
         Session session = mock(Session.class);
         DemographicUser demographicUser = new DemographicUser();
         DemographicUser existingDemographicUser = new DemographicUser();
-        when(session.get(eq(DemographicUser.class), any())).thenReturn(existingDemographicUser);
+        doReturn(Optional.of(existingDemographicUser)).when(hibernateDemographicDao).getDemographicUser(any(), any(),
+                any());
         when(hibernateHelper.executeWithExceptionHandling(any(), any())).thenAnswer(invocation -> {
             ((Function<Session, DemographicUser>) invocation.getArgument(1)).apply(session);
             return demographicUser;
         });
 
         DemographicUser returnedDemographicUser = hibernateDemographicDao.saveDemographicUser(demographicUser,
-                Optional.of(DEMOGRAPHIC_USER_ID));
+                TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
 
         verify(hibernateHelper).executeWithExceptionHandling(eq(null), any());
-        verify(session).get(DemographicUser.class, DEMOGRAPHIC_USER_ID);
         verify(session).delete(existingDemographicUser);
+        verify(session).flush();
         verify(session).saveOrUpdate(demographicUser);
         assertSame(returnedDemographicUser, demographicUser);
     }

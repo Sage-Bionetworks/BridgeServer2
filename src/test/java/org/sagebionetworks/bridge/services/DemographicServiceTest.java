@@ -59,20 +59,17 @@ public class DemographicServiceTest {
         DemographicUser demographicUser = new DemographicUser("test-id", TEST_APP_ID, TEST_STUDY_ID,
                 TEST_USER_ID,
                 new HashMap<>());
-        Optional<String> existingDemographicUserId = Optional.empty();
         demographicUser.getDemographics().put("category-name1",
                 new Demographic(null, demographicUser, "category-name1", true, ImmutableList.of(),
                         null));
         demographicUser.getDemographics().put("category-name2",
                 new Demographic(null, demographicUser, "category-name2", true, ImmutableList.of(),
                         null));
-        when(demographicDao.getDemographicUserId(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID))
-                .thenReturn(existingDemographicUserId);
-        when(demographicDao.saveDemographicUser(any(), any())).thenAnswer((invocation) -> invocation.getArgument(0));
+        when(demographicDao.saveDemographicUser(any(), any(), any(), any())).thenAnswer((invocation) -> invocation.getArgument(0));
 
         DemographicUser returnedDemographicUser = demographicService.saveDemographicUser(demographicUser);
 
-        verify(demographicDao).saveDemographicUser(demographicUser, existingDemographicUserId);
+        verify(demographicDao).saveDemographicUser(demographicUser, TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         assertEquals(returnedDemographicUser.getId(), "0");
         Iterator<Demographic> iter = returnedDemographicUser.getDemographics().values().iterator();
         for (int i = 1; iter.hasNext(); i++) {
@@ -83,7 +80,6 @@ public class DemographicServiceTest {
 
     @Test
     public void saveDemographicUserOverwrite() {
-        Optional<String> existingDemographicUserId = Optional.of(DEMOGRAPHIC_USER_ID);
         DemographicUser demographicUser = new DemographicUser("test-id", TEST_APP_ID, TEST_STUDY_ID,
                 TEST_USER_ID,
                 new HashMap<>());
@@ -93,16 +89,14 @@ public class DemographicServiceTest {
         demographicUser.getDemographics().put("category-name2",
                 new Demographic(null, demographicUser, "category-name2", true, ImmutableList.of(),
                         null));
-        when(demographicDao.getDemographicUserId(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID))
-                .thenReturn(existingDemographicUserId);
-        when(demographicDao.saveDemographicUser(any(), any())).thenAnswer((invocation) -> invocation.getArgument(0));
+        when(demographicDao.saveDemographicUser(any(), any(), any(), any())).thenAnswer((invocation) -> invocation.getArgument(0));
 
         DemographicUser returnedDemographicUser = demographicService.saveDemographicUser(demographicUser);
 
-        verify(demographicDao).saveDemographicUser(demographicUser, existingDemographicUserId);
-        assertEquals(returnedDemographicUser.getId(), DEMOGRAPHIC_USER_ID);
+        verify(demographicDao).saveDemographicUser(demographicUser, TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+        assertEquals(returnedDemographicUser.getId(), "0");
         Iterator<Demographic> iter = returnedDemographicUser.getDemographics().values().iterator();
-        for (int i = 0; iter.hasNext(); i++) {
+        for (int i = 1; iter.hasNext(); i++) {
             assertEquals(Integer.toString(i), iter.next().getId());
         }
         assertSame(returnedDemographicUser, demographicUser);
