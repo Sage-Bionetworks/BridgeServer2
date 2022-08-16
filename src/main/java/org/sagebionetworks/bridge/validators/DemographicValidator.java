@@ -10,6 +10,9 @@ import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL_OR_E
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateStringLength;
 
+/**
+ * Validates a Demographic
+ */
 public class DemographicValidator implements Validator {
     public static final String MUST_HAVE_ONE_VALUE = "must have exactly 1 value with multipleSelect=false";
     public static final String CANNOT_CONTAIN_NULL = "cannot contain null";

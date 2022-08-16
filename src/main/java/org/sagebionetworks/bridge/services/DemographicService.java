@@ -17,6 +17,9 @@ import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+/**
+ * Service for Demographic related operations.
+ */
 @Component
 public class DemographicService {
     private DemographicDao demographicDao;
@@ -26,6 +29,13 @@ public class DemographicService {
         this.demographicDao = demographicDao;
     }
 
+    /**
+     * Saves or overwrites a DemographicUser.
+     * 
+     * @param demographicUser The DemographicUser to save/overwrite.
+     * @return The DemographicUser that was saved.
+     * @throws InvalidEntityException if demographicUser is invalid.
+     */
     public DemographicUser saveDemographicUser(DemographicUser demographicUser) throws InvalidEntityException {
         demographicUser.setId(generateGuid());
         if (demographicUser.getDemographics() != null) {
@@ -35,9 +45,20 @@ public class DemographicService {
             }
         }
         Validate.entityThrowingException(DemographicUserValidator.INSTANCE, demographicUser);
-        return demographicDao.saveDemographicUser(demographicUser, demographicUser.getAppId(), demographicUser.getStudyId(), demographicUser.getUserId());
+        return demographicDao.saveDemographicUser(demographicUser, demographicUser.getAppId(),
+                demographicUser.getStudyId(), demographicUser.getUserId());
     }
 
+    /**
+     * Deletes a Demographic.
+     * 
+     * @param userId        The userId of the user who owns the Demographic to
+     *                      delete.
+     * @param demographicId The id of the Demographic to delete.
+     * @throws EntityNotFoundException if the Demographic does not exist or the
+     *                                 specified user does not own the specified
+     *                                 Demographic.
+     */
     public void deleteDemographic(String userId, String demographicId) throws EntityNotFoundException {
         Demographic existingDemographic = demographicDao.getDemographic(demographicId)
                 .orElseThrow(() -> new EntityNotFoundException(Demographic.class));
@@ -50,12 +71,37 @@ public class DemographicService {
         demographicDao.deleteDemographic(demographicId);
     }
 
+    /**
+     * Deletes a DemographicUser (all demographics for a user).
+     * 
+     * @param appId   The appId of the app which contains the DemographicUser to
+     *                delete.
+     * @param studyId The studyId of the study which contains the DemographicUser to
+     *                delete. Can be null if the demographics are app-level.
+     * @param userId  The userId of the user to delete demographics for.
+     * @throws EntityNotFoundException if the DemographicUser to delete does not
+     *                                 exist based on the provided appId, studyId,
+     *                                 and userId.
+     */
     public void deleteDemographicUser(String appId, String studyId, String userId) throws EntityNotFoundException {
         String existingDemographicUserId = demographicDao.getDemographicUserId(appId, studyId, userId)
                 .orElseThrow(() -> new EntityNotFoundException(DemographicUser.class));
         demographicDao.deleteDemographicUser(existingDemographicUserId);
     }
 
+    /**
+     * Fetches a DemographicUser.
+     * 
+     * @param appId   The appId of the app which contains the DemographicUser to
+     *                fetch.
+     * @param studyId The studyId of the study which contains the DemographicUser to
+     *                fetch. Can be null if the demographics are app-level.
+     * @param userId  The userId of the user to fetch demographics for.
+     * @return The fetched DemographicUser.
+     * @throws EntityNotFoundException if the DemographicUser to fetch does not
+     *                                 exist based on the provided appId, studyId,
+     *                                 and userId.
+     */
     public DemographicUser getDemographicUser(String appId, String studyId, String userId)
             throws EntityNotFoundException {
         DemographicUser existingDemographicUser = demographicDao.getDemographicUser(appId, studyId, userId)
@@ -63,6 +109,21 @@ public class DemographicService {
         return existingDemographicUser;
     }
 
+    /**
+     * Fetches all app-level DemographicUsers for an app or all study-level
+     * DemographicUsers for a study.
+     * 
+     * @param appId    The appId of the app which contains the DemographicUsers to
+     *                 fetch.
+     * @param studyId  The studyId of the study which contains the DemographicUsers
+     *                 to fetch. Can be null if the demographics are app-level.
+     * @param offsetBy The offset at which the returned list of DemographicUsers
+     *                 should begin.
+     * @param pageSize The maximum number of entries in the returned list of
+     *                 DemographicUsers.
+     * @return a paged list of fetched DemographicUsers.
+     * @throws BadRequestException if the pageSize is invalid.
+     */
     public PagedResourceList<DemographicUser> getDemographicUsers(String appId, String studyId, int offsetBy,
             int pageSize) throws BadRequestException {
         if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
@@ -71,6 +132,11 @@ public class DemographicService {
         return demographicDao.getDemographicUsers(appId, studyId, offsetBy, pageSize);
     }
 
+    /**
+     * Generates a guid.
+     * 
+     * @return a generated guid.
+     */
     public String generateGuid() {
         return BridgeUtils.generateGuid();
     }

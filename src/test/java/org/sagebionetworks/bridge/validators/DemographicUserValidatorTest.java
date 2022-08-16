@@ -30,11 +30,17 @@ public class DemographicUserValidatorTest {
                 "test-units");
     }
 
+    /**
+     * Tests that the validator supports the DemographicUser class.
+     */
     @Test
     public void supports() {
         assertTrue(demographicUserValidator.supports(DemographicUser.class));
     }
 
+    /**
+     * Tests that the validator successfully validates a valid case.
+     */
     @Test
     public void valid() {
         Validate.entityThrowingException(demographicUserValidator, demographicUser);
@@ -42,12 +48,19 @@ public class DemographicUserValidatorTest {
         Validate.entityThrowingException(demographicUserValidator, demographicUser);
     }
 
+    /**
+     * Tests that the validator successfully validates a valid case with a null
+     * study.
+     */
     @Test
     public void validNullStudy() {
         demographicUser.setStudyId(null);
         Validate.entityThrowingException(demographicUserValidator, demographicUser);
     }
 
+    /**
+     * Tests that the validator rejects a DemographicUser with a blank id.
+     */
     @Test
     public void blankId() {
         demographicUser.setId(null);
@@ -56,6 +69,9 @@ public class DemographicUserValidatorTest {
         assertValidatorMessage(demographicUserValidator, demographicUser, "id", CANNOT_BE_NULL_OR_EMPTY);
     }
 
+    /**
+     * Tests that the validator rejects a DemographicUser with a blank appId.
+     */
     @Test
     public void blankAppId() {
         demographicUser.setAppId(null);
@@ -64,6 +80,9 @@ public class DemographicUserValidatorTest {
         assertValidatorMessage(demographicUserValidator, demographicUser, "appId", CANNOT_BE_NULL_OR_EMPTY);
     }
 
+    /**
+     * Tests that the validator rejects a DemographicUser with a blank userId.
+     */
     @Test
     public void blankUserId() {
         demographicUser.setUserId(null);
@@ -72,12 +91,19 @@ public class DemographicUserValidatorTest {
         assertValidatorMessage(demographicUserValidator, demographicUser, "userId", CANNOT_BE_NULL_OR_EMPTY);
     }
 
+    /**
+     * Tests that the validator rejects a DemographicUser with null demographics.
+     */
     @Test
     public void nullDemographics() {
         demographicUser.setDemographics(null);
         assertValidatorMessage(demographicUserValidator, demographicUser, "demographics", CANNOT_BE_NULL);
     }
 
+    /**
+     * Tests that the validator rejects a DemographicUser with blank key in the
+     * demographics map.
+     */
     @Test
     public void demographicsKeyBlank() {
         demographicUser.getDemographics().put("", demographic);
@@ -86,12 +112,21 @@ public class DemographicUserValidatorTest {
         assertValidatorMessage(demographicUserValidator, demographicUser, "demographics key", CANNOT_BE_NULL_OR_EMPTY);
     }
 
+    /**
+     * Tests that the validator rejects a DemographicUser with a null Demographic in
+     * the demographics map.
+     */
     @Test
     public void demographicsValueNull() {
         demographicUser.getDemographics().put("category-name", null);
         assertValidatorMessage(demographicUserValidator, demographicUser, "demographics value", CANNOT_BE_NULL);
     }
 
+    /**
+     * Tests that the validator rejects a DemographicUser which has a key in the
+     * demographics map that does not equal the categoryName of the Demographic
+     * corresponding to the key.
+     */
     @Test
     public void mistmatchedCategoryNameKey() {
         demographicUser.getDemographics().put("wrong-category-name", demographic);
@@ -102,6 +137,10 @@ public class DemographicUserValidatorTest {
         assertValidatorMessage(demographicUserValidator, demographicUser, DemographicUserValidator.KEYS_MUST_MATCH);
     }
 
+    /**
+     * Tests that the validator rejects a DemographicUser which has a Demographic in
+     * the demographics map that does not reference the parent DemographicUser.
+     */
     @Test
     public void childDemographicDoesNotStoreParent() {
         demographic.setDemographicUser(new DemographicUser());
@@ -113,12 +152,19 @@ public class DemographicUserValidatorTest {
                 DemographicUserValidator.CHILD_MUST_STORE_PARENT);
     }
 
+    /**
+     * Tests that the validator rejects a DemographicUser with an invalid id length.
+     */
     @Test
     public void idStringLength() {
         demographicUser.setId(generateStringOfLength(61));
         assertValidatorMessage(demographicUserValidator, demographicUser, "id", getInvalidStringLengthMessage(60));
     }
 
+    /**
+     * Tests that the validator rejects a DemographicUser with an invalid studyId
+     * length.
+     */
     @Test
     public void studyIdStringLength() {
         demographicUser.setStudyId(generateStringOfLength(61));
@@ -126,12 +172,20 @@ public class DemographicUserValidatorTest {
                 getInvalidStringLengthMessage(60));
     }
 
+    /**
+     * Tests that the validator rejects a DemographicUser with an invalid appId
+     * length.
+     */
     @Test
     public void appIdStringLength() {
         demographicUser.setAppId(generateStringOfLength(61));
         assertValidatorMessage(demographicUserValidator, demographicUser, "appId", getInvalidStringLengthMessage(60));
     }
 
+    /**
+     * Tests that the validator rejects a DemographicUser with an invalid userId
+     * length.
+     */
     @Test
     public void userIdStringLength() {
         demographicUser.setUserId(generateStringOfLength(256));

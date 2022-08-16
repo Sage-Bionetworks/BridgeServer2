@@ -8,6 +8,10 @@ import org.sagebionetworks.bridge.models.BridgeEntity;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
+/**
+ * Represents a single value out of possibly multiple values in a specific
+ * demographic category for a specific user
+ */
 @Embeddable
 public class DemographicValue implements BridgeEntity {
     @NotNull

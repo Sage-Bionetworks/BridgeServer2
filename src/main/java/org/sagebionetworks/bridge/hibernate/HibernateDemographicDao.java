@@ -13,6 +13,9 @@ import org.sagebionetworks.bridge.models.studies.Demographic;
 import org.sagebionetworks.bridge.models.studies.DemographicUser;
 import org.springframework.stereotype.Component;
 
+/**
+ * Hibernate dao for demographic-related operations.
+ */
 @Component
 public class HibernateDemographicDao implements DemographicDao {
     private HibernateHelper hibernateHelper;
@@ -22,6 +25,19 @@ public class HibernateDemographicDao implements DemographicDao {
         this.hibernateHelper = hibernateHelper;
     }
 
+    /**
+     * Saves/overwrites a DemographicUser.
+     * 
+     * @param demographicUser The DemographicUser to save/overwrite.
+     * @param appId           The appId of the app in which to save the
+     *                        DemographicUser.
+     * @param studyId         The studyId of the study in which to save the
+     *                        DemographicUser. Can be null if the demographics are
+     *                        app-level.
+     * @param userId          The userId of the user to associate the
+     *                        DemographicUser with.
+     * @return the saved DemographicUser.
+     */
     @Override
     public DemographicUser saveDemographicUser(DemographicUser demographicUser, String appId, String studyId,
             String userId) {
@@ -39,16 +55,32 @@ public class HibernateDemographicDao implements DemographicDao {
         }
     }
 
+    /**
+     * Deletes a Demographic.
+     * 
+     * @param demographicId The id of the Demographic to delete.
+     */
     @Override
     public void deleteDemographic(String demographicId) {
         hibernateHelper.deleteById(Demographic.class, demographicId);
     }
 
+    /**
+     * Deletes a DemographicUser.
+     * 
+     * @param demographicUserId The id of the DemographicUser to delete.
+     */
     @Override
     public void deleteDemographicUser(String demographicUserId) {
         hibernateHelper.deleteById(DemographicUser.class, demographicUserId);
     }
 
+    /**
+     * Fetches a Demographic.
+     * 
+     * @param demographicId The id of the Demographic to fetch.
+     * @return the fetched Demographic, or empty if it was not found.
+     */
     @Override
     public Optional<String> getDemographicUserId(String appId, String studyId, String userId) {
         QueryBuilder builder = new QueryBuilder();
@@ -62,6 +94,18 @@ public class HibernateDemographicDao implements DemographicDao {
         return existingDemographicUserId;
     }
 
+    /**
+     * Fetches the id for a DemographicUser.
+     * 
+     * @param appId   The appId of the app which contains the DemographicUser whose
+     *                id will be fetched.
+     * @param studyId The studyId of the study which contains the DemographicUser
+     *                whose id will be fetched. Can be null if the demographics are
+     *                app-level.
+     * @param userId  The userId of the user who is associated with the
+     *                DemographicUser whose id will be fetched.
+     * @return the id for a DemographicUser, or empty if it was not found.
+     */
     @Override
     public Optional<Demographic> getDemographic(String demographicId) {
         QueryBuilder builder = new QueryBuilder();
@@ -73,6 +117,17 @@ public class HibernateDemographicDao implements DemographicDao {
         return existingDemographic;
     }
 
+    /**
+     * Fetches a DemographicUser.
+     * 
+     * @param appId   The appId of the app which contains the DemographicUser to
+     *                fetch.
+     * @param studyId The studyId of the study which contains the DemographicUser to
+     *                fetch. Can be null if the demographics are app-level.
+     * @param userId  The userId of the user who is associated with the
+     *                DemographicUser to be fetched.
+     * @return a DemographicUser, or empty if it was not found.
+     */
     @Override
     public Optional<DemographicUser> getDemographicUser(String appId, String studyId, String userId) {
         QueryBuilder builder = new QueryBuilder();
@@ -86,6 +141,20 @@ public class HibernateDemographicDao implements DemographicDao {
         return existingDemographicUser;
     }
 
+    /**
+     * Fetches all app-level DemographicUsers for an app or all study-level
+     * DemographicUsers for a study.
+     * 
+     * @param appId    The appId of the app which contains the DemographicUsers to
+     *                 fetch.
+     * @param studyId  The studyId of the study which contains the DemographicUsers
+     *                 to fetch. Can be null if the demographics are app-level.
+     * @param offsetBy The offset at which the returned list of DemographicUsers
+     *                 should begin.
+     * @param pageSize The maximum number of entries in the returned list of
+     *                 DemographicUsers.
+     * @return a paged list of fetched DemographicUsers.
+     */
     @Override
     public PagedResourceList<DemographicUser> getDemographicUsers(String appId, String studyId, int offsetBy,
             int pageSize) {

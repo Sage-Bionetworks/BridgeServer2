@@ -54,6 +54,9 @@ public class DemographicServiceTest {
                 .generateGuid();
     }
 
+    /**
+     * Tests saving a new DemographicUser.
+     */
     @Test
     public void saveDemographicUserNew() {
         DemographicUser demographicUser = new DemographicUser("test-id", TEST_APP_ID, TEST_STUDY_ID,
@@ -65,7 +68,8 @@ public class DemographicServiceTest {
         demographicUser.getDemographics().put("category-name2",
                 new Demographic(null, demographicUser, "category-name2", true, ImmutableList.of(),
                         null));
-        when(demographicDao.saveDemographicUser(any(), any(), any(), any())).thenAnswer((invocation) -> invocation.getArgument(0));
+        when(demographicDao.saveDemographicUser(any(), any(), any(), any()))
+                .thenAnswer((invocation) -> invocation.getArgument(0));
 
         DemographicUser returnedDemographicUser = demographicService.saveDemographicUser(demographicUser);
 
@@ -78,6 +82,9 @@ public class DemographicServiceTest {
         assertSame(returnedDemographicUser, demographicUser);
     }
 
+    /**
+     * Tests overwriting a DemographicUser.
+     */
     @Test
     public void saveDemographicUserOverwrite() {
         DemographicUser demographicUser = new DemographicUser("test-id", TEST_APP_ID, TEST_STUDY_ID,
@@ -89,7 +96,8 @@ public class DemographicServiceTest {
         demographicUser.getDemographics().put("category-name2",
                 new Demographic(null, demographicUser, "category-name2", true, ImmutableList.of(),
                         null));
-        when(demographicDao.saveDemographicUser(any(), any(), any(), any())).thenAnswer((invocation) -> invocation.getArgument(0));
+        when(demographicDao.saveDemographicUser(any(), any(), any(), any()))
+                .thenAnswer((invocation) -> invocation.getArgument(0));
 
         DemographicUser returnedDemographicUser = demographicService.saveDemographicUser(demographicUser);
 
@@ -117,6 +125,9 @@ public class DemographicServiceTest {
         demographicService.saveDemographicUser(demographicUser);
     }
 
+    /**
+     * Tests deleting a Demographic.
+     */
     @Test
     public void deleteDemographic() {
         DemographicUser demographicUser = new DemographicUser();
@@ -130,6 +141,10 @@ public class DemographicServiceTest {
         verify(demographicDao).deleteDemographic(DEMOGRAPHIC_ID);
     }
 
+    /**
+     * Tests that attempting to delete a Demographic that does not exist results in
+     * an error.
+     */
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void deleteDemographicNotFound() {
         when(demographicDao.getDemographic(DEMOGRAPHIC_ID)).thenReturn(Optional.empty());
@@ -137,6 +152,10 @@ public class DemographicServiceTest {
         demographicService.deleteDemographic(TEST_USER_ID, DEMOGRAPHIC_ID);
     }
 
+    /**
+     * Tests that attempting to delete a Demographic that is not owned by the user
+     * who is trying to delete it results in a not found error
+     */
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void deleteDemographicNotOwnedByUser() {
         DemographicUser demographicUser = new DemographicUser();
@@ -148,6 +167,9 @@ public class DemographicServiceTest {
         demographicService.deleteDemographic("wrong user id", DEMOGRAPHIC_ID);
     }
 
+    /**
+     * Tests deleting a DemographicUser.
+     */
     @Test
     public void deleteDemographicUser() {
         when(demographicDao.getDemographicUserId(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID))
@@ -159,6 +181,10 @@ public class DemographicServiceTest {
         verify(demographicDao).deleteDemographicUser(DEMOGRAPHIC_USER_ID);
     }
 
+    /**
+     * Tests that attempting to delete a DemographicUser that does not exist results
+     * in an error.
+     */
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void deleteDemographicUserNotFound() {
         when(demographicDao.getDemographicUserId(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID))
@@ -167,6 +193,9 @@ public class DemographicServiceTest {
         demographicService.deleteDemographicUser(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
     }
 
+    /**
+     * Tests fetching a DemographicUser.
+     */
     @Test
     public void getDemographicUser() {
         DemographicUser demographicUser = new DemographicUser();
@@ -181,6 +210,10 @@ public class DemographicServiceTest {
         assertSame(returnedDemographicUser, demographicUser);
     }
 
+    /**
+     * Tests that attempting to fetch a DemographicUser that does not exist results
+     * in an error.
+     */
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void getDemographicUserNotFound() {
         when(demographicDao.getDemographicUser(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID))
@@ -189,6 +222,9 @@ public class DemographicServiceTest {
         demographicService.getDemographicUser(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
     }
 
+    /**
+     * Tests fetching DemographicUsers.
+     */
     @Test
     public void getDemographicUsers() {
         DemographicUser demographicUser1 = new DemographicUser();
@@ -206,6 +242,10 @@ public class DemographicServiceTest {
         assertSame(returnedDemographicUsersResourceList, demographicUsersResourceList);
     }
 
+    /**
+     * Tests that attempting to fetch DemographicUsers with a bad pageSize results
+     * in an error.
+     */
     @Test
     public void getDemographicUsersBadPageSize() {
         try {

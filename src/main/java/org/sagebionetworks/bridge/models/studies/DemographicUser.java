@@ -17,6 +17,9 @@ import org.sagebionetworks.bridge.models.BridgeEntity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * Represents all demographics for a single user. Contains multiple Demographics.
+ */
 @Entity
 @Table(name = "DemographicsUsers")
 public class DemographicUser implements BridgeEntity {

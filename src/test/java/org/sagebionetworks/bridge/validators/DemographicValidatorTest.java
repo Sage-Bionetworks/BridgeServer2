@@ -36,22 +36,36 @@ public class DemographicValidatorTest {
         demographicNotMultipleSelect.getValues().add(new DemographicValue("value"));
     }
 
+    /**
+     * Tests that the validator supports the Demographic class.
+     */
     @Test
     public void supports() {
         assertTrue(demographicValidator.supports(Demographic.class));
     }
 
+    /**
+     * Tests that the validator successfully validates a case with null units.
+     */
     @Test
     public void validNullUnits() {
         demographicMultipleSelect.setUnits(null);
         Validate.entityThrowingException(demographicValidator, demographicMultipleSelect);
     }
 
+    /**
+     * Tests that the validator successfully validates a case with multipleSelect
+     * true.
+     */
     @Test
     public void validMultipleSelect() {
         Validate.entityThrowingException(demographicValidator, demographicMultipleSelect);
     }
 
+    /**
+     * Tests that the validator successfully validates a case with multipleSelect
+     * true and multiple DemographicValues.
+     */
     @Test
     public void validMultipleSelectMultipleValues() {
         demographicMultipleSelect.getValues().add(new DemographicValue("value"));
@@ -61,11 +75,18 @@ public class DemographicValidatorTest {
         Validate.entityThrowingException(demographicValidator, demographicMultipleSelect);
     }
 
+    /**
+     * Tests that the validator successfully validates a case with multipleSelect
+     * false.
+     */
     @Test
     public void validNotMultipleSelect() {
         Validate.entityThrowingException(demographicValidator, demographicNotMultipleSelect);
     }
 
+    /**
+     * Tests that the validator rejects a Demographic with a blank id.
+     */
     @Test
     public void blankId() {
         demographicMultipleSelect.setId(null);
@@ -74,6 +95,10 @@ public class DemographicValidatorTest {
         assertValidatorMessage(demographicValidator, demographicMultipleSelect, "id", CANNOT_BE_NULL_OR_EMPTY);
     }
 
+    /**
+     * Tests that the validator rejects a Demographic with a null demographicUser
+     * reference.
+     */
     @Test
     public void nullUser() {
         demographicMultipleSelect.setDemographicUser(null);
@@ -81,6 +106,9 @@ public class DemographicValidatorTest {
                 CANNOT_BE_NULL_OR_EMPTY);
     }
 
+    /**
+     * Tests that the validator rejects a Demographic with a blank userId.
+     */
     @Test
     public void blankUserId() {
         demographicMultipleSelect.getDemographicUser().setId(null);
@@ -91,6 +119,9 @@ public class DemographicValidatorTest {
                 CANNOT_BE_NULL_OR_EMPTY);
     }
 
+    /**
+     * Tests that the validator rejects a Demographic with a blank categoryName.
+     */
     @Test
     public void blankCategoryName() {
         demographicMultipleSelect.setCategoryName(null);
@@ -101,12 +132,19 @@ public class DemographicValidatorTest {
                 CANNOT_BE_NULL_OR_EMPTY);
     }
 
+    /**
+     * Tests that the validator rejects a Demographic with null values.
+     */
     @Test
     public void nullValues() {
         demographicMultipleSelect.setValues(null);
         assertValidatorMessage(demographicValidator, demographicMultipleSelect, "values", CANNOT_BE_NULL);
     }
 
+    /**
+     * Tests that the validator rejects a Demographic which has multipleSelect false
+     * but not exactly 1 value.
+     */
     @Test
     public void notMultipleSelectNotOneValue() {
         // now has 2 values
@@ -119,6 +157,10 @@ public class DemographicValidatorTest {
                 DemographicValidator.MUST_HAVE_ONE_VALUE);
     }
 
+    /**
+     * Tests that the validator rejects a Demographic with has a null
+     * DemographicValue.
+     */
     @Test
     public void containsNullValue() {
         demographicMultipleSelect.getValues().add(null);
@@ -129,6 +171,9 @@ public class DemographicValidatorTest {
                 DemographicValidator.CANNOT_CONTAIN_NULL);
     }
 
+    /**
+     * Tests that the validator rejects a Demographic with an invalid id length.
+     */
     @Test
     public void idStringLength() {
         demographicMultipleSelect.setId(generateStringOfLength(61));
@@ -136,6 +181,10 @@ public class DemographicValidatorTest {
                 getInvalidStringLengthMessage(60));
     }
 
+    /**
+     * Tests that the validator rejects a Demographic with a parent DemographicUser
+     * that has an invalid demographicUserId length.
+     */
     @Test
     public void demographicUserIdStringLength() {
         demographicMultipleSelect.getDemographicUser().setId(generateStringOfLength(61));
@@ -143,6 +192,10 @@ public class DemographicValidatorTest {
                 getInvalidStringLengthMessage(60));
     }
 
+    /**
+     * Tests that the validator rejects a Demographic with an invalid categoryName
+     * length.
+     */
     @Test
     public void categoryNameStringLength() {
         demographicMultipleSelect.setCategoryName(generateStringOfLength(769));
@@ -150,6 +203,9 @@ public class DemographicValidatorTest {
                 getInvalidStringLengthMessage(768));
     }
 
+    /**
+     * Tests that the validator rejects a Demographic with an invalid units length.
+     */
     @Test
     public void unitsStringLength() {
         demographicMultipleSelect.setUnits(generateStringOfLength(513));

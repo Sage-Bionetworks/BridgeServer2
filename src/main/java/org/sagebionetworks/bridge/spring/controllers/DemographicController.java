@@ -29,12 +29,17 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * Controller for demographic-related APIs.
+ */
 @CrossOrigin
 @RestController
 public class DemographicController extends BaseController {
-    private static final StatusMessage DELETE_DEMOGRAPHIC_MESSAGE = new StatusMessage("Demographic successfully deleted");
-    private static final StatusMessage DELETE_DEMOGRAPHIC_USER_MESSAGE = new StatusMessage("Demographic user successfully deleted");
-    
+    private static final StatusMessage DELETE_DEMOGRAPHIC_MESSAGE = new StatusMessage(
+            "Demographic successfully deleted");
+    private static final StatusMessage DELETE_DEMOGRAPHIC_USER_MESSAGE = new StatusMessage(
+            "Demographic user successfully deleted");
+
     private DemographicService demographicService;
 
     private ParticipantService participantService;
@@ -49,7 +54,31 @@ public class DemographicController extends BaseController {
         this.participantService = participantService;
     }
 
-    // Save/update all demographics for a user
+    /**
+     * Saves/updates all demographics for a user.
+     * 
+     * @param studyId The studyId of the study in which to save the DemographicUser.
+     *                Can be empty if the demographics are app-level.
+     * @param userId  The userId of the user to associate the DemographicUser with.
+     *                Can be empty if the user themself is the caller.
+     * @return The saved DemographicUser.
+     * @throws BadRequestException         if the deserialized JSON is not in a
+     *                                     valid format.
+     * @throws EntityNotFoundException     if the user's account does not exist or
+     *                                     the account is not in the specified
+     *                                     study.
+     * @throws InvalidEntityException      if the deserialized DemographicUser is
+     *                                     not valid.
+     * @throws NotAuthenticatedException   if the caller is not authenticated.
+     * @throws UnauthorizedException       if called at the study level and not by
+     *                                     the user themself but the caller is not a
+     *                                     researcher or study-coordinator.
+     * @throws ConsentRequiredException    if called by the user themself OR at an
+     *                                     app level and not by the user themself
+     *                                     but the caller is not consented.
+     * @throws UnsupportedVersionException if the caller's app version is not
+     *                                     supported.
+     */
     @PostMapping({ "/v5/studies/{studyId}/participants/{userId}/demographics",
             "/v5/studies/{studyId}/participants/self/demographics",
             "/v1/apps/self/participants/{userId}/demographics",
@@ -87,7 +116,32 @@ public class DemographicController extends BaseController {
         return demographicService.saveDemographicUser(demographicUser);
     }
 
-    // Save/update all demographics for a user
+    /**
+     * Saves/updates all demographics for a user. POSTed JSON must be in the
+     * assessment format.
+     * 
+     * @param studyId The studyId of the study in which to save the DemographicUser.
+     *                Can be empty if the demographics are app-level.
+     * @param userId  The userId of the user to associate the DemographicUser with.
+     *                Can be empty if the user themself is the caller.
+     * @return The saved DemographicUser.
+     * @throws BadRequestException         if the deserialized JSON is not in a
+     *                                     valid format.
+     * @throws EntityNotFoundException     if the user's account does not exist or
+     *                                     the account is not in the specified
+     *                                     study.
+     * @throws InvalidEntityException      if the deserialized DemographicUser is
+     *                                     not valid.
+     * @throws NotAuthenticatedException   if the caller is not authenticated.
+     * @throws UnauthorizedException       if called at the study level and not by
+     *                                     the user themself but the caller is not a
+     *                                     researcher or study-coordinator.
+     * @throws ConsentRequiredException    if called by the user themself OR at an
+     *                                     app level and not by the user themself
+     *                                     but the caller is not consented.
+     * @throws UnsupportedVersionException if the caller's app version is not
+     *                                     supported.
+     */
     @PostMapping({ "/v5/studies/{studyId}/participants/{userId}/demographics/assessment",
             "/v5/studies/{studyId}/participants/self/demographics/assessment",
             "/v1/apps/self/participants/{userId}/demographics/assessment",
@@ -126,10 +180,33 @@ public class DemographicController extends BaseController {
         return demographicService.saveDemographicUser(demographicUser);
     }
 
-    // Delete a specific demographic for a user
+    /**
+     * Deletes a specific Demographic for a user.
+     * 
+     * @param studyId       The studyId of the study which contains the Demographic
+     *                      to delete. Can be empty if the demographics are
+     *                      app-level.
+     * @param userId        The userId of the user which owns the Demographic to
+     *                      delete. Can be empty if the user themself is the caller.
+     * @param demographicId The id of the Demographic to delete.
+     * @return a success message if the deletion occurred successfully.
+     * @throws EntityNotFoundException     if the user's account does not exist, the
+     *                                     user is not in the specified study, the
+     *                                     Demographic does not exist, or the user
+     *                                     does not own the specified Demographic.
+     * @throws NotAuthenticatedException   if the caller is not authenticated.
+     * @throws UnauthorizedException       if called at the study level but the
+     *                                     caller is not a researcher or
+     *                                     study-coordinator.
+     * @throws ConsentRequiredException    if called at the app level but the caller
+     *                                     is not consented.
+     * @throws UnsupportedVersionException if the caller's app version is not
+     *                                     supported.
+     */
     @DeleteMapping({ "/v5/studies/{studyId}/participants/{userId}/demographics/{demographicId}",
             "/v1/apps/self/participants/{userId}/demographics/{demographicId}" })
-    public StatusMessage deleteDemographic(@PathVariable(required = false) Optional<String> studyId, @PathVariable String userId,
+    public StatusMessage deleteDemographic(@PathVariable(required = false) Optional<String> studyId,
+            @PathVariable String userId,
             @PathVariable String demographicId) throws EntityNotFoundException, NotAuthenticatedException,
             UnauthorizedException, ConsentRequiredException, UnsupportedVersionException {
         String studyIdNull = studyId.orElse(null);
@@ -148,7 +225,27 @@ public class DemographicController extends BaseController {
         return DELETE_DEMOGRAPHIC_MESSAGE;
     }
 
-    // Delete all demographics for a user
+    /**
+     * Deletes all demographics for a user.
+     * 
+     * @param studyId The studyId of the study which contains the DemographicUser to
+     *                delete. Can be empty if the demographics are app-level.
+     * @param userId  The userId of the DemographicUser to delete. Can be empty if
+     *                the user themself is the caller.
+     * @return a success message if the delete occurred successfully.
+     * @throws EntityNotFoundException     if the user's account does not exist, the
+     *                                     user is not in the specified study, or
+     *                                     the DemographicUser to delete does not
+     *                                     exist.
+     * @throws NotAuthenticatedException   if the caller is not authenticated.
+     * @throws UnauthorizedException       if called at the study level but the
+     *                                     caller is not a researcher or
+     *                                     study-coordinator.
+     * @throws ConsentRequiredException    if called at the app level but the caller
+     *                                     is not consented.
+     * @throws UnsupportedVersionException if the caller's app version is not
+     *                                     supported.
+     */
     @DeleteMapping({ "/v5/studies/{studyId}/participants/{userId}/demographics",
             "/v1/apps/self/participants/{userId}/demographics" })
     public StatusMessage deleteDemographicUser(@PathVariable(required = false) Optional<String> studyId,
@@ -170,7 +267,27 @@ public class DemographicController extends BaseController {
         return DELETE_DEMOGRAPHIC_USER_MESSAGE;
     }
 
-    // Get all demographics for a user
+    /**
+     * Fetches a DemographicUser (all demographics for a user).
+     * 
+     * @param studyId The studyId of the study which contains the DemographicUser to
+     *                fetch. Can be empty if the demographics are app-level.
+     * @param userId  The userId of the DemographicUser to fetch. Can be empty if
+     *                the user themself is the caller.
+     * @return the fetched DemographicUser.
+     * @throws EntityNotFoundException     if the user's account does not exist, the
+     *                                     user is not in the specified study, or
+     *                                     the DemographicUser to fetch does not
+     *                                     exist.
+     * @throws NotAuthenticatedException   if the caller is not authenticated.
+     * @throws UnauthorizedException       if called at the study level but the
+     *                                     caller is not a researcher or
+     *                                     study-coordinator.
+     * @throws ConsentRequiredException    if called at the app level but the caller
+     *                                     is not consented.
+     * @throws UnsupportedVersionException if the caller's app version is not
+     *                                     supported.
+     */
     @GetMapping({ "/v5/studies/{studyId}/participants/{userId}/demographics",
             "/v1/apps/self/participants/{userId}/demographics" })
     public DemographicUser getDemographicUser(@PathVariable(required = false) Optional<String> studyId,
@@ -191,8 +308,27 @@ public class DemographicController extends BaseController {
         return demographicService.getDemographicUser(session.getAppId(), studyIdNull, userId);
     }
 
-    // Get all demographics for all users
-    // Paged with offset
+    /**
+     * Fetches all app-level DemographicUsers for an app or all study-level
+     * DemographicUsers for a study. Paged with offset.
+     * 
+     * @param studyId  The studyId of the study which contains the DemographicUsers
+     *                 to fetch. Can be empty if the demographics are app-level.
+     * @param offsetBy The offset at which the returned list of DemographicUsers
+     *                 should begin.
+     * @param pageSize The maximum number of entries in the returned list of
+     *                 DemographicUsers.
+     * @return A paged list of fetched DemographicUsers.
+     * @throws BadRequestException         if the pageSize is invalid.
+     * @throws NotAuthenticatedException   if the caller is not authenticated.
+     * @throws UnauthorizedException       if called at the study level but the
+     *                                     caller is not a researcher or
+     *                                     study-coordinator.
+     * @throws ConsentRequiredException    if called at the app level but the caller
+     *                                     is not consented.
+     * @throws UnsupportedVersionException if the caller's app version is not
+     *                                     supported.
+     */
     @GetMapping({ "/v5/studies/{studyId}/participants/demographics", "/v1/apps/self/participants/demographics" })
     public PagedResourceList<DemographicUser> getDemographicUsers(
             @PathVariable(required = false) Optional<String> studyId,

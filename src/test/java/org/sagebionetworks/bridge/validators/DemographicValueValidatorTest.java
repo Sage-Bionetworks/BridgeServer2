@@ -12,11 +12,17 @@ import org.testng.annotations.Test;
 public class DemographicValueValidatorTest {
     private final DemographicValueValidator demographicValueValidator = new DemographicValueValidator();
 
+    /**
+     * Tests that the validator supports the DemographicValue class.
+     */
     @Test
     public void supports() {
         assertTrue(demographicValueValidator.supports(DemographicValue.class));
     }
 
+    /**
+     * Tests that the validator successfully validates a valid case.
+     */
     @Test
     public void valid() {
         Validate.entityThrowingException(demographicValueValidator, new DemographicValue("foo"));
@@ -27,12 +33,19 @@ public class DemographicValueValidatorTest {
         Validate.entityThrowingException(demographicValueValidator, new DemographicValue(0));
     }
 
+    /**
+     * Tests that the validator rejects a DemographicValue with a blank value.
+     */
     @Test
     public void blank() {
         assertValidatorMessage(demographicValueValidator, new DemographicValue(""), "value", CANNOT_BE_NULL_OR_EMPTY);
         assertValidatorMessage(demographicValueValidator, new DemographicValue(null), "value", CANNOT_BE_NULL_OR_EMPTY);
     }
 
+    /**
+     * Tests that the validator rejects a DemographicValue with an invalid value
+     * length.
+     */
     @Test
     public void stringLength() {
         assertValidatorMessage(demographicValueValidator, new DemographicValue(generateStringOfLength(1025)), "value",

@@ -50,6 +50,9 @@ public class HibernateDemographicDaoTest {
         MockitoAnnotations.initMocks(this);
     }
 
+    /**
+     * Tests whether a new DemographicUser is saved correctly.
+     */
     @Test
     public void saveDemographicUserNew() {
         DemographicUser demographicUser = new DemographicUser();
@@ -63,6 +66,9 @@ public class HibernateDemographicDaoTest {
         assertSame(returnedDemographicUser, demographicUser);
     }
 
+    /**
+     * Tests whether a DemographicUser overwrites a saved DemographicUser correctly.
+     */
     @SuppressWarnings("unchecked")
     @Test
     public void saveDemographicUserOverwrite() {
@@ -86,6 +92,9 @@ public class HibernateDemographicDaoTest {
         assertSame(returnedDemographicUser, demographicUser);
     }
 
+    /**
+     * Tests whether a Demographic is deleted correctly.
+     */
     @Test
     public void deleteDemographic() {
         hibernateDemographicDao.deleteDemographic(DEMOGRAPHIC_ID);
@@ -93,6 +102,9 @@ public class HibernateDemographicDaoTest {
         verify(hibernateHelper).deleteById(Demographic.class, DEMOGRAPHIC_ID);
     }
 
+    /**
+     * Tests whether a DemographicUser is deleted correctly.
+     */
     @Test
     public void deleteDemographicUser() {
         hibernateDemographicDao.deleteDemographicUser(DEMOGRAPHIC_USER_ID);
@@ -100,6 +112,9 @@ public class HibernateDemographicDaoTest {
         verify(hibernateHelper).deleteById(DemographicUser.class, DEMOGRAPHIC_USER_ID);
     }
 
+    /**
+     * Tests whether a DemographicUser's id is fetched correctly.
+     */
     @Test
     public void getDemographicUserId() {
         when(hibernateHelper.queryGetOne(any(), any(), eq(String.class)))
@@ -115,8 +130,12 @@ public class HibernateDemographicDaoTest {
         assertEquals(returnedDemographicUserId.get(), DEMOGRAPHIC_USER_ID);
     }
 
+    /**
+     * Tests whether empty is returned when a fetching a DemographicUser's id but it
+     * does not exist.
+     */
     @Test
-    public void getDemographicUserIdNull() {
+    public void getDemographicUserIdEmpty() {
         when(hibernateHelper.queryGetOne(any(), any(), eq(String.class))).thenReturn(Optional.empty());
 
         Optional<String> returnedDemographicUserId = hibernateDemographicDao.getDemographicUserId(TEST_APP_ID,
@@ -129,6 +148,9 @@ public class HibernateDemographicDaoTest {
         assertTrue(!returnedDemographicUserId.isPresent());
     }
 
+    /**
+     * Tests whether a Demographic is fetched correctly.
+     */
     @Test
     public void getDemographic() {
         Demographic demographic = new Demographic();
@@ -143,8 +165,12 @@ public class HibernateDemographicDaoTest {
         assertSame(returnedDemographic.get(), demographic);
     }
 
+    /**
+     * Tests whether empty is returned when fetching a Demographic but it does not
+     * exist.
+     */
     @Test
-    public void getDemographicNull() {
+    public void getDemographicEmpty() {
         when(hibernateHelper.queryGetOne(any(), any(), eq(Demographic.class))).thenReturn(Optional.empty());
 
         Optional<Demographic> returnedDemographic = hibernateDemographicDao.getDemographic(DEMOGRAPHIC_ID);
@@ -155,6 +181,9 @@ public class HibernateDemographicDaoTest {
         assertTrue(!returnedDemographic.isPresent());
     }
 
+    /**
+     * Tests whether a DemographicUser is fetched correctly.
+     */
     @Test
     public void getDemographicUser() {
         DemographicUser demographicUser = new DemographicUser();
@@ -172,6 +201,10 @@ public class HibernateDemographicDaoTest {
         assertSame(returnedDemographicUser.get(), demographicUser);
     }
 
+    /**
+     * Tests whether empty is returned when fetching a DemographicUser but it does
+     * not exist.
+     */
     @Test
     public void getDemographicUserNull() {
         when(hibernateHelper.queryGetOne(any(), any(), eq(DemographicUser.class))).thenReturn(Optional.empty());
@@ -187,6 +220,9 @@ public class HibernateDemographicDaoTest {
         assertTrue(!returnedDemographicUser.isPresent());
     }
 
+    /**
+     * Tests whether multiple DemographicUsers are fetched correctly.
+     */
     @SuppressWarnings("deprecation")
     @Test
     public void getDemographicUsers() {

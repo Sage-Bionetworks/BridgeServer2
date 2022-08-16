@@ -19,16 +19,26 @@ import com.google.common.collect.ImmutableList;
 
 @Test
 public class DemographicUserAssessmentDeserializerTest {
+    /**
+     * Tests whether null is deserialized correctly.
+     */
     @Test
     public void deserializeNull() throws JsonProcessingException, JsonMappingException {
         assertNull(new ObjectMapper().readValue("null", DemographicUserAssessment.class));
     }
 
+    /**
+     * Tests whether an array throws an exception when deserialized.
+     */
     @Test(expectedExceptions = MismatchedInputException.class)
     public void deserializeArray() throws JsonProcessingException, JsonMappingException {
         new ObjectMapper().readValue("[]", DemographicUserAssessment.class);
     }
 
+    /**
+     * Tests whether deserializing an empty object will succeed but result in an
+     * empty DemographicUser.
+     */
     @Test
     public void deserializeEmpty() throws JsonProcessingException, JsonMappingException {
         DemographicUser demographicUser = new DemographicUser(null, null, null, null, new HashMap<>());
@@ -38,6 +48,10 @@ public class DemographicUserAssessmentDeserializerTest {
                 demographicUser.toString());
     }
 
+    /**
+     * Tests whether deserializing JSON without a stepHistory will succeed but
+     * result in a DemographicUser without demographics.
+     */
     @Test
     public void deserializeNoSteps() throws JsonProcessingException, JsonMappingException {
         DemographicUser demographicUser = new DemographicUser(null, null, null, null, new HashMap<>());
@@ -47,12 +61,20 @@ public class DemographicUserAssessmentDeserializerTest {
                 demographicUser.toString());
     }
 
+    /**
+     * Tests whether deserializing JSON without answerType results in an error
+     * (cannot know whether value is an array or not).
+     */
     @Test(expectedExceptions = JsonMappingException.class)
     public void deserializeNoAnswerType() throws JsonProcessingException, JsonMappingException {
         new ObjectMapper().readValue("{\"stepHistory\":[{\"identifier\":\"category1\",\"value\":5}]}",
                 DemographicUserAssessment.class);
     }
 
+    /**
+     * Tests whether deserializing JSON without type results in an error
+     * (cannot know whether value is an array or not).
+     */
     @Test(expectedExceptions = JsonMappingException.class)
     public void deserializeNoType() throws JsonProcessingException, JsonMappingException {
         new ObjectMapper().readValue(
@@ -60,6 +82,9 @@ public class DemographicUserAssessmentDeserializerTest {
                 DemographicUserAssessment.class);
     }
 
+    /**
+     * Tests deserializing a valid case with unknown fields.
+     */
     @Test
     public void deserialize() throws JsonProcessingException, JsonMappingException {
         DemographicUser demographicUser = new DemographicUser(null, null, null, null, new HashMap<>());

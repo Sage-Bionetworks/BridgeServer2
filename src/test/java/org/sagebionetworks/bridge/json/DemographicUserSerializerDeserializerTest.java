@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.json;
 
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertTrue;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -19,6 +19,9 @@ import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.google.common.collect.ImmutableList;
 
 public class DemographicUserSerializerDeserializerTest {
+    /**
+     * Tests whether a DemographicUser is serialized correctly.
+     */
     @Test
     public void serialize() throws JsonProcessingException {
         DemographicUser demographicUser = new DemographicUser("id1", "appid1", null, "userid1",
@@ -64,11 +67,18 @@ public class DemographicUserSerializerDeserializerTest {
                 "{\"userId\":\"userid1\",\"demographics\":{\"category2\":{\"id\":\"id2\",\"multipleSelect\":true,\"units\":\"units1\",\"values\":[\"value1\",\"value2\"]},\"category3\":{\"id\":\"id3\",\"multipleSelect\":false,\"units\":\"units2\",\"values\":[\"value3\"]},\"category1\":{\"id\":\"id1\",\"multipleSelect\":true,\"values\":[]}}}");
     }
 
+    /**
+     * Tests whether deserializing an array results in an error.
+     */
     @Test(expectedExceptions = MismatchedInputException.class)
     public void deserializeArray() throws JsonProcessingException, JsonMappingException {
         new ObjectMapper().readValue("[]", DemographicUser.class);
     }
 
+    /**
+     * Tests whether deserializing an empty object succeeds but results in an empty
+     * DemographicUser.
+     */
     @Test
     public void deserializeEmpty() throws JsonProcessingException, JsonMappingException {
         DemographicUser demographicUser = new DemographicUser(null, null, null, null, null);
@@ -76,6 +86,10 @@ public class DemographicUserSerializerDeserializerTest {
         assertEquals(new ObjectMapper().readValue("{}", DemographicUser.class).toString(), demographicUser.toString());
     }
 
+    /**
+     * Tests whether deserializing without demographics succeeds and results in a
+     * DemographicUser without demographics.
+     */
     @Test
     public void deserializeNoDemographics() throws JsonProcessingException, JsonMappingException {
         DemographicUser demographicUser = new DemographicUser(null, null, null, null, new HashMap<>());
@@ -84,14 +98,21 @@ public class DemographicUserSerializerDeserializerTest {
                 demographicUser.toString());
     }
 
+    /**
+     * Tests whether deserializing without specifying multipleSelect defaults
+     * multipleSelect to true.
+     */
     @Test
     public void deserializeNoMultipleSelect() throws JsonProcessingException, JsonMappingException {
         DemographicUser demographicUser = new ObjectMapper().readValue(
                 "{\"userId\":\"testuserid\",\"demographics\":{\"category1\":{\"values\":[5]}}}", DemographicUser.class);
 
-        assertFalse(demographicUser.getDemographics().get("category1").isMultipleSelect());
+        assertTrue(demographicUser.getDemographics().get("category1").isMultipleSelect());
     }
 
+    /**
+     * Tests deserializing a valid case with unknown fields.
+     */
     @Test
     public void deserialize() throws JsonProcessingException, JsonMappingException {
         DemographicUser demographicUser = new DemographicUser(null, null, null, "testuserid", new LinkedHashMap<>());

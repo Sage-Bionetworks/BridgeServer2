@@ -8,6 +8,9 @@ import org.sagebionetworks.bridge.models.studies.DemographicValue;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
+/**
+ * Validates a DemographicValue
+ */
 public class DemographicValueValidator implements Validator {
     public static final DemographicValueValidator INSTANCE = new DemographicValueValidator();
 

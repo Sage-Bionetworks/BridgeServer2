@@ -82,6 +82,9 @@ public class DemographicControllerTest {
         doReturn(mockResponse).when(controller).response();
     }
 
+    /**
+     * Tests that the mapping annotations on controller methods are correct.
+     */
     @Test
     public void verifyAnnotations() throws Exception {
         assertCrossOrigin(DemographicController.class);
@@ -93,6 +96,9 @@ public class DemographicControllerTest {
         assertGet(DemographicController.class, "getDemographicUsers");
     }
 
+    /**
+     * Tests saving a DemographicUser.
+     */
     @Test
     public void saveDemographicUser() throws MismatchedInputException {
         DemographicUser demographicUser = new DemographicUser();
@@ -109,6 +115,9 @@ public class DemographicControllerTest {
         assertEquals(demographicUser.getUserId(), TEST_USER_ID);
     }
 
+    /**
+     * Tests saving a DemographicUser at the app level.
+     */
     @Test
     public void saveDemographicUserAppLevel() throws MismatchedInputException {
         DemographicUser demographicUser = new DemographicUser();
@@ -125,6 +134,10 @@ public class DemographicControllerTest {
         assertEquals(demographicUser.getUserId(), TEST_USER_ID);
     }
 
+    /**
+     * Tests that attempting to save a DemographicUser for a user who is not in the
+     * study specified throws an error.
+     */
     @Test(expectedExceptions = { EntityNotFoundException.class })
     public void saveDemographicUserNotInStudy() throws EntityNotFoundException, MismatchedInputException {
         doThrow(new EntityNotFoundException(Account.class)).when(participantService).getAccountInStudy(any(), any(),
@@ -133,6 +146,9 @@ public class DemographicControllerTest {
         controller.saveDemographicUser(Optional.of(TEST_STUDY_ID), Optional.of(TEST_USER_ID));
     }
 
+    /**
+     * Tests saving a DemographicUser by the user themself.
+     */
     @Test
     public void saveDemographicUserSelf() throws MismatchedInputException {
         DemographicUser demographicUser = new DemographicUser();
@@ -149,6 +165,9 @@ public class DemographicControllerTest {
         assertEquals(demographicUser.getUserId(), TEST_USER_ID);
     }
 
+    /**
+     * Tests saving a DemographicUser by the user themself at the app level.
+     */
     @Test
     public void saveDemographicUserSelfAppLevel() throws MismatchedInputException {
         DemographicUser demographicUser = new DemographicUser();
@@ -165,6 +184,9 @@ public class DemographicControllerTest {
         assertEquals(demographicUser.getUserId(), TEST_USER_ID);
     }
 
+    /**
+     * Tests that attempting to post null for a DemographicUser results in an error.
+     */
     @Test
     public void saveDemographicUserNull() throws MismatchedInputException {
         doReturn(null).when(controller).parseJson(DemographicUser.class);
@@ -175,12 +197,16 @@ public class DemographicControllerTest {
         } catch (BadRequestException e) {
         }
 
+        // can't use expectedExceptions because we need to test these after
         verify(controller).getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
         verify(participantService).getAccountInStudy(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
-        // can't use expectedExceptions because we need to test this after
         verify(controller).parseJson(DemographicUser.class);
     }
 
+    /**
+     * Tests that attempting to post an array for a DemographicUser results in an
+     * error.
+     */
     @Test(expectedExceptions = { MismatchedInputException.class })
     public void saveDemographicUserInvalid() throws MismatchedInputException {
         doAnswer((invocation) -> {
@@ -191,6 +217,9 @@ public class DemographicControllerTest {
         controller.saveDemographicUser(Optional.empty(), Optional.of(TEST_USER_ID));
     }
 
+    /**
+     * Tests saving a DemographicUser in the assessment format.
+     */
     @Test
     public void saveDemographicUserAssessment() throws MismatchedInputException {
         DemographicUser demographicUser = new DemographicUser();
@@ -208,6 +237,9 @@ public class DemographicControllerTest {
         assertEquals(demographicUser.getUserId(), TEST_USER_ID);
     }
 
+    /**
+     * Tests saving a DemographicUser in the assessment format at the app level.
+     */
     @Test
     public void saveDemographicUserAssessmentAppLevel() throws MismatchedInputException {
         DemographicUser demographicUser = new DemographicUser();
@@ -225,6 +257,10 @@ public class DemographicControllerTest {
         assertEquals(demographicUser.getUserId(), TEST_USER_ID);
     }
 
+    /**
+     * Tests that attempting to save a DemographicUser for a user who is not in the
+     * specified study results in an error when using the assessment format.
+     */
     @Test(expectedExceptions = { EntityNotFoundException.class })
     public void saveDemographicUserAssessmentNotInStudy() throws EntityNotFoundException, MismatchedInputException {
         doThrow(new EntityNotFoundException(Account.class)).when(participantService).getAccountInStudy(any(), any(),
@@ -233,6 +269,10 @@ public class DemographicControllerTest {
         controller.saveDemographicUserAssessment(Optional.of(TEST_STUDY_ID), Optional.of(TEST_USER_ID));
     }
 
+    /**
+     * Test saving a DemographicUser by the user themself using the assessment
+     * format.
+     */
     @Test
     public void saveDemographicUserSelfAssessment() throws MismatchedInputException {
         DemographicUser demographicUser = new DemographicUser();
@@ -250,6 +290,10 @@ public class DemographicControllerTest {
         assertEquals(demographicUser.getUserId(), TEST_USER_ID);
     }
 
+    /**
+     * Test saving a DemographicUser by the user themself using the assessment
+     * format at the app level.
+     */
     @Test
     public void saveDemographicUserSelfAssessmentAppLevel() throws MismatchedInputException {
         DemographicUser demographicUser = new DemographicUser();
@@ -267,6 +311,10 @@ public class DemographicControllerTest {
         assertEquals(demographicUser.getUserId(), TEST_USER_ID);
     }
 
+    /**
+     * Tests that attempting to post null for a DemographicUser results in an error
+     * when using the asssessment format.
+     */
     @Test
     public void saveDemographicUserAssessmentNull() throws MismatchedInputException {
         doReturn(null).when(controller).parseJson(DemographicUserAssessment.class);
@@ -283,6 +331,10 @@ public class DemographicControllerTest {
         verify(controller).parseJson(DemographicUserAssessment.class);
     }
 
+    /**
+     * Tests that attempting to post an array for a DemographicUser results in an
+     * error when using the assessment format.
+     */
     @Test(expectedExceptions = { MismatchedInputException.class })
     public void saveDemographicUserAssessmentInvalid() throws MismatchedInputException {
         // doThrow wasn't working here; the exception was thrown immediately when this
@@ -297,10 +349,14 @@ public class DemographicControllerTest {
         controller.saveDemographicUserAssessment(Optional.empty(), Optional.of(TEST_USER_ID));
     }
 
+    /**
+     * Tests deleting a Demographic.
+     */
     @Test
     public void deleteDemographic() {
 
-        StatusMessage message = controller.deleteDemographic(Optional.of(TEST_STUDY_ID), TEST_USER_ID, TEST_DEMOGRAPHIC_ID);
+        StatusMessage message = controller.deleteDemographic(Optional.of(TEST_STUDY_ID), TEST_USER_ID,
+                TEST_DEMOGRAPHIC_ID);
 
         verify(controller).getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
         verify(participantService).getAccountInStudy(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
@@ -308,6 +364,10 @@ public class DemographicControllerTest {
         assertEquals(message.getMessage(), "Demographic successfully deleted");
     }
 
+    /**
+     * Tests that attempting to delete a Demographic for a user who is not in the
+     * specified study throws an error.
+     */
     @Test(expectedExceptions = { EntityNotFoundException.class })
     public void deleteDemographicNotInStudy() {
         doThrow(new EntityNotFoundException(Account.class)).when(participantService).getAccountInStudy(any(), any(),
@@ -316,6 +376,10 @@ public class DemographicControllerTest {
         controller.deleteDemographic(Optional.of(TEST_STUDY_ID), TEST_USER_ID, TEST_DEMOGRAPHIC_ID);
     }
 
+    /**
+     * Tests that attempting to delete a Demographic that does not exist throws an
+     * error.
+     */
     @Test(expectedExceptions = { EntityNotFoundException.class })
     public void deleteDemographicNotFound() {
         doThrow(new EntityNotFoundException(Demographic.class)).when(demographicService).deleteDemographic(any(),
@@ -324,6 +388,9 @@ public class DemographicControllerTest {
         controller.deleteDemographic(Optional.of(TEST_STUDY_ID), TEST_USER_ID, TEST_DEMOGRAPHIC_ID);
     }
 
+    /**
+     * Tests deleting a Demographic at the app level.
+     */
     @Test
     public void deleteDemographicAppLevel() {
 
@@ -335,6 +402,9 @@ public class DemographicControllerTest {
         assertEquals(message.getMessage(), "Demographic successfully deleted");
     }
 
+    /**
+     * Tests deleting a DemographicUser.
+     */
     @Test
     public void deleteDemographicUser() {
 
@@ -346,6 +416,10 @@ public class DemographicControllerTest {
         assertEquals(message.getMessage(), "Demographic user successfully deleted");
     }
 
+    /**
+     * Tests that attempting to delete a DemographicUser for a user who is not in
+     * the specified study throws an error.
+     */
     @Test(expectedExceptions = { EntityNotFoundException.class })
     public void deleteDemographicUserNotInStudy() {
         doThrow(new EntityNotFoundException(Account.class)).when(participantService).getAccountInStudy(any(), any(),
@@ -354,6 +428,10 @@ public class DemographicControllerTest {
         controller.deleteDemographicUser(Optional.of(TEST_STUDY_ID), TEST_USER_ID);
     }
 
+    /**
+     * Tests that attempting to delete a DemographicUser that does not exist throws
+     * an error.
+     */
     @Test(expectedExceptions = { EntityNotFoundException.class })
     public void deleteDemographicUserNotFound() {
         doThrow(new EntityNotFoundException(DemographicUser.class)).when(demographicService)
@@ -362,6 +440,9 @@ public class DemographicControllerTest {
         controller.deleteDemographicUser(Optional.of(TEST_STUDY_ID), TEST_USER_ID);
     }
 
+    /**
+     * Tests deleting a DemographicUser at the app level.
+     */
     @Test
     public void deleteDemographicUserAppLevel() {
 
@@ -373,6 +454,9 @@ public class DemographicControllerTest {
         assertEquals(message.getMessage(), "Demographic user successfully deleted");
     }
 
+    /**
+     * Tests fetching a DemographicUser.
+     */
     @Test
     public void getDemographicUser() {
 
@@ -383,6 +467,10 @@ public class DemographicControllerTest {
         verify(demographicService).getDemographicUser(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
     }
 
+    /**
+     * Tests that attempting to fetch a DemographicUser for a user who is not in the
+     * specified study throws an error.
+     */
     @Test(expectedExceptions = { EntityNotFoundException.class })
     public void getDemographicUserNotInStudy() {
         doThrow(new EntityNotFoundException(Account.class)).when(participantService).getAccountInStudy(any(), any(),
@@ -391,6 +479,10 @@ public class DemographicControllerTest {
         controller.getDemographicUser(Optional.of(TEST_STUDY_ID), TEST_USER_ID);
     }
 
+    /**
+     * Tests that attempting to fetch a DemographicUser that does not exist throws
+     * an error.
+     */
     @Test(expectedExceptions = { EntityNotFoundException.class })
     public void getDemographicUserNotFound() {
         doThrow(new EntityNotFoundException(Demographic.class)).when(demographicService).getDemographicUser(any(),
@@ -399,6 +491,9 @@ public class DemographicControllerTest {
         controller.getDemographicUser(Optional.of(TEST_STUDY_ID), TEST_USER_ID);
     }
 
+    /**
+     * Tests fetching a DemographicUser at the app level.
+     */
     @Test
     public void getDemographicUserAppLevel() {
 
@@ -409,6 +504,9 @@ public class DemographicControllerTest {
         verify(demographicService).getDemographicUser(TEST_APP_ID, null, TEST_USER_ID);
     }
 
+    /**
+     * Tests fetching multiple DemographicUsers.
+     */
     @Test
     public void getDemographicUsers() {
 
@@ -418,6 +516,9 @@ public class DemographicControllerTest {
         verify(demographicService).getDemographicUsers(TEST_APP_ID, TEST_STUDY_ID, 0, 10);
     }
 
+    /**
+     * Tests fetching multiple DemographicUsers at the app level.
+     */
     @Test
     public void getDemographicUsersAppLevel() {
 
@@ -427,6 +528,10 @@ public class DemographicControllerTest {
         verify(demographicService).getDemographicUsers(TEST_APP_ID, null, 0, 10);
     }
 
+    /**
+     * Tests fetching multiple DemographicUsers with blank offsetBy and pageSize
+     * succeeds and uses the default values..
+     */
     @Test
     public void getDemographicUsersBlankParams() {
 
@@ -436,6 +541,10 @@ public class DemographicControllerTest {
         verify(demographicService).getDemographicUsers(TEST_APP_ID, TEST_STUDY_ID, 0, API_DEFAULT_PAGE_SIZE);
     }
 
+    /**
+     * Tests that attempting to fetch multiple DemographicUsers using an invalid
+     * offsetBy and pageSize throws an error.
+     */
     @Test(expectedExceptions = BadRequestException.class)
     public void getDemographicUsersInvalidParams() {
 

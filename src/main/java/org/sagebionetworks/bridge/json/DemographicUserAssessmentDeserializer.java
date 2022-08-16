@@ -20,7 +20,10 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonMappingException;
 
-// deserializes from assessment format
+/**
+ * Class used to deserialize from the assessment JSON format and convert to the
+ * "normal" JSON format.
+ */
 public class DemographicUserAssessmentDeserializer extends JsonDeserializer<DemographicUserAssessment> {
     private final String MULTIPLE_SELECT_STEP_TYPE = "array";
 

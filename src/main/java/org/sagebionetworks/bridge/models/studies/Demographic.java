@@ -19,6 +19,10 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * Represents a demographic category and value(s) in that category for a
+ * specific user. Contains multiple DemographicValues.
+ */
 @Entity
 @Table(name = "Demographics")
 public class Demographic implements BridgeEntity {
@@ -36,7 +40,7 @@ public class Demographic implements BridgeEntity {
     String categoryName;
 
     @Nonnull
-    private boolean multipleSelect;
+    private boolean multipleSelect = true;
 
     @Nonnull
     @ElementCollection(fetch = FetchType.EAGER)
