@@ -12,6 +12,9 @@ import org.sagebionetworks.bridge.models.studies.DemographicUser;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
+/**
+ * Validates a DemographicUser
+ */
 public class DemographicUserValidator implements Validator {
     public static final String KEYS_MUST_MATCH = "keys in demographics must match the corresponding Demographic's categoryName";
     public static final String CHILD_MUST_STORE_PARENT = "child Demographic must store correct parent";
