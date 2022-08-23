@@ -14,11 +14,14 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -41,11 +44,14 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
+import org.sagebionetworks.client.exceptions.SynapseException;
 import org.sagebionetworks.client.exceptions.UnknownSynapseServerException;
 import org.sagebionetworks.repo.model.Entity;
 import org.sagebionetworks.repo.model.Folder;
 import org.sagebionetworks.repo.model.Project;
 import org.sagebionetworks.repo.model.Team;
+import org.sagebionetworks.repo.model.annotation.v2.AnnotationsValue;
+import org.sagebionetworks.repo.model.annotation.v2.AnnotationsValueType;
 import org.sagebionetworks.repo.model.project.ExternalS3StorageLocationSetting;
 import org.sagebionetworks.repo.model.table.EntityView;
 import org.sagebionetworks.repo.model.table.TableEntity;
@@ -56,6 +62,7 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.config.BridgeConfig;
+import org.sagebionetworks.bridge.exceptions.BridgeSynapseException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -793,5 +800,52 @@ public class Exporter3ServiceTest {
 
         // No calls to HealthDataEx3Service or SQS.
         verifyZeroInteractions(mockHealthDataEx3Service, mockSqsClient);
+    }
+
+    // checks study and app id annotations are not added when the project exists
+    @Test
+    public void studyMetadataProjectExists() throws BridgeSynapseException, IOException, SynapseException {
+        Exporter3Configuration ex3Config = makeConfiguredEx3Config();
+        // project id is non-null
+
+        exporter3Service.initExporter3Internal(APP_NAME, TEST_APP_ID, Optional.of(TEST_STUDY_ID), ex3Config);
+        verify(mockSynapseHelper, never()).addAnnotationsToEntity(any(), any());
+    }
+
+    // checks study and app id annotations for app id only
+    @Test
+    public void studyMetadataAppOnly() throws BridgeSynapseException, IOException, SynapseException {
+        when(mockSynapseHelper.createEntityWithRetry(any())).thenAnswer(invocation -> {
+            Project project = invocation.getArgument(0);
+            project.setId(PROJECT_ID);
+            return project;
+        });
+        Exporter3Configuration ex3Config = makeConfiguredEx3Config();
+        ex3Config.setProjectId(null);
+
+        Map<String, AnnotationsValue> expectedAppOnly = ImmutableMap.of("appId", new AnnotationsValue()
+                .setType(AnnotationsValueType.STRING).setValue(ImmutableList.of(TEST_APP_ID)));
+        exporter3Service.initExporter3Internal(APP_NAME, TEST_APP_ID, Optional.empty(), ex3Config);
+        verify(mockSynapseHelper).addAnnotationsToEntity(eq(PROJECT_ID), eq(expectedAppOnly));
+    }
+
+    // checks study and app id annotations for app id + study id
+    @Test
+    public void studyMetadataAppAndStudy() throws BridgeSynapseException, IOException, SynapseException {
+        when(mockSynapseHelper.createEntityWithRetry(any())).thenAnswer(invocation -> {
+            Project project = invocation.getArgument(0);
+            project.setId(PROJECT_ID);
+            return project;
+        });
+        Exporter3Configuration ex3Config = makeConfiguredEx3Config();
+        ex3Config.setProjectId(null);
+
+        Map<String, AnnotationsValue> expectedAppAndStudy = ImmutableMap.of(
+                "appId",
+                new AnnotationsValue().setType(AnnotationsValueType.STRING).setValue(ImmutableList.of(TEST_APP_ID)),
+                "studyId",
+                new AnnotationsValue().setType(AnnotationsValueType.STRING).setValue(ImmutableList.of(TEST_STUDY_ID)));
+        exporter3Service.initExporter3Internal(APP_NAME, TEST_APP_ID, Optional.of(TEST_STUDY_ID), ex3Config);
+        verify(mockSynapseHelper).addAnnotationsToEntity(eq(PROJECT_ID), eq(expectedAppAndStudy));
     }
 }
