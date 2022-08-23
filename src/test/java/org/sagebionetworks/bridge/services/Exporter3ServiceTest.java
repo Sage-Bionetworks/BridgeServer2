@@ -823,8 +823,9 @@ public class Exporter3ServiceTest {
         Exporter3Configuration ex3Config = makeConfiguredEx3Config();
         ex3Config.setProjectId(null);
 
-        Map<String, AnnotationsValue> expectedAppOnly = ImmutableMap.of("appId", new AnnotationsValue()
-                .setType(AnnotationsValueType.STRING).setValue(ImmutableList.of(TEST_APP_ID)));
+        Map<String, AnnotationsValue> expectedAppOnly = ImmutableMap.of(
+                "appId",
+                new AnnotationsValue().setType(AnnotationsValueType.STRING).setValue(ImmutableList.of(TEST_APP_ID)));
         exporter3Service.initExporter3Internal(APP_NAME, TEST_APP_ID, Optional.empty(), ex3Config);
         verify(mockSynapseHelper).addAnnotationsToEntity(eq(PROJECT_ID), eq(expectedAppOnly));
     }
