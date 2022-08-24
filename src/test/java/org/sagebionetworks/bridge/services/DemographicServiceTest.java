@@ -55,10 +55,10 @@ public class DemographicServiceTest {
     }
 
     /**
-     * Tests saving a new DemographicUser.
+     * Tests saving a DemographicUser.
      */
     @Test
-    public void saveDemographicUserNew() {
+    public void saveDemographicUser() {
         DemographicUser demographicUser = new DemographicUser("test-id", TEST_APP_ID, TEST_STUDY_ID,
                 TEST_USER_ID,
                 new HashMap<>());
@@ -77,35 +77,9 @@ public class DemographicServiceTest {
         assertEquals(returnedDemographicUser.getId(), "0");
         Iterator<Demographic> iter = returnedDemographicUser.getDemographics().values().iterator();
         for (int i = 1; iter.hasNext(); i++) {
-            assertEquals(Integer.toString(i), iter.next().getId());
-        }
-        assertSame(returnedDemographicUser, demographicUser);
-    }
-
-    /**
-     * Tests overwriting a DemographicUser.
-     */
-    @Test
-    public void saveDemographicUserOverwrite() {
-        DemographicUser demographicUser = new DemographicUser("test-id", TEST_APP_ID, TEST_STUDY_ID,
-                TEST_USER_ID,
-                new HashMap<>());
-        demographicUser.getDemographics().put("category-name1",
-                new Demographic(null, demographicUser, "category-name1", true, ImmutableList.of(),
-                        null));
-        demographicUser.getDemographics().put("category-name2",
-                new Demographic(null, demographicUser, "category-name2", true, ImmutableList.of(),
-                        null));
-        when(demographicDao.saveDemographicUser(any(), any(), any(), any()))
-                .thenAnswer((invocation) -> invocation.getArgument(0));
-
-        DemographicUser returnedDemographicUser = demographicService.saveDemographicUser(demographicUser);
-
-        verify(demographicDao).saveDemographicUser(demographicUser, TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
-        assertEquals(returnedDemographicUser.getId(), "0");
-        Iterator<Demographic> iter = returnedDemographicUser.getDemographics().values().iterator();
-        for (int i = 1; iter.hasNext(); i++) {
-            assertEquals(Integer.toString(i), iter.next().getId());
+            Demographic next = iter.next();
+            assertEquals(Integer.toString(i), next.getId());
+            assertSame(next.getDemographicUser(), demographicUser);
         }
         assertSame(returnedDemographicUser, demographicUser);
     }

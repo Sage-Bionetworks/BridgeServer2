@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.json;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
@@ -22,7 +23,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 
 /**
  * Class used to deserialize from the assessment JSON format and convert to the
- * "normal" JSON format.
+ * "normal" format.
  */
 public class DemographicUserAssessmentDeserializer extends JsonDeserializer<DemographicUserAssessment> {
     private final String MULTIPLE_SELECT_STEP_TYPE = "array";
@@ -36,15 +37,23 @@ public class DemographicUserAssessmentDeserializer extends JsonDeserializer<Demo
         if (results.getStepHistory() != null) {
             for (DemographicAssessmentResultStep resultStep : results.getStepHistory()) {
                 if (resultStep == null) {
+                    // ignore null steps
                     continue;
                 }
-                if (resultStep.getValue() != null) {
-                    // remove null
-                    for (ListIterator<DemographicValue> iter = resultStep.getValue().listIterator(); iter.hasNext();) {
-                        DemographicValue next = iter.next();
-                        if (next == null || next.getValue() == null) {
-                            iter.remove();
-                        }
+                if (resultStep.getIdentifier() == null) {
+                    // identifier (category name) cannot be null because it is used as the key to a
+                    // map
+                    throw new JsonMappingException(p, "identifier cannot be null");
+                }
+                if (resultStep.getValue() == null) {
+                    // convert null value list to empty list
+                    resultStep.setValue(new ArrayList<>());
+                }
+                // remove null values
+                for (ListIterator<DemographicValue> iter = resultStep.getValue().listIterator(); iter.hasNext();) {
+                    DemographicValue next = iter.next();
+                    if (next == null || next.getValue() == null) {
+                        iter.remove();
                     }
                 }
                 if (resultStep.getAnswerType() == null) {
@@ -61,7 +70,7 @@ public class DemographicUserAssessmentDeserializer extends JsonDeserializer<Demo
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    private static class DemographicAssessmentResults {
+    static class DemographicAssessmentResults {
         private List<DemographicAssessmentResultStep> stepHistory;
 
         public List<DemographicAssessmentResultStep> getStepHistory() {
@@ -70,7 +79,7 @@ public class DemographicUserAssessmentDeserializer extends JsonDeserializer<Demo
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    private static class DemographicAssessmentResultStep {
+    static class DemographicAssessmentResultStep {
         private String identifier;
         private String answerType;
         @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
@@ -78,6 +87,10 @@ public class DemographicUserAssessmentDeserializer extends JsonDeserializer<Demo
 
         public String getIdentifier() {
             return identifier;
+        }
+
+        public void setIdentifier(String identifier) {
+            this.identifier = identifier;
         }
 
         public String getAnswerType() {
@@ -91,6 +104,10 @@ public class DemographicUserAssessmentDeserializer extends JsonDeserializer<Demo
 
         public List<DemographicValue> getValue() {
             return value;
+        }
+
+        public void setValue(List<DemographicValue> value) {
+            this.value = value;
         }
     }
 }

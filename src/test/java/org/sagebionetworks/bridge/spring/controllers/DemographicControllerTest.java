@@ -75,7 +75,7 @@ public class DemographicControllerTest {
         session = new UserSession();
         session.setAppId(TEST_APP_ID);
         session.setParticipant(new StudyParticipant.Builder().withId(TEST_USER_ID).build());
-        doReturn(session).when(controller).getAdministrativeSession();
+        doReturn(session).when(controller).getAuthenticatedSession(Roles.ADMIN);
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
         doReturn(session).when(controller).getAuthenticatedSession(any());
         doReturn(mockRequest).when(controller).request();
@@ -125,7 +125,7 @@ public class DemographicControllerTest {
 
         controller.saveDemographicUser(Optional.empty(), Optional.of(TEST_USER_ID));
 
-        verify(controller).getAdministrativeSession();
+        verify(controller).getAuthenticatedSession(Roles.ADMIN);
         verify(controller).parseJson(DemographicUser.class);
         verify(participantService).getAccountInStudy(TEST_APP_ID, null, TEST_USER_ID);
         verify(demographicService).saveDemographicUser(demographicUser);
@@ -248,7 +248,7 @@ public class DemographicControllerTest {
 
         controller.saveDemographicUserAssessment(Optional.empty(), Optional.of(TEST_USER_ID));
 
-        verify(controller).getAdministrativeSession();
+        verify(controller).getAuthenticatedSession(Roles.ADMIN);
         verify(participantService).getAccountInStudy(TEST_APP_ID, null, TEST_USER_ID);
         verify(controller).parseJson(DemographicUserAssessment.class);
         verify(demographicService).saveDemographicUser(demographicUser);
@@ -396,7 +396,7 @@ public class DemographicControllerTest {
 
         StatusMessage message = controller.deleteDemographic(Optional.empty(), TEST_USER_ID, TEST_DEMOGRAPHIC_ID);
 
-        verify(controller).getAdministrativeSession();
+        verify(controller).getAuthenticatedSession(Roles.ADMIN);
         verify(participantService).getAccountInStudy(TEST_APP_ID, null, TEST_USER_ID);
         verify(demographicService).deleteDemographic(TEST_USER_ID, TEST_DEMOGRAPHIC_ID);
         assertEquals(message.getMessage(), "Demographic successfully deleted");
@@ -448,7 +448,7 @@ public class DemographicControllerTest {
 
         StatusMessage message = controller.deleteDemographicUser(Optional.empty(), TEST_USER_ID);
 
-        verify(controller).getAdministrativeSession();
+        verify(controller).getAuthenticatedSession(Roles.ADMIN);
         verify(participantService).getAccountInStudy(TEST_APP_ID, null, TEST_USER_ID);
         verify(demographicService).deleteDemographicUser(TEST_APP_ID, null, TEST_USER_ID);
         assertEquals(message.getMessage(), "Demographic user successfully deleted");
@@ -499,7 +499,7 @@ public class DemographicControllerTest {
 
         controller.getDemographicUser(Optional.empty(), TEST_USER_ID);
 
-        verify(controller).getAdministrativeSession();
+        verify(controller).getAuthenticatedSession(Roles.ADMIN);
         verify(participantService).getAccountInStudy(TEST_APP_ID, null, TEST_USER_ID);
         verify(demographicService).getDemographicUser(TEST_APP_ID, null, TEST_USER_ID);
     }
@@ -524,7 +524,7 @@ public class DemographicControllerTest {
 
         controller.getDemographicUsers(Optional.empty(), "0", "10");
 
-        verify(controller).getAdministrativeSession();
+        verify(controller).getAuthenticatedSession(Roles.ADMIN);
         verify(demographicService).getDemographicUsers(TEST_APP_ID, null, 0, 10);
     }
 

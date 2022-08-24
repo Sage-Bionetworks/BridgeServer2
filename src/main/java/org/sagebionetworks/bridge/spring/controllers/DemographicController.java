@@ -81,8 +81,8 @@ public class DemographicController extends BaseController {
      */
     @PostMapping({ "/v5/studies/{studyId}/participants/{userId}/demographics",
             "/v5/studies/{studyId}/participants/self/demographics",
-            "/v1/apps/self/participants/{userId}/demographics",
-            "/v1/apps/self/participants/self/demographics" })
+            "/v3/participants/{userId}/demographics",
+            "/v3/participants/self/demographics" })
     public DemographicUser saveDemographicUser(@PathVariable(required = false) Optional<String> studyId,
             @PathVariable(required = false) Optional<String> userId)
             throws BadRequestException, EntityNotFoundException, InvalidEntityException,
@@ -97,7 +97,7 @@ public class DemographicController extends BaseController {
             userIdUnwrapped = userId.get();
         } else if (userId.isPresent() && !studyId.isPresent()) {
             // posted on the user's behalf at an app level
-            session = getAdministrativeSession();
+            session = getAuthenticatedSession(Roles.ADMIN);
             userIdUnwrapped = userId.get();
         } else {
             // posted by the user
@@ -144,8 +144,8 @@ public class DemographicController extends BaseController {
      */
     @PostMapping({ "/v5/studies/{studyId}/participants/{userId}/demographics/assessment",
             "/v5/studies/{studyId}/participants/self/demographics/assessment",
-            "/v1/apps/self/participants/{userId}/demographics/assessment",
-            "/v1/apps/self/participants/self/demographics/assessment" })
+            "/v3/participants/{userId}/demographics/assessment",
+            "/v3/participants/self/demographics/assessment" })
     public DemographicUser saveDemographicUserAssessment(@PathVariable(required = false) Optional<String> studyId,
             @PathVariable(required = false) Optional<String> userId)
             throws BadRequestException, EntityNotFoundException, InvalidEntityException,
@@ -160,7 +160,7 @@ public class DemographicController extends BaseController {
             userIdUnwrapped = userId.get();
         } else if (userId.isPresent() && !studyId.isPresent()) {
             // posted on the user's behalf at an app level
-            session = getAdministrativeSession();
+            session = getAuthenticatedSession(Roles.ADMIN);
             userIdUnwrapped = userId.get();
         } else {
             // posted by the user, either at an app or study level
@@ -204,7 +204,7 @@ public class DemographicController extends BaseController {
      *                                     supported.
      */
     @DeleteMapping({ "/v5/studies/{studyId}/participants/{userId}/demographics/{demographicId}",
-            "/v1/apps/self/participants/{userId}/demographics/{demographicId}" })
+            "/v3/participants/{userId}/demographics/{demographicId}" })
     public StatusMessage deleteDemographic(@PathVariable(required = false) Optional<String> studyId,
             @PathVariable String userId,
             @PathVariable String demographicId) throws EntityNotFoundException, NotAuthenticatedException,
@@ -217,7 +217,7 @@ public class DemographicController extends BaseController {
             session = getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
         } else {
             // app level demographics
-            session = getAdministrativeSession();
+            session = getAuthenticatedSession(Roles.ADMIN);
         }
         participantService.getAccountInStudy(session.getAppId(), studyIdNull, userId);
 
@@ -247,7 +247,7 @@ public class DemographicController extends BaseController {
      *                                     supported.
      */
     @DeleteMapping({ "/v5/studies/{studyId}/participants/{userId}/demographics",
-            "/v1/apps/self/participants/{userId}/demographics" })
+            "/v3/participants/{userId}/demographics" })
     public StatusMessage deleteDemographicUser(@PathVariable(required = false) Optional<String> studyId,
             @PathVariable String userId) throws EntityNotFoundException, NotAuthenticatedException,
             UnauthorizedException, ConsentRequiredException, UnsupportedVersionException {
@@ -259,7 +259,7 @@ public class DemographicController extends BaseController {
             session = getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
         } else {
             // app level demographics
-            session = getAdministrativeSession();
+            session = getAuthenticatedSession(Roles.ADMIN);
         }
         participantService.getAccountInStudy(session.getAppId(), studyIdNull, userId);
 
@@ -289,7 +289,7 @@ public class DemographicController extends BaseController {
      *                                     supported.
      */
     @GetMapping({ "/v5/studies/{studyId}/participants/{userId}/demographics",
-            "/v1/apps/self/participants/{userId}/demographics" })
+            "/v3/participants/{userId}/demographics" })
     public DemographicUser getDemographicUser(@PathVariable(required = false) Optional<String> studyId,
             @PathVariable String userId) throws EntityNotFoundException, NotAuthenticatedException,
             UnauthorizedException, ConsentRequiredException, UnsupportedVersionException {
@@ -301,7 +301,7 @@ public class DemographicController extends BaseController {
             session = getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
         } else {
             // app level demographics
-            session = getAdministrativeSession();
+            session = getAuthenticatedSession(Roles.ADMIN);
         }
         participantService.getAccountInStudy(session.getAppId(), studyIdNull, userId);
 
@@ -329,7 +329,7 @@ public class DemographicController extends BaseController {
      * @throws UnsupportedVersionException if the caller's app version is not
      *                                     supported.
      */
-    @GetMapping({ "/v5/studies/{studyId}/participants/demographics", "/v1/apps/self/participants/demographics" })
+    @GetMapping({ "/v5/studies/{studyId}/participants/demographics", "/v3/participants/demographics" })
     public PagedResourceList<DemographicUser> getDemographicUsers(
             @PathVariable(required = false) Optional<String> studyId,
             @RequestParam(required = false) String offsetBy, @RequestParam(required = false) String pageSize)
@@ -343,7 +343,7 @@ public class DemographicController extends BaseController {
             session = getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
         } else {
             // app level demographics
-            session = getAdministrativeSession();
+            session = getAuthenticatedSession(Roles.ADMIN);
         }
         int offsetInt = BridgeUtils.getIntOrDefault(offsetBy, 0);
         int pageSizeInt = BridgeUtils.getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);

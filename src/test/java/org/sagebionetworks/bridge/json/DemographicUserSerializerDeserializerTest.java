@@ -3,8 +3,11 @@ package org.sagebionetworks.bridge.json;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.sagebionetworks.bridge.models.studies.Demographic;
 import org.sagebionetworks.bridge.models.studies.DemographicUser;
@@ -24,8 +27,7 @@ public class DemographicUserSerializerDeserializerTest {
      */
     @Test
     public void serialize() throws JsonProcessingException {
-        DemographicUser demographicUser = new DemographicUser("id1", "appid1", null, "userid1",
-                new HashMap<>());
+        DemographicUser demographicUser = new DemographicUser("id1", "appid1", "studyid", "userid1", new HashMap<>());
         Demographic demographicNullUnitsEmptyValues = new Demographic("id1", demographicUser, "category1", true,
                 ImmutableList.of(), null);
         demographicUser.getDemographics().put("category1", demographicNullUnitsEmptyValues);
@@ -99,6 +101,84 @@ public class DemographicUserSerializerDeserializerTest {
     }
 
     /**
+     * Tests whether deserializing with null demographics succeeds and results in a
+     * DemographicUser with null demographics (if this actually happens it should be
+     * rejected by the validator but the deserialization should succeed).
+     */
+    @Test
+    public void deserializeNullDemographics() throws JsonProcessingException, JsonMappingException {
+        DemographicUser demographicUser = new DemographicUser(null, null, null, null, null);
+
+        assertEquals(new ObjectMapper().readValue("{\"demographics\":null}", DemographicUser.class).toString(),
+                demographicUser.toString());
+    }
+
+    /**
+     * Tests whether deserializing with a demographics map that contains a null
+     * value succeeds (if this actually happens it should be rejected by the
+     * validator but the deserialization should succeed).
+     */
+    @Test
+    public void deserializeNullDemographicsMapValue() throws JsonMappingException, JsonProcessingException {
+        DemographicUser demographicUser = new DemographicUser(null, null, null, null, new HashMap<>());
+        demographicUser.getDemographics().put("category1", null);
+
+        assertEquals(new ObjectMapper().readValue("{\"demographics\":{\"category1\":null}}", DemographicUser.class)
+                .toString(), demographicUser.toString());
+    }
+
+    /**
+     * Tests whether deserializing with null list of values succeeds and results in
+     * a Demographic with a null list of values (if this actually happens it should
+     * be rejected by the validator but the deserialization should succeed).
+     */
+    @Test
+    public void deserializeNullDemographicValues() throws JsonProcessingException, JsonMappingException {
+        DemographicUser demographicUser = new DemographicUser(null, null, null, null, new HashMap<>());
+        Demographic demographic = new Demographic(null, demographicUser, "category1", true, null, null);
+        demographicUser.getDemographics().put("category1", demographic);
+
+        assertEquals(new ObjectMapper()
+                .readValue("{\"demographics\":{\"category1\":{\"values\":null}}}", DemographicUser.class).toString(),
+                demographicUser.toString());
+    }
+
+    /**
+     * Tests whether null values will be ignored when deserializing and nothing
+     * else.
+     */
+    @Test
+    public void deserializeNullDemographicValue() throws JsonMappingException, JsonProcessingException {
+        DemographicUser demographicUser = new DemographicUser(null, null, null, null, new HashMap<>());
+        Demographic demographic = new Demographic(null, demographicUser, "category1", true,
+                ImmutableList.of(new DemographicValue("foo")), null);
+        demographicUser.getDemographics().put("category1", demographic);
+
+        assertEquals(
+                new ObjectMapper().readValue("{\"demographics\":{\"category1\":{\"values\":[null, \"foo\", null]}}}",
+                        DemographicUser.class).toString(),
+                demographicUser.toString());
+    }
+
+    /**
+     * Tests whether only DemographicValues with null inner values are removed when
+     * setting the list of values.
+     */
+    @Test
+    public void setNullDemographicValueInner() {
+        Demographic demographic = new Demographic();
+        List<DemographicValue> values = new ArrayList<>();
+        values.add(new DemographicValue(null));
+        values.add(new DemographicValue("foo"));
+        values.add(new DemographicValue(null));
+
+        demographic.setValues(values);
+
+        assertEquals(values.size(), 1);
+        assertEquals(values.get(0).getValue(), "foo");
+    }
+
+    /**
      * Tests whether deserializing without specifying multipleSelect defaults
      * multipleSelect to true.
      */
@@ -129,38 +209,42 @@ public class DemographicUserSerializerDeserializerTest {
                 "testunits");
         demographicUser.getDemographics().put("category3", demographic3);
 
-        assertEquals(new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false).readValue(
-                "{" +
-                        "    \"unknown field\": null," +
-                        "    \"userId\": \"testuserid\"," +
-                        "    \"demographics\": {" +
-                        "        \"category1\": {" +
-                        "            \"unknown field\": null," +
-                        "            \"multipleSelect\": true," +
-                        "            \"values\": [" +
-                        "                -7," +
-                        "                -6.3," +
-                        "                1," +
-                        "                \"foo\"" +
-                        "            ]," +
-                        "            \"units\": null" +
-                        "        }," +
-                        "        \"category2\": {" +
-                        "            \"unknown field\": null," +
-                        "            \"multipleSelect\": false," +
-                        "            \"values\": [" +
-                        "                5.3" +
-                        "            ]" +
-                        "        }," +
-                        "        \"category3\": {" +
-                        "            \"unknown field\": null," +
-                        "            \"multipleSelect\": true," +
-                        "            \"values\": []," +
-                        "            \"units\": \"testunits\"" +
-                        "        }" +
-                        "    }" +
-                        "}",
-                DemographicUser.class).toString(),
-                demographicUser.toString());
+        DemographicUser deserialized = new ObjectMapper()
+                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false).readValue(
+                        "{" +
+                                "    \"unknown field\": null," +
+                                "    \"userId\": \"testuserid\"," +
+                                "    \"demographics\": {" +
+                                "        \"category1\": {" +
+                                "            \"unknown field\": null," +
+                                "            \"multipleSelect\": true," +
+                                "            \"values\": [" +
+                                "                -7," +
+                                "                -6.3," +
+                                "                1," +
+                                "                \"foo\"" +
+                                "            ]," +
+                                "            \"units\": null" +
+                                "        }," +
+                                "        \"category2\": {" +
+                                "            \"unknown field\": null," +
+                                "            \"multipleSelect\": false," +
+                                "            \"values\": [" +
+                                "                5.3" +
+                                "            ]" +
+                                "        }," +
+                                "        \"category3\": {" +
+                                "            \"unknown field\": null," +
+                                "            \"multipleSelect\": true," +
+                                "            \"values\": []," +
+                                "            \"units\": \"testunits\"" +
+                                "        }" +
+                                "    }" +
+                                "}",
+                        DemographicUser.class);
+        assertEquals(deserialized.toString(), demographicUser.toString());
+        for (Map.Entry<String, Demographic> entry : deserialized.getDemographics().entrySet()) {
+            assertEquals(entry.getKey(), entry.getValue().getCategoryName());
+        }
     }
 }
