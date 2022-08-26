@@ -1,8 +1,10 @@
 package org.sagebionetworks.bridge.services;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import javax.annotation.Resource;
@@ -23,6 +25,8 @@ import org.sagebionetworks.client.exceptions.SynapseException;
 import org.sagebionetworks.repo.model.Folder;
 import org.sagebionetworks.repo.model.Project;
 import org.sagebionetworks.repo.model.Team;
+import org.sagebionetworks.repo.model.annotation.v2.AnnotationsValue;
+import org.sagebionetworks.repo.model.annotation.v2.AnnotationsValueType;
 import org.sagebionetworks.repo.model.project.ExternalS3StorageLocationSetting;
 import org.sagebionetworks.repo.model.table.ColumnModel;
 import org.sagebionetworks.repo.model.table.ColumnType;
@@ -272,7 +276,7 @@ public class Exporter3Service {
             isAppModified = true;
         }
 
-        boolean isConfigModified = initExporter3Internal(app.getName(), appId, ex3Config);
+        boolean isConfigModified = initExporter3Internal(app.getName(), appId, Optional.empty(), ex3Config);
         if (isConfigModified) {
             isAppModified = true;
         }
@@ -311,7 +315,7 @@ public class Exporter3Service {
             isStudyModified = true;
         }
 
-        boolean isConfigModified = initExporter3Internal(study.getName(), appId + '/' + studyId, ex3Config);
+        boolean isConfigModified = initExporter3Internal(study.getName(), appId, Optional.of(studyId), ex3Config);
         if (isConfigModified) {
             isStudyModified = true;
         }
@@ -361,10 +365,8 @@ public class Exporter3Service {
 
     // Package-scoped for unit tests.
     // Parent name is the name of the app or study this is being initialized for.
-    // Base key is the base S3 key for all files in S3. This is either [appID] or [appId]/[studyId] if this is for a
-    // study.
     // This modifies the passed in Exporter3Config. Returns true if ex3Config was modified.
-    boolean initExporter3Internal(String parentName, String baseKey, Exporter3Configuration ex3Config)
+    boolean initExporter3Internal(String parentName, String appId, Optional<String> studyId, Exporter3Configuration ex3Config)
             throws BridgeSynapseException, IOException, SynapseException {
         boolean isModified = false;
 
@@ -444,6 +446,16 @@ public class Exporter3Service {
                             ": " + ex.getMessage(), ex);
                 }
             }
+
+            // Add study and app id annotations.
+            Map<String, AnnotationsValue> annotations = new HashMap<>();
+            annotations.put("appId",
+                    new AnnotationsValue().setType(AnnotationsValueType.STRING).setValue(ImmutableList.of(appId)));
+            if (studyId.isPresent()) {
+                annotations.put("studyId", new AnnotationsValue().setType(AnnotationsValueType.STRING)
+                        .setValue(ImmutableList.of(studyId.get())));
+            }
+            synapseHelper.addAnnotationsToEntity(projectId, annotations);
         }
 
         // Create Participant Version Table.
@@ -478,6 +490,10 @@ public class Exporter3Service {
         // Create storage location.
         Long storageLocationId = ex3Config.getStorageLocationId();
         if (storageLocationId == null) {
+            String baseKey = appId;
+            if (studyId.isPresent()) {
+                baseKey += "/" + studyId.get();
+            }
             // Create owner.txt so that we can create the storage location.
             s3Helper.writeLinesToS3(rawHealthDataBucket, baseKey + "/owner.txt",
                     ImmutableList.of(exporterSynapseUser));
