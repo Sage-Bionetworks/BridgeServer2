@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import javax.annotation.Resource;
@@ -38,12 +39,15 @@ import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.SecureTokenGenerator;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.BridgeSynapseException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.ClientInfo;
+import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ParticipantVersion;
@@ -179,6 +183,7 @@ public class Exporter3Service {
     private BridgeConfig config;
     private HealthDataEx3Service healthDataEx3Service;
     private ParticipantVersionService participantVersionService;
+    private RequestInfoService requestInfoService;
     private S3Helper s3Helper;
     private AmazonSNS snsClient;
     private AmazonSQS sqsClient;
@@ -229,6 +234,11 @@ public class Exporter3Service {
     @Autowired
     public final void setParticipantVersionService(ParticipantVersionService participantVersionService) {
         this.participantVersionService = participantVersionService;
+    }
+
+    @Autowired
+    public final void setRequestInfoService(RequestInfoService requestInfoService) {
+        this.requestInfoService = requestInfoService;
     }
 
     @Resource(name = "s3Helper")
@@ -585,6 +595,31 @@ public class Exporter3Service {
         });
         SharingScope sharingScope = account.getSharingScope();
         record.setSharingScope(sharingScope);
+
+        // Handle Client Info.
+        String clientInfoJsonText;
+        if (upload.getClientInfo() != null) {
+            clientInfoJsonText = upload.getClientInfo();
+        } else {
+            ClientInfo clientInfo = ClientInfo.UNKNOWN_CLIENT;
+            RequestContext requestContext = RequestContext.get();
+            String calledUserId = requestContext.getCallerUserId();
+            String uploaderUserId = account.getId();
+            if (Objects.equals(calledUserId, uploaderUserId)) {
+                // The caller is the uploader. Get the Client Info from the RequestContext.
+                clientInfo = requestContext.getCallerClientInfo();
+            } else {
+                // The caller is _not_ the uploader. Get the Client Info from the RequestInfoService.
+                RequestInfo requestInfo = requestInfoService.getRequestInfo(uploaderUserId);
+                if (requestInfo != null && requestInfo.getClientInfo() != null) {
+                    clientInfo = requestInfo.getClientInfo();
+                }
+            }
+
+            clientInfoJsonText = BridgeObjectMapper.get().writerWithDefaultPrettyPrinter()
+                    .writeValueAsString(clientInfo);
+        }
+        record.setClientInfo(clientInfoJsonText);
 
         // Also mark with the latest participant version.
         Optional<ParticipantVersion> participantVersion = participantVersionService

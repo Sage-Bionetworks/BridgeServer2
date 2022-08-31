@@ -55,10 +55,12 @@ import org.sagebionetworks.repo.model.annotation.v2.AnnotationsValueType;
 import org.sagebionetworks.repo.model.project.ExternalS3StorageLocationSetting;
 import org.sagebionetworks.repo.model.table.EntityView;
 import org.sagebionetworks.repo.model.table.TableEntity;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.config.BridgeConfig;
@@ -66,6 +68,8 @@ import org.sagebionetworks.bridge.exceptions.BridgeSynapseException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.ClientInfo;
+import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ParticipantVersion;
@@ -88,6 +92,7 @@ public class Exporter3ServiceTest {
     private static final long ADMIN_SYNAPSE_ID = 555L;
     private static final long BRIDGE_ADMIN_TEAM_ID = 1111L;
     private static final long BRIDGE_STAFF_TEAM_ID = 2222L;
+    private static final ClientInfo CLIENT_INFO = ClientInfo.fromUserAgentCache(TestConstants.UA);
     private static final String CREATE_STUDY_TOPIC_ARN = "arn:aws:sns:us-east-1:111111111111:create-study-topic";
     private static final long DATA_ACCESS_TEAM_ID = 3333L;
     private static final long DOWNSTREAM_ETL_SYNAPSE_ID = 3888L;
@@ -108,6 +113,7 @@ public class Exporter3ServiceTest {
     private static final String SUBSCRIPTION_ENDPOINT = "arn:aws:sqs:us-east-1:222222222222:subscription-queue";
     private static final String SUBSCRIPTION_PROTOCOL = "sqs";
     private static final String SYNAPSE_TRACKING_VIEW_ID = "syn8888";
+    private static final String USER_ID = "test-user";
     private static final String WORKER_QUEUE_URL = "http://example.com/dummy-sqs-url";
 
     private static final String EXPECTED_PROJECT_NAME = APP_NAME + " Project " + NAME_SCOPING_TOKEN;
@@ -134,6 +140,9 @@ public class Exporter3ServiceTest {
 
     @Mock
     private ParticipantVersionService mockParticipantVersionService;
+
+    @Mock
+    private RequestInfoService mockRequestInfoService;
 
     @Mock
     private S3Helper mockS3Helper;
@@ -176,6 +185,12 @@ public class Exporter3ServiceTest {
         study.setName(APP_NAME);
         when(mockStudyService.getStudy(eq(TestConstants.TEST_APP_ID), eq(TestConstants.TEST_STUDY_ID), anyBoolean()))
                 .thenReturn(study);
+    }
+
+    @AfterClass
+    public static void afterClass() {
+        // Reset Request Context.
+        RequestContext.set(RequestContext.NULL_INSTANCE);
     }
 
     @Test
@@ -754,6 +769,238 @@ public class Exporter3ServiceTest {
         HealthDataRecordEx3 recordToCreate = recordToCreateCaptor.getValue();
         assertNull(recordToCreate.getParticipantVersion());
         assertEquals(recordToCreate.getVersion().longValue(), 1L);
+    }
+
+    @Test
+    public void completeUpload_ClientInfo_FromUpload() throws Exception {
+        // Set up inputs. For simplicity, just write the client info as a string, since this bypasses the JSON
+        // serialization.
+        Upload upload = Upload.create();
+        upload.setClientInfo("dummy upload client info string");
+        upload.setHealthCode(TestConstants.HEALTH_CODE);
+        upload.setUploadId(RECORD_ID);
+
+        // Mock AccountService.
+        Account account = Account.create();
+        account.setId(USER_ID);
+        when(mockAccountService.getAccount(any())).thenReturn(Optional.of(account));
+
+        // Ensure there is no client info in the Request Context.
+        RequestContext requestContext = new RequestContext.Builder().withCallerUserId(USER_ID)
+                .withCallerClientInfo(null).build();
+        RequestContext.set(requestContext);
+
+        // Mock HealthDataEx3Service.
+        HealthDataRecordEx3 createdRecord = HealthDataRecordEx3.create();
+        createdRecord.setId(RECORD_ID);
+        when(mockHealthDataEx3Service.createOrUpdateRecord(any())).thenReturn(createdRecord);
+
+        // Mock SQS. Return type doesn't actually matter except for logs, but we don't want it to be null.
+        when(mockSqsClient.sendMessage(any(), any())).thenReturn(new SendMessageResult());
+
+        // Execute.
+        exporter3Service.completeUpload(app, upload);
+
+        // Verify client info.
+        ArgumentCaptor<HealthDataRecordEx3> recordToCreateCaptor = ArgumentCaptor.forClass(HealthDataRecordEx3.class);
+        verify(mockHealthDataEx3Service).createOrUpdateRecord(recordToCreateCaptor.capture());
+
+        HealthDataRecordEx3 recordToCreate = recordToCreateCaptor.getValue();
+        assertEquals(recordToCreate.getClientInfo(), "dummy upload client info string");
+    }
+
+    @Test
+    public void completeUpload_ClientInfo_FromUploaderNull() throws Exception {
+        // Set up inputs.
+        Upload upload = Upload.create();
+        upload.setHealthCode(TestConstants.HEALTH_CODE);
+        upload.setUploadId(RECORD_ID);
+
+        // Mock AccountService.
+        Account account = Account.create();
+        account.setId(USER_ID);
+        when(mockAccountService.getAccount(any())).thenReturn(Optional.of(account));
+
+        // Set RequestContext.
+        RequestContext requestContext = new RequestContext.Builder().withCallerUserId(USER_ID)
+                .withCallerClientInfo(null).build();
+        RequestContext.set(requestContext);
+
+        // Mock HealthDataEx3Service.
+        HealthDataRecordEx3 createdRecord = HealthDataRecordEx3.create();
+        createdRecord.setId(RECORD_ID);
+        when(mockHealthDataEx3Service.createOrUpdateRecord(any())).thenReturn(createdRecord);
+
+        // Mock SQS. Return type doesn't actually matter except for logs, but we don't want it to be null.
+        when(mockSqsClient.sendMessage(any(), any())).thenReturn(new SendMessageResult());
+
+        // Execute.
+        exporter3Service.completeUpload(app, upload);
+
+        // Verify client info. RequestContext automatically fills it in with ClientInfo.UNKNOWN_CLIENT.
+        ArgumentCaptor<HealthDataRecordEx3> recordToCreateCaptor = ArgumentCaptor.forClass(HealthDataRecordEx3.class);
+        verify(mockHealthDataEx3Service).createOrUpdateRecord(recordToCreateCaptor.capture());
+
+        HealthDataRecordEx3 recordToCreate = recordToCreateCaptor.getValue();
+        String clientInfoJsonText = recordToCreate.getClientInfo();
+        ClientInfo deser = BridgeObjectMapper.get().readValue(clientInfoJsonText, ClientInfo.class);
+        assertEquals(deser, ClientInfo.UNKNOWN_CLIENT);
+    }
+
+    @Test
+    public void completeUpload_ClientInfo_FromUploader() throws Exception {
+        // Set up inputs.
+        Upload upload = Upload.create();
+        upload.setHealthCode(TestConstants.HEALTH_CODE);
+        upload.setUploadId(RECORD_ID);
+
+        // Mock AccountService.
+        Account account = Account.create();
+        account.setId(USER_ID);
+        when(mockAccountService.getAccount(any())).thenReturn(Optional.of(account));
+
+        // Set RequestContext.
+        RequestContext requestContext = new RequestContext.Builder().withCallerUserId(USER_ID)
+                .withCallerClientInfo(CLIENT_INFO).build();
+        RequestContext.set(requestContext);
+
+        // Mock HealthDataEx3Service.
+        HealthDataRecordEx3 createdRecord = HealthDataRecordEx3.create();
+        createdRecord.setId(RECORD_ID);
+        when(mockHealthDataEx3Service.createOrUpdateRecord(any())).thenReturn(createdRecord);
+
+        // Mock SQS. Return type doesn't actually matter except for logs, but we don't want it to be null.
+        when(mockSqsClient.sendMessage(any(), any())).thenReturn(new SendMessageResult());
+
+        // Execute.
+        exporter3Service.completeUpload(app, upload);
+
+        // Verify client info.
+        ArgumentCaptor<HealthDataRecordEx3> recordToCreateCaptor = ArgumentCaptor.forClass(HealthDataRecordEx3.class);
+        verify(mockHealthDataEx3Service).createOrUpdateRecord(recordToCreateCaptor.capture());
+
+        HealthDataRecordEx3 recordToCreate = recordToCreateCaptor.getValue();
+        String clientInfoJsonText = recordToCreate.getClientInfo();
+        ClientInfo deser = BridgeObjectMapper.get().readValue(clientInfoJsonText, ClientInfo.class);
+        assertEquals(deser, CLIENT_INFO);
+    }
+
+    @Test
+    public void completeUpload_ClientInfo_FromWorkerNullRequestInfo() throws Exception {
+        // Set up inputs.
+        Upload upload = Upload.create();
+        upload.setHealthCode(TestConstants.HEALTH_CODE);
+        upload.setUploadId(RECORD_ID);
+
+        // Mock AccountService.
+        Account account = Account.create();
+        account.setId(USER_ID);
+        when(mockAccountService.getAccount(any())).thenReturn(Optional.of(account));
+
+        // Set RequestContext.
+        RequestContext requestContext = new RequestContext.Builder().withCallerUserId("worker-user").build();
+        RequestContext.set(requestContext);
+
+        // Mock HealthDataEx3Service.
+        HealthDataRecordEx3 createdRecord = HealthDataRecordEx3.create();
+        createdRecord.setId(RECORD_ID);
+        when(mockHealthDataEx3Service.createOrUpdateRecord(any())).thenReturn(createdRecord);
+
+        // Mock SQS. Return type doesn't actually matter except for logs, but we don't want it to be null.
+        when(mockSqsClient.sendMessage(any(), any())).thenReturn(new SendMessageResult());
+
+        // Execute.
+        exporter3Service.completeUpload(app, upload);
+
+        // Verify client info. Defaults to ClientInfo.UNKNOWN_CLIENT.
+        ArgumentCaptor<HealthDataRecordEx3> recordToCreateCaptor = ArgumentCaptor.forClass(HealthDataRecordEx3.class);
+        verify(mockHealthDataEx3Service).createOrUpdateRecord(recordToCreateCaptor.capture());
+
+        HealthDataRecordEx3 recordToCreate = recordToCreateCaptor.getValue();
+        String clientInfoJsonText = recordToCreate.getClientInfo();
+        ClientInfo deser = BridgeObjectMapper.get().readValue(clientInfoJsonText, ClientInfo.class);
+        assertEquals(deser, ClientInfo.UNKNOWN_CLIENT);
+    }
+
+    @Test
+    public void completeUpload_ClientInfo_FromWorkerNullClientInfo() throws Exception {
+        // Set up inputs.
+        Upload upload = Upload.create();
+        upload.setHealthCode(TestConstants.HEALTH_CODE);
+        upload.setUploadId(RECORD_ID);
+
+        // Mock AccountService.
+        Account account = Account.create();
+        account.setId(USER_ID);
+        when(mockAccountService.getAccount(any())).thenReturn(Optional.of(account));
+
+        // Set RequestContext.
+        RequestContext requestContext = new RequestContext.Builder().withCallerUserId("worker-user").build();
+        RequestContext.set(requestContext);
+
+        // Mock HealthDataEx3Service.
+        HealthDataRecordEx3 createdRecord = HealthDataRecordEx3.create();
+        createdRecord.setId(RECORD_ID);
+        when(mockHealthDataEx3Service.createOrUpdateRecord(any())).thenReturn(createdRecord);
+
+        // Mock RequestInfoService.
+        when(mockRequestInfoService.getRequestInfo(USER_ID)).thenReturn(new RequestInfo());
+
+        // Mock SQS. Return type doesn't actually matter except for logs, but we don't want it to be null.
+        when(mockSqsClient.sendMessage(any(), any())).thenReturn(new SendMessageResult());
+
+        // Execute.
+        exporter3Service.completeUpload(app, upload);
+
+        // Verify client info. Defaults to ClientInfo.UNKNOWN_CLIENT.
+        ArgumentCaptor<HealthDataRecordEx3> recordToCreateCaptor = ArgumentCaptor.forClass(HealthDataRecordEx3.class);
+        verify(mockHealthDataEx3Service).createOrUpdateRecord(recordToCreateCaptor.capture());
+
+        HealthDataRecordEx3 recordToCreate = recordToCreateCaptor.getValue();
+        String clientInfoJsonText = recordToCreate.getClientInfo();
+        ClientInfo deser = BridgeObjectMapper.get().readValue(clientInfoJsonText, ClientInfo.class);
+        assertEquals(deser, ClientInfo.UNKNOWN_CLIENT);
+    }
+
+    @Test
+    public void completeUpload_ClientInfo_FromWorker() throws Exception {
+        // Set up inputs.
+        Upload upload = Upload.create();
+        upload.setHealthCode(TestConstants.HEALTH_CODE);
+        upload.setUploadId(RECORD_ID);
+
+        // Mock AccountService.
+        Account account = Account.create();
+        account.setId(USER_ID);
+        when(mockAccountService.getAccount(any())).thenReturn(Optional.of(account));
+
+        // Set RequestContext.
+        RequestContext requestContext = new RequestContext.Builder().withCallerUserId("worker-user").build();
+        RequestContext.set(requestContext);
+
+        // Mock HealthDataEx3Service.
+        HealthDataRecordEx3 createdRecord = HealthDataRecordEx3.create();
+        createdRecord.setId(RECORD_ID);
+        when(mockHealthDataEx3Service.createOrUpdateRecord(any())).thenReturn(createdRecord);
+
+        // Mock RequestInfoService.
+        RequestInfo requestInfo = new RequestInfo.Builder().withClientInfo(CLIENT_INFO).build();
+        when(mockRequestInfoService.getRequestInfo(USER_ID)).thenReturn(requestInfo);
+
+        // Mock SQS. Return type doesn't actually matter except for logs, but we don't want it to be null.
+        when(mockSqsClient.sendMessage(any(), any())).thenReturn(new SendMessageResult());
+
+        // Execute.
+        exporter3Service.completeUpload(app, upload);
+
+        // Verify client info. Defaults to ClientInfo.UNKNOWN_CLIENT.
+        ArgumentCaptor<HealthDataRecordEx3> recordToCreateCaptor = ArgumentCaptor.forClass(HealthDataRecordEx3.class);
+        verify(mockHealthDataEx3Service).createOrUpdateRecord(recordToCreateCaptor.capture());
+
+        HealthDataRecordEx3 recordToCreate = recordToCreateCaptor.getValue();
+        String clientInfoJsonText = recordToCreate.getClientInfo();
+        ClientInfo deser = BridgeObjectMapper.get().readValue(clientInfoJsonText, ClientInfo.class);
+        assertEquals(deser, CLIENT_INFO);
     }
 
     @Test
