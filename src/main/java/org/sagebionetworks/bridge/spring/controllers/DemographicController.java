@@ -190,18 +190,15 @@ public class DemographicController extends BaseController {
      *                      delete. Can be empty if the user themself is the caller.
      * @param demographicId The id of the Demographic to delete.
      * @return a success message if the deletion occurred successfully.
-     * @throws EntityNotFoundException     if the user's account does not exist, the
-     *                                     user is not in the specified study, the
-     *                                     Demographic does not exist, or the user
-     *                                     does not own the specified Demographic.
-     * @throws NotAuthenticatedException   if the caller is not authenticated.
-     * @throws UnauthorizedException       if called at the study level but the
-     *                                     caller is not a researcher or
-     *                                     study-coordinator.
-     * @throws ConsentRequiredException    if called at the app level but the caller
-     *                                     is not consented.
-     * @throws UnsupportedVersionException if the caller's app version is not
-     *                                     supported.
+     * @throws EntityNotFoundException   if the user's account does not exist, the
+     *                                   user is not in the specified study, the
+     *                                   Demographic does not exist, or the user
+     *                                   does not own the specified Demographic.
+     * @throws NotAuthenticatedException if the caller is not authenticated.
+     * @throws UnauthorizedException     if called at the study level but the
+     *                                   caller is not a researcher or
+     *                                   study-coordinator, or if called at the app
+     *                                   level but the caller is not an admin.
      */
     @DeleteMapping({ "/v5/studies/{studyId}/participants/{userId}/demographics/{demographicId}",
             "/v3/participants/{userId}/demographics/{demographicId}" })
@@ -233,18 +230,15 @@ public class DemographicController extends BaseController {
      * @param userId  The userId of the DemographicUser to delete. Can be empty if
      *                the user themself is the caller.
      * @return a success message if the delete occurred successfully.
-     * @throws EntityNotFoundException     if the user's account does not exist, the
-     *                                     user is not in the specified study, or
-     *                                     the DemographicUser to delete does not
-     *                                     exist.
-     * @throws NotAuthenticatedException   if the caller is not authenticated.
-     * @throws UnauthorizedException       if called at the study level but the
-     *                                     caller is not a researcher or
-     *                                     study-coordinator.
-     * @throws ConsentRequiredException    if called at the app level but the caller
-     *                                     is not consented.
-     * @throws UnsupportedVersionException if the caller's app version is not
-     *                                     supported.
+     * @throws EntityNotFoundException   if the user's account does not exist, the
+     *                                   user is not in the specified study, or
+     *                                   the DemographicUser to delete does not
+     *                                   exist.
+     * @throws NotAuthenticatedException if the caller is not authenticated.
+     * @throws UnauthorizedException     if called at the study level but the
+     *                                   caller is not a researcher or
+     *                                   study-coordinator, or if called at the app
+     *                                   level but the caller is not an admin.
      */
     @DeleteMapping({ "/v5/studies/{studyId}/participants/{userId}/demographics",
             "/v3/participants/{userId}/demographics" })
@@ -275,18 +269,15 @@ public class DemographicController extends BaseController {
      * @param userId  The userId of the DemographicUser to fetch. Can be empty if
      *                the user themself is the caller.
      * @return the fetched DemographicUser.
-     * @throws EntityNotFoundException     if the user's account does not exist, the
-     *                                     user is not in the specified study, or
-     *                                     the DemographicUser to fetch does not
-     *                                     exist.
-     * @throws NotAuthenticatedException   if the caller is not authenticated.
-     * @throws UnauthorizedException       if called at the study level but the
-     *                                     caller is not a researcher or
-     *                                     study-coordinator.
-     * @throws ConsentRequiredException    if called at the app level but the caller
-     *                                     is not consented.
-     * @throws UnsupportedVersionException if the caller's app version is not
-     *                                     supported.
+     * @throws EntityNotFoundException   if the user's account does not exist, the
+     *                                   user is not in the specified study, or
+     *                                   the DemographicUser to fetch does not
+     *                                   exist.
+     * @throws NotAuthenticatedException if the caller is not authenticated.
+     * @throws UnauthorizedException     if called at the study level but the
+     *                                   caller is not a researcher or
+     *                                   study-coordinator, or if called at the app
+     *                                   level but the caller is not an admin.
      */
     @GetMapping({ "/v5/studies/{studyId}/participants/{userId}/demographics",
             "/v3/participants/{userId}/demographics" })
@@ -319,15 +310,12 @@ public class DemographicController extends BaseController {
      * @param pageSize The maximum number of entries in the returned list of
      *                 DemographicUsers.
      * @return A paged list of fetched DemographicUsers.
-     * @throws BadRequestException         if the pageSize is invalid.
-     * @throws NotAuthenticatedException   if the caller is not authenticated.
-     * @throws UnauthorizedException       if called at the study level but the
-     *                                     caller is not a researcher or
-     *                                     study-coordinator.
-     * @throws ConsentRequiredException    if called at the app level but the caller
-     *                                     is not consented.
-     * @throws UnsupportedVersionException if the caller's app version is not
-     *                                     supported.
+     * @throws BadRequestException       if the pageSize is invalid.
+     * @throws NotAuthenticatedException if the caller is not authenticated.
+     * @throws UnauthorizedException     if called at the study level but the
+     *                                   caller is not a researcher or
+     *                                   study-coordinator, or if called at the app
+     *                                   level but the caller is not an admin.
      */
     @GetMapping({ "/v5/studies/{studyId}/participants/demographics", "/v3/participants/demographics" })
     public PagedResourceList<DemographicUser> getDemographicUsers(
