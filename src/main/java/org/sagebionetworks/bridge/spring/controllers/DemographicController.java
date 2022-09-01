@@ -204,8 +204,8 @@ public class DemographicController extends BaseController {
             "/v3/participants/{userId}/demographics/{demographicId}" })
     public StatusMessage deleteDemographic(@PathVariable(required = false) Optional<String> studyId,
             @PathVariable String userId,
-            @PathVariable String demographicId) throws EntityNotFoundException, NotAuthenticatedException,
-            UnauthorizedException, ConsentRequiredException, UnsupportedVersionException {
+            @PathVariable String demographicId)
+            throws EntityNotFoundException, NotAuthenticatedException, UnauthorizedException {
         String studyIdNull = studyId.orElse(null);
 
         UserSession session;
@@ -243,8 +243,8 @@ public class DemographicController extends BaseController {
     @DeleteMapping({ "/v5/studies/{studyId}/participants/{userId}/demographics",
             "/v3/participants/{userId}/demographics" })
     public StatusMessage deleteDemographicUser(@PathVariable(required = false) Optional<String> studyId,
-            @PathVariable String userId) throws EntityNotFoundException, NotAuthenticatedException,
-            UnauthorizedException, ConsentRequiredException, UnsupportedVersionException {
+            @PathVariable String userId)
+            throws EntityNotFoundException, NotAuthenticatedException, UnauthorizedException {
         String studyIdNull = studyId.orElse(null);
 
         UserSession session;
@@ -282,8 +282,8 @@ public class DemographicController extends BaseController {
     @GetMapping({ "/v5/studies/{studyId}/participants/{userId}/demographics",
             "/v3/participants/{userId}/demographics" })
     public DemographicUser getDemographicUser(@PathVariable(required = false) Optional<String> studyId,
-            @PathVariable String userId) throws EntityNotFoundException, NotAuthenticatedException,
-            UnauthorizedException, ConsentRequiredException, UnsupportedVersionException {
+            @PathVariable String userId)
+            throws EntityNotFoundException, NotAuthenticatedException, UnauthorizedException {
         String studyIdNull = studyId.orElse(null);
 
         UserSession session;
@@ -321,8 +321,7 @@ public class DemographicController extends BaseController {
     public PagedResourceList<DemographicUser> getDemographicUsers(
             @PathVariable(required = false) Optional<String> studyId,
             @RequestParam(required = false) String offsetBy, @RequestParam(required = false) String pageSize)
-            throws BadRequestException, NotAuthenticatedException,
-            UnauthorizedException, ConsentRequiredException, UnsupportedVersionException {
+            throws BadRequestException, NotAuthenticatedException, UnauthorizedException {
         String studyIdNull = studyId.orElse(null);
 
         UserSession session;
