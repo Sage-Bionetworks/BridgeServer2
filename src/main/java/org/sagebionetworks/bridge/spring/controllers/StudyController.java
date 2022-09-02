@@ -9,6 +9,7 @@ import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
+import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.models.files.FileDispositionType.INLINE;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
@@ -259,5 +260,12 @@ public class StudyController extends BaseController {
         UserSession session = getAdministrativeSession();
        
         return service.transitionToWithdrawn(session.getAppId(), studyId);
+    }
+    
+    @PostMapping("v5/studies/{studyId}/reverttodesign")
+    public Study revertToDesign(@PathVariable String studyId) {
+        UserSession session = getAuthenticatedSession(SUPERADMIN);
+        
+        return  service.revertToDesign(session.getAppId(), studyId);
     }
 }
