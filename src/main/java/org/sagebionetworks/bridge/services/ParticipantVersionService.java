@@ -28,6 +28,8 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ParticipantVersion;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.apps.App;
+import org.sagebionetworks.bridge.models.studies.Demographic;
+import org.sagebionetworks.bridge.models.studies.DemographicUser;
 import org.sagebionetworks.bridge.models.worker.Ex3ParticipantVersionRequest;
 import org.sagebionetworks.bridge.models.worker.WorkerRequest;
 import org.sagebionetworks.bridge.time.DateUtils;
@@ -39,6 +41,7 @@ public class ParticipantVersionService {
     static final String WORKER_NAME_EX_3_PARTICIPANT_VERSION = "Ex3ParticipantVersionWorker";
 
     private AppService appService;
+    private DemographicService demographicService;
     private BridgeConfig config;
     private ParticipantVersionDao participantVersionDao;
     private AmazonSQS sqsClient;
@@ -46,6 +49,11 @@ public class ParticipantVersionService {
     @Autowired
     public final void setAppService(AppService appService) {
         this.appService = appService;
+    }
+
+    @Autowired
+    public final void setDemographicService(DemographicService demographicService) {
+        this.demographicService = demographicService;
     }
 
     @Autowired
@@ -105,6 +113,15 @@ public class ParticipantVersionService {
         participantVersion.setSharingScope(account.getSharingScope());
         participantVersion.setStudyMemberships(BridgeUtils.mapStudyMemberships(account));
         participantVersion.setTimeZone(account.getClientTimeZone());
+        participantVersion.setAppDemographics(
+                demographicService.getDemographicUser(account.getAppId(), null, account.getId()).getDemographics());
+        Map<String, Map<String, Demographic>> studyDemographics = new HashMap<>();
+        for (String studyId : participantVersion.getStudyMemberships().keySet()) {
+            DemographicUser demographicUser = demographicService.getDemographicUser(account.getAppId(), studyId,
+                    account.getId());
+            studyDemographics.put(studyId, demographicUser.getDemographics());
+        }
+        participantVersion.setStudyDemographics(studyDemographics);
 
         return participantVersion;
     }

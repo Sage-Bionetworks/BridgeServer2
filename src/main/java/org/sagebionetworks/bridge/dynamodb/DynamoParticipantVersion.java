@@ -9,6 +9,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverted;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConvertedJson;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -19,6 +20,7 @@ import org.sagebionetworks.bridge.json.DateTimeToLongDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
 import org.sagebionetworks.bridge.models.accounts.ParticipantVersion;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
+import org.sagebionetworks.bridge.models.studies.Demographic;
 
 @DynamoDBTable(tableName = "ParticipantVersion")
 public class DynamoParticipantVersion implements ParticipantVersion {
@@ -32,6 +34,10 @@ public class DynamoParticipantVersion implements ParticipantVersion {
     private SharingScope sharingScope;
     private Map<String, String> studyMemberships;
     private String timeZone;
+    @DynamoDBTypeConvertedJson
+    private Map<String, Demographic> appDemographics;
+    @DynamoDBTypeConvertedJson
+    private Map<String, Map<String, Demographic>> studyDemographics;
     private Long version;
 
     /**
@@ -175,6 +181,26 @@ public class DynamoParticipantVersion implements ParticipantVersion {
     @Override
     public void setTimeZone(String timeZone) {
         this.timeZone = timeZone;
+    }
+
+    @Override
+    public Map<String, Demographic> getAppDemographics() {
+        return appDemographics;
+    }
+
+    @Override
+    public void setAppDemographics(Map<String, Demographic> appDemographics) {
+        this.appDemographics = appDemographics;
+    }
+
+    @Override
+    public Map<String, Map<String, Demographic>> getStudyDemographics() {
+        return studyDemographics;
+    }
+
+    @Override
+    public void setStudyDemographics(Map<String, Map<String, Demographic>> studyDemographics) {
+        this.studyDemographics = studyDemographics;
     }
 
     /**
