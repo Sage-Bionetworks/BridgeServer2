@@ -191,6 +191,10 @@ public class DynamoParticipantVersion implements ParticipantVersion {
     @Override
     public void setAppDemographics(Map<String, Demographic> appDemographics) {
         this.appDemographics = appDemographics;
+        if (appDemographics.isEmpty()) {
+            // DDB doesn't support empty collections, use null for empty collections.
+            this.appDemographics = null;
+        }
     }
 
     @Override
@@ -201,6 +205,10 @@ public class DynamoParticipantVersion implements ParticipantVersion {
     @Override
     public void setStudyDemographics(Map<String, Map<String, Demographic>> studyDemographics) {
         this.studyDemographics = studyDemographics;
+        if (studyDemographics.isEmpty()) {
+            // DDB doesn't support empty collections, use null for empty collections.
+            this.studyDemographics = null;
+        }
     }
 
     /**
