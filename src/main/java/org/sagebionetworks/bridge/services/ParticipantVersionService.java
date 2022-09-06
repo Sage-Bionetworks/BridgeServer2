@@ -29,7 +29,6 @@ import org.sagebionetworks.bridge.models.accounts.ParticipantVersion;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.studies.Demographic;
-import org.sagebionetworks.bridge.models.studies.DemographicUser;
 import org.sagebionetworks.bridge.models.worker.Ex3ParticipantVersionRequest;
 import org.sagebionetworks.bridge.models.worker.WorkerRequest;
 import org.sagebionetworks.bridge.time.DateUtils;
@@ -113,13 +112,23 @@ public class ParticipantVersionService {
         participantVersion.setSharingScope(account.getSharingScope());
         participantVersion.setStudyMemberships(BridgeUtils.mapStudyMemberships(account));
         participantVersion.setTimeZone(account.getClientTimeZone());
-        participantVersion.setAppDemographics(
-                demographicService.getDemographicUser(account.getAppId(), null, account.getId()).getDemographics());
+
+        Map<String, Demographic> appDemographics = null;
+        try {
+            appDemographics = demographicService.getDemographicUser(account.getAppId(), null, account.getId())
+                    .getDemographics();
+        } catch (EntityNotFoundException e) {
+        }
+        participantVersion.setAppDemographics(appDemographics);
         Map<String, Map<String, Demographic>> studyDemographics = new HashMap<>();
         for (String studyId : participantVersion.getStudyMemberships().keySet()) {
-            DemographicUser demographicUser = demographicService.getDemographicUser(account.getAppId(), studyId,
-                    account.getId());
-            studyDemographics.put(studyId, demographicUser.getDemographics());
+            Map<String, Demographic> oneStudyDemographics = null;
+            try {
+                oneStudyDemographics = demographicService
+                        .getDemographicUser(account.getAppId(), studyId, account.getId()).getDemographics();
+            } catch (EntityNotFoundException e) {
+            }
+            studyDemographics.put(studyId, oneStudyDemographics);
         }
         participantVersion.setStudyDemographics(studyDemographics);
 
