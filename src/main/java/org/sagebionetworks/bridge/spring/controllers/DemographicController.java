@@ -15,6 +15,7 @@ import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.exceptions.UnsupportedVersionException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.DemographicUser;
 import org.sagebionetworks.bridge.models.studies.DemographicUserAssessment;
@@ -104,7 +105,7 @@ public class DemographicController extends BaseController {
             session = getAuthenticatedAndConsentedSession();
             userIdUnwrapped = session.getId();
         }
-        participantService.getAccountInStudy(session.getAppId(), studyIdNullable, userIdUnwrapped);
+        Account account = participantService.getAccountInStudy(session.getAppId(), studyIdNullable, userIdUnwrapped);
 
         DemographicUser demographicUser = parseJson(DemographicUser.class);
         if (demographicUser == null) {
@@ -113,7 +114,7 @@ public class DemographicController extends BaseController {
         demographicUser.setAppId(session.getAppId());
         demographicUser.setStudyId(studyIdNullable);
         demographicUser.setUserId(userIdUnwrapped);
-        return demographicService.saveDemographicUser(demographicUser);
+        return demographicService.saveDemographicUser(demographicUser, account);
     }
 
     /**
@@ -167,7 +168,7 @@ public class DemographicController extends BaseController {
             session = getAuthenticatedAndConsentedSession();
             userIdUnwrapped = session.getId();
         }
-        participantService.getAccountInStudy(session.getAppId(), studyIdNullable, userIdUnwrapped);
+        Account account = participantService.getAccountInStudy(session.getAppId(), studyIdNullable, userIdUnwrapped);
 
         DemographicUserAssessment demographicUserAssessment = parseJson(DemographicUserAssessment.class);
         if (demographicUserAssessment == null) {
@@ -177,7 +178,7 @@ public class DemographicController extends BaseController {
         demographicUser.setAppId(session.getAppId());
         demographicUser.setStudyId(studyIdNullable);
         demographicUser.setUserId(userIdUnwrapped);
-        return demographicService.saveDemographicUser(demographicUser);
+        return demographicService.saveDemographicUser(demographicUser, account);
     }
 
     /**
@@ -216,9 +217,9 @@ public class DemographicController extends BaseController {
             // app level demographics
             session = getAuthenticatedSession(Roles.ADMIN);
         }
-        participantService.getAccountInStudy(session.getAppId(), studyIdNull, userId);
+        Account account = participantService.getAccountInStudy(session.getAppId(), studyIdNull, userId);
 
-        demographicService.deleteDemographic(userId, demographicId);
+        demographicService.deleteDemographic(userId, demographicId, account);
         return DELETE_DEMOGRAPHIC_MESSAGE;
     }
 
@@ -255,9 +256,9 @@ public class DemographicController extends BaseController {
             // app level demographics
             session = getAuthenticatedSession(Roles.ADMIN);
         }
-        participantService.getAccountInStudy(session.getAppId(), studyIdNull, userId);
+        Account account = participantService.getAccountInStudy(session.getAppId(), studyIdNull, userId);
 
-        demographicService.deleteDemographicUser(session.getAppId(), studyIdNull, userId);
+        demographicService.deleteDemographicUser(session.getAppId(), studyIdNull, userId, account);
         return DELETE_DEMOGRAPHIC_USER_MESSAGE;
     }
 

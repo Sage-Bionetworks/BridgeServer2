@@ -10,6 +10,7 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.studies.Demographic;
 import org.sagebionetworks.bridge.models.studies.DemographicUser;
 import org.sagebionetworks.bridge.validators.DemographicUserValidator;
@@ -22,6 +23,8 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class DemographicService {
+    private ParticipantVersionService participantVersionService;
+
     private DemographicDao demographicDao;
 
     @Autowired
@@ -29,14 +32,21 @@ public class DemographicService {
         this.demographicDao = demographicDao;
     }
 
+    @Autowired
+    public final void setParticipantVersionService(ParticipantVersionService participantVersionService) {
+        this.participantVersionService = participantVersionService;
+    }
+
     /**
      * Saves or overwrites a DemographicUser.
      * 
      * @param demographicUser The DemographicUser to save/overwrite.
+     * @param account         The account of the user owning the demographics.
      * @return The DemographicUser that was saved.
      * @throws InvalidEntityException if demographicUser is invalid.
      */
-    public DemographicUser saveDemographicUser(DemographicUser demographicUser) throws InvalidEntityException {
+    public DemographicUser saveDemographicUser(DemographicUser demographicUser, Account account)
+            throws InvalidEntityException {
         demographicUser.setId(generateGuid());
         if (demographicUser.getDemographics() != null) {
             for (Demographic demographic : demographicUser.getDemographics().values()) {
@@ -45,8 +55,10 @@ public class DemographicService {
             }
         }
         Validate.entityThrowingException(DemographicUserValidator.INSTANCE, demographicUser);
-        return demographicDao.saveDemographicUser(demographicUser, demographicUser.getAppId(),
+        DemographicUser savedDemographicUser = demographicDao.saveDemographicUser(demographicUser, demographicUser.getAppId(),
                 demographicUser.getStudyId(), demographicUser.getUserId());
+        participantVersionService.createParticipantVersionFromAccount(account);
+        return savedDemographicUser;
     }
 
     /**
@@ -55,11 +67,12 @@ public class DemographicService {
      * @param userId        The userId of the user who owns the Demographic to
      *                      delete.
      * @param demographicId The id of the Demographic to delete.
+     * @param account       The account of the user owning the demographics.
      * @throws EntityNotFoundException if the Demographic does not exist or the
      *                                 specified user does not own the specified
      *                                 Demographic.
      */
-    public void deleteDemographic(String userId, String demographicId) throws EntityNotFoundException {
+    public void deleteDemographic(String userId, String demographicId, Account account) throws EntityNotFoundException {
         Demographic existingDemographic = demographicDao.getDemographic(demographicId)
                 .orElseThrow(() -> new EntityNotFoundException(Demographic.class));
         if (!existingDemographic.getDemographicUser().getUserId().equals(userId)) {
@@ -69,6 +82,7 @@ public class DemographicService {
             throw new EntityNotFoundException(Demographic.class);
         }
         demographicDao.deleteDemographic(demographicId);
+        participantVersionService.createParticipantVersionFromAccount(account);
     }
 
     /**
@@ -78,15 +92,17 @@ public class DemographicService {
      *                delete.
      * @param studyId The studyId of the study which contains the DemographicUser to
      *                delete. Can be null if the demographics are app-level.
+     * @param account The account of the user owning the demographics.
      * @param userId  The userId of the user to delete demographics for.
      * @throws EntityNotFoundException if the DemographicUser to delete does not
      *                                 exist based on the provided appId, studyId,
      *                                 and userId.
      */
-    public void deleteDemographicUser(String appId, String studyId, String userId) throws EntityNotFoundException {
+    public void deleteDemographicUser(String appId, String studyId, String userId, Account account) throws EntityNotFoundException {
         String existingDemographicUserId = demographicDao.getDemographicUserId(appId, studyId, userId)
                 .orElseThrow(() -> new EntityNotFoundException(DemographicUser.class));
         demographicDao.deleteDemographicUser(existingDemographicUserId);
+        participantVersionService.createParticipantVersionFromAccount(account);
     }
 
     /**
