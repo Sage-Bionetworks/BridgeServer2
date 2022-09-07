@@ -507,7 +507,7 @@ public class Exporter3Service {
         // Create Participant Version Demographics Table.
         String participantVersionDemographicsTableId = ex3Config.getParticipantVersionDemographicsTableId();
         if (participantVersionDemographicsTableId == null) {
-            participantVersionTableId = synapseHelper.createTableWithColumnsAndAcls(
+            participantVersionDemographicsTableId = synapseHelper.createTableWithColumnsAndAcls(
                     PARTICIPANT_VERSION_DEMOGRAPHICS_COLUMNS_MODELS, dataReadOnlyIds, dataAdminIds, projectId,
                     TABLE_NAME_PARTICIPANT_VERSIONS_DEMOGRAPHICS);
             LOG.info("Created Synapse table " + participantVersionDemographicsTableId);
