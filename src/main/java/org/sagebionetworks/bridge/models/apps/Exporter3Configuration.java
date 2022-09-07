@@ -7,6 +7,7 @@ public final class Exporter3Configuration {
     private String createStudyNotificationTopicArn;
     private Long dataAccessTeamId;
     private String participantVersionTableId;
+    private String participantVersionDemographicsTableId;
     private String projectId;
     private String rawDataFolderId;
     private Long storageLocationId;
@@ -45,6 +46,15 @@ public final class Exporter3Configuration {
 
     public void setParticipantVersionTableId(String participantVersionTableId) {
         this.participantVersionTableId = participantVersionTableId;
+    }
+
+    /** The Synapse table where Participant Version demographics information is stored. */
+    public String getParticipantVersionDemographicsTableId() {
+        return participantVersionDemographicsTableId;
+    }
+
+    public void setParticipantVersionDemographicsTableId(String participantVersionDemographicsTableId) {
+        this.participantVersionDemographicsTableId = participantVersionDemographicsTableId;
     }
 
     /**

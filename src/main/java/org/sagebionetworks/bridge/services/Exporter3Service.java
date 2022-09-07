@@ -86,6 +86,7 @@ public class Exporter3Service {
     static final String FOLDER_NAME_BRIDGE_RAW_DATA = "Bridge Raw Data";
     static final String FORMAT_CREATE_STUDY_TOPIC_NAME = "Bridge-Create-Study-Notification-%s";
     static final String TABLE_NAME_PARTICIPANT_VERSIONS = "Participant Versions";
+    static final String TABLE_NAME_PARTICIPANT_VERSIONS_DEMOGRAPHICS = "Participant Versions Demographics";
     static final String WORKER_NAME_EXPORTER_3 = "Exporter3Worker";
 
     static final List<ColumnModel> PARTICIPANT_VERSION_COLUMN_MODELS;
@@ -158,6 +159,53 @@ public class Exporter3Service {
         listBuilder.add(timeZoneColumn);
 
         PARTICIPANT_VERSION_COLUMN_MODELS = listBuilder.build();
+    }
+    static final List<ColumnModel> PARTICIPANT_VERSION_DEMOGRAPHICS_COLUMNS_MODELS;
+    static {
+        ImmutableList.Builder<ColumnModel> listBuilder = ImmutableList.builder();
+
+        ColumnModel healthCodeColumn = new ColumnModel();
+        healthCodeColumn.setName("healthCode");
+        healthCodeColumn.setColumnType(ColumnType.STRING);
+        healthCodeColumn.setMaximumSize(36L);
+        listBuilder.add(healthCodeColumn);
+
+        ColumnModel participantVersionColumn = new ColumnModel();
+        participantVersionColumn.setName("participantVersion");
+        participantVersionColumn.setColumnType(ColumnType.INTEGER);
+        listBuilder.add(participantVersionColumn);
+
+        ColumnModel appIdColumn = new ColumnModel();
+        appIdColumn.setName("appId");
+        appIdColumn.setColumnType(ColumnType.STRING);
+        healthCodeColumn.setMaximumSize(255L);
+        listBuilder.add(appIdColumn);
+
+        ColumnModel studyIdColumn = new ColumnModel();
+        studyIdColumn.setName("studyId");
+        studyIdColumn.setColumnType(ColumnType.STRING);
+        healthCodeColumn.setMaximumSize(255L);
+        listBuilder.add(studyIdColumn);
+
+        ColumnModel categoryNameColumn = new ColumnModel();
+        categoryNameColumn.setName("demographicCategoryName");
+        categoryNameColumn.setColumnType(ColumnType.STRING);
+        healthCodeColumn.setMaximumSize(768L);
+        listBuilder.add(categoryNameColumn);
+
+        ColumnModel demographicValueColumn = new ColumnModel();
+        demographicValueColumn.setName("demographicValue");
+        demographicValueColumn.setColumnType(ColumnType.LARGETEXT);
+        healthCodeColumn.setMaximumSize(1024L);
+        listBuilder.add(demographicValueColumn);
+
+        ColumnModel demographicUnitsColumn = new ColumnModel();
+        demographicUnitsColumn.setName("demographicUnits");
+        demographicUnitsColumn.setColumnType(ColumnType.LARGETEXT);
+        healthCodeColumn.setMaximumSize(1024L);
+        listBuilder.add(demographicUnitsColumn);
+
+        PARTICIPANT_VERSION_DEMOGRAPHICS_COLUMNS_MODELS = listBuilder.build();
     }
 
     // Config attributes.
@@ -454,6 +502,17 @@ public class Exporter3Service {
             LOG.info("Created Synapse table " + participantVersionTableId);
 
             ex3Config.setParticipantVersionTableId(participantVersionTableId);
+            isModified = true;
+        }
+        // Create Participant Version Demographics Table.
+        String participantVersionDemographicsTableId = ex3Config.getParticipantVersionDemographicsTableId();
+        if (participantVersionDemographicsTableId == null) {
+            participantVersionTableId = synapseHelper.createTableWithColumnsAndAcls(
+                    PARTICIPANT_VERSION_DEMOGRAPHICS_COLUMNS_MODELS, dataReadOnlyIds, dataAdminIds, projectId,
+                    TABLE_NAME_PARTICIPANT_VERSIONS_DEMOGRAPHICS);
+            LOG.info("Created Synapse table " + participantVersionDemographicsTableId);
+
+            ex3Config.setParticipantVersionDemographicsTableId(participantVersionDemographicsTableId);
             isModified = true;
         }
 
