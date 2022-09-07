@@ -27,6 +27,7 @@ import org.sagebionetworks.repo.model.project.ExternalS3StorageLocationSetting;
 import org.sagebionetworks.repo.model.table.ColumnModel;
 import org.sagebionetworks.repo.model.table.ColumnType;
 import org.sagebionetworks.repo.model.table.EntityView;
+import org.sagebionetworks.repo.model.table.MaterializedView;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -87,6 +88,24 @@ public class Exporter3Service {
     static final String FORMAT_CREATE_STUDY_TOPIC_NAME = "Bridge-Create-Study-Notification-%s";
     static final String TABLE_NAME_PARTICIPANT_VERSIONS = "Participant Versions";
     static final String TABLE_NAME_PARTICIPANT_VERSIONS_DEMOGRAPHICS = "Participant Versions Demographics";
+    static final String VIEW_NAME_PARTICIPANT_VERSIONS_DEMOGRAPHICS = "Participant Versions Demographics Joined View";
+    static final String VIEW_DEFINING_SQL = "SELECT" +
+            "    participants.healthCode AS healthCode," +
+            "    participants.participantVersion AS participantVersion," +
+            "    participants.createdOn AS createdOn," +
+            "    participants.modifiedOn AS modifiedOn," +
+            "    participants.dataGroups AS dataGroups," +
+            "    participants.languages AS languages," +
+            "    participants.sharingScope AS sharingScope," +
+            "    participants.studyMemberships AS studyMemberships," +
+            "    participants.clientTimeZone AS clientTimeZone," +
+            "    demographics.appId AS appId," +
+            "    demographics.studyId AS studyId," +
+            "    demographics.demographicCategoryName AS demographicCategoryName," +
+            "    demographics.demographicValue AS demographicValue," +
+            "    demographics.demographicUnits AS demographicUnits" +
+            "FROM %s as participants JOIN %s as demographics" +
+            "    ON participants.healthCode = demographics.healthCode AND participants.participantVersion = demographics.participantVersion";
     static final String WORKER_NAME_EXPORTER_3 = "Exporter3Worker";
 
     static final List<ColumnModel> PARTICIPANT_VERSION_COLUMN_MODELS;
@@ -513,6 +532,18 @@ public class Exporter3Service {
             LOG.info("Created Synapse table " + participantVersionDemographicsTableId);
 
             ex3Config.setParticipantVersionDemographicsTableId(participantVersionDemographicsTableId);
+            isModified = true;
+        }
+
+        // Create joined materialized view with participant versions and demographics
+        String participantVersionDemographicsViewId = ex3Config.getParticipantVersionDemographicsViewId();
+        if (participantVersionDemographicsViewId == null) {
+            String sql = String.format(VIEW_DEFINING_SQL, participantVersionTableId, participantVersionDemographicsTableId);
+            MaterializedView view = new MaterializedView().setName(VIEW_NAME_PARTICIPANT_VERSIONS_DEMOGRAPHICS)
+                    .setParentId(projectId).setDefiningSQL(sql);
+            MaterializedView createdView = synapseHelper.createEntityWithRetry(view);
+
+            ex3Config.setParticipantVersionDemographicsViewId(createdView.getId());
             isModified = true;
         }
 

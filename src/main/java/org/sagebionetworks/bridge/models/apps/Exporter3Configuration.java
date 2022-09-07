@@ -8,6 +8,7 @@ public final class Exporter3Configuration {
     private Long dataAccessTeamId;
     private String participantVersionTableId;
     private String participantVersionDemographicsTableId;
+    private String participantVersionDemographicsViewId;
     private String projectId;
     private String rawDataFolderId;
     private Long storageLocationId;
@@ -48,13 +49,22 @@ public final class Exporter3Configuration {
         this.participantVersionTableId = participantVersionTableId;
     }
 
-    /** The Synapse table where Participant Version demographics information is stored. */
+    /** The Synapse table to where we exporter Participant Version Demographics. */
     public String getParticipantVersionDemographicsTableId() {
         return participantVersionDemographicsTableId;
     }
 
     public void setParticipantVersionDemographicsTableId(String participantVersionDemographicsTableId) {
         this.participantVersionDemographicsTableId = participantVersionDemographicsTableId;
+    }
+
+    /** The Synapse materialized view which joins the Participant Versions table and the Demographics table. */
+    public String getParticipantVersionDemographicsViewId() {
+        return participantVersionDemographicsViewId;
+    }
+
+    public void setParticipantVersionDemographicsViewId(String participantVersionDemographicsViewId) {
+        this.participantVersionDemographicsViewId = participantVersionDemographicsViewId;
     }
 
     /**
