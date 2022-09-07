@@ -27,12 +27,16 @@ public class DemographicUserSerializerDeserializerTest {
      */
     @Test
     public void serialize() throws JsonProcessingException {
-        DemographicUser demographicUser = new DemographicUser("id1", "appid1", "studyid", "userid1", new HashMap<>());
+        DemographicUser demographicUser = new DemographicUser("id1", "appid1", "studyid", "userid1",
+                new HashMap<>());
         Demographic demographicNullUnitsEmptyValues = new Demographic("id1", demographicUser, "category1", true,
                 ImmutableList.of(), null);
         demographicUser.getDemographics().put("category1", demographicNullUnitsEmptyValues);
         Demographic demographicMultipleValues = new Demographic("id2", demographicUser, "category2", true,
-                ImmutableList.of(new DemographicValue("value1"), new DemographicValue("value2")), "units1");
+                ImmutableList.of(new DemographicValue("value1"), new DemographicValue("value2"),
+                        new DemographicValue(true), new DemographicValue(false),
+                        new DemographicValue(5), new DemographicValue(-7.2)),
+                "units1");
         demographicUser.getDemographics().put("category2", demographicMultipleValues);
         Demographic demographicNotMultipleSelect = new Demographic("id3", demographicUser, "category3", false,
                 ImmutableList.of(new DemographicValue("value3")), "units2");
@@ -48,6 +52,10 @@ public class DemographicUserSerializerDeserializerTest {
         //             "values": [
         //                 "value1",
         //                 "value2"
+        //                 "true",
+        //                 "false",
+        //                 "5",
+        //                 "-7.2",
         //             ]
         //         },
         //         "category3": {
@@ -66,7 +74,7 @@ public class DemographicUserSerializerDeserializerTest {
         //     }
         // }
         assertEquals(new ObjectMapper().writeValueAsString(demographicUser),
-                "{\"userId\":\"userid1\",\"demographics\":{\"category2\":{\"id\":\"id2\",\"multipleSelect\":true,\"units\":\"units1\",\"values\":[\"value1\",\"value2\"]},\"category3\":{\"id\":\"id3\",\"multipleSelect\":false,\"units\":\"units2\",\"values\":[\"value3\"]},\"category1\":{\"id\":\"id1\",\"multipleSelect\":true,\"values\":[]}}}");
+                "{\"userId\":\"userid1\",\"demographics\":{\"category2\":{\"id\":\"id2\",\"multipleSelect\":true,\"units\":\"units1\",\"values\":[\"value1\",\"value2\",\"true\",\"false\",\"5\",\"-7.2\"]},\"category3\":{\"id\":\"id3\",\"multipleSelect\":false,\"units\":\"units2\",\"values\":[\"value3\"]},\"category1\":{\"id\":\"id1\",\"multipleSelect\":true,\"values\":[]}}}");
     }
 
     /**
