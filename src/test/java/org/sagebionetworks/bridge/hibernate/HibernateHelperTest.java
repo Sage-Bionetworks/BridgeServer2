@@ -15,22 +15,18 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.fail;
 
-import java.lang.reflect.Method;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Function;
 
 import javax.persistence.OptimisticLockException;
 import javax.persistence.PersistenceException;
-import javax.persistence.RollbackException;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
-import org.hibernate.NonUniqueResultException;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
@@ -65,17 +61,14 @@ public class HibernateHelperTest {
     private Transaction mockTransaction;
     
     @BeforeMethod
-    public void setup(Method method) {
+    public void setup() {
         MockitoAnnotations.initMocks(this);
-        // Spy Hibernate helper. This allows us to mock execute() and test it
-        // independently later.
+        // Spy Hibernate helper. This allows us to mock execute() and test it independently later.
         helper = spy(new HibernateHelper(mockSessionFactory, mockExceptionConverter));
-        if (!method.getName().toLowerCase().contains("nosetup")) {
-            doAnswer(invocation -> {
-                Function<Session, ?> function = invocation.getArgument(0);
-                return function.apply(mockSession);
-            }).when(helper).execute(any());
-        }
+        doAnswer(invocation -> {
+            Function<Session, ?> function = invocation.getArgument(0);
+            return function.apply(mockSession);
+        }).when(helper).execute(any());
     }
 
     @Test
@@ -242,50 +235,6 @@ public class HibernateHelperTest {
         
         verify(mockQuery).setParameter("appId", TEST_APP_ID);
         verify(mockQuery).setParameter("id", 10L);
-    }
-
-    @Test
-    public void queryGetOne() {
-        // mock query
-        Object hibernateOutput = new Object();
-        Query<Object> mockQuery = mock(Query.class);
-        when(mockQuery.uniqueResultOptional()).thenReturn(Optional.of(hibernateOutput));
-
-        when(mockSession.createQuery(QUERY, Object.class)).thenReturn(mockQuery);
-
-        // execute and validate
-        Optional<Object> helperOutput = helper.queryGetOne(QUERY, null, Object.class);
-        assertSame(helperOutput.get(), hibernateOutput);
-    }
-
-    @Test
-    public void queryGetOneWithParameters() {
-        // mock query
-        Object hibernateOutput = new Object();
-        Query<Object> mockQuery = mock(Query.class);
-        when(mockQuery.uniqueResultOptional()).thenReturn(Optional.of(hibernateOutput));
-
-        when(mockSession.createQuery(QUERY, Object.class)).thenReturn(mockQuery);
-
-        // execute and validate
-        Optional<Object> helperOutput = helper.queryGetOne(QUERY, PARAMETERS, Object.class);
-        assertSame(helperOutput.get(), hibernateOutput);
-
-        verify(mockQuery).setParameter("appId", TEST_APP_ID);
-        verify(mockQuery).setParameter("id", 10L);
-    }
-
-    @Test(expectedExceptions = BridgeServiceException.class)
-    public void queryGetOneNonUnique() {
-        // mock query
-        Query<Object> mockQuery = mock(Query.class);
-        when(mockQuery.uniqueResultOptional()).thenThrow(new NonUniqueResultException(2));
-        when(mockExceptionConverter.convert(any(), any())).thenAnswer((invocation) -> invocation.getArgument(0));
-
-        when(mockSession.createQuery(QUERY, Object.class)).thenReturn(mockQuery);
-
-        // execute
-        helper.queryGetOne(QUERY, PARAMETERS, Object.class);
     }
 
     @Test
@@ -676,21 +625,5 @@ public class HibernateHelperTest {
         verify(mockQuery).setParameter("a", "b");
         verify(mockQuery).setParameter("c", "d");
         verify(mockQuery).getResultList();
-    }
-
-    @Test
-    public void executeRollbackNoSetup() {
-        when(mockSession.beginTransaction()).thenReturn(mockTransaction);
-        when(mockSessionFactory.openSession()).thenReturn(mockSession);
-
-        try {
-            helper.execute((session) -> {
-                throw new RollbackException();
-            });
-            fail("should have thrown an exception");
-        } catch (RollbackException e) {
-        }
-
-        verify(mockTransaction).rollback();
     }
 }
