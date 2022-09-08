@@ -106,10 +106,10 @@ public class Validate {
     
     static void entity(Validator validator, Errors errors, Object object) {
         checkNotNull(validator);
+        checkNotNull(object);
         checkArgument(object instanceof BridgeEntity);
         checkArgument(validator.supports(object.getClass()), "Invalid validator");
         checkNotNull(errors);
-        checkNotNull(object);
         
         validator.validate(object, errors);
     }
