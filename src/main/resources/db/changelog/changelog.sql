@@ -988,33 +988,3 @@ MODIFY COLUMN `uploadURL` VARCHAR(1536) DEFAULT NULL;
 
 ALTER TABLE `FileRevisions`
 MODIFY COLUMN `uploadURL` VARCHAR(2048) DEFAULT NULL;
-
--- changeset bridge:72
-
-CREATE TABLE `DemographicsUsers` (
-    `id` varchar(60) NOT NULL,
-    `studyId` varchar(60) NULL,
-    `appId` varchar(60) NOT NULL,
-    `userId` varchar(255) NOT NULL,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY (`studyId`, `appId`, `userId`),
-    CONSTRAINT `DemographicUser-Account-Constraint` FOREIGN KEY (`userId`) REFERENCES `Accounts` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `DemographicUser-Study-Constraint` FOREIGN KEY (`studyId`, `appId`) REFERENCES `Substudies` (`id`, `studyId`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-
-CREATE TABLE `Demographics` (
-    `id` varchar(60) NOT NULL,
-    `demographicUserId` varchar(60) NOT NULL,
-    `categoryName` varchar(768) NOT NULL,
-    `multipleSelect` boolean NOT NULL,
-    `units` varchar(512) NULL,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY (`demographicUserId`, `categoryName`),
-    CONSTRAINT `Demographic-DemographicUser-Constraint` FOREIGN KEY (`demographicUserId`) REFERENCES `DemographicsUsers` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-
-CREATE TABLE `DemographicsValues` (
-    `demographicId` varchar(60) NOT NULL,
-    `value` varchar(1024) NOT NULL,
-    CONSTRAINT `DemographicValue-Demographic-Constraint` FOREIGN KEY (`demographicId`) REFERENCES `Demographics` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
