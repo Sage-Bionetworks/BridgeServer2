@@ -2,8 +2,6 @@ package org.sagebionetworks.bridge.models.studies;
 
 import java.util.Map;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
@@ -23,24 +21,19 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @Entity
 @Table(name = "DemographicsUsers")
 public class DemographicUser implements BridgeEntity {
-    @Nonnull
     @Id
     @JsonIgnore
     private String id;
 
-    @Nonnull
     @JsonIgnore
     private String appId;
 
-    @Nullable
     @JsonIgnore
     private String studyId;
 
-    @Nonnull
     private String userId;
 
     // use Map for easy JSON serialization
-    @Nonnull
     @OneToMany(mappedBy = "demographicUser", fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
     @MapKey(name = "categoryName")
     private Map<String, Demographic> demographics;
