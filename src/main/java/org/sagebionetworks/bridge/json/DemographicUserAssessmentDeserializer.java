@@ -26,7 +26,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
  * "normal" format.
  */
 public class DemographicUserAssessmentDeserializer extends JsonDeserializer<DemographicUserAssessment> {
-    private final String MULTIPLE_SELECT_STEP_TYPE = "array";
+    private static final String MULTIPLE_SELECT_STEP_TYPE = "array";
 
     @Override
     public DemographicUserAssessment deserialize(JsonParser p, DeserializationContext ctxt)
