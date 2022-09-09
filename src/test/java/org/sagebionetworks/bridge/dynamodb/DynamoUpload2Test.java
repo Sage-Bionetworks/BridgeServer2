@@ -24,8 +24,7 @@ import org.sagebionetworks.bridge.models.upload.UploadCompletionClient;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
 
 public class DynamoUpload2Test {
-    private static final String CLIENT_INFO = "dummy client info";
-
+    
     /**
      * We will be returning this object through the API in a later update to the server. For now, 
      * we just want to know we are persisting an object that can return the correct JSON. We 
@@ -38,7 +37,6 @@ public class DynamoUpload2Test {
         ObjectNode metadata = (ObjectNode) BridgeObjectMapper.get().readTree("{\"key\":\"value\"}");
         
         DynamoUpload2 upload = new DynamoUpload2();
-        upload.setClientInfo(CLIENT_INFO);
         upload.setCompletedBy(UploadCompletionClient.S3_WORKER);
         upload.setRequestedOn(requestedOn.getMillis());
         upload.setCompletedOn(completedOn.getMillis());
@@ -60,7 +58,6 @@ public class DynamoUpload2Test {
         upload.setZipped(false);
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(upload);
-        assertEquals(node.get("clientInfo").textValue(), CLIENT_INFO);
         assertEquals(node.get("completedBy").textValue(), "s3_worker");
         assertEquals(node.get("requestedOn").textValue(), requestedOn.toString());
         assertEquals(node.get("completedOn").textValue(), completedOn.toString());

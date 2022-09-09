@@ -111,20 +111,7 @@ public class ParticipantController extends BaseController {
     final void setAccountWorkflowService(AccountWorkflowService accountWorkflowService) {
         this.accountWorkflowService = accountWorkflowService; 
     }
-
-    /**
-     * Backfills the participant version for a user in a given app. Note that if the participant version already
-     * exists, participantVersionService will do nothing.
-     */
-    @PostMapping("/v1/apps/{appId}/participants/{userId}/exporter3/versions/backfill")
-    @ResponseStatus(HttpStatus.CREATED)
-    public StatusMessage backfillParticipantVersion(@PathVariable String appId, @PathVariable String userId) {
-        getAuthenticatedSession(WORKER);
-        App app = appService.getApp(appId);
-        participantService.backfillParticipantVersion(app, userId);
-        return new StatusMessage("Participant version backfilled");
-    }
-
+    
     /** Researcher API to allow backfill of SMS notification registrations. */
     @PostMapping("/v3/participants/{userId}/notifications/sms")
     @ResponseStatus(HttpStatus.CREATED)

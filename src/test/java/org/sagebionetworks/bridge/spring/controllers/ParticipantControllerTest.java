@@ -312,7 +312,6 @@ public class ParticipantControllerTest extends Mockito {
     @Test
     public void verifyAnnotations() throws Exception {
         assertCrossOrigin(ParticipantController.class);
-        assertPost(ParticipantController.class, "backfillParticipantVersion");
         assertPost(ParticipantController.class, "requestParticipantRoster");
         assertCreate(ParticipantController.class, "createSmsRegistration");
         assertGet(ParticipantController.class, "getSelfParticipant");
@@ -348,14 +347,6 @@ public class ParticipantControllerTest extends Mockito {
         assertGet(ParticipantController.class, "getActivityEvents");
         assertAccept(ParticipantController.class, "sendSmsMessageForWorker");
         assertPost(ParticipantController.class, "createCustomActivityEvent");
-    }
-
-    @Test
-    public void backfillParticipantVersion() {
-        doReturn(session).when(controller).getAuthenticatedSession(WORKER);
-        StatusMessage result = controller.backfillParticipantVersion(TEST_APP_ID, TEST_USER_ID);
-        assertEquals(result.getMessage(), "Participant version backfilled");
-        verify(mockParticipantService).backfillParticipantVersion(same(app), eq(TEST_USER_ID));
     }
 
     @Test

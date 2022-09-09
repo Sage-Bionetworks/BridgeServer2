@@ -120,7 +120,7 @@ public class AccountService {
         cacheProvider.setObject(cacheKey, account.getCreatedOn());
 
         // Create the corresponding Participant Version.
-        participantVersionService.createParticipantVersionFromAccount(app, account);
+        participantVersionService.createParticipantVersionFromAccount(account);
     }
     
     /**
@@ -168,10 +168,10 @@ public class AccountService {
         // reflect the enrollments.
         Set<String> newStudies = Sets.newHashSet(collectStudyIds(account));
         newStudies.removeAll(collectStudyIds(persistedAccount));
-
-        App app = appService.getApp(account.getAppId());
+        
         if (!newStudies.isEmpty()) {
-            activityEventService.publishEnrollmentEvent(app,
+            App app = appService.getApp(account.getAppId());
+            activityEventService.publishEnrollmentEvent(app, 
                     account.getHealthCode(), account.getModifiedOn());
             
             StudyActivityEvent.Builder builder = new StudyActivityEvent.Builder()
@@ -190,7 +190,7 @@ public class AccountService {
             cacheProvider.setObject(cacheKey, account.getModifiedOn());
         }
         // Create the corresponding Participant Version.
-        participantVersionService.createParticipantVersionFromAccount(app, account);
+        participantVersionService.createParticipantVersionFromAccount(account);
     }
     
     /**

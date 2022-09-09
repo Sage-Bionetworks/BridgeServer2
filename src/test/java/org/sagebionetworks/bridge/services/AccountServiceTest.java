@@ -210,7 +210,7 @@ public class AccountServiceTest extends Mockito {
         verify(mockCacheProvider).setObject(CacheKey.etag(DateTimeZone.class, TEST_USER_ID), MOCK_DATETIME);
 
         // Verify we also create a participant version.
-        verify(mockParticipantVersionService).createParticipantVersionFromAccount(same(app), same(createdAccount));
+        verify(mockParticipantVersionService).createParticipantVersionFromAccount(same(createdAccount));
     }
     
     @Test
@@ -252,11 +252,7 @@ public class AccountServiceTest extends Mockito {
     @Test
     public void updateAccount() throws Exception {
         mockGetAccountById(ACCOUNT_ID, false);
-
-        App app = App.create();
-        app.setIdentifier(TEST_APP_ID);
-        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
-
+        
         Account updated = Account.create();
         updated.setAppId(TEST_APP_ID);
         updated.setId(TEST_USER_ID);
@@ -269,7 +265,7 @@ public class AccountServiceTest extends Mockito {
         verify(mockCacheProvider).setObject(CacheKey.etag(DateTimeZone.class, TEST_USER_ID), MOCK_DATETIME);
 
         // Verify we also create a participant version.
-        verify(mockParticipantVersionService).createParticipantVersionFromAccount(same(app), same(updated));
+        verify(mockParticipantVersionService).createParticipantVersionFromAccount(same(updated));
     }
     
     @Test

@@ -33,6 +33,7 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
@@ -193,9 +194,6 @@ public class ParticipantServiceTest extends Mockito {
     private ScheduledActivityDao activityDao;
 
     @Mock
-    private ParticipantVersionService participantVersionService;
-
-    @Mock
     private SmsService smsService;
 
     @Mock
@@ -329,19 +327,7 @@ public class ParticipantServiceTest extends Mockito {
         when(accountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
         when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
     }
-
-    @Test
-    public void backfillParticipantVersion() {
-        // Mock account.
-        account.setId(ID);
-        AccountId accountId = AccountId.forId(TEST_APP_ID, ID);
-        when(accountService.getAccount(accountId)).thenReturn(Optional.of(account));
-
-        // Execute and validate.
-        participantService.backfillParticipantVersion(APP, ID);
-        verify(participantVersionService).createParticipantVersionFromAccount(same(APP), same(account));
-    }
-
+    
     @Test
     public void createParticipant() {
         APP.setEmailVerificationEnabled(true);
@@ -2273,6 +2259,49 @@ public class ParticipantServiceTest extends Mockito {
 
         Account capturedAccount = accountCaptor.getValue();
         assertEquals(capturedAccount.getClientTimeZone(), "America/Los_Angeles");
+    }
+
+    @Test
+    public void getAccountInStudy() {
+        Account account = mock(Account.class);
+        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
+        when(account.getEnrollments())
+                .thenReturn(ImmutableSet.of(Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_APP_ID)));
+
+        Account returnedAccount = participantService.getAccountInStudy(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+
+        verify(accountService).getAccount(eq(AccountId.forId(TEST_APP_ID, TEST_USER_ID)));
+        assertSame(account, returnedAccount);
+        verify(account).getEnrollments();
+    }
+
+    @Test
+    public void getAccountInStudyNullStudyId() {
+        Account account = mock(Account.class);
+        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
+        when(account.getEnrollments())
+                .thenReturn(ImmutableSet.of(Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_APP_ID)));
+
+        Account returnedAccount = participantService.getAccountInStudy(TEST_APP_ID, null, TEST_USER_ID);
+
+        verify(accountService).getAccount(eq(AccountId.forId(TEST_APP_ID, TEST_USER_ID)));
+        assertSame(account, returnedAccount);
+    }
+
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void getAccountInStudyNotInStudy() {
+        Account account = mock(Account.class);
+        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
+        when(account.getEnrollments()).thenReturn(ImmutableSet.of());
+
+        participantService.getAccountInStudy(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+    }
+
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void getAccountInStudyNoAccount() {
+        when(accountService.getAccount(any())).thenReturn(Optional.empty());
+
+        participantService.getAccountInStudy(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
     }
 
     // getPagedAccountSummaries() filters studies in the query itself, as this is the only 

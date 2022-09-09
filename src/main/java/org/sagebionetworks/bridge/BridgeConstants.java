@@ -158,5 +158,4 @@ public class BridgeConstants {
             "102", "203", "556", "692", "790", "821", "823", "830", "831", "878", "879", "884", 
             "890", "893");
 
-    public static final String PARTICIPANT_FILE_RATE_LIMIT_ERROR = "User requested to download too much data";
 }

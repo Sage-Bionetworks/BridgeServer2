@@ -10,7 +10,7 @@
 
     <properties>
         <apache.http.version>4.5.13</apache.http.version>
-        <aws.version>1.12.261</aws.version>
+        <aws.version>1.11.944</aws.version>
         <hibernate.version>5.4.27.Final</hibernate.version>
         <jackson.version>2.12.6</jackson.version>
         <java.version>1.8</java.version>

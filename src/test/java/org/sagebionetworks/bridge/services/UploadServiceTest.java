@@ -41,13 +41,10 @@ import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.RequestContext;
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.dao.UploadDedupeDao;
@@ -56,8 +53,6 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.NotFoundException;
-import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -72,8 +67,7 @@ import org.sagebionetworks.bridge.models.upload.UploadView;
 
 @SuppressWarnings("ConstantConditions")
 public class UploadServiceTest {
-    private static final ClientInfo CLIENT_INFO = ClientInfo.fromUserAgentCache(TestConstants.UA);
-
+    
     private static final DateTime START_TIME = DateTime.parse("2016-04-02T10:00:00.000Z");
     private static final DateTime END_TIME = DateTime.parse("2016-04-03T10:00:00.000Z");
     private static final String MOCK_OFFSET_KEY = "mock-offset-key";
@@ -138,12 +132,7 @@ public class UploadServiceTest {
     public void after() {
         DateTimeUtils.setCurrentMillisSystem();
     }
-
-    @AfterClass
-    public static void afterClass() {
-        RequestContext.set(RequestContext.NULL_INSTANCE);
-    }
-
+    
     @Test(expectedExceptions = BadRequestException.class)
     public void getNullUploadId() {
         svc.getUpload(null);
@@ -427,25 +416,19 @@ public class UploadServiceTest {
     
     @Test
     public void createUpload() throws Exception {
-        // Set up RequestContext.
-        RequestContext.set(new RequestContext.Builder().withCallerClientInfo(CLIENT_INFO).build());
-
-        // Create input.
         UploadRequest uploadRequest = constructUploadRequest();
         Upload upload = new DynamoUpload2(uploadRequest, HEALTH_CODE);
         upload.setUploadId(NEW_UPLOAD_ID);
-
-        // Mock dependencies.
+        
         when(mockUploadDao.getUpload(ORIGINAL_UPLOAD_ID)).thenReturn(upload);
         when(mockUploadDao.createUpload(uploadRequest, TEST_APP_ID, HEALTH_CODE, null)).thenReturn(upload);
         when(mockS3UploadClient.generatePresignedUrl(any())).thenReturn(new URL("https://ws.com/some-link"));
-
-        // Execute and verify.
+        
         UploadSession session = svc.createUpload(TEST_APP_ID, PARTICIPANT, uploadRequest);
         assertEquals(session.getId(), NEW_UPLOAD_ID);
         assertEquals(session.getUrl(), "https://ws.com/some-link");
         assertEquals(session.getExpires(), TIMESTAMP.getMillis() + UploadService.EXPIRATION);
-
+        
         verify(mockS3UploadClient).generatePresignedUrl(requestCaptor.capture());
         GeneratePresignedUrlRequest request = requestCaptor.getValue();
         assertEquals(request.getBucketName(), UPLOAD_BUCKET_NAME);
@@ -454,10 +437,6 @@ public class UploadServiceTest {
         assertEquals(request.getExpiration(), new Date(TIMESTAMP.getMillis() + UploadService.EXPIRATION));
         assertEquals(request.getMethod(), HttpMethod.PUT);
         assertEquals(request.getRequestParameters().get(SERVER_SIDE_ENCRYPTION), AES_256_SERVER_SIDE_ENCRYPTION);
-
-        String clientInfoJsonText = upload.getClientInfo();
-        ClientInfo deser = BridgeObjectMapper.get().readValue(clientInfoJsonText, ClientInfo.class);
-        assertEquals(deser, CLIENT_INFO);
     }
     
     @Test

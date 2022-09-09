@@ -125,8 +125,6 @@ public class ParticipantService {
     @Autowired
     private AccountService accountService;
     @Autowired
-    private ParticipantVersionService participantVersionService;
-    @Autowired
     private SmsService smsService;
     @Autowired
     private SubpopulationService subpopService;
@@ -163,19 +161,7 @@ public class ParticipantService {
     protected DateTime getInstallDateTime() {
         return new DateTime();
     }
-
-    /**
-     * Backfills the participant version for a user in a given app. Note that if the participant version already
-     * exists, participantVersionService will do nothing.
-     */
-    public void backfillParticipantVersion(App app, String userIdToken) {
-        checkNotNull(app);
-        checkNotNull(userIdToken);
-
-        Account account = getAccountThrowingException(app.getIdentifier(), userIdToken);
-        participantVersionService.createParticipantVersionFromAccount(app, account);
-    }
-
+    
     /**
      * This is a researcher API to backfill SMS notification registrations for a user. We generally prefer the app
      * register notifications, but sometimes the work can't be done on time, so we want study developers to have the
@@ -842,7 +828,29 @@ public class ParticipantService {
         }
         account.setRoles(newRoleSet);
     }
-    
+
+    /**
+     * Fetches an account. If it exists and a studyId was specified, the account is
+     * returned; otherwise, an exception is thrown.
+     * 
+     * @param appId   id of the app for the account
+     * @param studyId id of the study to check whether the account is in it; can be
+     *                null in which case the study check will not occur and the
+     *                account will only be fetched if it exists
+     * @param id      id of the account to check
+     * @return the fetched account
+     * @throws EntityNotFoundException if the account does not exist or the account
+     *                                 is not in the specified study
+     */
+    public Account getAccountInStudy(String appId, String studyId, String id) throws EntityNotFoundException {
+        Account account = getAccountThrowingException(appId, id);
+        if (studyId != null) {
+            BridgeUtils.getElement(account.getEnrollments(), Enrollment::getStudyId, studyId)
+                    .orElseThrow(() -> new EntityNotFoundException(Account.class));
+        }
+        return account;
+    }
+
     private Account getAccountThrowingException(String appId, String id) {
         AccountId accountId = BridgeUtils.parseAccountId(appId, id);
         return getAccountThrowingException(accountId);
