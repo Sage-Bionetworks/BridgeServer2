@@ -89,22 +89,22 @@ public class Exporter3Service {
     static final String TABLE_NAME_PARTICIPANT_VERSIONS = "Participant Versions";
     static final String TABLE_NAME_PARTICIPANT_VERSIONS_DEMOGRAPHICS = "Participant Versions Demographics";
     static final String VIEW_NAME_PARTICIPANT_VERSIONS_DEMOGRAPHICS = "Participant Versions Demographics Joined View";
-    static final String VIEW_DEFINING_SQL = "SELECT" +
-            "    participants.healthCode AS healthCode," +
-            "    participants.participantVersion AS participantVersion," +
-            "    participants.createdOn AS createdOn," +
-            "    participants.modifiedOn AS modifiedOn," +
-            "    participants.dataGroups AS dataGroups," +
-            "    participants.languages AS languages," +
-            "    participants.sharingScope AS sharingScope," +
-            "    participants.studyMemberships AS studyMemberships," +
-            "    participants.clientTimeZone AS clientTimeZone," +
-            "    demographics.appId AS appId," +
-            "    demographics.studyId AS studyId," +
-            "    demographics.demographicCategoryName AS demographicCategoryName," +
-            "    demographics.demographicValue AS demographicValue," +
-            "    demographics.demographicUnits AS demographicUnits" +
-            "FROM %s as participants JOIN %s as demographics" +
+    static final String VIEW_DEFINING_SQL = "SELECT\n" +
+            "    participants.healthCode AS healthCode,\n" +
+            "    participants.participantVersion AS participantVersion,\n" +
+            "    participants.createdOn AS createdOn,\n" +
+            "    participants.modifiedOn AS modifiedOn,\n" +
+            "    participants.dataGroups AS dataGroups,\n" +
+            "    participants.languages AS languages,\n" +
+            "    participants.sharingScope AS sharingScope,\n" +
+            "    participants.studyMemberships AS studyMemberships,\n" +
+            "    participants.clientTimeZone AS clientTimeZone,\n" +
+            "    demographics.appId AS appId,\n" +
+            "    demographics.studyId AS studyId,\n" +
+            "    demographics.demographicCategoryName AS demographicCategoryName,\n" +
+            "    demographics.demographicValue AS demographicValue,\n" +
+            "    demographics.demographicUnits AS demographicUnits\n" +
+            "FROM %s as participants JOIN %s as demographics\n" +
             "    ON participants.healthCode = demographics.healthCode AND participants.participantVersion = demographics.participantVersion";
     static final String WORKER_NAME_EXPORTER_3 = "Exporter3Worker";
 
@@ -215,13 +215,12 @@ public class Exporter3Service {
         ColumnModel demographicValueColumn = new ColumnModel();
         demographicValueColumn.setName("demographicValue");
         demographicValueColumn.setColumnType(ColumnType.LARGETEXT);
-        healthCodeColumn.setMaximumSize(1024L);
         listBuilder.add(demographicValueColumn);
 
         ColumnModel demographicUnitsColumn = new ColumnModel();
         demographicUnitsColumn.setName("demographicUnits");
-        demographicUnitsColumn.setColumnType(ColumnType.LARGETEXT);
-        healthCodeColumn.setMaximumSize(1024L);
+        demographicUnitsColumn.setColumnType(ColumnType.STRING);
+        healthCodeColumn.setMaximumSize(512L);
         listBuilder.add(demographicUnitsColumn);
 
         PARTICIPANT_VERSION_DEMOGRAPHICS_COLUMNS_MODELS = listBuilder.build();
@@ -542,6 +541,7 @@ public class Exporter3Service {
             MaterializedView view = new MaterializedView().setName(VIEW_NAME_PARTICIPANT_VERSIONS_DEMOGRAPHICS)
                     .setParentId(projectId).setDefiningSQL(sql);
             MaterializedView createdView = synapseHelper.createEntityWithRetry(view);
+            LOG.info("Created Synapse materialized view " + createdView.getId());
 
             ex3Config.setParticipantVersionDemographicsViewId(createdView.getId());
             isModified = true;

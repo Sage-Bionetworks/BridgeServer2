@@ -1,7 +1,5 @@
 package org.sagebionetworks.bridge.models.apps;
 
-import java.util.Objects;
-
 /** This class holds Exporter 3.0 configuration for a given app. */
 public final class Exporter3Configuration {
     private String createStudyNotificationTopicArn;
@@ -100,33 +98,82 @@ public final class Exporter3Configuration {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        Exporter3Configuration that = (Exporter3Configuration) o;
-        return Objects.equals(createStudyNotificationTopicArn, that.createStudyNotificationTopicArn) &&
-                Objects.equals(dataAccessTeamId, that.dataAccessTeamId) &&
-                Objects.equals(participantVersionTableId, that.participantVersionTableId) &&
-                Objects.equals(projectId, that.projectId) &&
-                Objects.equals(rawDataFolderId, that.rawDataFolderId) &&
-                Objects.equals(storageLocationId, that.storageLocationId);
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result
+                + ((createStudyNotificationTopicArn == null) ? 0 : createStudyNotificationTopicArn.hashCode());
+        result = prime * result + ((dataAccessTeamId == null) ? 0 : dataAccessTeamId.hashCode());
+        result = prime * result + ((participantVersionDemographicsTableId == null) ? 0
+                : participantVersionDemographicsTableId.hashCode());
+        result = prime * result + ((participantVersionDemographicsViewId == null) ? 0
+                : participantVersionDemographicsViewId.hashCode());
+        result = prime * result + ((participantVersionTableId == null) ? 0 : participantVersionTableId.hashCode());
+        result = prime * result + ((projectId == null) ? 0 : projectId.hashCode());
+        result = prime * result + ((rawDataFolderId == null) ? 0 : rawDataFolderId.hashCode());
+        result = prime * result + ((storageLocationId == null) ? 0 : storageLocationId.hashCode());
+        return result;
     }
 
     @Override
-    public int hashCode() {
-        return Objects.hash(createStudyNotificationTopicArn, dataAccessTeamId, participantVersionTableId, projectId, rawDataFolderId,
-                storageLocationId);
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        Exporter3Configuration other = (Exporter3Configuration) obj;
+        if (createStudyNotificationTopicArn == null) {
+            if (other.createStudyNotificationTopicArn != null)
+                return false;
+        } else if (!createStudyNotificationTopicArn.equals(other.createStudyNotificationTopicArn))
+            return false;
+        if (dataAccessTeamId == null) {
+            if (other.dataAccessTeamId != null)
+                return false;
+        } else if (!dataAccessTeamId.equals(other.dataAccessTeamId))
+            return false;
+        if (participantVersionDemographicsTableId == null) {
+            if (other.participantVersionDemographicsTableId != null)
+                return false;
+        } else if (!participantVersionDemographicsTableId.equals(other.participantVersionDemographicsTableId))
+            return false;
+        if (participantVersionDemographicsViewId == null) {
+            if (other.participantVersionDemographicsViewId != null)
+                return false;
+        } else if (!participantVersionDemographicsViewId.equals(other.participantVersionDemographicsViewId))
+            return false;
+        if (participantVersionTableId == null) {
+            if (other.participantVersionTableId != null)
+                return false;
+        } else if (!participantVersionTableId.equals(other.participantVersionTableId))
+            return false;
+        if (projectId == null) {
+            if (other.projectId != null)
+                return false;
+        } else if (!projectId.equals(other.projectId))
+            return false;
+        if (rawDataFolderId == null) {
+            if (other.rawDataFolderId != null)
+                return false;
+        } else if (!rawDataFolderId.equals(other.rawDataFolderId))
+            return false;
+        if (storageLocationId == null) {
+            if (other.storageLocationId != null)
+                return false;
+        } else if (!storageLocationId.equals(other.storageLocationId))
+            return false;
+        return true;
     }
 
     @Override
     public String toString() {
-        return String.format(
-                "Exporter3Configuration [createStudyNotificationTopicArn=%s, dataAccessTeamId=%s, participantVersionTableId=%s, projectId=%s, " +
-                        "rawDataFolderId=%s, storageLocationId=%s]",
-                createStudyNotificationTopicArn, dataAccessTeamId, projectId, participantVersionTableId, rawDataFolderId, storageLocationId);
+        return "Exporter3Configuration [createStudyNotificationTopicArn=" + createStudyNotificationTopicArn
+                + ", dataAccessTeamId=" + dataAccessTeamId + ", participantVersionDemographicsTableId="
+                + participantVersionDemographicsTableId + ", participantVersionDemographicsViewId="
+                + participantVersionDemographicsViewId + ", participantVersionTableId=" + participantVersionTableId
+                + ", projectId=" + projectId + ", rawDataFolderId=" + rawDataFolderId + ", storageLocationId="
+                + storageLocationId + "]";
     }
 }
