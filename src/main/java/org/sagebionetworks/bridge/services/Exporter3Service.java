@@ -517,7 +517,7 @@ public class Exporter3Service {
         if (participantVersionTableId == null) {
             participantVersionTableId = synapseHelper.createTableWithColumnsAndAcls(PARTICIPANT_VERSION_COLUMN_MODELS,
                     dataReadOnlyIds, dataAdminIds, projectId, TABLE_NAME_PARTICIPANT_VERSIONS);
-            LOG.info("Created Synapse table " + participantVersionTableId);
+            LOG.info("Created Synapse participant versions table " + participantVersionTableId);
 
             ex3Config.setParticipantVersionTableId(participantVersionTableId);
             isModified = true;
@@ -528,7 +528,8 @@ public class Exporter3Service {
             participantVersionDemographicsTableId = synapseHelper.createTableWithColumnsAndAcls(
                     PARTICIPANT_VERSION_DEMOGRAPHICS_COLUMNS_MODELS, dataReadOnlyIds, dataAdminIds, projectId,
                     TABLE_NAME_PARTICIPANT_VERSIONS_DEMOGRAPHICS);
-            LOG.info("Created Synapse table " + participantVersionDemographicsTableId);
+            LOG.info(
+                    "Created Synapse participant versions demographics table " + participantVersionDemographicsTableId);
 
             ex3Config.setParticipantVersionDemographicsTableId(participantVersionDemographicsTableId);
             isModified = true;
@@ -541,7 +542,7 @@ public class Exporter3Service {
             MaterializedView view = new MaterializedView().setName(VIEW_NAME_PARTICIPANT_VERSIONS_DEMOGRAPHICS)
                     .setParentId(projectId).setDefiningSQL(sql);
             MaterializedView createdView = synapseHelper.createEntityWithRetry(view);
-            LOG.info("Created Synapse materialized view " + createdView.getId());
+            LOG.info("Created Synapse participant versions demographics materialized view " + createdView.getId());
 
             ex3Config.setParticipantVersionDemographicsViewId(createdView.getId());
             isModified = true;
