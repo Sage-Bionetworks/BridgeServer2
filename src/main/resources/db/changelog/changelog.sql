@@ -1005,7 +1005,7 @@ CREATE TABLE `DemographicsUsers` (
 CREATE TABLE `Demographics` (
     `id` varchar(60) NOT NULL,
     `demographicUserId` varchar(60) NOT NULL,
-    `categoryName` varchar(768) NOT NULL,
+    `categoryName` varchar(255) NOT NULL,
     `multipleSelect` boolean NOT NULL,
     `units` varchar(512) NULL,
     PRIMARY KEY (`id`),
