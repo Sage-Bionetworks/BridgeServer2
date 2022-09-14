@@ -296,7 +296,8 @@ public class DemographicController extends BaseController {
         }
         participantService.getAccountInStudy(session.getAppId(), studyIdNull, userId);
 
-        return demographicService.getDemographicUser(session.getAppId(), studyIdNull, userId);
+        return demographicService.getDemographicUser(session.getAppId(), studyIdNull, userId)
+                .orElseThrow(() -> new EntityNotFoundException(DemographicUser.class));
     }
 
     /**

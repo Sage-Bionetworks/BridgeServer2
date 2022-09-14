@@ -485,7 +485,7 @@ public class DemographicControllerTest {
      */
     @Test(expectedExceptions = { EntityNotFoundException.class })
     public void getDemographicUserNotFound() {
-        doThrow(new EntityNotFoundException(Demographic.class)).when(demographicService).getDemographicUser(any(),
+        doReturn(Optional.empty()).when(demographicService).getDemographicUser(any(),
                 any(), any());
 
         controller.getDemographicUser(Optional.of(TEST_STUDY_ID), TEST_USER_ID);
