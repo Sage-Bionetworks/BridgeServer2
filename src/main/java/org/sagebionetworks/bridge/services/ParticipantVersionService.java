@@ -29,6 +29,7 @@ import org.sagebionetworks.bridge.models.accounts.ParticipantVersion;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.studies.Demographic;
+import org.sagebionetworks.bridge.models.studies.DemographicUser;
 import org.sagebionetworks.bridge.models.worker.Ex3ParticipantVersionRequest;
 import org.sagebionetworks.bridge.models.worker.WorkerRequest;
 import org.sagebionetworks.bridge.time.DateUtils;
@@ -114,19 +115,19 @@ public class ParticipantVersionService {
         participantVersion.setTimeZone(account.getClientTimeZone());
 
         Map<String, Demographic> appDemographics = null;
-        try {
-            appDemographics = demographicService.getDemographicUser(account.getAppId(), null, account.getId())
-                    .getDemographics();
-        } catch (EntityNotFoundException e) {
+        Optional<DemographicUser> appDemographicUser = demographicService.getDemographicUser(account.getAppId(), null,
+                account.getId());
+        if (appDemographicUser.isPresent()) {
+            appDemographics = appDemographicUser.get().getDemographics();
         }
         participantVersion.setAppDemographics(appDemographics);
         Map<String, Map<String, Demographic>> studyDemographics = new HashMap<>();
         for (String studyId : participantVersion.getStudyMemberships().keySet()) {
             Map<String, Demographic> oneStudyDemographics = null;
-            try {
-                oneStudyDemographics = demographicService
-                        .getDemographicUser(account.getAppId(), studyId, account.getId()).getDemographics();
-            } catch (EntityNotFoundException e) {
+            Optional<DemographicUser> studyDemographicUser = demographicService.getDemographicUser(account.getAppId(),
+                    studyId, account.getId());
+            if (studyDemographicUser.isPresent()) {
+                oneStudyDemographics = studyDemographicUser.get().getDemographics();
             }
             studyDemographics.put(studyId, oneStudyDemographics);
         }
@@ -198,6 +199,8 @@ public class ParticipantVersionService {
         attrMap.put("sharingScope", participantVersion.getSharingScope());
         attrMap.put("studyMemberships", participantVersion.getStudyMemberships());
         attrMap.put("timeZone", participantVersion.getTimeZone());
+        attrMap.put("appDemographics", participantVersion.getAppDemographics());
+        attrMap.put("studyDemographics", participantVersion.getStudyDemographics());
         return attrMap;
     }
 
