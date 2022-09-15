@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.services;
 import com.amazonaws.HttpMethod;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.Headers;
+import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import org.joda.time.DateTimeUtils;
@@ -17,21 +18,27 @@ import org.sagebionetworks.bridge.dao.ParticipantFileDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.exceptions.LimitExceededException;
+import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.files.ParticipantFile;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
+import static org.testng.Assert.fail;
 
 public class ParticipantFileServiceTest {
 
@@ -57,6 +64,10 @@ public class ParticipantFileServiceTest {
         MockitoAnnotations.initMocks(this);
 
         when(mockConfig.get("participant-file.bucket")).thenReturn(UPLOAD_BUCKET);
+        when(mockConfig.getInt("participant-file.rate-limiter.initial-bytes")).thenReturn(1000);
+        when(mockConfig.getInt("participant-file.rate-limiter.maximum-bytes")).thenReturn(1000);
+        when(mockConfig.getInt("participant-file.rate-limiter.refill-interval-seconds")).thenReturn(5);
+        when(mockConfig.getInt("participant-file.rate-limiter.refill-bytes")).thenReturn(1000);
         service.setConfig(mockConfig);
 
         when(mockS3Client.generatePresignedUrl(any())).thenAnswer(i -> {
@@ -64,6 +75,10 @@ public class ParticipantFileServiceTest {
             String filePath = request.getKey();
             return new URL("https://" + UPLOAD_BUCKET + "/" + filePath);
         });
+
+        ObjectMetadata metadata = new ObjectMetadata();
+        metadata.setContentLength(100); // 100 B
+        when(mockS3Client.getObjectMetadata(any(), any())).thenReturn(metadata);
 
         DateTimeUtils.setCurrentMillisFixed(TestConstants.TIMESTAMP.getMillis());
     }
@@ -76,6 +91,18 @@ public class ParticipantFileServiceTest {
     @Test
     public void getParticipantFiles() {
         service.getParticipantFiles("test_user", "dummy-key", 20);
+
+        verify(mockFileDao).getParticipantFiles("test_user", "dummy-key", 20);
+    }
+
+    @Test
+    public void getParticipantFilesNullDao() {
+        when(mockFileDao.getParticipantFiles("test_user", "dummy-key", 20)).thenReturn(null);
+
+        ForwardCursorPagedResourceList<ParticipantFile> files = service.getParticipantFiles("test_user", "dummy-key",
+                20);
+        // should be null when dao returns null
+        assertNull(files);
 
         verify(mockFileDao).getParticipantFiles("test_user", "dummy-key", 20);
     }
@@ -95,6 +122,18 @@ public class ParticipantFileServiceTest {
     @Test(expectedExceptions = BadRequestException.class)
     public void getParticipantFilesPageSizeTooLarge() {
         service.getParticipantFiles("test_user", null, 5000);
+    }
+
+    @Test(expectedExceptions = {LimitExceededException.class})
+    public void getParticipantFilesRateLimited() {
+        List<ParticipantFile> files = new ArrayList<>();
+        for (int i = 0; i < 11; i++) {
+            files.add(ParticipantFile.create());
+        }
+        when(mockFileDao.getParticipantFiles("userid", null, 100))
+                .thenReturn(new ForwardCursorPagedResourceList<>(files, null, true));
+
+        service.getParticipantFiles("userid", null, 100);
     }
 
     @Test
@@ -126,6 +165,53 @@ public class ParticipantFileServiceTest {
         assertEquals(request.getKey(), "test_user/file_id");
         assertEquals(request.getExpiration(), TestConstants.TIMESTAMP.plusDays(1).toDate());
     }
+
+    @Test(expectedExceptions = { LimitExceededException.class })
+    public void getParticipantFileRateLimited() {
+        ParticipantFile file = ParticipantFile.create();
+        file.setFileId("fileid");
+        file.setUserId("userid");
+        when(mockFileDao.getParticipantFile("userid", "fileid")).thenReturn(Optional.of(file));
+
+        for (int i = 0; i < 10; i++) {
+            try {
+                service.getParticipantFile("userid", "fileid");
+            } catch (LimitExceededException e) {
+                fail(String.format(
+                        "RateLimiter should not have rejected download %d of 100 KB with initial of 1 MB", i + 1));
+            }
+        }
+        verify(mockS3Client, times(10)).getObjectMetadata(UPLOAD_BUCKET, "userid/fileid");
+        service.getParticipantFile("userid", "fileid");
+    }
+
+    @Test
+    public void getParticipantFileS3NotFound() {
+        AmazonS3Exception notFoundException = new AmazonS3Exception("404 not found");
+        notFoundException.setStatusCode(404);
+        when(mockS3Client.getObjectMetadata(any(), any())).thenThrow(notFoundException);
+
+        ParticipantFile file = ParticipantFile.create();
+        file.setFileId("fileid");
+        file.setUserId("userid");
+        when(mockFileDao.getParticipantFile("userid", "fileid")).thenReturn(Optional.of(file));
+        // should be allowed because 404 from S3 = 0 bytes uploaded = 0 bytes to download
+        service.getParticipantFile("userid", "fileid");
+        verify(mockS3Client).getObjectMetadata(UPLOAD_BUCKET, "userid/fileid");
+    }
+
+    @Test(expectedExceptions = AmazonS3Exception.class)
+    public void getParticipantFileS3UnknownException() {
+        AmazonS3Exception notFoundException = new AmazonS3Exception("500 internal server error");
+        notFoundException.setStatusCode(500);
+        when(mockS3Client.getObjectMetadata(any(), any())).thenThrow(notFoundException);
+
+        ParticipantFile file = ParticipantFile.create();
+        when(mockFileDao.getParticipantFile("userid", "fileid")).thenReturn(Optional.of(file));
+        // should throw AmazonS3Exception
+        service.getParticipantFile("userid", "fileid");
+    }
+
 
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void getParticipantFileNoSuchFile() {

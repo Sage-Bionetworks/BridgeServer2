@@ -33,6 +33,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.dao.UploadDedupeDao;
@@ -40,6 +42,8 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.NotFoundException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
@@ -182,6 +186,18 @@ public class UploadService {
             Upload upload = uploadDao.createUpload(uploadRequest, appId, participant.getHealthCode(),
                     originalUploadId);
             uploadId = upload.getUploadId();
+
+            // Get client info from Request Context, write it to the upload as JSON.
+            ClientInfo clientInfo = RequestContext.get().getCallerClientInfo();
+            try {
+                String clientInfoJsonText = BridgeObjectMapper.get().writerWithDefaultPrettyPrinter()
+                        .writeValueAsString(clientInfo);
+                upload.setClientInfo(clientInfoJsonText);
+            } catch (JsonProcessingException ex) {
+                // Should never happen. Log an error and swallow it, so that we don't fail the rest of the upload.
+                logger.error("Error serializing client info to JSON for app " + appId + " healthcode " +
+                        participant.getHealthCode(), ex);
+            }
 
             if (originalUploadId != null) {
                 // We had a dupe of a previous completed upload. Log this for future analysis.

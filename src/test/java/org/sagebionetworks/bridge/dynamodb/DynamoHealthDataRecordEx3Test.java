@@ -11,16 +11,13 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableMap;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordEx3;
 import org.sagebionetworks.bridge.models.upload.Upload;
 
 public class DynamoHealthDataRecordEx3Test {
-    private static final ClientInfo CLIENT_INFO = ClientInfo.fromUserAgentCache(TestConstants.UA);
     private static final Map<String, String> METADATA_MAP = ImmutableMap.of("foo", "bar");
     private static final int PARTICIPANT_VERSION = 42;
     private static final String RECORD_ID = "test-record";
@@ -31,10 +28,6 @@ public class DynamoHealthDataRecordEx3Test {
 
     @Test
     public void createFromUpload() throws Exception {
-        // Set client info in Request Context.
-        RequestContext requestContext = new RequestContext.Builder().withCallerClientInfo(CLIENT_INFO).build();
-        RequestContext.set(requestContext);
-
         // Create upload.
         Upload upload = Upload.create();
         upload.setUploadId(RECORD_ID);
@@ -59,10 +52,6 @@ public class DynamoHealthDataRecordEx3Test {
         assertEquals(record.getAppId(), TestConstants.TEST_APP_ID);
         assertEquals(record.getHealthCode(), TestConstants.HEALTH_CODE);
         assertEquals(record.getCreatedOn().longValue(), TestConstants.CREATED_ON.getMillis());
-
-        String clientInfoJsonText = record.getClientInfo();
-        ClientInfo deser = BridgeObjectMapper.get().readValue(clientInfoJsonText, ClientInfo.class);
-        assertEquals(deser, CLIENT_INFO);
 
         Map<String, String> metadataMap = record.getMetadata();
         assertEquals(metadataMap.size(), 4);
