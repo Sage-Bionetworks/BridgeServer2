@@ -20,6 +20,10 @@ public interface Upload {
      */
     boolean canBeValidated();
 
+    /** Uploader's client info, in JSON format. */
+    String getClientInfo();
+    void setClientInfo(String clientInfo);
+
     /** Upload content length in bytes. */
     long getContentLength();
     void setContentLength(long contentLength);
