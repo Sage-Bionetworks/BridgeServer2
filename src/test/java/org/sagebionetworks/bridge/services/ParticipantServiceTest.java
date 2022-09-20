@@ -194,6 +194,9 @@ public class ParticipantServiceTest extends Mockito {
     private ScheduledActivityDao activityDao;
 
     @Mock
+    private ParticipantVersionService participantVersionService;
+
+    @Mock
     private SmsService smsService;
 
     @Mock
@@ -327,7 +330,19 @@ public class ParticipantServiceTest extends Mockito {
         when(accountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
         when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
     }
-    
+
+    @Test
+    public void backfillParticipantVersion() {
+        // Mock account.
+        account.setId(ID);
+        AccountId accountId = AccountId.forId(TEST_APP_ID, ID);
+        when(accountService.getAccount(accountId)).thenReturn(Optional.of(account));
+
+        // Execute and validate.
+        participantService.backfillParticipantVersion(APP, ID);
+        verify(participantVersionService).createParticipantVersionFromAccount(same(APP), same(account));
+    }
+
     @Test
     public void createParticipant() {
         APP.setEmailVerificationEnabled(true);

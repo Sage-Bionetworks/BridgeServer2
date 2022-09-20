@@ -991,7 +991,7 @@ MODIFY COLUMN `uploadURL` VARCHAR(2048) DEFAULT NULL;
 
 -- changeset bridge:72
 
-CREATE TABLE `DemographicsUsers` (
+CREATE TABLE IF NOT EXISTS `DemographicsUsers` (
     `id` varchar(60) NOT NULL,
     `studyId` varchar(60) NULL,
     `appId` varchar(60) NOT NULL,
@@ -1002,7 +1002,7 @@ CREATE TABLE `DemographicsUsers` (
     CONSTRAINT `DemographicUser-Study-Constraint` FOREIGN KEY (`studyId`, `appId`) REFERENCES `Substudies` (`id`, `studyId`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
-CREATE TABLE `Demographics` (
+CREATE TABLE IF NOT EXISTS `Demographics` (
     `id` varchar(60) NOT NULL,
     `demographicUserId` varchar(60) NOT NULL,
     `categoryName` varchar(255) NOT NULL,
@@ -1013,7 +1013,7 @@ CREATE TABLE `Demographics` (
     CONSTRAINT `Demographic-DemographicUser-Constraint` FOREIGN KEY (`demographicUserId`) REFERENCES `DemographicsUsers` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
-CREATE TABLE `DemographicsValues` (
+CREATE TABLE IF NOT EXISTS `DemographicsValues` (
     `demographicId` varchar(60) NOT NULL,
     `value` varchar(1024) NOT NULL,
     CONSTRAINT `DemographicValue-Demographic-Constraint` FOREIGN KEY (`demographicId`) REFERENCES `Demographics` (`id`) ON DELETE CASCADE

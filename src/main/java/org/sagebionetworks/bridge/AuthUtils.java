@@ -173,11 +173,12 @@ public class AuthUtils {
 
     public static final AuthEvaluator CAN_DELETE_PARTICIPANTS = new AuthEvaluator()
             .canAccessStudy().hasAnyRole(STUDY_COORDINATOR).or()
-            .hasAnyRole(RESEARCHER, ADMIN); 
-    
+            .hasAnyRole(RESEARCHER, ADMIN);
+
     public static final AuthEvaluator CAN_EXPORT_PARTICIPANTS = new AuthEvaluator()
-            .canAccessStudy().hasAnyRole(STUDY_COORDINATOR);        
-    
+            .canAccessStudy().hasAnyRole(STUDY_COORDINATOR).or()
+            .hasAnyRole(ADMIN);
+
     /**
      * Can the caller view external IDs? Must be a study coordinator, developer, or researcher
      * (external IDs are pretty lax because in theory, they are not identifying).

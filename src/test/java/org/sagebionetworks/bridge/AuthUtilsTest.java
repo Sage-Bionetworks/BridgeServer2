@@ -12,6 +12,7 @@ import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_ASSESSMENTS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_SHARED_ASSESSMENTS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_ENROLLMENTS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_OTHER_ENROLLMENTS;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_EXPORT_PARTICIPANTS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_STUDY_ASSOCIATIONS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_TRANSITION_STUDY;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
@@ -1196,6 +1197,39 @@ public class AuthUtilsTest extends Mockito {
                 .build());
 
         assertFalse(CAN_DOWNLOAD_PARTICIPANT_ROSTER.check(STUDY_ID, TEST_STUDY_ID));
+    }
+
+    @Test
+    public void canExporterParticipants_adminSucceeds() {
+        RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
+        assertTrue(CAN_EXPORT_PARTICIPANTS.check(STUDY_ID, TEST_STUDY_ID));
+    }
+
+    @Test
+    public void canExporterParticipants_developerFails() {
+        RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
+        assertFalse(CAN_EXPORT_PARTICIPANTS.check(STUDY_ID, TEST_STUDY_ID));
+    }
+
+    @Test
+    public void canExporterParticipants_studyCoordinatorSucceeds() {
+        RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID)).build());
+        assertTrue(CAN_EXPORT_PARTICIPANTS.check(STUDY_ID, TEST_STUDY_ID));
+    }
+
+    @Test
+    public void canExporterParticipants_studyDesignerFails() {
+        RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(STUDY_DESIGNER))
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID)).build());
+        assertFalse(CAN_EXPORT_PARTICIPANTS.check(STUDY_ID, TEST_STUDY_ID));
+    }
+
+    @Test
+    public void canExporterParticipants_studyCoordinatorWrongStudyFails() {
+        RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
+                .withOrgSponsoredStudies(ImmutableSet.of("wrong-study")).build());
+        assertFalse(CAN_EXPORT_PARTICIPANTS.check(STUDY_ID, TEST_STUDY_ID));
     }
 
     @Test

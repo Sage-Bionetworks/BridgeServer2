@@ -75,6 +75,14 @@ public class ParticipantVersionService {
     public void createParticipantVersionFromAccount(Account account) {
         String appId = account.getAppId();
         App app = appService.getApp(appId);
+        createParticipantVersionFromAccount(app, account);
+    }
+
+    /**
+     * Creates a participant version from an account. Takes in an app, if you already have it, so that we don't
+     * needlessly call appService.getApp() twice.
+     */
+    public void createParticipantVersionFromAccount(App app, Account account) {
         if (!app.isExporter3Enabled()) {
             // If Exporter 3.0 isn't enabled, there's no point in creating a Participant Version.
             return;

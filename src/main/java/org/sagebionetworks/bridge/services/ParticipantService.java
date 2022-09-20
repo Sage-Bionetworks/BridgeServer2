@@ -125,6 +125,8 @@ public class ParticipantService {
     @Autowired
     private AccountService accountService;
     @Autowired
+    private ParticipantVersionService participantVersionService;
+    @Autowired
     private SmsService smsService;
     @Autowired
     private SubpopulationService subpopService;
@@ -161,7 +163,19 @@ public class ParticipantService {
     protected DateTime getInstallDateTime() {
         return new DateTime();
     }
-    
+
+    /**
+     * Backfills the participant version for a user in a given app. Note that if the participant version already
+     * exists, participantVersionService will do nothing.
+     */
+    public void backfillParticipantVersion(App app, String userIdToken) {
+        checkNotNull(app);
+        checkNotNull(userIdToken);
+
+        Account account = getAccountThrowingException(app.getIdentifier(), userIdToken);
+        participantVersionService.createParticipantVersionFromAccount(app, account);
+    }
+
     /**
      * This is a researcher API to backfill SMS notification registrations for a user. We generally prefer the app
      * register notifications, but sometimes the work can't be done on time, so we want study developers to have the
