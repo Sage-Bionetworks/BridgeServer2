@@ -381,10 +381,6 @@ public class DemographicUserAssessmentDeserializerTest {
                         "                {" +
                         "                    \"unknown field\": null," +
                         "                    \"identifier\": \"category1\"," +
-                        "                    \"answerType\": {" +
-                        "                        \"type\": \"ArRaY\"," +
-                        "                        \"unknown field\": null" +
-                        "                    }," +
                         "                    \"value\": [" +
                         "                        -7," +
                         "                        -6.3," +
@@ -395,10 +391,7 @@ public class DemographicUserAssessmentDeserializerTest {
                         "                {" +
                         "                    \"unknown field\": null," +
                         "                    \"identifier\": \"category2\"," +
-                        "                    \"answerType\": {" +
-                        "                        \"type\": \"NuMbEr\"," +
-                        "                        \"unknown field\": null" +
-                        "                    }," +
+                        "                    \"answerType\": null," +
                         "                    \"value\": 5.3" +
                         "                }," +
                         "                {" +
