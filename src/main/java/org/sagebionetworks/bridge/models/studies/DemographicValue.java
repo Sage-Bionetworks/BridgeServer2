@@ -40,6 +40,10 @@ public class DemographicValue implements BridgeEntity {
         this.value = String.valueOf(value);
     }
 
+    public DemographicValue(String key, String value) {
+        this.value = key + "=" + value;
+    }
+
     @JsonValue
     public String getValue() {
         return value;
