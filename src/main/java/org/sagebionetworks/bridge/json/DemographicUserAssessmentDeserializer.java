@@ -20,7 +20,9 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /**
- * Class used to deserialize from the mobile client v2 assessment JSON format
+ * Class used to deserialize from the mobile client v2 assessment JSON schema
+ * draft 7
+ * (https://github.com/Sage-Bionetworks/mobile-client-json/blob/00320defcb5c67873c501b5d99201fed6fdcd0e6/schemas/v2/AssessmentResultObject.json)
  * and convert to the "normal" format. Throws JsonMappingException when the
  * types are incorrect, but generally allows empty values.
  */
