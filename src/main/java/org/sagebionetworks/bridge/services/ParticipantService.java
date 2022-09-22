@@ -842,7 +842,29 @@ public class ParticipantService {
         }
         account.setRoles(newRoleSet);
     }
-    
+
+    /**
+     * Fetches an account. If it exists and a studyId was specified, the account is
+     * returned; otherwise, an exception is thrown.
+     * 
+     * @param appId   id of the app for the account
+     * @param studyId id of the study to check whether the account is in it; can be
+     *                null in which case the study check will not occur and the
+     *                account will only be fetched if it exists
+     * @param id      id of the account to check
+     * @return the fetched account
+     * @throws EntityNotFoundException if the account does not exist or the account
+     *                                 is not in the specified study
+     */
+    public Account getAccountInStudy(String appId, String studyId, String id) throws EntityNotFoundException {
+        Account account = getAccountThrowingException(appId, id);
+        if (studyId != null) {
+            BridgeUtils.getElement(account.getEnrollments(), Enrollment::getStudyId, studyId)
+                    .orElseThrow(() -> new EntityNotFoundException(Account.class));
+        }
+        return account;
+    }
+
     private Account getAccountThrowingException(String appId, String id) {
         AccountId accountId = BridgeUtils.parseAccountId(appId, id);
         return getAccountThrowingException(accountId);

@@ -161,7 +161,7 @@ public class TestUtils {
         for (Method method : methods) {
             if (method.getName().equals(methodName)) {
                 A ann = AnnotationUtils.findAnnotation(method, annClazz);
-                assertNotNull(ann);
+                assertNotNull(ann, "could not find annotation " + annClazz.getSimpleName() + " on method " + method);
                 // If this is a rest controller and the method returns a String, then it 
                 // should be annotated with a produces property that sets the mime type to 
                 // JSON. Otherwise it won't return JSON unless the client sends the correct
@@ -340,11 +340,21 @@ public class TestUtils {
             Validate.entityThrowingException(validator, object);
             fail("Should have thrown exception");
         } catch(InvalidEntityException e) {
+            if (!e.getErrors().containsKey(fieldName)) {
+                fail("Did not find error messages with this fieldName");
+            }
             if (e.getErrors().get(fieldName).contains(error)) {
                 return;
             }
             fail("Did not find error message in errors object");
         }
+    }
+
+    /**
+     * Asserts that on validation, InvalidEntityException has been thrown with the correct error message.
+     */
+    public static void assertValidatorMessage(Validator validator, Object object, String error) {
+        assertValidatorMessage(validator, object, object.getClass().getSimpleName(), error);
     }
 
     public static Map<SubpopulationGuid,ConsentStatus> toMap(ConsentStatus... statuses) {
