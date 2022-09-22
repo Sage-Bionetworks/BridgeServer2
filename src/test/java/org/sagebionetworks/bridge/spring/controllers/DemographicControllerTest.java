@@ -14,6 +14,7 @@ import static org.sagebionetworks.bridge.TestUtils.assertDelete;
 import static org.sagebionetworks.bridge.TestUtils.assertGet;
 import static org.sagebionetworks.bridge.TestUtils.assertPost;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertSame;
 import static org.testng.Assert.fail;
 
 import java.util.Optional;
@@ -459,12 +460,15 @@ public class DemographicControllerTest {
      */
     @Test
     public void getDemographicUser() {
+        DemographicUser demographicUser = new DemographicUser();
+        doReturn(Optional.of(demographicUser)).when(demographicService).getDemographicUser(any(), any(), any());
 
-        controller.getDemographicUser(Optional.of(TEST_STUDY_ID), TEST_USER_ID);
+        DemographicUser returnedDemographicUser = controller.getDemographicUser(Optional.of(TEST_STUDY_ID), TEST_USER_ID);
 
         verify(controller).getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
         verify(participantService).getAccountInStudy(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         verify(demographicService).getDemographicUser(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+        assertSame(returnedDemographicUser, demographicUser);
     }
 
     /**
@@ -496,12 +500,15 @@ public class DemographicControllerTest {
      */
     @Test
     public void getDemographicUserAppLevel() {
+        DemographicUser demographicUser = new DemographicUser();
+        doReturn(Optional.of(demographicUser)).when(demographicService).getDemographicUser(any(), any(), any());
 
-        controller.getDemographicUser(Optional.empty(), TEST_USER_ID);
+        DemographicUser returnedDemographicUser = controller.getDemographicUser(Optional.empty(), TEST_USER_ID);
 
         verify(controller).getAuthenticatedSession(Roles.ADMIN);
         verify(participantService).getAccountInStudy(TEST_APP_ID, null, TEST_USER_ID);
         verify(demographicService).getDemographicUser(TEST_APP_ID, null, TEST_USER_ID);
+        assertSame(returnedDemographicUser, demographicUser);
     }
 
     /**
