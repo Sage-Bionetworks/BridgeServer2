@@ -7,6 +7,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -54,6 +55,7 @@ import org.sagebionetworks.repo.model.annotation.v2.AnnotationsValue;
 import org.sagebionetworks.repo.model.annotation.v2.AnnotationsValueType;
 import org.sagebionetworks.repo.model.project.ExternalS3StorageLocationSetting;
 import org.sagebionetworks.repo.model.table.EntityView;
+import org.sagebionetworks.repo.model.table.MaterializedView;
 import org.sagebionetworks.repo.model.table.TableEntity;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeMethod;
@@ -101,6 +103,8 @@ public class Exporter3ServiceTest {
     private static final String NAME_SCOPING_TOKEN = "dummy-token";
     private static final int PARTICIPANT_VERSION = 42;
     private static final String PARTICIPANT_VERSION_TABLE_ID = "syn4999";
+    private static final String PARTICIPANT_VERSION_DEMOGRAPHICS_TABLE_ID = "syn5999";
+    private static final String PARTICIPANT_VERSION_DEMOGRAPHICS_VIEW_ID = "syn6999";
     private static final String PROJECT_ID = "syn5555";
     private static final String PROJECT_ID_WITHOUT_PREFIX = "5555";
     private static final String RAW_FOLDER_ID = "syn6666";
@@ -248,6 +252,32 @@ public class Exporter3ServiceTest {
                 ImmutableSet.of(BRIDGE_STAFF_TEAM_ID, DATA_ACCESS_TEAM_ID),
                 ImmutableSet.of(EXPORTER_SYNAPSE_ID, BRIDGE_ADMIN_TEAM_ID), PROJECT_ID,
                 Exporter3Service.TABLE_NAME_PARTICIPANT_VERSIONS);
+
+        // Verify created participant version demographics table.
+        verify(mockSynapseHelper).createTableWithColumnsAndAcls(
+                Exporter3Service.PARTICIPANT_VERSION_DEMOGRAPHICS_COLUMN_MODELS,
+                ImmutableSet.of(BRIDGE_STAFF_TEAM_ID, DATA_ACCESS_TEAM_ID),
+                ImmutableSet.of(EXPORTER_SYNAPSE_ID, BRIDGE_ADMIN_TEAM_ID), PROJECT_ID,
+                Exporter3Service.TABLE_NAME_PARTICIPANT_VERSIONS_DEMOGRAPHICS);
+
+        ArgumentCaptor<Entity> materializedViewCaptor = ArgumentCaptor.forClass(Entity.class);
+        verify(mockSynapseHelper, atLeastOnce()).createEntityWithRetry(materializedViewCaptor.capture());
+        MaterializedView capturedMaterializedView = null;
+        for (Entity entity : materializedViewCaptor.getAllValues()) {
+            if (entity instanceof MaterializedView) {
+                capturedMaterializedView = (MaterializedView) entity;
+            }
+        }
+        if (capturedMaterializedView == null) {
+            fail("should have called createEntityWithRetry with a MaterializedView");
+        }
+        assertEquals(capturedMaterializedView.getName(), Exporter3Service.VIEW_NAME_PARTICIPANT_VERSIONS_DEMOGRAPHICS);
+        assertEquals(capturedMaterializedView.getParentId(), PROJECT_ID);
+        assertEquals(capturedMaterializedView.getDefiningSQL(), String.format(Exporter3Service.VIEW_DEFINING_SQL,
+                PARTICIPANT_VERSION_TABLE_ID, PARTICIPANT_VERSION_DEMOGRAPHICS_TABLE_ID));
+        verify(mockSynapseHelper).createAclWithRetry(PARTICIPANT_VERSION_DEMOGRAPHICS_VIEW_ID,
+                ImmutableSet.of(EXPORTER_SYNAPSE_ID, BRIDGE_ADMIN_TEAM_ID),
+                ImmutableSet.of(BRIDGE_STAFF_TEAM_ID, DATA_ACCESS_TEAM_ID));
 
         // Verify folder ACLs.
         verify(mockSynapseHelper).createAclWithRetry(RAW_FOLDER_ID, ImmutableSet.of(EXPORTER_SYNAPSE_ID, BRIDGE_ADMIN_TEAM_ID),
@@ -490,10 +520,23 @@ public class Exporter3ServiceTest {
         when(mockSynapseHelper.getEntityWithRetry(SYNAPSE_TRACKING_VIEW_ID, EntityView.class))
                 .thenReturn(trackingView);
 
-        TableEntity createdTable = new TableEntity();
-        createdTable.setId(PARTICIPANT_VERSION_TABLE_ID);
-        when(mockSynapseHelper.createTableWithColumnsAndAcls(anyList(), anySet(), anySet(), anyString(), anyString()))
+        TableEntity createdParticipantVersionsTable = new TableEntity();
+        createdParticipantVersionsTable.setId(PARTICIPANT_VERSION_TABLE_ID);
+        when(mockSynapseHelper.createTableWithColumnsAndAcls(anyList(), anySet(), anySet(), anyString(),
+                eq(Exporter3Service.TABLE_NAME_PARTICIPANT_VERSIONS)))
                 .thenReturn(PARTICIPANT_VERSION_TABLE_ID);
+
+        TableEntity createdParticipantVersionsDemographicsTable = new TableEntity();
+        createdParticipantVersionsDemographicsTable.setId(PARTICIPANT_VERSION_DEMOGRAPHICS_TABLE_ID);
+        when(mockSynapseHelper.createTableWithColumnsAndAcls(anyList(), anySet(), anySet(), anyString(),
+                eq(Exporter3Service.TABLE_NAME_PARTICIPANT_VERSIONS_DEMOGRAPHICS)))
+                .thenReturn(PARTICIPANT_VERSION_DEMOGRAPHICS_TABLE_ID);
+
+        when(mockSynapseHelper.createEntityWithRetry(any(MaterializedView.class))).thenAnswer(invocation -> {
+            MaterializedView materializedView = invocation.getArgument(0);
+            materializedView.setId(PARTICIPANT_VERSION_DEMOGRAPHICS_VIEW_ID);
+            return materializedView;
+        });
 
         Folder createdFolder = new Folder();
         createdFolder.setId(RAW_FOLDER_ID);
@@ -524,7 +567,7 @@ public class Exporter3ServiceTest {
 
         // Verify created project. Note that we call this method again later, which is why we verify it twice now.
         ArgumentCaptor<Entity> entitiesToCreateCaptor = ArgumentCaptor.forClass(Project.class);
-        verify(mockSynapseHelper, times(2)).createEntityWithRetry(entitiesToCreateCaptor
+        verify(mockSynapseHelper, times(3)).createEntityWithRetry(entitiesToCreateCaptor
                 .capture());
         List<Entity> entitiesToCreateList = entitiesToCreateCaptor.getAllValues();
 
@@ -546,8 +589,23 @@ public class Exporter3ServiceTest {
                 DATA_READ_ONLY_ID_SET, DATA_ADMIN_ID_SET, PROJECT_ID,
                 Exporter3Service.TABLE_NAME_PARTICIPANT_VERSIONS);
 
+        // Verify created participant version demographics table.
+        verify(mockSynapseHelper).createTableWithColumnsAndAcls(
+                Exporter3Service.PARTICIPANT_VERSION_DEMOGRAPHICS_COLUMN_MODELS,
+                DATA_READ_ONLY_ID_SET, DATA_ADMIN_ID_SET, PROJECT_ID,
+                Exporter3Service.TABLE_NAME_PARTICIPANT_VERSIONS_DEMOGRAPHICS);
+
+        // Verify created participant version demographics view.
+        MaterializedView capturedMaterializedView = (MaterializedView) entitiesToCreateList.get(1);
+        assertEquals(capturedMaterializedView.getName(), Exporter3Service.VIEW_NAME_PARTICIPANT_VERSIONS_DEMOGRAPHICS);
+        assertEquals(capturedMaterializedView.getParentId(), PROJECT_ID);
+        assertEquals(capturedMaterializedView.getDefiningSQL(), String.format(Exporter3Service.VIEW_DEFINING_SQL,
+                PARTICIPANT_VERSION_TABLE_ID, PARTICIPANT_VERSION_DEMOGRAPHICS_TABLE_ID));
+        verify(mockSynapseHelper).createAclWithRetry(PARTICIPANT_VERSION_DEMOGRAPHICS_VIEW_ID, DATA_ADMIN_ID_SET,
+                DATA_READ_ONLY_ID_SET);
+
         // Verify created folder.
-        Folder folderToCreate = (Folder) entitiesToCreateList.get(1);
+        Folder folderToCreate = (Folder) entitiesToCreateList.get(2);
         assertEquals(folderToCreate.getName(), Exporter3Service.FOLDER_NAME_BRIDGE_RAW_DATA);
         assertEquals(folderToCreate.getParentId(), PROJECT_ID);
 
@@ -574,6 +632,8 @@ public class Exporter3ServiceTest {
         Exporter3Configuration ex3Config = new Exporter3Configuration();
         ex3Config.setDataAccessTeamId(DATA_ACCESS_TEAM_ID);
         ex3Config.setParticipantVersionTableId(PARTICIPANT_VERSION_TABLE_ID);
+        ex3Config.setParticipantVersionDemographicsTableId(PARTICIPANT_VERSION_DEMOGRAPHICS_TABLE_ID);
+        ex3Config.setParticipantVersionDemographicsViewId(PARTICIPANT_VERSION_DEMOGRAPHICS_VIEW_ID);
         ex3Config.setProjectId(PROJECT_ID);
         ex3Config.setRawDataFolderId(RAW_FOLDER_ID);
         ex3Config.setStorageLocationId(STORAGE_LOCATION_ID);

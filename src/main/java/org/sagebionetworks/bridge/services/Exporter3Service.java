@@ -187,7 +187,7 @@ public class Exporter3Service {
 
         PARTICIPANT_VERSION_COLUMN_MODELS = listBuilder.build();
     }
-    static final List<ColumnModel> PARTICIPANT_VERSION_DEMOGRAPHICS_COLUMNS_MODELS;
+    static final List<ColumnModel> PARTICIPANT_VERSION_DEMOGRAPHICS_COLUMN_MODELS;
     static {
         ImmutableList.Builder<ColumnModel> listBuilder = ImmutableList.builder();
 
@@ -231,7 +231,7 @@ public class Exporter3Service {
         healthCodeColumn.setMaximumSize(512L);
         listBuilder.add(demographicUnitsColumn);
 
-        PARTICIPANT_VERSION_DEMOGRAPHICS_COLUMNS_MODELS = listBuilder.build();
+        PARTICIPANT_VERSION_DEMOGRAPHICS_COLUMN_MODELS = listBuilder.build();
     }
 
     // Config attributes.
@@ -548,7 +548,7 @@ public class Exporter3Service {
         String participantVersionDemographicsTableId = ex3Config.getParticipantVersionDemographicsTableId();
         if (participantVersionDemographicsTableId == null) {
             participantVersionDemographicsTableId = synapseHelper.createTableWithColumnsAndAcls(
-                    PARTICIPANT_VERSION_DEMOGRAPHICS_COLUMNS_MODELS, dataReadOnlyIds, dataAdminIds, projectId,
+                    PARTICIPANT_VERSION_DEMOGRAPHICS_COLUMN_MODELS, dataReadOnlyIds, dataAdminIds, projectId,
                     TABLE_NAME_PARTICIPANT_VERSIONS_DEMOGRAPHICS);
             LOG.info(
                     "Created Synapse participant versions demographics table " + participantVersionDemographicsTableId);
@@ -564,6 +564,7 @@ public class Exporter3Service {
             MaterializedView view = new MaterializedView().setName(VIEW_NAME_PARTICIPANT_VERSIONS_DEMOGRAPHICS)
                     .setParentId(projectId).setDefiningSQL(sql);
             MaterializedView createdView = synapseHelper.createEntityWithRetry(view);
+            synapseHelper.createAclWithRetry(createdView.getId(), dataAdminIds, dataReadOnlyIds);
             LOG.info("Created Synapse participant versions demographics materialized view " + createdView.getId());
 
             ex3Config.setParticipantVersionDemographicsViewId(createdView.getId());

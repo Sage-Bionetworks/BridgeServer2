@@ -46,6 +46,9 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ParticipantVersion;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.apps.App;
+import org.sagebionetworks.bridge.models.studies.Demographic;
+import org.sagebionetworks.bridge.models.studies.DemographicUser;
+import org.sagebionetworks.bridge.models.studies.DemographicValue;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.worker.Ex3ParticipantVersionRequest;
 import org.sagebionetworks.bridge.models.worker.WorkerRequest;
@@ -62,10 +65,19 @@ public class ParticipantVersionServiceTest {
     private static final String STUDY_ID_2 = "study2";
     private static final Map<String, String> STUDY_MEMBERSHIPS = ImmutableMap.of(STUDY_ID_1, EXTERNAL_ID_1);
     private static final String TIME_ZONE = "America/Los_Angeles";
+    private static final Map<String, Demographic> APP_DEMOGRAPHICS = ImmutableMap.of("category1", new Demographic("id1",
+            null, "category1", false, ImmutableList.of(new DemographicValue("value1")), "units"));
+    private static final Map<String, Map<String, Demographic>> STUDY_DEMOGRAPHICS = ImmutableMap.of(
+            STUDY_ID_1,
+            ImmutableMap.of("category2", new Demographic("id2", null, "category2", true,
+                    ImmutableList.of(new DemographicValue("value2"), new DemographicValue("value3")), null)));
     private static final String WORKER_QUEUE_URL = "http://example.com/dummy-sqs-url";
 
     @Mock
     private AppService mockAppService;
+
+    @Mock
+    private DemographicService demographicService;
 
     @Mock
     private ParticipantVersionDao mockParticipantVersionDao;
@@ -110,6 +122,13 @@ public class ParticipantVersionServiceTest {
         when(mockParticipantVersionDao.getLatestParticipantVersionForHealthCode(TestConstants.TEST_APP_ID,
                 TestConstants.HEALTH_CODE)).thenReturn(Optional.empty());
         when(mockSqsClient.sendMessage(anyString(), anyString())).thenReturn(new SendMessageResult());
+        DemographicUser appDemographicUser = new DemographicUser();
+        appDemographicUser.setDemographics(APP_DEMOGRAPHICS);
+        when(demographicService.getDemographicUser(TestConstants.TEST_APP_ID, null, ACCOUNT_ID)).thenReturn(Optional.of(appDemographicUser));
+        DemographicUser study1DemographicUser = new DemographicUser();
+        study1DemographicUser.setDemographics(STUDY_DEMOGRAPHICS.get(STUDY_ID_1));
+        when(demographicService.getDemographicUser(TestConstants.TEST_APP_ID, STUDY_ID_1, ACCOUNT_ID)).thenReturn(Optional.of(study1DemographicUser));
+        when(demographicService.getDemographicUser(TestConstants.TEST_APP_ID, STUDY_ID_2, ACCOUNT_ID)).thenReturn(Optional.empty());
 
         // Make Account. Populate it with attributes we care about for Participant Versions.
         Account account = Account.create();
@@ -142,6 +161,8 @@ public class ParticipantVersionServiceTest {
         assertEquals(participantVersion.getParticipantVersion(), 1);
         assertEquals(participantVersion.getSharingScope(), SharingScope.ALL_QUALIFIED_RESEARCHERS);
         assertEquals(participantVersion.getTimeZone(), TIME_ZONE);
+        assertEquals(participantVersion.getAppDemographics(), APP_DEMOGRAPHICS);
+        assertEquals(participantVersion.getStudyDemographics(), STUDY_DEMOGRAPHICS);
 
         Map<String, String> studyMembershipMap = participantVersion.getStudyMemberships();
         assertEquals(studyMembershipMap.size(), 2);
@@ -313,7 +334,7 @@ public class ParticipantVersionServiceTest {
         participantVersion2.setCreatedOn(3333L);
         participantVersion2.setModifiedOn(4444L);
 
-        assertTrue(ParticipantVersionService.isIdenticalParticipantVersion(participantVersion1, participantVersion2));
+        assertTrue(participantVersionService.isIdenticalParticipantVersion(participantVersion1, participantVersion2));
     }
 
     @Test
@@ -324,7 +345,7 @@ public class ParticipantVersionServiceTest {
         ParticipantVersion participantVersion2 = makeParticipantVersion();
         participantVersion2.setDataGroups(ImmutableSet.of("datagroup2"));
 
-        assertFalse(ParticipantVersionService.isIdenticalParticipantVersion(participantVersion1, participantVersion2));
+        assertFalse(participantVersionService.isIdenticalParticipantVersion(participantVersion1, participantVersion2));
     }
 
     @Test
@@ -335,7 +356,7 @@ public class ParticipantVersionServiceTest {
         ParticipantVersion participantVersion2 = makeParticipantVersion();
         participantVersion2.setLanguages(ImmutableList.of("en-gb"));
 
-        assertFalse(ParticipantVersionService.isIdenticalParticipantVersion(participantVersion1, participantVersion2));
+        assertFalse(participantVersionService.isIdenticalParticipantVersion(participantVersion1, participantVersion2));
     }
 
     @Test
@@ -346,7 +367,7 @@ public class ParticipantVersionServiceTest {
         ParticipantVersion participantVersion2 = makeParticipantVersion();
         participantVersion2.setSharingScope(SharingScope.SPONSORS_AND_PARTNERS);
 
-        assertFalse(ParticipantVersionService.isIdenticalParticipantVersion(participantVersion1, participantVersion2));
+        assertFalse(participantVersionService.isIdenticalParticipantVersion(participantVersion1, participantVersion2));
     }
 
     @Test
@@ -357,7 +378,7 @@ public class ParticipantVersionServiceTest {
         ParticipantVersion participantVersion2 = makeParticipantVersion();
         participantVersion2.setStudyMemberships(ImmutableMap.of("study2", "ext2"));
 
-        assertFalse(ParticipantVersionService.isIdenticalParticipantVersion(participantVersion1, participantVersion2));
+        assertFalse(participantVersionService.isIdenticalParticipantVersion(participantVersion1, participantVersion2));
     }
 
     @Test
@@ -368,7 +389,31 @@ public class ParticipantVersionServiceTest {
         ParticipantVersion participantVersion2 = makeParticipantVersion();
         participantVersion2.setTimeZone("Australia/Sydney");
 
-        assertFalse(ParticipantVersionService.isIdenticalParticipantVersion(participantVersion1, participantVersion2));
+        assertFalse(participantVersionService.isIdenticalParticipantVersion(participantVersion1, participantVersion2));
+    }
+
+    @Test
+    public void isIdenticalParticipantVersion_DifferentAppDemographics() {
+        ParticipantVersion participantVersion1 = makeParticipantVersion();
+        participantVersion1.setAppDemographics(APP_DEMOGRAPHICS);
+
+        ParticipantVersion participantVersion2 = makeParticipantVersion();
+        participantVersion2.setAppDemographics(ImmutableMap.<String, Demographic>builder()
+                .putAll(APP_DEMOGRAPHICS).put("another category", new Demographic()).build());
+
+        assertFalse(participantVersionService.isIdenticalParticipantVersion(participantVersion1, participantVersion2));
+    }
+
+    @Test
+    public void isIdenticalParticipantVersion_DifferentStudyDemographics() {
+        ParticipantVersion participantVersion1 = makeParticipantVersion();
+        participantVersion1.setStudyDemographics(STUDY_DEMOGRAPHICS);
+
+        ParticipantVersion participantVersion2 = makeParticipantVersion();
+        participantVersion2.setStudyDemographics(ImmutableMap.<String, Map<String, Demographic>>builder()
+                .putAll(STUDY_DEMOGRAPHICS).put("another category", ImmutableMap.of()).build());
+
+        assertFalse(participantVersionService.isIdenticalParticipantVersion(participantVersion1, participantVersion2));
     }
 
     private static ParticipantVersion makeParticipantVersion() {
@@ -383,6 +428,8 @@ public class ParticipantVersionServiceTest {
         participantVersion.setSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS);
         participantVersion.setStudyMemberships(STUDY_MEMBERSHIPS);
         participantVersion.setTimeZone(TIME_ZONE);
+        participantVersion.setAppDemographics(APP_DEMOGRAPHICS);
+        participantVersion.setStudyDemographics(STUDY_DEMOGRAPHICS);
         return participantVersion;
     }
 

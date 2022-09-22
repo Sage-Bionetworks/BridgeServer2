@@ -5,7 +5,10 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.DemographicDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -15,6 +18,7 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.studies.Demographic;
 import org.sagebionetworks.bridge.models.studies.DemographicUser;
+import org.sagebionetworks.bridge.models.studies.DemographicValue;
 import org.sagebionetworks.bridge.validators.DemographicUserValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,7 +61,8 @@ public class DemographicService {
             }
         }
         Validate.entityThrowingException(DemographicUserValidator.INSTANCE, demographicUser);
-        DemographicUser savedDemographicUser = demographicDao.saveDemographicUser(demographicUser, demographicUser.getAppId(),
+        DemographicUser savedDemographicUser = demographicDao.saveDemographicUser(demographicUser,
+                demographicUser.getAppId(),
                 demographicUser.getStudyId(), demographicUser.getUserId());
         participantVersionService.createParticipantVersionFromAccount(account);
         return savedDemographicUser;
@@ -100,7 +105,8 @@ public class DemographicService {
      *                                 exist based on the provided appId, studyId,
      *                                 and userId.
      */
-    public void deleteDemographicUser(String appId, String studyId, String userId, Account account) throws EntityNotFoundException {
+    public void deleteDemographicUser(String appId, String studyId, String userId, Account account)
+            throws EntityNotFoundException {
         String existingDemographicUserId = demographicDao.getDemographicUserId(appId, studyId, userId)
                 .orElseThrow(() -> new EntityNotFoundException(DemographicUser.class));
         demographicDao.deleteDemographicUser(existingDemographicUserId);
@@ -142,6 +148,44 @@ public class DemographicService {
             throw new BadRequestException(PAGE_SIZE_ERROR);
         }
         return demographicDao.getDemographicUsers(appId, studyId, offsetBy, pageSize);
+    }
+
+    /**
+     * Tests whether two Demographics are identical except for their id and parent
+     * DemographicUser.
+     * 
+     * @return whether the two Demographics are identical.
+     */
+    public boolean isIdenticalDemographic(Demographic demographic1, Demographic demographic2) {
+        if (demographic1 == demographic2) {
+            return true;
+        }
+        if (demographic1 == null || demographic2 == null) {
+            return false;
+        }
+        boolean nonValuesFieldsEquals = new EqualsBuilder()
+                .append(demographic1.getCategoryName(), demographic2.getCategoryName())
+                .append(demographic1.isMultipleSelect(), demographic2.isMultipleSelect())
+                .append(demographic1.getUnits(), demographic2.getUnits()).isEquals();
+        if (!nonValuesFieldsEquals) {
+            return false;
+        }
+        if (demographic1.getValues() == null || demographic2.getValues() == null) {
+            if (demographic1.getValues() != demographic2.getValues()) {
+                return false;
+            }
+        } else {
+            // DemographicValue doesn't implement equals either
+            Set<String> demographic1Values = demographic1.getValues().stream().map(DemographicValue::getValue)
+                    .collect(Collectors.toSet());
+            Set<String> demographic2Values = demographic2.getValues().stream().map(DemographicValue::getValue)
+                    .collect(Collectors.toSet());
+            if (!demographic1Values.equals(demographic2Values)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

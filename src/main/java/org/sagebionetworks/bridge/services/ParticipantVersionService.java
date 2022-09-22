@@ -190,10 +190,58 @@ public class ParticipantVersionService {
     // Compares non-key attributes for participant versions. Returns true if they are the same, false if they are
     // different.
     // Package-scoped for unit tests.
-    static boolean isIdenticalParticipantVersion(ParticipantVersion oldVersion, ParticipantVersion newVersion) {
+    boolean isIdenticalParticipantVersion(ParticipantVersion oldVersion, ParticipantVersion newVersion) {
         Map<String, Object> oldAttrMap = getParticipantVersionAttributes(oldVersion);
         Map<String, Object> newAttrMap = getParticipantVersionAttributes(newVersion);
-        return oldAttrMap.equals(newAttrMap);
+        if (!oldAttrMap.equals(newAttrMap)) {
+            return false;
+        }
+        // Demographic doesn't implement equals so we have to do this manually
+        if (oldVersion.getAppDemographics() == null || newVersion.getAppDemographics() == null) {
+            if (oldVersion.getAppDemographics() != newVersion.getAppDemographics()) {
+                return false;
+            }
+        } else {
+            if (!isIdenticalDemographicsMap(oldVersion.getAppDemographics(), newVersion.getAppDemographics())) {
+                return false;
+            }
+        }
+        if (oldVersion.getStudyDemographics() == null || newVersion.getStudyDemographics() == null) {
+            if (oldVersion.getStudyDemographics() != newVersion.getStudyDemographics()) {
+                return false;
+            }
+        } else {
+            if (oldVersion.getStudyDemographics().size() != newVersion.getStudyDemographics().size()) {
+                return false;
+            }
+            for (String studyId : oldVersion.getStudyDemographics().keySet()) {
+                if (!isIdenticalDemographicsMap(oldVersion.getStudyDemographics().get(studyId),
+                        newVersion.getStudyDemographics().get(studyId))) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    private boolean isIdenticalDemographicsMap(Map<String, Demographic> demographics1,
+            Map<String, Demographic> demographics2) {
+        if (demographics1 == null || demographics2 == null) {
+            if (demographics1 != demographics2) {
+                return false;
+            }
+        }
+        if (demographics1.size() != demographics2.size()) {
+            return false;
+        }
+        for (String categoryName : demographics1.keySet()) {
+            if (!demographicService.isIdenticalDemographic(demographics1.get(categoryName),
+                    demographics2.get(categoryName))) {
+                return false;
+            }
+        }
+        return true;
     }
 
     // This gets non-key attributes for the participant. This is mainly to test if the participant version has changed,
@@ -207,8 +255,6 @@ public class ParticipantVersionService {
         attrMap.put("sharingScope", participantVersion.getSharingScope());
         attrMap.put("studyMemberships", participantVersion.getStudyMemberships());
         attrMap.put("timeZone", participantVersion.getTimeZone());
-        attrMap.put("appDemographics", participantVersion.getAppDemographics());
-        attrMap.put("studyDemographics", participantVersion.getStudyDemographics());
         return attrMap;
     }
 

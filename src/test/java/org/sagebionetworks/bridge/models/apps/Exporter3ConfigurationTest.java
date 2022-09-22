@@ -18,6 +18,8 @@ public class Exporter3ConfigurationTest {
         Exporter3Configuration config = new Exporter3Configuration();
         config.setDataAccessTeamId(1L);
         config.setParticipantVersionTableId("test-table-id");
+        config.setParticipantVersionDemographicsTableId("test-table-id");
+        config.setParticipantVersionDemographicsViewId("test-view-id");
         config.setProjectId("test-project-id");
         config.setRawDataFolderId("test-folder-id");
         config.setStorageLocationId(2L);
@@ -33,6 +35,18 @@ public class Exporter3ConfigurationTest {
         config.setParticipantVersionTableId(null);
         assertFalse(config.isConfigured());
         config.setParticipantVersionTableId("test-table-id");
+        assertTrue(config.isConfigured());
+
+        // Null participant version demographics table ID.
+        config.setParticipantVersionDemographicsTableId(null);
+        assertFalse(config.isConfigured());
+        config.setParticipantVersionDemographicsTableId("test-table-id");
+        assertTrue(config.isConfigured());
+
+        // Null participant version demographics view ID.
+        config.setParticipantVersionDemographicsViewId(null);
+        assertFalse(config.isConfigured());
+        config.setParticipantVersionDemographicsViewId("test-view-id");
         assertTrue(config.isConfigured());
 
         // Null project ID.
@@ -61,17 +75,21 @@ public class Exporter3ConfigurationTest {
         config.setCreateStudyNotificationTopicArn("arn:1111:test-topic");
         config.setDataAccessTeamId(1L);
         config.setParticipantVersionTableId("test-table-id");
+        config.setParticipantVersionDemographicsTableId("test-table-id");
+        config.setParticipantVersionDemographicsViewId("test-view-id");
         config.setProjectId("test-project-id");
         config.setRawDataFolderId("test-folder-id");
         config.setStorageLocationId(2L);
 
         // Convert to JsonNode.
         JsonNode jsonNode = BridgeObjectMapper.get().convertValue(config, JsonNode.class);
-        assertEquals(jsonNode.size(), 8);
+        assertEquals(jsonNode.size(), 10);
         assertTrue(jsonNode.get("configured").booleanValue());
         assertEquals(jsonNode.get("createStudyNotificationTopicArn").textValue(), "arn:1111:test-topic");
         assertEquals(jsonNode.get("dataAccessTeamId").intValue(), 1);
         assertEquals(jsonNode.get("participantVersionTableId").textValue(), "test-table-id");
+        assertEquals(jsonNode.get("participantVersionDemographicsTableId").textValue(), "test-table-id");
+        assertEquals(jsonNode.get("participantVersionDemographicsViewId").textValue(), "test-view-id");
         assertEquals(jsonNode.get("projectId").textValue(), "test-project-id");
         assertEquals(jsonNode.get("rawDataFolderId").textValue(), "test-folder-id");
         assertEquals(jsonNode.get("storageLocationId").intValue(), 2);
