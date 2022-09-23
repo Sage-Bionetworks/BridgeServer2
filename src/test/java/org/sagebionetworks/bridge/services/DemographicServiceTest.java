@@ -11,6 +11,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
+import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 import java.util.HashMap;
@@ -176,24 +177,26 @@ public class DemographicServiceTest {
         when(demographicDao.getDemographicUser(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID))
                 .thenReturn(Optional.of(demographicUser));
 
-        DemographicUser returnedDemographicUser = demographicService.getDemographicUser(TEST_APP_ID,
+        Optional<DemographicUser> returnedDemographicUser = demographicService.getDemographicUser(TEST_APP_ID,
                 TEST_STUDY_ID,
                 TEST_USER_ID);
 
         verify(demographicDao).getDemographicUser(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
-        assertSame(returnedDemographicUser, demographicUser);
+        assertSame(returnedDemographicUser.get(), demographicUser);
     }
 
     /**
      * Tests that attempting to fetch a DemographicUser that does not exist results
-     * in an error.
+     * in an Optional.empty.
      */
-    @Test(expectedExceptions = EntityNotFoundException.class)
+    @Test
     public void getDemographicUserNotFound() {
         when(demographicDao.getDemographicUser(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID))
                 .thenReturn(Optional.empty());
 
-        demographicService.getDemographicUser(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+        Optional<DemographicUser> returnedDemographicUser = demographicService.getDemographicUser(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+        verify(demographicDao).getDemographicUser(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+        assertTrue(!returnedDemographicUser.isPresent());
     }
 
     /**

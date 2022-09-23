@@ -131,6 +131,24 @@ public class HibernateDemographicDaoTest {
     }
 
     /**
+     * Tests whether a DemographicUser's id is fetched correctly with null studyId.
+     */
+    @Test
+    public void getDemographicUserIdApp() {
+        when(hibernateHelper.queryGetOne(any(), any(), eq(String.class)))
+                .thenReturn(Optional.of(DEMOGRAPHIC_USER_ID));
+
+        Optional<String> returnedDemographicUserId = hibernateDemographicDao.getDemographicUserId(TEST_APP_ID,
+                null, TEST_USER_ID);
+
+        verify(hibernateHelper).queryGetOne(
+                "SELECT du.id FROM DemographicUser du WHERE du.appId = :appId AND du.studyId IS NULL AND du.userId = :userId",
+                ImmutableMap.of("userId", TEST_USER_ID, "appId", TEST_APP_ID),
+                String.class);
+        assertEquals(returnedDemographicUserId.get(), DEMOGRAPHIC_USER_ID);
+    }
+
+    /**
      * Tests whether empty is returned when a fetching a DemographicUser's id but it
      * does not exist.
      */
@@ -191,12 +209,30 @@ public class HibernateDemographicDaoTest {
                 .thenReturn(Optional.of(demographicUser));
 
         Optional<DemographicUser> returnedDemographicUser = hibernateDemographicDao.getDemographicUser(
-                TEST_APP_ID,
-                TEST_STUDY_ID, TEST_USER_ID);
+                TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
 
         verify(hibernateHelper).queryGetOne(
                 "FROM DemographicUser du WHERE du.appId = :appId AND du.studyId = :studyId AND du.userId = :userId",
                 ImmutableMap.of("studyId", TEST_STUDY_ID, "userId", TEST_USER_ID, "appId", TEST_APP_ID),
+                DemographicUser.class);
+        assertSame(returnedDemographicUser.get(), demographicUser);
+    }
+
+    /**
+     * Tests whether a DemographicUser is fetched correctly with null studyId.
+     */
+    @Test
+    public void getDemographicUserApp() {
+        DemographicUser demographicUser = new DemographicUser();
+        when(hibernateHelper.queryGetOne(any(), any(), eq(DemographicUser.class)))
+                .thenReturn(Optional.of(demographicUser));
+
+        Optional<DemographicUser> returnedDemographicUser = hibernateDemographicDao.getDemographicUser(
+                TEST_APP_ID, null, TEST_USER_ID);
+
+        verify(hibernateHelper).queryGetOne(
+                "FROM DemographicUser du WHERE du.appId = :appId AND du.studyId IS NULL AND du.userId = :userId",
+                ImmutableMap.of("userId", TEST_USER_ID, "appId", TEST_APP_ID),
                 DemographicUser.class);
         assertSame(returnedDemographicUser.get(), demographicUser);
     }
@@ -240,6 +276,38 @@ public class HibernateDemographicDaoTest {
         String countQuery = "SELECT COUNT(*) " + query;
         Map<String, Object> parameters = new HashMap<>();
         parameters.put("studyId", TEST_STUDY_ID);
+        parameters.put("appId", TEST_APP_ID);
+        verify(hibernateHelper).queryCount(countQuery, parameters);
+        verify(hibernateHelper).queryGet(query, parameters, 0, 5, DemographicUser.class);
+        assertSame(returnedDemographicUsersResourceList.getItems(), demographicUsers);
+        assertEquals(returnedDemographicUsersResourceList.getRequestParams(),
+                ImmutableMap.of("pageSize", 5, "offsetBy", 0, "type", "RequestParams"));
+        // ensure suppressDeprecated is enabled by ensuring null return from deprecated
+        // methods
+        assertNull(returnedDemographicUsersResourceList.getPageSize());
+        assertNull(returnedDemographicUsersResourceList.getOffsetBy());
+    }
+
+    /**
+     * Tests whether multiple DemographicUsers are fetched correctly with null
+     * studyId.
+     */
+    @SuppressWarnings("deprecation")
+    @Test
+    public void getDemographicUsersApp() {
+        DemographicUser demographicUser1 = new DemographicUser();
+        DemographicUser demographicUser2 = new DemographicUser();
+        List<DemographicUser> demographicUsers = ImmutableList.of(demographicUser1, demographicUser2);
+        when(hibernateHelper.queryCount(any(), any())).thenReturn(2);
+        when(hibernateHelper.queryGet(any(), any(), any(), any(), eq(DemographicUser.class)))
+                .thenReturn(demographicUsers);
+
+        PagedResourceList<DemographicUser> returnedDemographicUsersResourceList = hibernateDemographicDao
+                .getDemographicUsers(TEST_APP_ID, null, 0, 5);
+
+        String query = "FROM DemographicUser du WHERE du.appId = :appId AND du.studyId IS NULL";
+        String countQuery = "SELECT COUNT(*) " + query;
+        Map<String, Object> parameters = new HashMap<>();
         parameters.put("appId", TEST_APP_ID);
         verify(hibernateHelper).queryCount(countQuery, parameters);
         verify(hibernateHelper).queryGet(query, parameters, 0, 5, DemographicUser.class);

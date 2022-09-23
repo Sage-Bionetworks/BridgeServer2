@@ -87,7 +87,11 @@ public class HibernateDemographicDao implements DemographicDao {
         builder.append("SELECT du.id FROM DemographicUser du");
         WhereClauseBuilder where = builder.startWhere(SearchTermPredicate.AND);
         where.append("du.appId = :appId", "appId", appId);
-        where.append("du.studyId = :studyId", "studyId", studyId);
+        if (studyId == null) {
+            where.append("du.studyId IS NULL");
+        } else {
+            where.append("du.studyId = :studyId", "studyId", studyId);
+        }
         where.append("du.userId = :userId", "userId", userId);
         Optional<String> existingDemographicUserId = hibernateHelper.queryGetOne(builder.getQuery(),
                 builder.getParameters(), String.class);
@@ -134,7 +138,11 @@ public class HibernateDemographicDao implements DemographicDao {
         builder.append("FROM DemographicUser du");
         WhereClauseBuilder where = builder.startWhere(SearchTermPredicate.AND);
         where.append("du.appId = :appId", "appId", appId);
-        where.append("du.studyId = :studyId", "studyId", studyId);
+        if (studyId == null) {
+            where.append("du.studyId IS NULL");
+        } else {
+            where.append("du.studyId = :studyId", "studyId", studyId);
+        }
         where.append("du.userId = :userId", "userId", userId);
         Optional<DemographicUser> existingDemographicUser = hibernateHelper.queryGetOne(builder.getQuery(),
                 builder.getParameters(), DemographicUser.class);
@@ -162,7 +170,11 @@ public class HibernateDemographicDao implements DemographicDao {
         builder.append("FROM DemographicUser du");
         WhereClauseBuilder where = builder.startWhere(SearchTermPredicate.AND);
         where.append("du.appId = :appId", "appId", appId);
-        where.append("du.studyId = :studyId", "studyId", studyId);
+        if (studyId == null) {
+            where.append("du.studyId IS NULL");
+        } else {
+            where.append("du.studyId = :studyId", "studyId", studyId);
+        }
         int count = hibernateHelper.queryCount("SELECT COUNT(*) " + builder.getQuery(), builder.getParameters());
         List<DemographicUser> existingDemographicUsers = hibernateHelper.queryGet(builder.getQuery(),
                 builder.getParameters(), offsetBy, pageSize, DemographicUser.class);

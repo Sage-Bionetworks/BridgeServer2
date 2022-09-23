@@ -4,6 +4,8 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 
+import java.util.Optional;
+
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.DemographicDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -98,15 +100,9 @@ public class DemographicService {
      *                fetch. Can be null if the demographics are app-level.
      * @param userId  The userId of the user to fetch demographics for.
      * @return The fetched DemographicUser.
-     * @throws EntityNotFoundException if the DemographicUser to fetch does not
-     *                                 exist based on the provided appId, studyId,
-     *                                 and userId.
      */
-    public DemographicUser getDemographicUser(String appId, String studyId, String userId)
-            throws EntityNotFoundException {
-        DemographicUser existingDemographicUser = demographicDao.getDemographicUser(appId, studyId, userId)
-                .orElseThrow(() -> new EntityNotFoundException(DemographicUser.class));
-        return existingDemographicUser;
+    public Optional<DemographicUser> getDemographicUser(String appId, String studyId, String userId) {
+        return demographicDao.getDemographicUser(appId, studyId, userId);
     }
 
     /**
