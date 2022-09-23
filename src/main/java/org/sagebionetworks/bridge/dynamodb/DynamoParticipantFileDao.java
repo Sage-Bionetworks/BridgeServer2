@@ -4,10 +4,14 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.ParticipantFileDao;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.files.ParticipantFile;
+
+import com.google.common.collect.ImmutableList;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -59,6 +63,26 @@ public class DynamoParticipantFileDao implements ParticipantFileDao {
     }
 
     @Override
+    public List<ParticipantFile> getAllFilesForParticipant(String userId) {
+        checkArgument(isNotBlank(userId));
+
+        // Make hash key.
+        DynamoParticipantFile hashKey = new DynamoParticipantFile(userId, null);
+        DynamoDBQueryExpression<DynamoParticipantFile> queryExpression = new DynamoDBQueryExpression<>();
+        queryExpression.setHashKeyValues(hashKey);
+
+        // Query.
+        PaginatedQueryList<DynamoParticipantFile> results = mapper.query(DynamoParticipantFile.class, queryExpression);
+
+        // Convert to List<ParticipantFile> because of Java type weirdness.
+        // Note that we use the stream API instead of ImmutableList.copyOf() because of wonkiness with mocking
+        // mapper.query().
+        //noinspection SimplifyStreamApiCallChains
+        List<ParticipantFile> fileResults = results.stream().collect(Collectors.toList());
+        return fileResults;
+    }
+
+    @Override
     public Optional<ParticipantFile> getParticipantFile(String userId, String fileId) {
         checkArgument(isNotBlank(userId));
         checkArgument(isNotBlank(fileId));
@@ -88,5 +112,14 @@ public class DynamoParticipantFileDao implements ParticipantFileDao {
         if (mapper.load(deleteTarget) != null) {
             mapper.delete(deleteTarget);
         }
+    }
+
+    @Override
+    public void batchDeleteParticipantFiles(List<ParticipantFile> fileList) {
+        checkNotNull(fileList);
+        checkArgument(!fileList.isEmpty());
+
+        List<DynamoDBMapper.FailedBatch> failures = mapper.batchDelete(fileList);
+        BridgeUtils.ifFailuresThrowException(failures);
     }
 }

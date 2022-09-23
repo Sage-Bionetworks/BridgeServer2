@@ -81,7 +81,8 @@ public interface UploadDao {
      * Delete all the upload records for a given health code. This is used to clean up records when a user is deleted, 
      * typically as part of testing. 
      * @param healthCode
-     *      the health code of the user being deleted.  
+     *      the health code of the user being deleted.
+     * @return a list of upload IDs to be deleted
      */
-    void deleteUploadsForHealthCode(@Nonnull String healthCode);
+    List<String> deleteUploadsForHealthCode(@Nonnull String healthCode);
 }

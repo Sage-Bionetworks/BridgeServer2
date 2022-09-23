@@ -81,6 +81,8 @@ public class UploadServiceTest {
     final static DateTime TIMESTAMP = DateTime.now();
     final static String ORIGINAL_UPLOAD_ID = "anOriginalUploadId";
     final static String NEW_UPLOAD_ID = "aNewUploadId";
+    private static final String UPLOAD_ID_1 = "upload1";
+    private static final String UPLOAD_ID_2 = "upload2";
     final static String RECORD_ID = "aRecordId";
     final static StudyParticipant PARTICIPANT = new StudyParticipant.Builder().withHealthCode(HEALTH_CODE).build();
 
@@ -386,7 +388,7 @@ public class UploadServiceTest {
         svc.getUploads("ABC", null, END_TIME, 0, null);
         verify(mockUploadDao).getUploads("ABC", START_TIME, END_TIME, 0, null);
     }
-    
+
     @Test
     public void canPassNoTimes() {
         setupUploadMocks();
@@ -410,8 +412,17 @@ public class UploadServiceTest {
     
     @Test
     public void deleteUploadsByHealthCodeWorks() {
-        svc.deleteUploadsForHealthCode("ABC");
-        verify(mockUploadDao).deleteUploadsForHealthCode("ABC");
+        // Mock DAO.
+        when(mockUploadDao.deleteUploadsForHealthCode(HEALTH_CODE)).thenReturn(ImmutableList.of(UPLOAD_ID_1,
+                UPLOAD_ID_2));
+
+        // Execute.
+        svc.deleteUploadsForHealthCode(HEALTH_CODE);
+
+        // Verify dependencies.
+        verify(mockUploadDao).deleteUploadsForHealthCode(HEALTH_CODE);
+        verify(mockS3Client).deleteObject(UPLOAD_BUCKET_NAME, UPLOAD_ID_1);
+        verify(mockS3Client).deleteObject(UPLOAD_BUCKET_NAME, UPLOAD_ID_2);
     }
     
     @Test
