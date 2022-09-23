@@ -465,8 +465,16 @@ public class UploadService {
     
     public void deleteUploadsForHealthCode(String healthCode) {
         checkArgument(isNotBlank(healthCode));
-        
-        uploadDao.deleteUploadsForHealthCode(healthCode);
+
+        // Delete from DynamoDB.
+        List<String> uploadIdList = uploadDao.deleteUploadsForHealthCode(healthCode);
+
+        // Delete files from S3.
+        // If the file does not exist on S3, the s3Client will actually return success
+        // instead of an error message.
+        for (String uploadId : uploadIdList) {
+            s3Client.deleteObject(uploadBucket, uploadId);
+        }
     }
 
     @FunctionalInterface

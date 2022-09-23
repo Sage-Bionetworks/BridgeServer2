@@ -81,11 +81,17 @@ import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.GuidVersionHolder;
 import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.ReportTypeResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.appconfig.AppConfig;
+import org.sagebionetworks.bridge.models.appconfig.AppConfigElement;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
 import org.sagebionetworks.bridge.models.organizations.Organization;
+import org.sagebionetworks.bridge.models.reports.ReportIndex;
+import org.sagebionetworks.bridge.models.reports.ReportType;
+import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.apps.AppAndUsers;
 import org.sagebionetworks.bridge.models.templates.Template;
@@ -98,9 +104,17 @@ import org.sagebionetworks.bridge.services.email.EmailType;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmail;
 
 public class AppServiceTest extends Mockito {
+    private static final String APP_CONFIG_GUID_1 = "appConfig1";
+    private static final String APP_CONFIG_GUID_2 = "appConfig2";
+    private static final String APP_CONFIG_ELEMENT_ID_1 = "appConfigElement1";
+    private static final String APP_CONFIG_ELEMENT_ID_2 = "appConfigElement2";
     private static final long BRIDGE_ADMIN_TEAM_ID = 1357L;
     private static final long BRIDGE_STAFF_TEAM_ID = 2468L;
+    private static final String REPORT_ID_1 = "report1";
+    private static final String REPORT_ID_2 = "report2";
     private static final Long TEST_USER_ID = Long.parseLong("3348228"); // test user exists in synapse
+    private static final String SCHEDULE_PLAN_GUID_1 = "schedulePlan1";
+    private static final String SCHEDULE_PLAN_GUID_2 = "schedulePlan2";
     private static final String TEST_NAME_SCOPING_TOKEN = "qwerty";
     private static final String TEST_PROJECT_NAME = "Test App AppServiceTest Project " + TEST_NAME_SCOPING_TOKEN;
     private static final String TEST_TEAM_NAME = "Test App AppServiceTest Access Team " + TEST_NAME_SCOPING_TOKEN;
@@ -124,13 +138,25 @@ public class AppServiceTest extends Mockito {
     private static final String VERIFICATION_TOKEN = "dummy-token";
     private static final CacheKey VER_CACHE_KEY = CacheKey.verificationToken("dummy-token");
     private static final ByteArrayResource TEMPLATE_RESOURCE = new ByteArrayResource("<p>${url}</p>".getBytes());
-    
+
+    @Mock
+    AppConfigService mockAppConfigService;
+    @Mock
+    AppConfigElementService mockAppConfigElementService;
     @Mock
     BridgeConfig mockBridgeConfig;
     @Mock
     CompoundActivityDefinitionService mockCompoundActivityDefinitionService;
     @Mock
+    HealthDataDocumentationService mockHealthDataDocumentationService;
+    @Mock
+    ReportService mockReportService;
+    @Mock
+    SchedulePlanService mockSchedulePlanService;
+    @Mock
     NotificationTopicService mockTopicService;
+    @Mock
+    UploadSchemaService mockUploadSchemaService;
     @Mock
     SendMailService mockSendMailService;
     @Mock
@@ -714,9 +740,38 @@ public class AppServiceTest extends Mockito {
     
     @Test
     public void physicallyDeleteApp() {
+        // Mock dependencies.
         PagedResourceList<? extends Template> page1 = new PagedResourceList<>(
                 ImmutableList.of(createTemplate("guid1"), createTemplate("guid2"), createTemplate("guid3")), 3);
         PagedResourceList<? extends Template> page2 = new PagedResourceList<>(ImmutableList.of(), 3);
+
+        AppConfig appConfig1 = AppConfig.create();
+        appConfig1.setGuid(APP_CONFIG_GUID_1);
+        AppConfig appConfig2 = AppConfig.create();
+        appConfig2.setGuid(APP_CONFIG_GUID_2);
+        when(mockAppConfigService.getAppConfigs(TEST_APP_ID, true)).thenReturn(ImmutableList.of(
+                appConfig1, appConfig2));
+
+        AppConfigElement appConfigElement1 = AppConfigElement.create();
+        appConfigElement1.setId(APP_CONFIG_ELEMENT_ID_1);
+        AppConfigElement appConfigElement2 = AppConfigElement.create();
+        appConfigElement2.setId(APP_CONFIG_ELEMENT_ID_2);
+        when(mockAppConfigElementService.getMostRecentElements(TEST_APP_ID, true)).thenReturn(
+                ImmutableList.of(appConfigElement1, appConfigElement2));
+
+        ReportIndex reportIndex1 = ReportIndex.create();
+        reportIndex1.setIdentifier(REPORT_ID_1);
+        ReportIndex reportIndex2 = ReportIndex.create();
+        reportIndex2.setIdentifier(REPORT_ID_2);
+        doReturn(new ReportTypeResourceList<>(ImmutableList.of(reportIndex1, reportIndex2))).when(mockReportService)
+                .getReportIndices(TEST_APP_ID, ReportType.STUDY);
+
+        SchedulePlan schedulePlan1 = SchedulePlan.create();
+        schedulePlan1.setGuid(SCHEDULE_PLAN_GUID_1);
+        SchedulePlan schedulePlan2 = SchedulePlan.create();
+        schedulePlan2.setGuid(SCHEDULE_PLAN_GUID_2);
+        when(mockSchedulePlanService.getSchedulePlans(any(), eq(TEST_APP_ID), eq(true))).thenReturn(
+                ImmutableList.of(schedulePlan1, schedulePlan2));
 
         doReturn(page1, page2).when(mockTemplateService).getTemplatesForType(
                 TEST_APP_ID, EMAIL_ACCOUNT_EXISTS, 0, 50, true);
@@ -732,7 +787,9 @@ public class AppServiceTest extends Mockito {
         verify(mockAccountService).deleteAllAccounts(app.getIdentifier());
         verify(mockAssessmentResourceService).deleteAllAssessmentResources(app.getIdentifier());
         verify(mockAssessmentService).deleteAllAssessments(app.getIdentifier());
+        verify(mockHealthDataDocumentationService).deleteAllHealthDataDocumentation(TEST_APP_ID);
         verify(mockStudyService).deleteAllStudies(app.getIdentifier());
+        verify(mockUploadSchemaService).deleteAllUploadSchemasAllRevisionsPermanently(TEST_APP_ID);
         verify(mockOrgService).deleteAllOrganizations(app.getIdentifier());
         verify(mockCompoundActivityDefinitionService).deleteAllCompoundActivityDefinitionsInApp(
                 app.getIdentifier());
@@ -741,6 +798,22 @@ public class AppServiceTest extends Mockito {
         verify(mockCacheProvider).removeApp(TEST_APP_ID);
         verify(mockTemplateService).deleteAllTemplates(TEST_APP_ID);
         verify(mockFileService).deleteAllAppFiles(TEST_APP_ID);
+
+        verify(mockAppConfigService).getAppConfigs(TEST_APP_ID, true);
+        verify(mockAppConfigService).deleteAppConfigPermanently(TEST_APP_ID, APP_CONFIG_GUID_1);
+        verify(mockAppConfigService).deleteAppConfigPermanently(TEST_APP_ID, APP_CONFIG_GUID_2);
+
+        verify(mockAppConfigElementService).getMostRecentElements(TEST_APP_ID, true);
+        verify(mockAppConfigElementService).deleteElementAllRevisionsPermanently(TEST_APP_ID, APP_CONFIG_ELEMENT_ID_1);
+        verify(mockAppConfigElementService).deleteElementAllRevisionsPermanently(TEST_APP_ID, APP_CONFIG_ELEMENT_ID_2);
+
+        verify(mockReportService).getReportIndices(TEST_APP_ID, ReportType.STUDY);
+        verify(mockReportService).deleteStudyReport(TEST_APP_ID, REPORT_ID_1);
+        verify(mockReportService).deleteStudyReport(TEST_APP_ID, REPORT_ID_2);
+
+        verify(mockSchedulePlanService).getSchedulePlans(any(), eq(TEST_APP_ID), eq(true));
+        verify(mockSchedulePlanService).deleteSchedulePlanPermanently(TEST_APP_ID, SCHEDULE_PLAN_GUID_1);
+        verify(mockSchedulePlanService).deleteSchedulePlanPermanently(TEST_APP_ID, SCHEDULE_PLAN_GUID_2);
     }
 
     private Template createTemplate(String guid) {
@@ -1559,6 +1632,8 @@ public class AppServiceTest extends Mockito {
     @SuppressWarnings("deprecation")
     @Test
     public void crudApp() {
+        when(mockReportService.getReportIndices(any(), any())).thenReturn(new ReportTypeResourceList<>(
+                ImmutableList.of()));
         when(mockTemplateService.getTemplatesForType(any(), any(), anyInt(), anyInt(), anyBoolean()))
             .thenReturn(new PagedResourceList<>(ImmutableList.of(), 0));
         // developer

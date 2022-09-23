@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -308,14 +309,17 @@ public class DynamoUploadDao implements UploadDao {
     }
     
     @Override
-    public void deleteUploadsForHealthCode(@Nonnull String healthCode) {
+    public List<String> deleteUploadsForHealthCode(@Nonnull String healthCode) {
         List<? extends Upload> uploadsToDelete = healthCodeRequestedOnIndex.queryKeys(
                 DynamoUpload2.class, HEALTH_CODE, healthCode, null);
-        
+        List<String> uploadIdList = uploadsToDelete.stream().map(Upload::getUploadId).collect(Collectors.toList());
+
         if (!uploadsToDelete.isEmpty()) {
             List<FailedBatch> failures = mapper.batchDelete(uploadsToDelete);
             BridgeUtils.ifFailuresThrowException(failures);
         }
+
+        return uploadIdList;
     }
 }
 

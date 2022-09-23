@@ -23,6 +23,7 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 
 import java.net.URL;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -220,6 +221,28 @@ public class ParticipantFileService {
         // If the file does not exist on S3, the s3Client will actually return success
         // instead of an error message.
         s3Client.deleteObject(bucketName, userId + "/" + fileId);
+    }
+
+    /**
+     * Internal API to delete all of a participant's files. This deletes both the metadata record in the database and
+     * the file content in storage.
+     */
+    public void deleteAllFilesForParticipant(String userId) {
+        // Get all files for user.
+        List<ParticipantFile> fileList = participantFileDao.getAllFilesForParticipant(userId);
+        if (fileList.isEmpty()) {
+            return;
+        }
+
+        // Delete files from S3.
+        // If the file does not exist on S3, the s3Client will actually return success
+        // instead of an error message.
+        for (ParticipantFile file : fileList) {
+            s3Client.deleteObject(bucketName, userId + "/" + file.getFileId());
+        }
+
+        // Delete files from DynamoDB.
+        participantFileDao.batchDeleteParticipantFiles(fileList);
     }
 
     /**

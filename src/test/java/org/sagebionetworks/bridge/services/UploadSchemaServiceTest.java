@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
+import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.anyString;
@@ -479,6 +480,20 @@ public class UploadSchemaServiceTest {
         // execute and validate
         List<UploadSchema> svcOutputSchemaList = svc.getAllUploadSchemasAllRevisions(TEST_APP_ID, false);
         assertSame(svcOutputSchemaList, daoOutputSchemaList);
+    }
+
+    @Test
+    public void deleteAllUploadSchemasAllRevisionsPermanently() {
+        // Mock dependencies.
+        List<UploadSchema> schemeList = ImmutableList.of(UploadSchema.create());
+        when(dao.getAllUploadSchemasAllRevisions(TEST_APP_ID, true)).thenReturn(schemeList);
+
+        // Execute.
+        svc.deleteAllUploadSchemasAllRevisionsPermanently(TEST_APP_ID);
+
+        // Verify dependencies.
+        verify(dao).getAllUploadSchemasAllRevisions(TEST_APP_ID, true);
+        verify(dao).deleteUploadSchemasPermanently(same(schemeList));
     }
 
     @Test

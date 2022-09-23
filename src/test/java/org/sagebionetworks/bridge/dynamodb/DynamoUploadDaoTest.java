@@ -31,6 +31,7 @@ import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dao.HealthCodeDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
@@ -59,7 +60,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 
 public class DynamoUploadDaoTest {
-
+    private static final String INDEX_NAME_HEALTH_CODE = "healthCode";
     private static String UPLOAD_ID = "uploadId";
     private static String UPLOAD_ID_2 = "uploadId2";
     private static String UPLOAD_ID_3 = "uploadId3";
@@ -479,12 +480,22 @@ public class DynamoUploadDaoTest {
 
     @Test
     public void deleteUploadsForHealthCode() {
-        List<DynamoUpload2> uploads = ImmutableList.of(new DynamoUpload2());
-        when(mockIndexHelper.queryKeys(DynamoUpload2.class, "healthCode", "oneHealthCode", null)).thenReturn(uploads);
+        // Make uploads to delete.
+        DynamoUpload2 upload1 = new DynamoUpload2();
+        upload1.setUploadId(UPLOAD_ID);
 
-        dao.deleteUploadsForHealthCode("oneHealthCode");
+        DynamoUpload2 upload2 = new DynamoUpload2();
+        upload2.setUploadId(UPLOAD_ID_2);
 
-        verify(mockIndexHelper).queryKeys(DynamoUpload2.class, "healthCode", "oneHealthCode", null);
+        List<DynamoUpload2> uploads = ImmutableList.of(upload1, upload2);
+        when(mockIndexHelper.queryKeys(DynamoUpload2.class, INDEX_NAME_HEALTH_CODE, TestConstants.HEALTH_CODE, null)).thenReturn(uploads);
+
+        // Execute.
+        List<String> uploadIdList = dao.deleteUploadsForHealthCode(TestConstants.HEALTH_CODE);
+        assertEquals(uploadIdList, ImmutableList.of(UPLOAD_ID, UPLOAD_ID_2));
+
+        // Verify dependencies.
+        verify(mockIndexHelper).queryKeys(DynamoUpload2.class, INDEX_NAME_HEALTH_CODE, TestConstants.HEALTH_CODE, null);
         verify(mockMapper).batchDelete(uploads);
     }
 

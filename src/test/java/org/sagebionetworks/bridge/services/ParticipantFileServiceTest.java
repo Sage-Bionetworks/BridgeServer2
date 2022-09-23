@@ -6,6 +6,7 @@ import com.amazonaws.services.s3.Headers;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.google.common.collect.ImmutableList;
 import org.joda.time.DateTimeUtils;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -32,6 +33,7 @@ import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -41,7 +43,8 @@ import static org.testng.Assert.assertNull;
 import static org.testng.Assert.fail;
 
 public class ParticipantFileServiceTest {
-
+    private static final String FILE_ID_1 = "file1";
+    private static final String FILE_ID_2 = "file2";
     private static final String UPLOAD_BUCKET = "file-bucket";
 
     @Mock
@@ -282,5 +285,39 @@ public class ParticipantFileServiceTest {
     public void deleteParticipantFileButNoSuchFile() {
         when(mockFileDao.getParticipantFile(eq("test_user"), eq("file_id"))).thenReturn(Optional.empty());
         service.deleteParticipantFile("test_user", "file_id");
+    }
+
+    @Test
+    public void deleteAllFilesForUser() {
+        // Make file list.
+        ParticipantFile file1 = ParticipantFile.create();
+        file1.setFileId(FILE_ID_1);
+
+        ParticipantFile file2 = ParticipantFile.create();
+        file2.setFileId(FILE_ID_2);
+
+        List<ParticipantFile> fileList = ImmutableList.of(file1, file2);
+        when(mockFileDao.getAllFilesForParticipant(TestConstants.TEST_USER_ID)).thenReturn(fileList);
+
+        // Execute.
+        service.deleteAllFilesForParticipant(TestConstants.TEST_USER_ID);
+
+        // Verify back-end calls.
+        verify(mockS3Client).deleteObject(UPLOAD_BUCKET, TestConstants.TEST_USER_ID + '/' + FILE_ID_1);
+        verify(mockS3Client).deleteObject(UPLOAD_BUCKET, TestConstants.TEST_USER_ID + '/' + FILE_ID_1);
+        verify(mockFileDao).batchDeleteParticipantFiles(fileList);
+    }
+
+    @Test
+    public void deleteAllFilesForUser_NoFiles() {
+        // Mock dependencies.
+        when(mockFileDao.getAllFilesForParticipant("test_user")).thenReturn(ImmutableList.of());
+
+        // Execute.
+        service.deleteAllFilesForParticipant("test_user");
+
+        // Verify no backend calls.
+        verify(mockS3Client, never()).deleteObject(any(), any());
+        verify(mockFileDao, never()).batchDeleteParticipantFiles(any());
     }
 }

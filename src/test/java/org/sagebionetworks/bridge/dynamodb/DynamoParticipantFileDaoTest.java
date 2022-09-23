@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.dynamodb;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
+import com.google.common.collect.ImmutableList;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
@@ -23,6 +24,7 @@ import java.util.stream.Stream;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -30,8 +32,10 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
+@SuppressWarnings("unchecked")
 public class DynamoParticipantFileDaoTest {
     private static final DynamoParticipantFile RESULT;
 
@@ -188,6 +192,29 @@ public class DynamoParticipantFileDaoTest {
     }
 
     @Test
+    public void getAllFilesForParticipant() {
+        // Set up mock.
+        when(resultPage.stream()).thenReturn(Stream.of(RESULT));
+        when(mapper.query(eq(DynamoParticipantFile.class), any())).thenReturn(resultPage);
+
+        // Execute and verify.
+        List<ParticipantFile> resultList = dao.getAllFilesForParticipant(KEY.getUserId());
+        assertNotNull(resultList);
+        assertEquals(resultList.size(), 1);
+        ParticipantFile resultFile = resultList.get(0);
+        assertSame(resultFile, RESULT);
+
+        // Verify query.
+        ArgumentCaptor<DynamoDBQueryExpression<DynamoParticipantFile>> queryCaptor = ArgumentCaptor.forClass(
+                DynamoDBQueryExpression.class);
+        verify(mapper).query(eq(DynamoParticipantFile.class), queryCaptor.capture());
+        DynamoDBQueryExpression<DynamoParticipantFile> expression = queryCaptor.getValue();
+        DynamoParticipantFile hashKey = expression.getHashKeyValues();
+        assertEquals(hashKey.getUserId(), KEY.getUserId());
+        assertNull(hashKey.getFileId());
+    }
+
+    @Test
     public void getParticipantFile() {
         when(mapper.load(any())).thenReturn(RESULT);
 
@@ -235,5 +262,13 @@ public class DynamoParticipantFileDaoTest {
         when(mapper.load(any())).thenReturn(null);
         dao.deleteParticipantFile(KEY.getUserId(), KEY.getFileId());
         verify(mapper, never()).delete(any());
+    }
+
+    @Test
+    public void batchDeleteParticipantFiles() {
+        // Copy RESULT_LIST to a new list because of Java type wonkiness.
+        List<ParticipantFile> fileList = ImmutableList.copyOf(RESULT_LIST);
+        dao.batchDeleteParticipantFiles(fileList);
+        verify(mapper).batchDelete(same((fileList)));
     }
 }
