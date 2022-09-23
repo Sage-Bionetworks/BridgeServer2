@@ -241,7 +241,7 @@ public class ParticipantFileService {
             s3Client.deleteObject(bucketName, userId + "/" + file.getFileId());
         }
 
-        // Delete files from
+        // Delete files from DynamoDB.
         participantFileDao.batchDeleteParticipantFiles(fileList);
     }
 
