@@ -9,7 +9,6 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverted;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConvertedJson;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -34,9 +33,7 @@ public class DynamoParticipantVersion implements ParticipantVersion {
     private SharingScope sharingScope;
     private Map<String, String> studyMemberships;
     private String timeZone;
-    @DynamoDBTypeConvertedJson
     private Map<String, Demographic> appDemographics;
-    @DynamoDBTypeConvertedJson
     private Map<String, Map<String, Demographic>> studyDemographics;
     private Long version;
 
@@ -184,6 +181,7 @@ public class DynamoParticipantVersion implements ParticipantVersion {
     }
 
     @Override
+    @DynamoDBTypeConverted(converter = AppDemographicsMapMarshaller.class)
     public Map<String, Demographic> getAppDemographics() {
         return appDemographics;
     }
@@ -198,6 +196,7 @@ public class DynamoParticipantVersion implements ParticipantVersion {
     }
 
     @Override
+    @DynamoDBTypeConverted(converter = StudyDemographicsMapMarshaller.class)
     public Map<String, Map<String, Demographic>> getStudyDemographics() {
         return studyDemographics;
     }

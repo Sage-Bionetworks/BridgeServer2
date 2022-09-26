@@ -171,7 +171,7 @@ public class ParticipantVersionServiceTest {
         assertEquals(participantVersion.getTimeZone(), TIME_ZONE);
         assertEquals(participantVersion.getAppDemographics(), APP_DEMOGRAPHICS);
         Map<String, Map<String, Demographic>> expectedStudyDemographics = new HashMap<>(STUDY_DEMOGRAPHICS);
-        expectedStudyDemographics.put(STUDY_ID_2, null);
+        expectedStudyDemographics.put(STUDY_ID_2, ImmutableMap.of());
         assertEquals(participantVersion.getStudyDemographics(), expectedStudyDemographics);
 
         Map<String, String> studyMembershipMap = participantVersion.getStudyMemberships();
@@ -440,10 +440,11 @@ public class ParticipantVersionServiceTest {
                         false, ImmutableList.of(new DemographicValue("value1")), "units")));
 
         ParticipantVersion participantVersion2 = makeParticipantVersion();
-        // exact same, need deep copy so re-create
+        // need deep copy so re-create
+        // id, demographicUser, and categoryName should be ignored
         participantVersion2.setAppDemographics(
-                ImmutableMap.of("category1", new Demographic("id1", new DemographicUser(), "category1",
-                        false, ImmutableList.of(new DemographicValue("value1")), "units")));
+                ImmutableMap.of("category1", new Demographic(null, null, null, false,
+                        ImmutableList.of(new DemographicValue("value1")), "units")));
 
         assertTrue(participantVersionService.isIdenticalParticipantVersion(participantVersion1, participantVersion2));
     }
@@ -471,10 +472,11 @@ public class ParticipantVersionServiceTest {
                     null))));
 
         ParticipantVersion participantVersion2 = makeParticipantVersion();
-        // exact same, need deep copy so re-create
+        // need deep copy so re-create
+        // id, demographicUser, and categoryName should be ignored
         participantVersion2.setStudyDemographics(ImmutableMap.of(
                 STUDY_ID_1,
-                ImmutableMap.of("category2", new Demographic("id2", new DemographicUser(), "category2", true,
+                ImmutableMap.of("category2", new Demographic(null, null, null, true,
                         ImmutableList.of(new DemographicValue("value2"), new DemographicValue(3),
                                 new DemographicValue(-4), new DemographicValue(true), new DemographicValue("k", "v")),
                         null))));

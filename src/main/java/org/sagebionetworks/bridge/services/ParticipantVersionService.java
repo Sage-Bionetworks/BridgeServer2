@@ -12,6 +12,8 @@ import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.model.SendMessageResult;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableMap;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -122,7 +124,7 @@ public class ParticipantVersionService {
         participantVersion.setStudyMemberships(BridgeUtils.mapStudyMemberships(account));
         participantVersion.setTimeZone(account.getClientTimeZone());
 
-        Map<String, Demographic> appDemographics = null;
+        Map<String, Demographic> appDemographics = ImmutableMap.of();
         Optional<DemographicUser> appDemographicUser = demographicService.getDemographicUser(account.getAppId(), null,
                 account.getId());
         if (appDemographicUser.isPresent()) {
@@ -131,7 +133,7 @@ public class ParticipantVersionService {
         participantVersion.setAppDemographics(appDemographics);
         Map<String, Map<String, Demographic>> studyDemographics = new HashMap<>();
         for (String studyId : participantVersion.getStudyMemberships().keySet()) {
-            Map<String, Demographic> oneStudyDemographics = null;
+            Map<String, Demographic> oneStudyDemographics = ImmutableMap.of();
             Optional<DemographicUser> studyDemographicUser = demographicService.getDemographicUser(account.getAppId(),
                     studyId, account.getId());
             if (studyDemographicUser.isPresent()) {
@@ -207,15 +209,16 @@ public class ParticipantVersionService {
         attrMap.put("sharingScope", participantVersion.getSharingScope());
         attrMap.put("studyMemberships", participantVersion.getStudyMemberships());
         attrMap.put("timeZone", participantVersion.getTimeZone());
-        // Demographic doesn't implement equals so we have to do this manually
+        // Demographic doesn't implement equals (Hibernate entity) so we have to do this manually
+        // serialize as string and compare strings
         try {
             attrMap.put("appDemographics", BridgeObjectMapper.get()
-                    .writeValueAsString(removeIdAndParentFromDemographicsMap(participantVersion.getAppDemographics())));
+                    .writeValueAsString(cleanDemographicsMapForComparison(participantVersion.getAppDemographics())));
             Map<String, Map<String, Demographic>> studyDemographicsNoId = new HashMap<>();
             if (participantVersion.getStudyDemographics() != null) {
                 for (Map.Entry<String, Map<String, Demographic>> entry : participantVersion.getStudyDemographics()
                         .entrySet()) {
-                    studyDemographicsNoId.put(entry.getKey(), removeIdAndParentFromDemographicsMap(entry.getValue()));
+                    studyDemographicsNoId.put(entry.getKey(), cleanDemographicsMapForComparison(entry.getValue()));
                 }
             }
             attrMap.put("studyDemographics", BridgeObjectMapper.get().writeValueAsString(studyDemographicsNoId));
@@ -228,7 +231,14 @@ public class ParticipantVersionService {
         return attrMap;
     }
 
-    private static Map<String, Demographic> removeIdAndParentFromDemographicsMap(Map<String, Demographic> demographics) {
+    /**
+     * Removes id, parent demographicUser, and categoryName from each Demographic in
+     * a demographics map for comparison with other demographics. When comparing
+     * demographics to determine identicalness, we don't want to compare ids. Also,
+     * deserializing a Demographic will result in a null internal categoryName and
+     * demographicUser, so those fields should not be compared.
+     */
+    private static Map<String, Demographic> cleanDemographicsMapForComparison(Map<String, Demographic> demographics) {
         Map<String, Demographic> demographicsNoId = new HashMap<>();
         if (demographics == null) {
             return demographicsNoId;
@@ -236,10 +246,9 @@ public class ParticipantVersionService {
         for (Map.Entry<String, Demographic> entry : demographics.entrySet()) {
             String categoryName = entry.getKey();
             Demographic demographic = entry.getValue();
-            // shallow copy Demographic without id and parent
-            Demographic demographicNoId = new Demographic(null, null,
-                    demographic.getCategoryName(), demographic.isMultipleSelect(), demographic.getValues(),
-                    demographic.getUnits());
+            // shallow copy Demographic without id, parent, and categoryname
+            Demographic demographicNoId = new Demographic(null, null, null, demographic.isMultipleSelect(),
+                    demographic.getValues(), demographic.getUnits());
             demographicsNoId.put(categoryName, demographicNoId);
         }
         return demographicsNoId;
