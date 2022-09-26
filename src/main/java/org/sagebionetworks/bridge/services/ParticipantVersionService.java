@@ -193,55 +193,7 @@ public class ParticipantVersionService {
     boolean isIdenticalParticipantVersion(ParticipantVersion oldVersion, ParticipantVersion newVersion) {
         Map<String, Object> oldAttrMap = getParticipantVersionAttributes(oldVersion);
         Map<String, Object> newAttrMap = getParticipantVersionAttributes(newVersion);
-        if (!oldAttrMap.equals(newAttrMap)) {
-            return false;
-        }
-        // Demographic doesn't implement equals so we have to do this manually
-        if (oldVersion.getAppDemographics() == null || newVersion.getAppDemographics() == null) {
-            if (oldVersion.getAppDemographics() != newVersion.getAppDemographics()) {
-                return false;
-            }
-        } else {
-            if (!isIdenticalDemographicsMap(oldVersion.getAppDemographics(), newVersion.getAppDemographics())) {
-                return false;
-            }
-        }
-        if (oldVersion.getStudyDemographics() == null || newVersion.getStudyDemographics() == null) {
-            if (oldVersion.getStudyDemographics() != newVersion.getStudyDemographics()) {
-                return false;
-            }
-        } else {
-            if (oldVersion.getStudyDemographics().size() != newVersion.getStudyDemographics().size()) {
-                return false;
-            }
-            for (String studyId : oldVersion.getStudyDemographics().keySet()) {
-                if (!isIdenticalDemographicsMap(oldVersion.getStudyDemographics().get(studyId),
-                        newVersion.getStudyDemographics().get(studyId))) {
-                    return false;
-                }
-            }
-        }
-
-        return true;
-    }
-
-    private boolean isIdenticalDemographicsMap(Map<String, Demographic> demographics1,
-            Map<String, Demographic> demographics2) {
-        if (demographics1 == null || demographics2 == null) {
-            if (demographics1 != demographics2) {
-                return false;
-            }
-        }
-        if (demographics1.size() != demographics2.size()) {
-            return false;
-        }
-        for (String categoryName : demographics1.keySet()) {
-            if (!demographicService.isIdenticalDemographic(demographics1.get(categoryName),
-                    demographics2.get(categoryName))) {
-                return false;
-            }
-        }
-        return true;
+        return oldAttrMap.equals(newAttrMap);
     }
 
     // This gets non-key attributes for the participant. This is mainly to test if the participant version has changed,
@@ -255,7 +207,42 @@ public class ParticipantVersionService {
         attrMap.put("sharingScope", participantVersion.getSharingScope());
         attrMap.put("studyMemberships", participantVersion.getStudyMemberships());
         attrMap.put("timeZone", participantVersion.getTimeZone());
+        // Demographic doesn't implement equals so we have to do this manually
+        try {
+            attrMap.put("appDemographics", BridgeObjectMapper.get()
+                    .writeValueAsString(removeIdAndParentFromDemographicsMap(participantVersion.getAppDemographics())));
+            Map<String, Map<String, Demographic>> studyDemographicsNoId = new HashMap<>();
+            if (participantVersion.getStudyDemographics() != null) {
+                for (Map.Entry<String, Map<String, Demographic>> entry : participantVersion.getStudyDemographics()
+                        .entrySet()) {
+                    studyDemographicsNoId.put(entry.getKey(), removeIdAndParentFromDemographicsMap(entry.getValue()));
+                }
+            }
+            attrMap.put("studyDemographics", BridgeObjectMapper.get().writeValueAsString(studyDemographicsNoId));
+        } catch (JsonProcessingException ex) {
+            // This should never happen, but catch and re-throw for code hygiene.
+            throw new BridgeServiceException("Error comparing participant versions for app "
+                    + participantVersion.getAppId() + " healthcode " + participantVersion.getHealthCode() + " version "
+                    + participantVersion.getParticipantVersion(), ex);
+        }
         return attrMap;
+    }
+
+    private static Map<String, Demographic> removeIdAndParentFromDemographicsMap(Map<String, Demographic> demographics) {
+        Map<String, Demographic> demographicsNoId = new HashMap<>();
+        if (demographics == null) {
+            return demographicsNoId;
+        }
+        for (Map.Entry<String, Demographic> entry : demographics.entrySet()) {
+            String categoryName = entry.getKey();
+            Demographic demographic = entry.getValue();
+            // shallow copy Demographic without id and parent
+            Demographic demographicNoId = new Demographic(null, null,
+                    demographic.getCategoryName(), demographic.isMultipleSelect(), demographic.getValues(),
+                    demographic.getUnits());
+            demographicsNoId.put(categoryName, demographicNoId);
+        }
+        return demographicsNoId;
     }
 
     // This is separate because we might need a separate redrive process in the future.
