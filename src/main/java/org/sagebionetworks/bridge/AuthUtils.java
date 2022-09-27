@@ -139,12 +139,10 @@ public class AuthUtils {
     public static final AuthEvaluator CAN_DOWNLOAD_PARTICIPANT_ROSTER = new AuthEvaluator()
             .canAccessStudy().hasAnyRole(STUDY_COORDINATOR).or()
             .hasAnyRole(RESEARCHER, ADMIN);
-    
-    /**
-     * Can the caller read participant reports? 
-     */
+
+    /** Can the caller read/write/delete participant reports? */
     public static final AuthEvaluator CAN_READ_PARTICIPANT_REPORTS = new AuthEvaluator().isSelf().or()
-            .canAccessStudy().hasAnyRole(STUDY_DESIGNER, STUDY_COORDINATOR).or()
+            .canAccessStudy().hasAnyRole(STUDY_DESIGNER, STUDY_COORDINATOR, ORG_ADMIN).or()
             .hasAnyRole(DEVELOPER, RESEARCHER, WORKER, ADMIN);
     
     /**

@@ -13,6 +13,7 @@ import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_SHARED_ASSESSMENTS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_ENROLLMENTS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_OTHER_ENROLLMENTS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EXPORT_PARTICIPANTS;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_PARTICIPANT_REPORTS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_STUDY_ASSOCIATIONS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_TRANSITION_STUDY;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
@@ -54,6 +55,7 @@ import org.sagebionetworks.bridge.models.studies.Enrollment;
 
 public class AuthUtilsTest extends Mockito {
     private static final String SHARED_OWNER_ID = TEST_APP_ID + ":" + TEST_OWNER_ID;
+    private static final String OTHER_STUDY_ID = "otherStudyId";
     private static final String OTHER_USER_ID = "otherUserId";
     
     @AfterMethod
@@ -176,7 +178,93 @@ public class AuthUtilsTest extends Mockito {
         
         CAN_EDIT_ENROLLMENTS.checkAndThrow(ORG_ID, TEST_ORG_ID);
     }
-    
+
+    @Test
+    public void canDeleteParticipantReports_succeedsForSelf() {
+        RequestContext.set(new RequestContext.Builder().withCallerUserId(TEST_USER_ID).build());
+        assertTrue(CAN_READ_PARTICIPANT_REPORTS.check(USER_ID, TEST_USER_ID, STUDY_ID, TEST_STUDY_ID));
+    }
+
+    @Test
+    public void canDeleteParticipantReports_succeedsForStudyDesigner() {
+        RequestContext.set(new RequestContext.Builder().withCallerUserId(OTHER_USER_ID)
+                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER))
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID)).build());
+        assertTrue(CAN_READ_PARTICIPANT_REPORTS.check(USER_ID, TEST_USER_ID, STUDY_ID, TEST_STUDY_ID));
+    }
+
+    @Test
+    public void canDeleteParticipantReports_succeedsForStudyCoordinator() {
+        RequestContext.set(new RequestContext.Builder().withCallerUserId(OTHER_USER_ID)
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID)).build());
+        assertTrue(CAN_READ_PARTICIPANT_REPORTS.check(USER_ID, TEST_USER_ID, STUDY_ID, TEST_STUDY_ID));
+    }
+
+    @Test
+    public void canDeleteParticipantReports_succeedsForOrgAdmin() {
+        RequestContext.set(new RequestContext.Builder().withCallerUserId(OTHER_USER_ID)
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN))
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID)).build());
+        assertTrue(CAN_READ_PARTICIPANT_REPORTS.check(USER_ID, TEST_USER_ID, STUDY_ID, TEST_STUDY_ID));
+    }
+
+    @Test
+    public void canDeleteParticipantReports_failsForWrongStudyId() {
+        RequestContext.set(new RequestContext.Builder().withCallerUserId(OTHER_USER_ID)
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN))
+                .withOrgSponsoredStudies(ImmutableSet.of(OTHER_STUDY_ID)).build());
+        assertFalse(CAN_READ_PARTICIPANT_REPORTS.check(USER_ID, TEST_USER_ID, STUDY_ID, TEST_STUDY_ID));
+    }
+
+    @Test
+    public void canDeleteParticipantReports_succeedsForDeveloper() {
+        RequestContext.set(new RequestContext.Builder().withCallerUserId(OTHER_USER_ID)
+                .withCallerRoles(ImmutableSet.of(DEVELOPER))
+                .withOrgSponsoredStudies(ImmutableSet.of(OTHER_STUDY_ID)).build());
+        assertTrue(CAN_READ_PARTICIPANT_REPORTS.check(USER_ID, TEST_USER_ID, STUDY_ID, TEST_STUDY_ID));
+    }
+
+    @Test
+    public void canDeleteParticipantReports_succeedsForResearcher() {
+        RequestContext.set(new RequestContext.Builder().withCallerUserId(OTHER_USER_ID)
+                .withCallerRoles(ImmutableSet.of(RESEARCHER))
+                .withOrgSponsoredStudies(ImmutableSet.of(OTHER_STUDY_ID)).build());
+        assertTrue(CAN_READ_PARTICIPANT_REPORTS.check(USER_ID, TEST_USER_ID, STUDY_ID, TEST_STUDY_ID));
+    }
+
+    @Test
+    public void canDeleteParticipantReports_succeedsForWorker() {
+        RequestContext.set(new RequestContext.Builder().withCallerUserId(OTHER_USER_ID)
+                .withCallerRoles(ImmutableSet.of(WORKER))
+                .withOrgSponsoredStudies(ImmutableSet.of(OTHER_STUDY_ID)).build());
+        assertTrue(CAN_READ_PARTICIPANT_REPORTS.check(USER_ID, TEST_USER_ID, STUDY_ID, TEST_STUDY_ID));
+    }
+
+    @Test
+    public void canDeleteParticipantReports_succeedsForAdmin() {
+        RequestContext.set(new RequestContext.Builder().withCallerUserId(OTHER_USER_ID)
+                .withCallerRoles(ImmutableSet.of(ADMIN))
+                .withOrgSponsoredStudies(ImmutableSet.of(OTHER_STUDY_ID)).build());
+        assertTrue(CAN_READ_PARTICIPANT_REPORTS.check(USER_ID, TEST_USER_ID, STUDY_ID, TEST_STUDY_ID));
+    }
+
+    @Test
+    public void canDeleteParticipantReports_succeedsForSuperAdmin() {
+        RequestContext.set(new RequestContext.Builder().withCallerUserId(OTHER_USER_ID)
+                .withCallerRoles(ImmutableSet.of(SUPERADMIN))
+                .withOrgSponsoredStudies(ImmutableSet.of(OTHER_STUDY_ID)).build());
+        assertTrue(CAN_READ_PARTICIPANT_REPORTS.check(USER_ID, TEST_USER_ID, STUDY_ID, TEST_STUDY_ID));
+    }
+
+    @Test
+    public void canDeleteParticipantReports_failsForNoRole() {
+        // For good measure, include study ID.
+        RequestContext.set(new RequestContext.Builder().withCallerUserId(OTHER_USER_ID)
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID)).build());
+        assertFalse(CAN_READ_PARTICIPANT_REPORTS.check(USER_ID, TEST_USER_ID, STUDY_ID, TEST_STUDY_ID));
+    }
+
     @Test
     public void canEditSharedAssessments_succeedsForAdmin() {
         RequestContext.set(new RequestContext.Builder()
