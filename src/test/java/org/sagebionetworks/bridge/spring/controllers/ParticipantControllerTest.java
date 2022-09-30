@@ -23,6 +23,7 @@ import static org.sagebionetworks.bridge.TestConstants.SUMMARY1;
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
+import static org.sagebionetworks.bridge.TestConstants.UA;
 import static org.sagebionetworks.bridge.TestConstants.UNENCRYPTED_HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
@@ -77,6 +78,8 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
+
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.models.ParticipantRosterRequest;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -143,6 +146,7 @@ import org.sagebionetworks.bridge.services.IntegrationTestUserService;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 
 public class ParticipantControllerTest extends Mockito {
+    private static final ClientInfo CLIENT_INFO = ClientInfo.fromUserAgentCache(TestConstants.UA);
 
     private static final BridgeObjectMapper MAPPER = BridgeObjectMapper.get();
 
@@ -174,6 +178,7 @@ public class ParticipantControllerTest extends Mockito {
             PHONE, null);
     private static final IdentifierUpdate EMAIL_UPDATE = new IdentifierUpdate(PHONE_PASSWORD_SIGN_IN_REQUEST,
             EMAIL, null, null);
+    private static final String TEST_USER_ID_TOKEN = "user-id-token";
     private static final IdentifierUpdate SYNAPSE_ID_UPDATE = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN_REQUEST, null,
             null, SYNAPSE_USER_ID);
     
@@ -331,6 +336,7 @@ public class ParticipantControllerTest extends Mockito {
         assertGet(ParticipantController.class, "getParticipantForWorker");
         assertGet(ParticipantController.class, "getRequestInfoForWorker");
         assertGet(ParticipantController.class, "getRequestInfo");
+        assertPost(ParticipantController.class, "updateRequestInfo");
         assertPost(ParticipantController.class, "updateParticipant");
         assertPost(ParticipantController.class, "signOut");
         assertPost(ParticipantController.class, "requestResetPassword");
@@ -704,7 +710,47 @@ public class ParticipantControllerTest extends Mockito {
         doReturn(requestInfo).when(mockRequestInfoService).getRequestInfo("userId");
         controller.getRequestInfoForWorker(app.getIdentifier(), "userId");
     }
-    
+
+    @Test
+    public void updateRequestInfo() throws Exception {
+        // Mock dependencies.
+        doReturn(session).when(controller).getAuthenticatedSession(SUPERADMIN);
+
+        StudyParticipant foundParticipant = new StudyParticipant.Builder().withId(TEST_USER_ID).build();
+        when(mockParticipantService.getParticipant(app, TEST_USER_ID_TOKEN, false)).thenReturn(
+                foundParticipant);
+
+        // Create inputs. Set app ID and user ID to gibberish values to make sure they are replaced. Also, blank out
+        // client info to ensure that it's regenerated from User-Agent.
+        // Add a few other attributes to verify this is being propagated correctly.
+        RequestInfo inputRequestInfo = new RequestInfo.Builder()
+                .withAppId("invalid app id")
+                .withLanguages(LANGUAGES)
+                .withUserAgent(UA)
+                .withUserDataGroups(USER_DATA_GROUPS)
+                .withUserId("invalid user id")
+                .withUserStudyIds(USER_STUDY_IDS)
+                .build();
+        mockRequestBody(mockRequest, inputRequestInfo);
+
+        // Execute.
+        StatusMessage message = controller.updateRequestInfo(TEST_USER_ID_TOKEN);
+        assertEquals(message.getMessage(), ParticipantController.UPDATED_REQUEST_INFO_MESSAGE.getMessage());
+
+        // Verify dependencies.
+        ArgumentCaptor<RequestInfo> requestInfoCaptor = ArgumentCaptor.forClass(RequestInfo.class);
+        verify(mockRequestInfoService).updateRequestInfo(requestInfoCaptor.capture());
+
+        RequestInfo requestInfo = requestInfoCaptor.getValue();
+        assertEquals(requestInfo.getAppId(), TEST_APP_ID);
+        assertEquals(requestInfo.getClientInfo(), CLIENT_INFO);
+        assertEquals(requestInfo.getLanguages(), LANGUAGES);
+        assertEquals(requestInfo.getUserAgent(), UA);
+        assertEquals(requestInfo.getUserDataGroups(), USER_DATA_GROUPS);
+        assertEquals(requestInfo.getUserId(), TEST_USER_ID);
+        assertEquals(requestInfo.getUserStudyIds(), USER_STUDY_IDS);
+    }
+
     private IdentifierHolder setUpCreateParticipant() throws Exception {
         IdentifierHolder holder = new IdentifierHolder(TEST_USER_ID);
 

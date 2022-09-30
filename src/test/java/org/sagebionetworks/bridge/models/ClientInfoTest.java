@@ -227,7 +227,40 @@ public class ClientInfoTest {
         ClientInfo info = ClientInfo.parseUserAgentString("/7.1.1.");
         assertSame(info, ClientInfo.UNKNOWN_CLIENT);
     }
-    
+
+    // See BRIDGE-3349
+    @Test
+    public void duplicateClientInfo() {
+        // Duplicated client info, separated by comma.
+        assertClientInfo("appName/1 (deviceName; osName/4.0.0) sdkName/5,appName/1 (deviceName; osName/4.0.0) sdkName/5",
+                "appName", 1, "deviceName", "osName", "4.0.0",
+                "sdkName", 5);
+
+        // Front half and back half are different. Parse as null.
+        assertClientInfo("appName/1 (deviceName; osName/4.0.0) sdkName/5,appName/1 (deviceName; osName/4.0.0) sdkName/6",
+                null, null, null, null, null, null,
+                null);
+
+        // Comma in the middle of the User-Agent string, but this is parseable normally.
+        assertClientInfo("appName/1 (deviceName; ,osName/4.0.0) sdkName/5",
+                "appName", 1, "deviceName", ",osName", "4.0.0",
+                "sdkName", 5);
+
+        // Examples from Jira
+        assertClientInfo("mobile-toolbox/78 (iPhone12,8; iOS/15.5),mobile-toolbox/78 (iPhone12,8; iOS/15.5)",
+                "mobile-toolbox", 78, "iPhone12,8", "iPhone OS", "15.5",
+                null, null);
+        assertClientInfo("mobile-toolbox/78 (iPhone 11 Pro; iOS/15.6.1),mobile-toolbox/78 (iPhone 11 Pro; iOS/15.6.1)",
+                "mobile-toolbox", 78, "iPhone 11 Pro", "iPhone OS",
+                "15.6.1", null, null);
+        assertClientInfo("Mobile Toolbox/14 (Motorola moto g power (2021); Android/11) BridgeClientKMM/1,Mobile Toolbox/14 (Motorola moto g power (2021); Android/11) BridgeClientKMM/1",
+                "Mobile Toolbox", 14, "Motorola moto g power (2021)",
+                "Android", "11", "BridgeClientKMM", 1);
+        assertClientInfo("MobileToolboxApp/74 (iPhone 7 Plus; iOS/15.3.1) BridgeClientKMM/0,MobileToolboxApp/74 (iPhone 7 Plus; iOS/15.3.1) BridgeClientKMM/0",
+                "MobileToolboxApp", 74, "iPhone 7 Plus",
+                "iPhone OS", "15.3.1", "BridgeClientKMM", 0);
+    }
+
     @Test
     public void jsonSerialization() {
         // Create POJO.
