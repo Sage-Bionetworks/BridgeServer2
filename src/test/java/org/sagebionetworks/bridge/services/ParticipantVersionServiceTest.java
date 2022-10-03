@@ -374,7 +374,7 @@ public class ParticipantVersionServiceTest {
         participantVersion2.setCreatedOn(3333L);
         participantVersion2.setModifiedOn(4444L);
 
-        assertTrue(participantVersionService.isIdenticalParticipantVersion(participantVersion1, participantVersion2));
+        assertTrue(ParticipantVersionService.isIdenticalParticipantVersion(participantVersion1, participantVersion2));
     }
 
     @Test
@@ -385,7 +385,7 @@ public class ParticipantVersionServiceTest {
         ParticipantVersion participantVersion2 = makeParticipantVersion();
         participantVersion2.setDataGroups(ImmutableSet.of("datagroup2"));
 
-        assertFalse(participantVersionService.isIdenticalParticipantVersion(participantVersion1, participantVersion2));
+        assertFalse(ParticipantVersionService.isIdenticalParticipantVersion(participantVersion1, participantVersion2));
     }
 
     @Test
@@ -396,7 +396,7 @@ public class ParticipantVersionServiceTest {
         ParticipantVersion participantVersion2 = makeParticipantVersion();
         participantVersion2.setLanguages(ImmutableList.of("en-gb"));
 
-        assertFalse(participantVersionService.isIdenticalParticipantVersion(participantVersion1, participantVersion2));
+        assertFalse(ParticipantVersionService.isIdenticalParticipantVersion(participantVersion1, participantVersion2));
     }
 
     @Test
@@ -407,7 +407,7 @@ public class ParticipantVersionServiceTest {
         ParticipantVersion participantVersion2 = makeParticipantVersion();
         participantVersion2.setSharingScope(SharingScope.SPONSORS_AND_PARTNERS);
 
-        assertFalse(participantVersionService.isIdenticalParticipantVersion(participantVersion1, participantVersion2));
+        assertFalse(ParticipantVersionService.isIdenticalParticipantVersion(participantVersion1, participantVersion2));
     }
 
     @Test
@@ -418,7 +418,7 @@ public class ParticipantVersionServiceTest {
         ParticipantVersion participantVersion2 = makeParticipantVersion();
         participantVersion2.setStudyMemberships(ImmutableMap.of("study2", "ext2"));
 
-        assertFalse(participantVersionService.isIdenticalParticipantVersion(participantVersion1, participantVersion2));
+        assertFalse(ParticipantVersionService.isIdenticalParticipantVersion(participantVersion1, participantVersion2));
     }
 
     @Test
@@ -429,7 +429,7 @@ public class ParticipantVersionServiceTest {
         ParticipantVersion participantVersion2 = makeParticipantVersion();
         participantVersion2.setTimeZone("Australia/Sydney");
 
-        assertFalse(participantVersionService.isIdenticalParticipantVersion(participantVersion1, participantVersion2));
+        assertFalse(ParticipantVersionService.isIdenticalParticipantVersion(participantVersion1, participantVersion2));
     }
 
     @Test
@@ -446,7 +446,7 @@ public class ParticipantVersionServiceTest {
                 ImmutableMap.of("category1", new Demographic(null, null, null, false,
                         ImmutableList.of(new DemographicValue("value1")), "units")));
 
-        assertTrue(participantVersionService.isIdenticalParticipantVersion(participantVersion1, participantVersion2));
+        assertTrue(ParticipantVersionService.isIdenticalParticipantVersion(participantVersion1, participantVersion2));
     }
 
     @Test
@@ -458,7 +458,7 @@ public class ParticipantVersionServiceTest {
         participantVersion2.setAppDemographics(ImmutableMap.<String, Demographic>builder()
                 .putAll(APP_DEMOGRAPHICS).put("another category", new Demographic()).build());
 
-        assertFalse(participantVersionService.isIdenticalParticipantVersion(participantVersion1, participantVersion2));
+        assertFalse(ParticipantVersionService.isIdenticalParticipantVersion(participantVersion1, participantVersion2));
     }
 
     @Test
@@ -481,7 +481,7 @@ public class ParticipantVersionServiceTest {
                                 new DemographicValue(-4), new DemographicValue(true), new DemographicValue("k", "v")),
                         null))));
 
-        assertTrue(participantVersionService.isIdenticalParticipantVersion(participantVersion1, participantVersion2));
+        assertTrue(ParticipantVersionService.isIdenticalParticipantVersion(participantVersion1, participantVersion2));
     }
 
     @Test
@@ -493,7 +493,7 @@ public class ParticipantVersionServiceTest {
         participantVersion2.setStudyDemographics(ImmutableMap.<String, Map<String, Demographic>>builder()
                 .putAll(STUDY_DEMOGRAPHICS).put("another category", ImmutableMap.of()).build());
 
-        assertFalse(participantVersionService.isIdenticalParticipantVersion(participantVersion1, participantVersion2));
+        assertFalse(ParticipantVersionService.isIdenticalParticipantVersion(participantVersion1, participantVersion2));
     }
 
     private static ParticipantVersion makeParticipantVersion() {

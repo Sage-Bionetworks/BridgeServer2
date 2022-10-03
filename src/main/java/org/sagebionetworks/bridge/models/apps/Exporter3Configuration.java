@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.models.apps;
 
+import java.util.Objects;
+
 /** This class holds Exporter 3.0 configuration for a given app. */
 public final class Exporter3Configuration {
     private String createStudyNotificationTopicArn;
@@ -100,20 +102,9 @@ public final class Exporter3Configuration {
 
     @Override
     public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result
-                + ((createStudyNotificationTopicArn == null) ? 0 : createStudyNotificationTopicArn.hashCode());
-        result = prime * result + ((dataAccessTeamId == null) ? 0 : dataAccessTeamId.hashCode());
-        result = prime * result + ((participantVersionDemographicsTableId == null) ? 0
-                : participantVersionDemographicsTableId.hashCode());
-        result = prime * result + ((participantVersionDemographicsViewId == null) ? 0
-                : participantVersionDemographicsViewId.hashCode());
-        result = prime * result + ((participantVersionTableId == null) ? 0 : participantVersionTableId.hashCode());
-        result = prime * result + ((projectId == null) ? 0 : projectId.hashCode());
-        result = prime * result + ((rawDataFolderId == null) ? 0 : rawDataFolderId.hashCode());
-        result = prime * result + ((storageLocationId == null) ? 0 : storageLocationId.hashCode());
-        return result;
+        return Objects.hash(createStudyNotificationTopicArn, dataAccessTeamId, participantVersionDemographicsTableId,
+                participantVersionDemographicsViewId, participantVersionTableId, projectId, rawDataFolderId,
+                storageLocationId);
     }
 
     @Override
@@ -125,47 +116,13 @@ public final class Exporter3Configuration {
         if (getClass() != obj.getClass())
             return false;
         Exporter3Configuration other = (Exporter3Configuration) obj;
-        if (createStudyNotificationTopicArn == null) {
-            if (other.createStudyNotificationTopicArn != null)
-                return false;
-        } else if (!createStudyNotificationTopicArn.equals(other.createStudyNotificationTopicArn))
-            return false;
-        if (dataAccessTeamId == null) {
-            if (other.dataAccessTeamId != null)
-                return false;
-        } else if (!dataAccessTeamId.equals(other.dataAccessTeamId))
-            return false;
-        if (participantVersionDemographicsTableId == null) {
-            if (other.participantVersionDemographicsTableId != null)
-                return false;
-        } else if (!participantVersionDemographicsTableId.equals(other.participantVersionDemographicsTableId))
-            return false;
-        if (participantVersionDemographicsViewId == null) {
-            if (other.participantVersionDemographicsViewId != null)
-                return false;
-        } else if (!participantVersionDemographicsViewId.equals(other.participantVersionDemographicsViewId))
-            return false;
-        if (participantVersionTableId == null) {
-            if (other.participantVersionTableId != null)
-                return false;
-        } else if (!participantVersionTableId.equals(other.participantVersionTableId))
-            return false;
-        if (projectId == null) {
-            if (other.projectId != null)
-                return false;
-        } else if (!projectId.equals(other.projectId))
-            return false;
-        if (rawDataFolderId == null) {
-            if (other.rawDataFolderId != null)
-                return false;
-        } else if (!rawDataFolderId.equals(other.rawDataFolderId))
-            return false;
-        if (storageLocationId == null) {
-            if (other.storageLocationId != null)
-                return false;
-        } else if (!storageLocationId.equals(other.storageLocationId))
-            return false;
-        return true;
+        return Objects.equals(createStudyNotificationTopicArn, other.createStudyNotificationTopicArn)
+                && Objects.equals(dataAccessTeamId, other.dataAccessTeamId)
+                && Objects.equals(participantVersionDemographicsTableId, other.participantVersionDemographicsTableId)
+                && Objects.equals(participantVersionDemographicsViewId, other.participantVersionDemographicsViewId)
+                && Objects.equals(participantVersionTableId, other.participantVersionTableId)
+                && Objects.equals(projectId, other.projectId) && Objects.equals(rawDataFolderId, other.rawDataFolderId)
+                && Objects.equals(storageLocationId, other.storageLocationId);
     }
 
     @Override

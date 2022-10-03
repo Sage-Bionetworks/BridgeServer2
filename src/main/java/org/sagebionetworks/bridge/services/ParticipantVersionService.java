@@ -192,7 +192,7 @@ public class ParticipantVersionService {
     // Compares non-key attributes for participant versions. Returns true if they are the same, false if they are
     // different.
     // Package-scoped for unit tests.
-    boolean isIdenticalParticipantVersion(ParticipantVersion oldVersion, ParticipantVersion newVersion) {
+    static boolean isIdenticalParticipantVersion(ParticipantVersion oldVersion, ParticipantVersion newVersion) {
         Map<String, Object> oldAttrMap = getParticipantVersionAttributes(oldVersion);
         Map<String, Object> newAttrMap = getParticipantVersionAttributes(newVersion);
         return oldAttrMap.equals(newAttrMap);

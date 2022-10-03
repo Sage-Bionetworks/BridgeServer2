@@ -552,6 +552,8 @@ public class Exporter3ServiceTest {
         // Validate returned EX3 Config.
         assertEquals(ex3Config.getDataAccessTeamId().longValue(), DATA_ACCESS_TEAM_ID);
         assertEquals(ex3Config.getParticipantVersionTableId(), PARTICIPANT_VERSION_TABLE_ID);
+        assertEquals(ex3Config.getParticipantVersionDemographicsTableId(), PARTICIPANT_VERSION_DEMOGRAPHICS_TABLE_ID);
+        assertEquals(ex3Config.getParticipantVersionDemographicsViewId(), PARTICIPANT_VERSION_DEMOGRAPHICS_VIEW_ID);
         assertEquals(ex3Config.getProjectId(), PROJECT_ID);
         assertEquals(ex3Config.getRawDataFolderId(), RAW_FOLDER_ID);
         assertEquals(ex3Config.getStorageLocationId().longValue(), STORAGE_LOCATION_ID);

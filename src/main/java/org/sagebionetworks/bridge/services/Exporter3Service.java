@@ -107,7 +107,6 @@ public class Exporter3Service {
             "    participants.sharingScope AS sharingScope,\n" +
             "    participants.studyMemberships AS studyMemberships,\n" +
             "    participants.clientTimeZone AS clientTimeZone,\n" +
-            "    demographics.appId AS appId,\n" +
             "    demographics.studyId AS studyId,\n" +
             "    demographics.demographicCategoryName AS demographicCategoryName,\n" +
             "    demographics.demographicValue AS demographicValue,\n" +
@@ -202,12 +201,6 @@ public class Exporter3Service {
         participantVersionColumn.setColumnType(ColumnType.INTEGER);
         listBuilder.add(participantVersionColumn);
 
-        ColumnModel appIdColumn = new ColumnModel();
-        appIdColumn.setName("appId");
-        appIdColumn.setColumnType(ColumnType.STRING);
-        healthCodeColumn.setMaximumSize(255L);
-        listBuilder.add(appIdColumn);
-
         ColumnModel studyIdColumn = new ColumnModel();
         studyIdColumn.setName("studyId");
         studyIdColumn.setColumnType(ColumnType.STRING);
@@ -217,7 +210,7 @@ public class Exporter3Service {
         ColumnModel categoryNameColumn = new ColumnModel();
         categoryNameColumn.setName("demographicCategoryName");
         categoryNameColumn.setColumnType(ColumnType.STRING);
-        healthCodeColumn.setMaximumSize(768L);
+        healthCodeColumn.setMaximumSize(255L);
         listBuilder.add(categoryNameColumn);
 
         ColumnModel demographicValueColumn = new ColumnModel();
