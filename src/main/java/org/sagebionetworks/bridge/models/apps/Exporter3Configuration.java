@@ -15,9 +15,8 @@ public final class Exporter3Configuration {
 
     /** Helper method that returns true if all configuration attributes are specified. */
     public boolean isConfigured() {
-        return dataAccessTeamId != null && participantVersionTableId != null
-                && participantVersionDemographicsTableId != null && participantVersionDemographicsViewId != null
-                && projectId != null && rawDataFolderId != null && storageLocationId != null;
+        return dataAccessTeamId != null && participantVersionTableId != null && projectId != null &&
+                rawDataFolderId != null && storageLocationId != null;
     }
 
     /** SNS topic to publish to when a study is initialized in this app. (This is not used for study configs.) */

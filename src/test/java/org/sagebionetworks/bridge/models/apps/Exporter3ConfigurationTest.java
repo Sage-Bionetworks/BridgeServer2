@@ -38,14 +38,16 @@ public class Exporter3ConfigurationTest {
         assertTrue(config.isConfigured());
 
         // Null participant version demographics table ID.
+        // Demographics should be ignored in isConfigured
         config.setParticipantVersionDemographicsTableId(null);
-        assertFalse(config.isConfigured());
+        assertTrue(config.isConfigured());
         config.setParticipantVersionDemographicsTableId("test-table-id");
         assertTrue(config.isConfigured());
 
         // Null participant version demographics view ID.
+        // Demographics should be ignored in isConfigured
         config.setParticipantVersionDemographicsViewId(null);
-        assertFalse(config.isConfigured());
+        assertTrue(config.isConfigured());
         config.setParticipantVersionDemographicsViewId("test-view-id");
         assertTrue(config.isConfigured());
 
