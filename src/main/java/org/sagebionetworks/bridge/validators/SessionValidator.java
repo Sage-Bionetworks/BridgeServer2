@@ -249,6 +249,9 @@ public class SessionValidator implements Validator {
             validateLabels(errors, asmt.getLabels());
             validateJsonLength(errors, TEXT_SIZE, asmt.getLabels(), LABELS_FIELD);
             validateColorScheme(errors, asmt.getColorScheme(), COLOR_SCHEME_FIELD);
+            if (asmt.getImageResource() != null) {
+                Validate.entity(ImageResourceValidator.INSTANCE, errors, asmt.getImageResource());
+            }
             errors.popNestedPath();
         }
         for (int i=0; i < session.getNotifications().size(); i++) {
