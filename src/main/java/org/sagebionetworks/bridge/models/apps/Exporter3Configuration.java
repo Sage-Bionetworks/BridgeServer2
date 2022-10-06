@@ -7,6 +7,8 @@ public final class Exporter3Configuration {
     private String createStudyNotificationTopicArn;
     private Long dataAccessTeamId;
     private String participantVersionTableId;
+    private String participantVersionDemographicsTableId;
+    private String participantVersionDemographicsViewId;
     private String projectId;
     private String rawDataFolderId;
     private Long storageLocationId;
@@ -47,6 +49,24 @@ public final class Exporter3Configuration {
         this.participantVersionTableId = participantVersionTableId;
     }
 
+    /** The Synapse table to where we exporter Participant Version Demographics. */
+    public String getParticipantVersionDemographicsTableId() {
+        return participantVersionDemographicsTableId;
+    }
+
+    public void setParticipantVersionDemographicsTableId(String participantVersionDemographicsTableId) {
+        this.participantVersionDemographicsTableId = participantVersionDemographicsTableId;
+    }
+
+    /** The Synapse materialized view which joins the Participant Versions table and the Demographics table. */
+    public String getParticipantVersionDemographicsViewId() {
+        return participantVersionDemographicsViewId;
+    }
+
+    public void setParticipantVersionDemographicsViewId(String participantVersionDemographicsViewId) {
+        this.participantVersionDemographicsViewId = participantVersionDemographicsViewId;
+    }
+
     /**
      * The Synapse project to export health data records to. It is recommended (but not required) that this is a
      * different project than the one used for Exporter 2.0/
@@ -80,33 +100,37 @@ public final class Exporter3Configuration {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        Exporter3Configuration that = (Exporter3Configuration) o;
-        return Objects.equals(createStudyNotificationTopicArn, that.createStudyNotificationTopicArn) &&
-                Objects.equals(dataAccessTeamId, that.dataAccessTeamId) &&
-                Objects.equals(participantVersionTableId, that.participantVersionTableId) &&
-                Objects.equals(projectId, that.projectId) &&
-                Objects.equals(rawDataFolderId, that.rawDataFolderId) &&
-                Objects.equals(storageLocationId, that.storageLocationId);
-    }
-
-    @Override
     public int hashCode() {
-        return Objects.hash(createStudyNotificationTopicArn, dataAccessTeamId, participantVersionTableId, projectId, rawDataFolderId,
+        return Objects.hash(createStudyNotificationTopicArn, dataAccessTeamId, participantVersionDemographicsTableId,
+                participantVersionDemographicsViewId, participantVersionTableId, projectId, rawDataFolderId,
                 storageLocationId);
     }
 
     @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        Exporter3Configuration other = (Exporter3Configuration) obj;
+        return Objects.equals(createStudyNotificationTopicArn, other.createStudyNotificationTopicArn)
+                && Objects.equals(dataAccessTeamId, other.dataAccessTeamId)
+                && Objects.equals(participantVersionDemographicsTableId, other.participantVersionDemographicsTableId)
+                && Objects.equals(participantVersionDemographicsViewId, other.participantVersionDemographicsViewId)
+                && Objects.equals(participantVersionTableId, other.participantVersionTableId)
+                && Objects.equals(projectId, other.projectId) && Objects.equals(rawDataFolderId, other.rawDataFolderId)
+                && Objects.equals(storageLocationId, other.storageLocationId);
+    }
+
+    @Override
     public String toString() {
-        return String.format(
-                "Exporter3Configuration [createStudyNotificationTopicArn=%s, dataAccessTeamId=%s, participantVersionTableId=%s, projectId=%s, " +
-                        "rawDataFolderId=%s, storageLocationId=%s]",
-                createStudyNotificationTopicArn, dataAccessTeamId, projectId, participantVersionTableId, rawDataFolderId, storageLocationId);
+        return "Exporter3Configuration [createStudyNotificationTopicArn=" + createStudyNotificationTopicArn
+                + ", dataAccessTeamId=" + dataAccessTeamId + ", participantVersionDemographicsTableId="
+                + participantVersionDemographicsTableId + ", participantVersionDemographicsViewId="
+                + participantVersionDemographicsViewId + ", participantVersionTableId=" + participantVersionTableId
+                + ", projectId=" + projectId + ", rawDataFolderId=" + rawDataFolderId + ", storageLocationId="
+                + storageLocationId + "]";
     }
 }

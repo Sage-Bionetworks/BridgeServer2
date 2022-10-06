@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
@@ -23,6 +24,8 @@ import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.ParticipantVersion;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
+import org.sagebionetworks.bridge.models.studies.Demographic;
+import org.sagebionetworks.bridge.models.studies.DemographicValue;
 
 public class DynamoParticipantVersionTest {
     private static final long CREATED_ON = DateTime.parse("2021-10-03T11:25:17.617-0700").getMillis();
@@ -33,6 +36,11 @@ public class DynamoParticipantVersionTest {
     private static final int PARTICIPANT_VERSION = 42;
     private static final Map<String, String> STUDY_MEMBERSHIPS = ImmutableMap.of("test-study", "test-ext-id");
     private static final String TIME_ZONE = "America/Los_Angeles";
+    private static final Map<String, Demographic> APP_DEMOGRAPHICS = ImmutableMap.of("category1", new Demographic("id1",
+            null, "category1", false, ImmutableList.of(new DemographicValue("value1")), "units"));
+    private static final Map<String, Map<String, Demographic>> STUDY_DEMOGRAPHICS = ImmutableMap.of("test-study",
+            ImmutableMap.of("category2", new Demographic("id2", null, "category2", true,
+                    ImmutableList.of(new DemographicValue("value2"), new DemographicValue("value3")), null)));
     private static final long VERSION = 2L;
 
     @Test
@@ -100,6 +108,18 @@ public class DynamoParticipantVersionTest {
                 STUDY_MEMBERSHIPS, ImmutableMap.of());
     }
 
+    @Test
+    public void getSetAppDemographics() {
+        assertCollectionCannotBeEmpty(DynamoParticipantVersion::getAppDemographics, DynamoParticipantVersion::setAppDemographics,
+                APP_DEMOGRAPHICS, ImmutableMap.of());
+    }
+
+    @Test
+    public void getSetStudyDemographics() {
+        assertCollectionCannotBeEmpty(DynamoParticipantVersion::getStudyDemographics, DynamoParticipantVersion::setStudyDemographics,
+                STUDY_DEMOGRAPHICS, ImmutableMap.of());
+    }
+
     private static <T> void assertCollectionCannotBeEmpty(Function<DynamoParticipantVersion, T> getter,
             BiConsumer<DynamoParticipantVersion, T> setter, T nonEmptyValue, T emptyValue) {
         // Initially null.
@@ -136,6 +156,8 @@ public class DynamoParticipantVersionTest {
         participantVersion.setSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS);
         participantVersion.setStudyMemberships(STUDY_MEMBERSHIPS);
         participantVersion.setTimeZone(TIME_ZONE);
+        participantVersion.setAppDemographics(APP_DEMOGRAPHICS);
+        participantVersion.setStudyDemographics(STUDY_DEMOGRAPHICS);
         participantVersion.setVersion(VERSION);
 
         // Convert to JsonNode.
@@ -164,6 +186,43 @@ public class DynamoParticipantVersionTest {
         assertEquals(studyMembershipsNode.size(), 1);
         assertEquals(studyMembershipsNode.get("test-study").textValue(), "test-ext-id");
 
+        JsonNode appDemographicsNode = jsonNode.get("appDemographics");
+        assertTrue(appDemographicsNode.isObject());
+        assertEquals(appDemographicsNode.size(), 1);
+        JsonNode appDemographicsDemographicNode = appDemographicsNode.get("category1");
+        assertNotNull(appDemographicsDemographicNode);
+        assertTrue(appDemographicsDemographicNode.isObject());
+        assertEquals(appDemographicsDemographicNode.size(), 5);
+        assertEquals(appDemographicsDemographicNode.get("id").textValue(), "id1");
+        assertFalse(appDemographicsDemographicNode.get("multipleSelect").booleanValue());
+        JsonNode appDemographicsDemographicValuesNode = appDemographicsDemographicNode.get("values");
+        assertNotNull(appDemographicsDemographicValuesNode);
+        assertEquals(appDemographicsDemographicValuesNode.size(), 1);
+        assertTrue(appDemographicsDemographicValuesNode.isArray());
+        assertEquals(appDemographicsDemographicValuesNode.get(0).textValue(), "value1");
+        assertEquals(appDemographicsDemographicNode.get("units").textValue(), "units");
+
+        JsonNode studyDemographicsNode = jsonNode.get("studyDemographics");
+        assertTrue(studyDemographicsNode.isObject());
+        assertEquals(studyDemographicsNode.size(), 1);
+        JsonNode studyDemographicsInnerNode = studyDemographicsNode.get("test-study");
+        assertNotNull(studyDemographicsInnerNode);
+        assertTrue(studyDemographicsInnerNode.isObject());
+        assertEquals(studyDemographicsInnerNode.size(), 1);
+        JsonNode studyDemographicsInnerDemographicNode = studyDemographicsInnerNode.get("category2");
+        assertNotNull(studyDemographicsInnerDemographicNode);
+        assertTrue(studyDemographicsInnerDemographicNode.isObject());
+        assertEquals(studyDemographicsInnerDemographicNode.size(), 4);
+        assertEquals(studyDemographicsInnerDemographicNode.get("id").textValue(), "id2");
+        assertTrue(studyDemographicsInnerDemographicNode.get("multipleSelect").booleanValue());
+        JsonNode studyDemographicsInnerDemographicValuesNode = studyDemographicsInnerDemographicNode.get("values");
+        assertNotNull(studyDemographicsInnerDemographicValuesNode);
+        assertEquals(studyDemographicsInnerDemographicValuesNode.size(), 2);
+        assertTrue(studyDemographicsInnerDemographicValuesNode.isArray());
+        assertEquals(studyDemographicsInnerDemographicValuesNode.get(0).textValue(), "value2");
+        assertEquals(studyDemographicsInnerDemographicValuesNode.get(1).textValue(), "value3");
+        assertFalse(studyDemographicsInnerDemographicNode.has("units"));
+
         // These fields don't get converted to JSON.
         assertFalse(jsonNode.has("key"));
         assertFalse(jsonNode.has("version"));
@@ -181,6 +240,11 @@ public class DynamoParticipantVersionTest {
         assertEquals(participantVersion.getSharingScope(), SharingScope.ALL_QUALIFIED_RESEARCHERS);
         assertEquals(participantVersion.getStudyMemberships(), STUDY_MEMBERSHIPS);
         assertEquals(participantVersion.getTimeZone(), TIME_ZONE);
+        // JSON does not include categoryName, so when serializing we have to add it back again
+        participantVersion.getAppDemographics().get("category1").setCategoryName("category1");
+        participantVersion.getStudyDemographics().get("test-study").get("category2").setCategoryName("category2");
+        assertEquals(participantVersion.getAppDemographics().toString(), APP_DEMOGRAPHICS.toString());
+        assertEquals(participantVersion.getStudyDemographics().toString(), STUDY_DEMOGRAPHICS.toString());
 
         // Version wasn't converted to JSON, and thus isn't in the de-serialized POJO either.
         assertNull(participantVersion.getVersion());

@@ -32,6 +32,7 @@ import org.sagebionetworks.repo.model.project.ExternalS3StorageLocationSetting;
 import org.sagebionetworks.repo.model.table.ColumnModel;
 import org.sagebionetworks.repo.model.table.ColumnType;
 import org.sagebionetworks.repo.model.table.EntityView;
+import org.sagebionetworks.repo.model.table.MaterializedView;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -94,6 +95,24 @@ public class Exporter3Service {
     static final String FOLDER_NAME_BRIDGE_RAW_DATA = "Bridge Raw Data";
     static final String FORMAT_CREATE_STUDY_TOPIC_NAME = "Bridge-Create-Study-Notification-%s";
     static final String TABLE_NAME_PARTICIPANT_VERSIONS = "Participant Versions";
+    static final String TABLE_NAME_PARTICIPANT_VERSIONS_DEMOGRAPHICS = "Participant Versions Demographics";
+    static final String VIEW_NAME_PARTICIPANT_VERSIONS_DEMOGRAPHICS = "Participant Versions Demographics Joined View";
+    static final String VIEW_DEFINING_SQL = "SELECT\n" +
+            "    participants.healthCode AS healthCode,\n" +
+            "    participants.participantVersion AS participantVersion,\n" +
+            "    participants.createdOn AS createdOn,\n" +
+            "    participants.modifiedOn AS modifiedOn,\n" +
+            "    participants.dataGroups AS dataGroups,\n" +
+            "    participants.languages AS languages,\n" +
+            "    participants.sharingScope AS sharingScope,\n" +
+            "    participants.studyMemberships AS studyMemberships,\n" +
+            "    participants.clientTimeZone AS clientTimeZone,\n" +
+            "    demographics.studyId AS studyId,\n" +
+            "    demographics.demographicCategoryName AS demographicCategoryName,\n" +
+            "    demographics.demographicValue AS demographicValue,\n" +
+            "    demographics.demographicUnits AS demographicUnits\n" +
+            "FROM %s as participants JOIN %s as demographics\n" +
+            "    ON participants.healthCode = demographics.healthCode AND participants.participantVersion = demographics.participantVersion";
     static final String WORKER_NAME_EXPORTER_3 = "Exporter3Worker";
 
     static final List<ColumnModel> PARTICIPANT_VERSION_COLUMN_MODELS;
@@ -166,6 +185,46 @@ public class Exporter3Service {
         listBuilder.add(timeZoneColumn);
 
         PARTICIPANT_VERSION_COLUMN_MODELS = listBuilder.build();
+    }
+    static final List<ColumnModel> PARTICIPANT_VERSION_DEMOGRAPHICS_COLUMN_MODELS;
+    static {
+        ImmutableList.Builder<ColumnModel> listBuilder = ImmutableList.builder();
+
+        ColumnModel healthCodeColumn = new ColumnModel();
+        healthCodeColumn.setName("healthCode");
+        healthCodeColumn.setColumnType(ColumnType.STRING);
+        healthCodeColumn.setMaximumSize(36L);
+        listBuilder.add(healthCodeColumn);
+
+        ColumnModel participantVersionColumn = new ColumnModel();
+        participantVersionColumn.setName("participantVersion");
+        participantVersionColumn.setColumnType(ColumnType.INTEGER);
+        listBuilder.add(participantVersionColumn);
+
+        ColumnModel studyIdColumn = new ColumnModel();
+        studyIdColumn.setName("studyId");
+        studyIdColumn.setColumnType(ColumnType.STRING);
+        healthCodeColumn.setMaximumSize(255L);
+        listBuilder.add(studyIdColumn);
+
+        ColumnModel categoryNameColumn = new ColumnModel();
+        categoryNameColumn.setName("demographicCategoryName");
+        categoryNameColumn.setColumnType(ColumnType.STRING);
+        healthCodeColumn.setMaximumSize(255L);
+        listBuilder.add(categoryNameColumn);
+
+        ColumnModel demographicValueColumn = new ColumnModel();
+        demographicValueColumn.setName("demographicValue");
+        demographicValueColumn.setColumnType(ColumnType.LARGETEXT);
+        listBuilder.add(demographicValueColumn);
+
+        ColumnModel demographicUnitsColumn = new ColumnModel();
+        demographicUnitsColumn.setName("demographicUnits");
+        demographicUnitsColumn.setColumnType(ColumnType.STRING);
+        healthCodeColumn.setMaximumSize(512L);
+        listBuilder.add(demographicUnitsColumn);
+
+        PARTICIPANT_VERSION_DEMOGRAPHICS_COLUMN_MODELS = listBuilder.build();
     }
 
     // Config attributes.
@@ -473,9 +532,35 @@ public class Exporter3Service {
         if (participantVersionTableId == null) {
             participantVersionTableId = synapseHelper.createTableWithColumnsAndAcls(PARTICIPANT_VERSION_COLUMN_MODELS,
                     dataReadOnlyIds, dataAdminIds, projectId, TABLE_NAME_PARTICIPANT_VERSIONS);
-            LOG.info("Created Synapse table " + participantVersionTableId);
+            LOG.info("Created Synapse participant versions table " + participantVersionTableId);
 
             ex3Config.setParticipantVersionTableId(participantVersionTableId);
+            isModified = true;
+        }
+        // Create Participant Version Demographics Table.
+        String participantVersionDemographicsTableId = ex3Config.getParticipantVersionDemographicsTableId();
+        if (participantVersionDemographicsTableId == null) {
+            participantVersionDemographicsTableId = synapseHelper.createTableWithColumnsAndAcls(
+                    PARTICIPANT_VERSION_DEMOGRAPHICS_COLUMN_MODELS, dataReadOnlyIds, dataAdminIds, projectId,
+                    TABLE_NAME_PARTICIPANT_VERSIONS_DEMOGRAPHICS);
+            LOG.info(
+                    "Created Synapse participant versions demographics table " + participantVersionDemographicsTableId);
+
+            ex3Config.setParticipantVersionDemographicsTableId(participantVersionDemographicsTableId);
+            isModified = true;
+        }
+
+        // Create joined materialized view with participant versions and demographics
+        String participantVersionDemographicsViewId = ex3Config.getParticipantVersionDemographicsViewId();
+        if (participantVersionDemographicsViewId == null) {
+            String sql = String.format(VIEW_DEFINING_SQL, participantVersionTableId, participantVersionDemographicsTableId);
+            MaterializedView view = new MaterializedView().setName(VIEW_NAME_PARTICIPANT_VERSIONS_DEMOGRAPHICS)
+                    .setParentId(projectId).setDefiningSQL(sql);
+            MaterializedView createdView = synapseHelper.createEntityWithRetry(view);
+            synapseHelper.createAclWithRetry(createdView.getId(), dataAdminIds, dataReadOnlyIds);
+            LOG.info("Created Synapse participant versions demographics materialized view " + createdView.getId());
+
+            ex3Config.setParticipantVersionDemographicsViewId(createdView.getId());
             isModified = true;
         }
 

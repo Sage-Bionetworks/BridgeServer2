@@ -29,6 +29,7 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.studies.Demographic;
 import org.sagebionetworks.bridge.models.studies.DemographicUser;
 import org.testng.annotations.BeforeMethod;
@@ -43,9 +44,15 @@ public class DemographicServiceTest {
     @Mock
     DemographicDao demographicDao;
 
+    @Mock
+    ParticipantVersionService participantVersionService;
+
     @InjectMocks
     @Spy
     DemographicService demographicService;
+
+    @Mock
+    Account account;
 
     @BeforeMethod
     public void beforeMethod() {
@@ -72,7 +79,7 @@ public class DemographicServiceTest {
         when(demographicDao.saveDemographicUser(any(), any(), any(), any()))
                 .thenAnswer((invocation) -> invocation.getArgument(0));
 
-        DemographicUser returnedDemographicUser = demographicService.saveDemographicUser(demographicUser);
+        DemographicUser returnedDemographicUser = demographicService.saveDemographicUser(demographicUser, account);
 
         verify(demographicDao).saveDemographicUser(demographicUser, TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         assertEquals(returnedDemographicUser.getId(), "0");
@@ -83,6 +90,7 @@ public class DemographicServiceTest {
             assertSame(next.getDemographicUser(), demographicUser);
         }
         assertSame(returnedDemographicUser, demographicUser);
+        verify(participantVersionService).createParticipantVersionFromAccount(account);
     }
 
     /**
@@ -97,7 +105,7 @@ public class DemographicServiceTest {
         when(demographicDao.getDemographicUser(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID))
                 .thenReturn(Optional.empty());
 
-        demographicService.saveDemographicUser(demographicUser);
+        demographicService.saveDemographicUser(demographicUser, account);
     }
 
     /**
@@ -111,9 +119,10 @@ public class DemographicServiceTest {
         demographic.setDemographicUser(demographicUser);
         when(demographicDao.getDemographic(DEMOGRAPHIC_ID)).thenReturn(Optional.of(demographic));
 
-        demographicService.deleteDemographic(TEST_USER_ID, DEMOGRAPHIC_ID);
+        demographicService.deleteDemographic(TEST_USER_ID, DEMOGRAPHIC_ID, account);
 
         verify(demographicDao).deleteDemographic(DEMOGRAPHIC_ID);
+        verify(participantVersionService).createParticipantVersionFromAccount(account);
     }
 
     /**
@@ -124,7 +133,7 @@ public class DemographicServiceTest {
     public void deleteDemographicNotFound() {
         when(demographicDao.getDemographic(DEMOGRAPHIC_ID)).thenReturn(Optional.empty());
 
-        demographicService.deleteDemographic(TEST_USER_ID, DEMOGRAPHIC_ID);
+        demographicService.deleteDemographic(TEST_USER_ID, DEMOGRAPHIC_ID, account);
     }
 
     /**
@@ -139,7 +148,7 @@ public class DemographicServiceTest {
         demographic.setDemographicUser(demographicUser);
         when(demographicDao.getDemographic(DEMOGRAPHIC_ID)).thenReturn(Optional.of(demographic));
 
-        demographicService.deleteDemographic("wrong user id", DEMOGRAPHIC_ID);
+        demographicService.deleteDemographic("wrong user id", DEMOGRAPHIC_ID, account);
     }
 
     /**
@@ -150,10 +159,11 @@ public class DemographicServiceTest {
         when(demographicDao.getDemographicUserId(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID))
                 .thenReturn(Optional.of(DEMOGRAPHIC_USER_ID));
 
-        demographicService.deleteDemographicUser(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+        demographicService.deleteDemographicUser(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, account);
 
         verify(demographicDao).getDemographicUserId(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         verify(demographicDao).deleteDemographicUser(DEMOGRAPHIC_USER_ID);
+        verify(participantVersionService).createParticipantVersionFromAccount(account);
     }
 
     /**
@@ -165,7 +175,7 @@ public class DemographicServiceTest {
         when(demographicDao.getDemographicUserId(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID))
                 .thenReturn(Optional.empty());
 
-        demographicService.deleteDemographicUser(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+        demographicService.deleteDemographicUser(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, account);
     }
 
     /**

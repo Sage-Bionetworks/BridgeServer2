@@ -12,6 +12,8 @@ import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.model.SendMessageResult;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableMap;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +30,8 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ParticipantVersion;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.apps.App;
+import org.sagebionetworks.bridge.models.studies.Demographic;
+import org.sagebionetworks.bridge.models.studies.DemographicUser;
 import org.sagebionetworks.bridge.models.worker.Ex3ParticipantVersionRequest;
 import org.sagebionetworks.bridge.models.worker.WorkerRequest;
 import org.sagebionetworks.bridge.time.DateUtils;
@@ -39,6 +43,7 @@ public class ParticipantVersionService {
     static final String WORKER_NAME_EX_3_PARTICIPANT_VERSION = "Ex3ParticipantVersionWorker";
 
     private AppService appService;
+    private DemographicService demographicService;
     private BridgeConfig config;
     private ParticipantVersionDao participantVersionDao;
     private AmazonSQS sqsClient;
@@ -46,6 +51,11 @@ public class ParticipantVersionService {
     @Autowired
     public final void setAppService(AppService appService) {
         this.appService = appService;
+    }
+
+    @Autowired
+    public final void setDemographicService(DemographicService demographicService) {
+        this.demographicService = demographicService;
     }
 
     @Autowired
@@ -114,6 +124,25 @@ public class ParticipantVersionService {
         participantVersion.setStudyMemberships(BridgeUtils.mapStudyMemberships(account));
         participantVersion.setTimeZone(account.getClientTimeZone());
 
+        Map<String, Demographic> appDemographics = ImmutableMap.of();
+        Optional<DemographicUser> appDemographicUser = demographicService.getDemographicUser(account.getAppId(), null,
+                account.getId());
+        if (appDemographicUser.isPresent()) {
+            appDemographics = appDemographicUser.get().getDemographics();
+        }
+        participantVersion.setAppDemographics(appDemographics);
+        Map<String, Map<String, Demographic>> studyDemographics = new HashMap<>();
+        for (String studyId : participantVersion.getStudyMemberships().keySet()) {
+            Map<String, Demographic> oneStudyDemographics = ImmutableMap.of();
+            Optional<DemographicUser> studyDemographicUser = demographicService.getDemographicUser(account.getAppId(),
+                    studyId, account.getId());
+            if (studyDemographicUser.isPresent()) {
+                oneStudyDemographics = studyDemographicUser.get().getDemographics();
+            }
+            studyDemographics.put(studyId, oneStudyDemographics);
+        }
+        participantVersion.setStudyDemographics(studyDemographics);
+
         return participantVersion;
     }
 
@@ -180,7 +209,49 @@ public class ParticipantVersionService {
         attrMap.put("sharingScope", participantVersion.getSharingScope());
         attrMap.put("studyMemberships", participantVersion.getStudyMemberships());
         attrMap.put("timeZone", participantVersion.getTimeZone());
+        // Demographic doesn't implement equals (Hibernate entity) so we have to do this manually
+        // serialize as string and compare strings
+        try {
+            attrMap.put("appDemographics", BridgeObjectMapper.get()
+                    .writeValueAsString(cleanDemographicsMapForComparison(participantVersion.getAppDemographics())));
+            Map<String, Map<String, Demographic>> studyDemographicsNoId = new HashMap<>();
+            if (participantVersion.getStudyDemographics() != null) {
+                for (Map.Entry<String, Map<String, Demographic>> entry : participantVersion.getStudyDemographics()
+                        .entrySet()) {
+                    studyDemographicsNoId.put(entry.getKey(), cleanDemographicsMapForComparison(entry.getValue()));
+                }
+            }
+            attrMap.put("studyDemographics", BridgeObjectMapper.get().writeValueAsString(studyDemographicsNoId));
+        } catch (JsonProcessingException ex) {
+            // This should never happen, but catch and re-throw for code hygiene.
+            throw new BridgeServiceException("Error comparing participant versions for app "
+                    + participantVersion.getAppId() + " healthcode " + participantVersion.getHealthCode() + " version "
+                    + participantVersion.getParticipantVersion(), ex);
+        }
         return attrMap;
+    }
+
+    /**
+     * Removes id, parent demographicUser, and categoryName from each Demographic in
+     * a demographics map for comparison with other demographics. When comparing
+     * demographics to determine identicalness, we don't want to compare ids. Also,
+     * deserializing a Demographic will result in a null internal categoryName and
+     * demographicUser, so those fields should not be compared.
+     */
+    private static Map<String, Demographic> cleanDemographicsMapForComparison(Map<String, Demographic> demographics) {
+        Map<String, Demographic> demographicsNoId = new HashMap<>();
+        if (demographics == null) {
+            return demographicsNoId;
+        }
+        for (Map.Entry<String, Demographic> entry : demographics.entrySet()) {
+            String categoryName = entry.getKey();
+            Demographic demographic = entry.getValue();
+            // shallow copy Demographic without id, parent, and categoryname
+            Demographic demographicNoId = new Demographic(null, null, null, demographic.isMultipleSelect(),
+                    demographic.getValues(), demographic.getUnits());
+            demographicsNoId.put(categoryName, demographicNoId);
+        }
+        return demographicsNoId;
     }
 
     // This is separate because we might need a separate redrive process in the future.

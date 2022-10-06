@@ -67,6 +67,9 @@ public class DemographicControllerTest {
     @Mock
     HttpServletResponse mockResponse;
 
+    @Mock
+    Account account;
+
     UserSession session;
 
     @BeforeMethod
@@ -104,13 +107,14 @@ public class DemographicControllerTest {
     public void saveDemographicUser() throws MismatchedInputException {
         DemographicUser demographicUser = new DemographicUser();
         doReturn(demographicUser).when(controller).parseJson(DemographicUser.class);
+        doReturn(account).when(participantService).getAccountInStudy(any(), any(), any());
 
         controller.saveDemographicUser(Optional.of(TEST_STUDY_ID), Optional.of(TEST_USER_ID));
 
         verify(controller).getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
         verify(participantService).getAccountInStudy(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         verify(controller).parseJson(DemographicUser.class);
-        verify(demographicService).saveDemographicUser(demographicUser);
+        verify(demographicService).saveDemographicUser(demographicUser, account);
         assertEquals(demographicUser.getAppId(), TEST_APP_ID);
         assertEquals(demographicUser.getStudyId(), TEST_STUDY_ID);
         assertEquals(demographicUser.getUserId(), TEST_USER_ID);
@@ -123,13 +127,14 @@ public class DemographicControllerTest {
     public void saveDemographicUserAppLevel() throws MismatchedInputException {
         DemographicUser demographicUser = new DemographicUser();
         doReturn(demographicUser).when(controller).parseJson(DemographicUser.class);
+        doReturn(account).when(participantService).getAccountInStudy(any(), any(), any());
 
         controller.saveDemographicUser(Optional.empty(), Optional.of(TEST_USER_ID));
 
         verify(controller).getAuthenticatedSession(Roles.ADMIN);
         verify(controller).parseJson(DemographicUser.class);
         verify(participantService).getAccountInStudy(TEST_APP_ID, null, TEST_USER_ID);
-        verify(demographicService).saveDemographicUser(demographicUser);
+        verify(demographicService).saveDemographicUser(demographicUser, account);
         assertEquals(demographicUser.getAppId(), TEST_APP_ID);
         assertEquals(demographicUser.getStudyId(), null);
         assertEquals(demographicUser.getUserId(), TEST_USER_ID);
@@ -154,13 +159,14 @@ public class DemographicControllerTest {
     public void saveDemographicUserSelf() throws MismatchedInputException {
         DemographicUser demographicUser = new DemographicUser();
         doReturn(demographicUser).when(controller).parseJson(DemographicUser.class);
+        doReturn(account).when(participantService).getAccountInStudy(any(), any(), any());
 
         controller.saveDemographicUser(Optional.of(TEST_STUDY_ID), Optional.empty());
 
         verify(controller).getAuthenticatedAndConsentedSession();
         verify(participantService).getAccountInStudy(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         verify(controller).parseJson(DemographicUser.class);
-        verify(demographicService).saveDemographicUser(demographicUser);
+        verify(demographicService).saveDemographicUser(demographicUser, account);
         assertEquals(demographicUser.getAppId(), TEST_APP_ID);
         assertEquals(demographicUser.getStudyId(), TEST_STUDY_ID);
         assertEquals(demographicUser.getUserId(), TEST_USER_ID);
@@ -173,13 +179,14 @@ public class DemographicControllerTest {
     public void saveDemographicUserSelfAppLevel() throws MismatchedInputException {
         DemographicUser demographicUser = new DemographicUser();
         doReturn(demographicUser).when(controller).parseJson(DemographicUser.class);
+        doReturn(account).when(participantService).getAccountInStudy(any(), any(), any());
 
         controller.saveDemographicUser(Optional.empty(), Optional.empty());
 
         verify(controller).getAuthenticatedAndConsentedSession();
         verify(participantService).getAccountInStudy(TEST_APP_ID, null, TEST_USER_ID);
         verify(controller).parseJson(DemographicUser.class);
-        verify(demographicService).saveDemographicUser(demographicUser);
+        verify(demographicService).saveDemographicUser(demographicUser, account);
         assertEquals(demographicUser.getAppId(), TEST_APP_ID);
         assertEquals(demographicUser.getStudyId(), null);
         assertEquals(demographicUser.getUserId(), TEST_USER_ID);
@@ -226,13 +233,14 @@ public class DemographicControllerTest {
         DemographicUser demographicUser = new DemographicUser();
         DemographicUserAssessment demographicUserAssessment = new DemographicUserAssessment(demographicUser);
         doReturn(demographicUserAssessment).when(controller).parseJson(DemographicUserAssessment.class);
+        doReturn(account).when(participantService).getAccountInStudy(any(), any(), any());
 
         controller.saveDemographicUserAssessment(Optional.of(TEST_STUDY_ID), Optional.of(TEST_USER_ID));
 
         verify(controller).getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
         verify(participantService).getAccountInStudy(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         verify(controller).parseJson(DemographicUserAssessment.class);
-        verify(demographicService).saveDemographicUser(demographicUser);
+        verify(demographicService).saveDemographicUser(demographicUser, account);
         assertEquals(demographicUser.getAppId(), TEST_APP_ID);
         assertEquals(demographicUser.getStudyId(), TEST_STUDY_ID);
         assertEquals(demographicUser.getUserId(), TEST_USER_ID);
@@ -246,13 +254,14 @@ public class DemographicControllerTest {
         DemographicUser demographicUser = new DemographicUser();
         DemographicUserAssessment demographicUserAssessment = new DemographicUserAssessment(demographicUser);
         doReturn(demographicUserAssessment).when(controller).parseJson(DemographicUserAssessment.class);
+        doReturn(account).when(participantService).getAccountInStudy(any(), any(), any());
 
         controller.saveDemographicUserAssessment(Optional.empty(), Optional.of(TEST_USER_ID));
 
         verify(controller).getAuthenticatedSession(Roles.ADMIN);
         verify(participantService).getAccountInStudy(TEST_APP_ID, null, TEST_USER_ID);
         verify(controller).parseJson(DemographicUserAssessment.class);
-        verify(demographicService).saveDemographicUser(demographicUser);
+        verify(demographicService).saveDemographicUser(demographicUser, account);
         assertEquals(demographicUser.getAppId(), TEST_APP_ID);
         assertEquals(demographicUser.getStudyId(), null);
         assertEquals(demographicUser.getUserId(), TEST_USER_ID);
@@ -279,13 +288,14 @@ public class DemographicControllerTest {
         DemographicUser demographicUser = new DemographicUser();
         DemographicUserAssessment demographicUserAssessment = new DemographicUserAssessment(demographicUser);
         doReturn(demographicUserAssessment).when(controller).parseJson(DemographicUserAssessment.class);
+        doReturn(account).when(participantService).getAccountInStudy(any(), any(), any());
 
         controller.saveDemographicUserAssessment(Optional.of(TEST_STUDY_ID), Optional.empty());
 
         verify(controller).getAuthenticatedAndConsentedSession();
         verify(participantService).getAccountInStudy(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         verify(controller).parseJson(DemographicUserAssessment.class);
-        verify(demographicService).saveDemographicUser(demographicUser);
+        verify(demographicService).saveDemographicUser(demographicUser, account);
         assertEquals(demographicUser.getAppId(), TEST_APP_ID);
         assertEquals(demographicUser.getStudyId(), TEST_STUDY_ID);
         assertEquals(demographicUser.getUserId(), TEST_USER_ID);
@@ -300,13 +310,14 @@ public class DemographicControllerTest {
         DemographicUser demographicUser = new DemographicUser();
         DemographicUserAssessment demographicUserAssessment = new DemographicUserAssessment(demographicUser);
         doReturn(demographicUserAssessment).when(controller).parseJson(DemographicUserAssessment.class);
+        doReturn(account).when(participantService).getAccountInStudy(any(), any(), any());
 
         controller.saveDemographicUserAssessment(Optional.empty(), Optional.empty());
 
         verify(controller).getAuthenticatedAndConsentedSession();
         verify(participantService).getAccountInStudy(TEST_APP_ID, null, TEST_USER_ID);
         verify(controller).parseJson(DemographicUserAssessment.class);
-        verify(demographicService).saveDemographicUser(demographicUser);
+        verify(demographicService).saveDemographicUser(demographicUser, account);
         assertEquals(demographicUser.getAppId(), TEST_APP_ID);
         assertEquals(demographicUser.getStudyId(), null);
         assertEquals(demographicUser.getUserId(), TEST_USER_ID);
@@ -355,13 +366,14 @@ public class DemographicControllerTest {
      */
     @Test
     public void deleteDemographic() {
+        doReturn(account).when(participantService).getAccountInStudy(any(), any(), any());
 
         StatusMessage message = controller.deleteDemographic(Optional.of(TEST_STUDY_ID), TEST_USER_ID,
                 TEST_DEMOGRAPHIC_ID);
 
         verify(controller).getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
         verify(participantService).getAccountInStudy(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
-        verify(demographicService).deleteDemographic(TEST_USER_ID, TEST_DEMOGRAPHIC_ID);
+        verify(demographicService).deleteDemographic(TEST_USER_ID, TEST_DEMOGRAPHIC_ID, account);
         assertEquals(message.getMessage(), "Demographic successfully deleted");
     }
 
@@ -384,7 +396,7 @@ public class DemographicControllerTest {
     @Test(expectedExceptions = { EntityNotFoundException.class })
     public void deleteDemographicNotFound() {
         doThrow(new EntityNotFoundException(Demographic.class)).when(demographicService).deleteDemographic(any(),
-                any());
+                any(), any());
 
         controller.deleteDemographic(Optional.of(TEST_STUDY_ID), TEST_USER_ID, TEST_DEMOGRAPHIC_ID);
     }
@@ -394,12 +406,13 @@ public class DemographicControllerTest {
      */
     @Test
     public void deleteDemographicAppLevel() {
+        doReturn(account).when(participantService).getAccountInStudy(any(), any(), any());
 
         StatusMessage message = controller.deleteDemographic(Optional.empty(), TEST_USER_ID, TEST_DEMOGRAPHIC_ID);
 
         verify(controller).getAuthenticatedSession(Roles.ADMIN);
         verify(participantService).getAccountInStudy(TEST_APP_ID, null, TEST_USER_ID);
-        verify(demographicService).deleteDemographic(TEST_USER_ID, TEST_DEMOGRAPHIC_ID);
+        verify(demographicService).deleteDemographic(TEST_USER_ID, TEST_DEMOGRAPHIC_ID, account);
         assertEquals(message.getMessage(), "Demographic successfully deleted");
     }
 
@@ -408,12 +421,13 @@ public class DemographicControllerTest {
      */
     @Test
     public void deleteDemographicUser() {
+        doReturn(account).when(participantService).getAccountInStudy(any(), any(), any());
 
         StatusMessage message = controller.deleteDemographicUser(Optional.of(TEST_STUDY_ID), TEST_USER_ID);
 
         verify(controller).getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
         verify(participantService).getAccountInStudy(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
-        verify(demographicService).deleteDemographicUser(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+        verify(demographicService).deleteDemographicUser(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, account);
         assertEquals(message.getMessage(), "Demographic user successfully deleted");
     }
 
@@ -436,7 +450,7 @@ public class DemographicControllerTest {
     @Test(expectedExceptions = { EntityNotFoundException.class })
     public void deleteDemographicUserNotFound() {
         doThrow(new EntityNotFoundException(DemographicUser.class)).when(demographicService)
-                .deleteDemographicUser(any(), any(), any());
+                .deleteDemographicUser(any(), any(), any(), any());
 
         controller.deleteDemographicUser(Optional.of(TEST_STUDY_ID), TEST_USER_ID);
     }
@@ -446,12 +460,13 @@ public class DemographicControllerTest {
      */
     @Test
     public void deleteDemographicUserAppLevel() {
+        doReturn(account).when(participantService).getAccountInStudy(any(), any(), any());
 
         StatusMessage message = controller.deleteDemographicUser(Optional.empty(), TEST_USER_ID);
 
         verify(controller).getAuthenticatedSession(Roles.ADMIN);
         verify(participantService).getAccountInStudy(TEST_APP_ID, null, TEST_USER_ID);
-        verify(demographicService).deleteDemographicUser(TEST_APP_ID, null, TEST_USER_ID);
+        verify(demographicService).deleteDemographicUser(TEST_APP_ID, null, TEST_USER_ID, account);
         assertEquals(message.getMessage(), "Demographic user successfully deleted");
     }
 
