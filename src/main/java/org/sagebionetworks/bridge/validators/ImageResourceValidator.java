@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.validators;
 
-import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL_OR_EMPTY;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateLabels;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateStringLength;
@@ -29,9 +28,7 @@ public class ImageResourceValidator implements Validator {
         }
         validateStringLength(errors, 255, imageResource.getName(), "name");
         validateStringLength(errors, 255, imageResource.getModule(), "module");
-        if (imageResource.getLabel() == null) {
-            errors.rejectValue("label", CANNOT_BE_NULL);
-        } else {
+        if (imageResource.getLabel() != null) {
             validateLabels(errors, ImmutableList.of(imageResource.getLabel()));
         }
     }
