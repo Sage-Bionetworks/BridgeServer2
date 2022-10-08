@@ -1,15 +1,13 @@
 package org.sagebionetworks.bridge.validators;
 
-import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL_OR_EMPTY;
-import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateLabels;
+import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateLabel;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateStringLength;
 
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.models.assessments.ImageResource;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
-
-import com.google.common.collect.ImmutableList;
 
 public class ImageResourceValidator implements Validator {
     public static final ImageResourceValidator INSTANCE = new ImageResourceValidator();
@@ -24,12 +22,14 @@ public class ImageResourceValidator implements Validator {
         ImageResource imageResource = (ImageResource) target;
 
         if (StringUtils.isBlank(imageResource.getName())) {
-            errors.rejectValue("name", CANNOT_BE_NULL_OR_EMPTY);
+            errors.rejectValue("name", CANNOT_BE_BLANK);
         }
         validateStringLength(errors, 255, imageResource.getName(), "name");
         validateStringLength(errors, 255, imageResource.getModule(), "module");
         if (imageResource.getLabel() != null) {
-            validateLabels(errors, ImmutableList.of(imageResource.getLabel()));
+            errors.pushNestedPath("label");
+            validateLabel(errors, imageResource.getLabel());
+            errors.popNestedPath();
         }
     }
 }

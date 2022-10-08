@@ -11,7 +11,9 @@ import com.google.common.collect.ImmutableList;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.Label;
 import org.sagebionetworks.bridge.models.assessments.ColorScheme;
+import org.sagebionetworks.bridge.models.assessments.ImageResource;
 
 public class AssessmentReferenceTest {
     
@@ -28,7 +30,13 @@ public class AssessmentReferenceTest {
         ref.setMinutesToComplete(10);
         ref.setLabels(LABELS);
         ref.setColorScheme(scheme);
-        
+        ImageResource imageResource = new ImageResource();
+        imageResource.setName("default");
+        imageResource.setModule("sage_survey");
+        Label label = new Label("en", "english label");
+        imageResource.setLabel(label);
+        ref.setImageResource(imageResource);
+
         JsonNode node = BridgeObjectMapper.get().valueToTree(ref);
         assertEquals(node.get("guid").textValue(), GUID);
         assertEquals(node.get("appId").textValue(), "shared");
@@ -43,7 +51,13 @@ public class AssessmentReferenceTest {
         assertEquals(node.get("colorScheme").get("inactivated").textValue(), "#444444");
         assertEquals(node.get("colorScheme").get("type").textValue(), "ColorScheme");
         assertEquals(node.get("type").textValue(), "AssessmentReference");
-        
+
+        assertEquals(node.get("imageResource").get("name").textValue(), "default");
+        assertEquals(node.get("imageResource").get("module").textValue(), "sage_survey");
+        assertEquals(node.get("imageResource").get("label").get("lang").textValue(), "en");
+        assertEquals(node.get("imageResource").get("label").get("value").textValue(), "english label");
+        assertEquals(node.get("imageResource").get("type").textValue(), "ImageResource");
+
         ArrayNode arrayNode = (ArrayNode)node.get("labels");
         assertEquals(arrayNode.get(0).get("lang").textValue(), "en");
         assertEquals(arrayNode.get(0).get("value").textValue(), "English");
@@ -60,6 +74,10 @@ public class AssessmentReferenceTest {
         assertEquals(deser.getColorScheme(), scheme);
         assertEquals(deser.getLabels().get(0).getValue(), LABELS.get(0).getValue());
         assertEquals(deser.getLabels().get(1).getValue(), LABELS.get(1).getValue());
+        assertEquals(deser.getImageResource().getName(), "default");
+        assertEquals(deser.getImageResource().getModule(), "sage_survey");
+        assertEquals(deser.getImageResource().getLabel().getLang(), "en");
+        assertEquals(deser.getImageResource().getLabel().getValue(), "english label");
     }
     
     @Test

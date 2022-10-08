@@ -11,6 +11,7 @@ import static org.sagebionetworks.bridge.models.OperatingSystem.ANDROID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
+import org.sagebionetworks.bridge.models.Label;
 import org.testng.annotations.Test;
 
 public class HibernateAssessmentTest {
@@ -54,6 +55,12 @@ public class HibernateAssessmentTest {
         assessment.setDeleted(true);
         assessment.setRevision(5);
         assessment.setVersion(8L);
+        ImageResource imageResource = new ImageResource();
+        imageResource.setName("default");
+        imageResource.setModule("sage_survey");
+        Label label = new Label("en", "english label");
+        imageResource.setLabel(label);
+        assessment.setImageResource(imageResource);
         return assessment;
     }
     
@@ -76,5 +83,9 @@ public class HibernateAssessmentTest {
         assertTrue(assessment.isDeleted());
         assertEquals(assessment.getRevision(), 5);
         assertEquals(assessment.getVersion(), 8);
+        assertEquals(assessment.getImageResource().getName(), "default");
+        assertEquals(assessment.getImageResource().getModule(), "sage_survey");
+        assertEquals(assessment.getImageResource().getLabel().getLang(), "en");
+        assertEquals(assessment.getImageResource().getLabel().getValue(), "english label");
     }
 }
