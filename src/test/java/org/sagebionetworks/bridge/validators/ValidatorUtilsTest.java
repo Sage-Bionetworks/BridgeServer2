@@ -118,13 +118,14 @@ public class ValidatorUtilsTest extends Mockito {
     public void validateLabels_emptyValid() {
         Errors errors = mock(Errors.class);
         ValidatorUtils.validateLabels(errors, ImmutableList.of());
-
+        verifyZeroInteractions(errors);
     }
 
     @Test
     public void validateLabels_nullValid() {
         Errors errors = mock(Errors.class);
         ValidatorUtils.validateLabels(errors, null);
+        verifyZeroInteractions(errors);
     }
 
     @Test
