@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.models.assessments;
 
 import javax.persistence.Convert;
 import javax.persistence.Embeddable;
-import javax.persistence.Table;
 
 import org.sagebionetworks.bridge.hibernate.LabelConverter;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
@@ -10,7 +9,6 @@ import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.Label;
 
 @Embeddable
-@Table(name = "ImageResources")
 @BridgeTypeName("ImageResource")
 public class ImageResource implements BridgeEntity {
     private String name;
