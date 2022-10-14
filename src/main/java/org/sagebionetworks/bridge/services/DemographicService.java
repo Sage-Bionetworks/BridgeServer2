@@ -96,12 +96,12 @@ public class DemographicService {
      * 
      * If "validationType" is "ENUM", "validationRules" should have the schema
      * {
-     * "en": [
-     * string
+     * "language": [
      * ]
      * }
-     * Other languages can be used but only English is currently supported. All
-     * values in the Demographic should be listed in the array of values.
+     * Where language is a "language" code. Other languages can be used but only
+     * English ("en") is currently supported. All values in the Demographic should
+     * be listed in the array of values.
      * 
      * If "validationType" is NUMBER_RANGE, "validationRules" should have the schema
      * {

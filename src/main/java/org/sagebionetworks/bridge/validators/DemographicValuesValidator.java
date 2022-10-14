@@ -87,9 +87,9 @@ public class DemographicValuesValidator implements Validator {
         // currently only English supported
         Set<String> allowedValues = enumValidationRules.get(DEMOGRAPHICS_ENUM_DEFAULT_LANGUAGE);
         if (allowedValues == null) {
-            errors.pushNestedPath("validationRules");
-            errors.rejectValue(DEMOGRAPHICS_ENUM_DEFAULT_LANGUAGE, CANNOT_BE_NULL);
-            errors.popNestedPath();
+            // does not exist or was explicitly null
+            // maybe there was a different language specified that wasn't English so no
+            // error
             return;
         }
         errors.popNestedPath();
