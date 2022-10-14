@@ -7,7 +7,6 @@ import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -22,19 +21,12 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.appconfig.AppConfigElement;
 import org.sagebionetworks.bridge.models.studies.Demographic;
 import org.sagebionetworks.bridge.models.studies.DemographicUser;
-import org.sagebionetworks.bridge.models.studies.DemographicValue;
+import org.sagebionetworks.bridge.models.studies.DemographicValuesValidationConfiguration;
 import org.sagebionetworks.bridge.validators.DemographicUserValidator;
+import org.sagebionetworks.bridge.validators.DemographicValuesValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.JsonNode;
 
 /**
  * Service for Demographic related operations.
@@ -42,7 +34,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 @Component
 public class DemographicService {
     private static final String DEMOGRAPHICS_APP_CONFIG_KEY_PREFIX = "bridge-validation-demographics-";
-    private static final String DEMOGRAPHICS_ENUM_DEFAULT_LANGUAGE = "en";
 
     private DemographicDao demographicDao;
 
@@ -96,7 +87,29 @@ public class DemographicService {
 
     /**
      * For every Demographic, checks the app config elements for keys in the form
-     * "bridge-validation-demographics-{categoryName}". If it exists,
+     * "bridge-validation-demographics-{categoryName}". If it exists, the data
+     * should be a JSON object in the form
+     * {
+     * "validationType": string,
+     * "validationRules": object
+     * }
+     * 
+     * If "validationType" is "ENUM", "validationRules" should have the schema
+     * {
+     * "en": [
+     * string
+     * ]
+     * }
+     * Other languages can be used but only English is currently supported. All
+     * values in the Demographic should be listed in the array of values.
+     * 
+     * If "validationType" is NUMBER_RANGE, "validationRules" should have the schema
+     * {
+     * "min": number (optional),
+     * "max": number (optional)
+     * }
+     * All values in the Demographic that are numbers should be greater than or
+     * equal to the min if it exists, or less than or equal to the max if it exists.
      * 
      * @param demographicUser The DemographicUser whose values should be validated
      * @throws InvalidEntityException if any value in any Demographic is not valid
@@ -111,126 +124,18 @@ public class DemographicService {
             // calculate what the key would be if it exists
             String appConfigElementId = DEMOGRAPHICS_APP_CONFIG_KEY_PREFIX + demographic.getCategoryName();
             if (elementIdToElement.containsKey(appConfigElementId)) {
-                DemographicAppConfigValidator demographicValidationJsonDeserializerTarget;
+                DemographicValuesValidationConfiguration configuration;
                 try {
-                    demographicValidationJsonDeserializerTarget = BridgeObjectMapper.get().treeToValue(
+                    configuration = BridgeObjectMapper.get().treeToValue(
                             elementIdToElement.get(appConfigElementId).getData(),
-                            DemographicAppConfigValidator.class);
-                    if (demographicValidationJsonDeserializerTarget == null) {
-                        throw new InvalidEntityException(demographicUser,
-                                "invalid validation configuration");
-                    }
-                    demographicValidationJsonDeserializerTarget.validate(demographic);
+                            DemographicValuesValidationConfiguration.class);
                 } catch (IOException | IllegalArgumentException e) {
                     throw new InvalidEntityException(demographicUser,
                             "error validating demographics: " + e.getMessage());
                 }
-            }
-        }
-    }
-
-    private static class DemographicAppConfigValidator {
-        private ValidationType validationType;
-        private JsonNode validationRules;
-
-        @SuppressWarnings("unused")
-        public void setValidationType(ValidationType validationType) {
-            this.validationType = validationType;
-        }
-
-        @SuppressWarnings("unused")
-        public void setValidationRules(JsonNode validationRules) {
-            this.validationRules = validationRules;
-        }
-
-        public static enum ValidationType {
-            NUMBER_RANGE,
-            ENUM
-        }
-
-        public void validate(Demographic demographic) throws JsonParseException, JsonMappingException, IOException {
-            if (validationType == null || validationRules == null) {
-                throw new InvalidEntityException(demographic,
-                        "category " + demographic.getCategoryName() + " has invalid validation configuration");
-            }
-            switch (validationType) {
-                case ENUM:
-                    validateEnum(demographic);
-                    break;
-                case NUMBER_RANGE:
-                    validateNumberRange(demographic);
-                    break;
-                default:
-                    break;
-            }
-        }
-
-        private void validateEnum(Demographic demographic)
-                throws JsonParseException, JsonMappingException, IOException {
-            // workaround because ObjectMapper does not have treeToValue method that accepts
-            // a TypeReference
-            JsonParser tokens = BridgeObjectMapper.get().treeAsTokens(validationRules);
-            JavaType type = BridgeObjectMapper.get().getTypeFactory()
-                    .constructType(new TypeReference<Map<String, Set<String>>>() {
-                    });
-            Map<String, Set<String>> enumValidationRules = BridgeObjectMapper.get().readValue(tokens, type);
-            if (enumValidationRules == null) {
-                throw new InvalidEntityException(demographic,
-                        "category " + demographic.getCategoryName() + " has invalid configuration");
-            }
-            // currently only English supported
-            Set<String> allowedValues = enumValidationRules.get(DEMOGRAPHICS_ENUM_DEFAULT_LANGUAGE);
-            if (allowedValues == null) {
-                throw new InvalidEntityException(demographic,
-                        "category " + demographic.getCategoryName() + " has invalid configuration");
-            }
-            // validate all values in the Demographic against the values in the
-            // AppConfigElement
-            for (DemographicValue demographicValue : demographic.getValues()) {
-                if (!allowedValues.contains(demographicValue.getValue())) {
-                    throw new InvalidEntityException(demographic, "category " + demographic.getCategoryName()
-                            + " has an invalid enum value " + demographicValue.getValue());
-                }
-            }
-        }
-
-        private void validateNumberRange(Demographic demographic)
-                throws JsonProcessingException, IllegalArgumentException {
-            NumberRangeValidationRules numberRangeValidationRules = BridgeObjectMapper.get()
-                    .treeToValue(validationRules, NumberRangeValidationRules.class);
-            if (numberRangeValidationRules == null) {
-                throw new InvalidEntityException(demographic,
-                        "category " + demographic.getCategoryName() + " has invalid configuration");
-            }
-            for (DemographicValue demographicValue : demographic.getValues()) {
-                double actualValue;
-                try {
-                    actualValue = Double.parseDouble(demographicValue.getValue());
-                } catch (NumberFormatException e) {
-                    // this value is not a double
-                    continue;
-                }
-                if (numberRangeValidationRules.getMin() != null && actualValue < numberRangeValidationRules.getMin()) {
-                    throw new InvalidEntityException(demographic, "category " + demographic.getCategoryName()
-                            + " has an invalid number value " + demographicValue.getValue());
-                }
-                if (numberRangeValidationRules.getMax() != null && actualValue > numberRangeValidationRules.getMax()) {
-                    throw new InvalidEntityException(demographic, "category " + demographic.getCategoryName()
-                            + " has an invalid number value " + demographicValue.getValue());
-                }
-            }
-        }
-
-        private static class NumberRangeValidationRules {
-            private Double min;
-            private Double max;
-
-            public Double getMin() {
-                return min;
-            }
-
-            public Double getMax() {
-                return max;
+                // validate the demographic using the validation configuration
+                // the configuration itself is validated by the DemographicValuesValidator
+                Validate.entityThrowingException(new DemographicValuesValidator(configuration), demographic);
             }
         }
     }
