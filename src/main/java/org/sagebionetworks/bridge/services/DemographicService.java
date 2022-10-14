@@ -28,7 +28,6 @@ import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -42,7 +41,7 @@ import com.fasterxml.jackson.databind.JsonNode;
  */
 @Component
 public class DemographicService {
-    private static final String DEMOGRAPHICS_APP_CONFIG_KEY_PREFIX = "bridge-demographics-";
+    private static final String DEMOGRAPHICS_APP_CONFIG_KEY_PREFIX = "bridge-validation-demographics-";
     private static final String DEMOGRAPHICS_ENUM_DEFAULT_LANGUAGE = "en";
 
     private DemographicDao demographicDao;
@@ -97,10 +96,7 @@ public class DemographicService {
 
     /**
      * For every Demographic, checks the app config elements for keys in the form
-     * "bridge-demographics-{categoryName}". If it exists, the list of values with
-     * key "en" is selected (currently validation only supports English). All values
-     * in the Demographic are checked to see if they are present in the list of
-     * values in the app config. If any of them are not, an exception is thrown.
+     * "bridge-validation-demographics-{categoryName}". If it exists,
      * 
      * @param demographicUser The DemographicUser whose values should be validated
      * @throws InvalidEntityException if any value in any Demographic is not valid
@@ -120,6 +116,10 @@ public class DemographicService {
                     demographicValidationJsonDeserializerTarget = BridgeObjectMapper.get().treeToValue(
                             elementIdToElement.get(appConfigElementId).getData(),
                             DemographicAppConfigValidator.class);
+                    if (demographicValidationJsonDeserializerTarget == null) {
+                        throw new InvalidEntityException(demographicUser,
+                                "invalid validation configuration");
+                    }
                     demographicValidationJsonDeserializerTarget.validate(demographic);
                 } catch (IOException | IllegalArgumentException e) {
                     throw new InvalidEntityException(demographicUser,
@@ -133,19 +133,33 @@ public class DemographicService {
         private ValidationType validationType;
         private JsonNode validationRules;
 
-        private static enum ValidationType {
-            @JsonProperty("numberRange")
+        @SuppressWarnings("unused")
+        public void setValidationType(ValidationType validationType) {
+            this.validationType = validationType;
+        }
+
+        @SuppressWarnings("unused")
+        public void setValidationRules(JsonNode validationRules) {
+            this.validationRules = validationRules;
+        }
+
+        public static enum ValidationType {
             NUMBER_RANGE,
-            @JsonProperty("enum")
             ENUM
         }
 
         public void validate(Demographic demographic) throws JsonParseException, JsonMappingException, IOException {
+            if (validationType == null || validationRules == null) {
+                throw new InvalidEntityException(demographic,
+                        "category " + demographic.getCategoryName() + " has invalid validation configuration");
+            }
             switch (validationType) {
                 case ENUM:
                     validateEnum(demographic);
+                    break;
                 case NUMBER_RANGE:
                     validateNumberRange(demographic);
+                    break;
                 default:
                     break;
             }
@@ -160,8 +174,16 @@ public class DemographicService {
                     .constructType(new TypeReference<Map<String, Set<String>>>() {
                     });
             Map<String, Set<String>> enumValidationRules = BridgeObjectMapper.get().readValue(tokens, type);
+            if (enumValidationRules == null) {
+                throw new InvalidEntityException(demographic,
+                        "category " + demographic.getCategoryName() + " has invalid configuration");
+            }
             // currently only English supported
             Set<String> allowedValues = enumValidationRules.get(DEMOGRAPHICS_ENUM_DEFAULT_LANGUAGE);
+            if (allowedValues == null) {
+                throw new InvalidEntityException(demographic,
+                        "category " + demographic.getCategoryName() + " has invalid configuration");
+            }
             // validate all values in the Demographic against the values in the
             // AppConfigElement
             for (DemographicValue demographicValue : demographic.getValues()) {
@@ -176,6 +198,10 @@ public class DemographicService {
                 throws JsonProcessingException, IllegalArgumentException {
             NumberRangeValidationRules numberRangeValidationRules = BridgeObjectMapper.get()
                     .treeToValue(validationRules, NumberRangeValidationRules.class);
+            if (numberRangeValidationRules == null) {
+                throw new InvalidEntityException(demographic,
+                        "category " + demographic.getCategoryName() + " has invalid configuration");
+            }
             for (DemographicValue demographicValue : demographic.getValues()) {
                 double actualValue;
                 try {
