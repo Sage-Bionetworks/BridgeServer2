@@ -108,9 +108,8 @@ public class DemographicService {
      * "min": number (optional),
      * "max": number (optional)
      * }
-     * All values in the Demographic that are numbers should be greater than or
+     * All values in the Demographic must be numbers and should be greater than or
      * equal to the min if it exists, or less than or equal to the max if it exists.
-     * Non-number values are ignored.
      * 
      * @param demographicUser The DemographicUser whose values should be validated
      * @throws InvalidEntityException if any value in any Demographic is not valid

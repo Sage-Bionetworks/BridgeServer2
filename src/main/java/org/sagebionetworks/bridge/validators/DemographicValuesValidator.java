@@ -24,6 +24,7 @@ public class DemographicValuesValidator implements Validator {
     private static final String DEMOGRAPHICS_ENUM_DEFAULT_LANGUAGE = "en";
     private static final String INVALID_CONFIGURATION = "invalid configuration for demographics validation";
     private static final String INVALID_ENUM_VALUE = "invalid enum value";
+    private static final String INVALID_NUMBER_VALUE_NOT_A_NUMBER = "invalid number value (not a number)";
     private static final String INVALID_NUMBER_VALUE_MIN = "invalid number value (less than specified min)";
     private static final String INVALID_NUMBER_VALUE_MAX = "invalid number value (greater than specified max)";
 
@@ -47,6 +48,10 @@ public class DemographicValuesValidator implements Validator {
         errors.pushNestedPath(getConfigurationNestedPath(demographic));
         Validate.entity(DemographicValuesValidationConfigurationValidator.INSTANCE, errors, configuration);
         errors.popNestedPath();
+        if (errors.hasErrors()) {
+            // configuration is invalid so we don't know how to validate the values
+            return;
+        }
 
         try {
             switch (configuration.getValidationType()) {
@@ -69,7 +74,7 @@ public class DemographicValuesValidator implements Validator {
     }
 
     private String getDemographicField(Demographic demographic, int index) {
-        return "demographic[" + demographic.getCategoryName() + "][" + index + "]";
+        return "demographics[" + demographic.getCategoryName() + "][" + index + "]";
     }
 
     private void validateEnum(Demographic demographic, Errors errors)
@@ -119,8 +124,7 @@ public class DemographicValuesValidator implements Validator {
             try {
                 actualValue = Double.parseDouble(demographicValue.getValue());
             } catch (NumberFormatException e) {
-                // this value is not a double, but maybe some other value is in this category so
-                // we don't want to error early in case that one needs to be checked
+                errors.rejectValue(getDemographicField(demographic, i), INVALID_NUMBER_VALUE_NOT_A_NUMBER);
                 continue;
             }
             if (numberRangeValidationRules.getMin() != null && actualValue < numberRangeValidationRules.getMin()) {
