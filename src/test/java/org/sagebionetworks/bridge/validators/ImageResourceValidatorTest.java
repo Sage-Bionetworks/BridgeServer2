@@ -1,15 +1,20 @@
 package org.sagebionetworks.bridge.validators;
 
+import static org.sagebionetworks.bridge.TestConstants.LABELS;
+import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
+import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.DUPLICATE_LANG;
+import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.generateStringOfLength;
+import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.getInvalidStringLengthMessage;
 import static org.testng.Assert.assertTrue;
 
 import org.sagebionetworks.bridge.models.Label;
 import org.sagebionetworks.bridge.models.assessments.ImageResource;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
-import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
-import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.generateStringOfLength;
-import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.getInvalidStringLengthMessage;
+
+import com.google.common.collect.ImmutableList;
+
 public class ImageResourceValidatorTest {
     static final String INVALID_LANG = "%s is not a valid ISO 639 alpha-2 or alpha-3 language code";
 
@@ -24,7 +29,7 @@ public class ImageResourceValidatorTest {
         imageResource = new ImageResource();
         imageResource.setName("default");
         imageResource.setModule("sage_survey");
-        imageResource.setLabel(new Label("en", "english label"));
+        imageResource.setLabels(LABELS);
     }
 
     @Test
@@ -51,7 +56,7 @@ public class ImageResourceValidatorTest {
 
     @Test
     public void validNullLabel() {
-        imageResource.setLabel(null);
+        imageResource.setLabels(null);
         Validate.entityThrowingException(validator, imageResource);
     }
 
@@ -80,32 +85,38 @@ public class ImageResourceValidatorTest {
     }
 
     @Test
+    public void duplicateLabels() {
+        imageResource.setLabels(ImmutableList.of(new Label("en", "foo"), new Label("en", "bar")));
+        assertValidatorMessage(validator, imageResource, "labels[1].lang", DUPLICATE_LANG);
+    }
+
+    @Test
     public void emptyLabelLang() {
-        imageResource.setLabel(new Label("", "empty label"));
-        assertValidatorMessage(validator, imageResource, "label.lang", CANNOT_BE_BLANK);
+        imageResource.setLabels(ImmutableList.of(new Label("", "empty label")));
+        assertValidatorMessage(validator, imageResource, "labels[0].lang", CANNOT_BE_BLANK);
     }
 
     @Test
     public void nullLabelLang() {
-        imageResource.setLabel(new Label(null, "null label"));
-        assertValidatorMessage(validator, imageResource, "label.lang", CANNOT_BE_BLANK);
+        imageResource.setLabels(ImmutableList.of(new Label(null, "null label")));
+        assertValidatorMessage(validator, imageResource, "labels[0].lang", CANNOT_BE_BLANK);
     }
 
     @Test
     public void invalidLabelLang() {
-        imageResource.setLabel(new Label("yyyy", "invalid label"));
-        assertValidatorMessage(validator, imageResource, "label.lang", INVALID_LANG);
+        imageResource.setLabels(ImmutableList.of(new Label("yyyy", "invalid label")));
+        assertValidatorMessage(validator, imageResource, "labels[0].lang", INVALID_LANG);
     }
 
     @Test
     public void emptyLabelValue() {
-        imageResource.setLabel(new Label("en", ""));
-        assertValidatorMessage(validator, imageResource, "label.value", CANNOT_BE_BLANK);
+        imageResource.setLabels(ImmutableList.of(new Label("en", "")));
+        assertValidatorMessage(validator, imageResource, "labels[0].value", CANNOT_BE_BLANK);
     }
 
     @Test
     public void nullLabelValue() {
-        imageResource.setLabel(new Label("en", null));
-        assertValidatorMessage(validator, imageResource, "label.value", CANNOT_BE_BLANK);
+        imageResource.setLabels(ImmutableList.of(new Label("en", null)));
+        assertValidatorMessage(validator, imageResource, "labels[0].value", CANNOT_BE_BLANK);
     }
 }

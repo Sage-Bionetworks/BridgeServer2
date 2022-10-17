@@ -11,7 +11,6 @@ import com.google.common.collect.ImmutableList;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.Label;
 import org.sagebionetworks.bridge.models.assessments.ColorScheme;
 import org.sagebionetworks.bridge.models.assessments.ImageResource;
 
@@ -33,8 +32,7 @@ public class AssessmentReferenceTest {
         ImageResource imageResource = new ImageResource();
         imageResource.setName("default");
         imageResource.setModule("sage_survey");
-        Label label = new Label("en", "english label");
-        imageResource.setLabel(label);
+        imageResource.setLabels(LABELS);
         ref.setImageResource(imageResource);
 
         JsonNode node = BridgeObjectMapper.get().valueToTree(ref);
@@ -54,8 +52,10 @@ public class AssessmentReferenceTest {
 
         assertEquals(node.get("imageResource").get("name").textValue(), "default");
         assertEquals(node.get("imageResource").get("module").textValue(), "sage_survey");
-        assertEquals(node.get("imageResource").get("label").get("lang").textValue(), "en");
-        assertEquals(node.get("imageResource").get("label").get("value").textValue(), "english label");
+        assertEquals(node.get("imageResource").get("labels").get(0).get("lang").textValue(), LABELS.get(0).getLang());
+        assertEquals(node.get("imageResource").get("labels").get(0).get("value").textValue(), LABELS.get(0).getValue());
+        assertEquals(node.get("imageResource").get("labels").get(1).get("lang").textValue(), LABELS.get(1).getLang());
+        assertEquals(node.get("imageResource").get("labels").get(1).get("value").textValue(), LABELS.get(1).getValue());
         assertEquals(node.get("imageResource").get("type").textValue(), "ImageResource");
 
         ArrayNode arrayNode = (ArrayNode)node.get("labels");
@@ -76,8 +76,10 @@ public class AssessmentReferenceTest {
         assertEquals(deser.getLabels().get(1).getValue(), LABELS.get(1).getValue());
         assertEquals(deser.getImageResource().getName(), "default");
         assertEquals(deser.getImageResource().getModule(), "sage_survey");
-        assertEquals(deser.getImageResource().getLabel().getLang(), "en");
-        assertEquals(deser.getImageResource().getLabel().getValue(), "english label");
+        assertEquals(deser.getImageResource().getLabels().get(0).getLang(), LABELS.get(0).getLang());
+        assertEquals(deser.getImageResource().getLabels().get(0).getValue(), LABELS.get(0).getValue());
+        assertEquals(deser.getImageResource().getLabels().get(1).getLang(), LABELS.get(1).getLang());
+        assertEquals(deser.getImageResource().getLabels().get(1).getValue(), LABELS.get(1).getValue());
     }
     
     @Test

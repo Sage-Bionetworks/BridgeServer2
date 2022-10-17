@@ -59,9 +59,11 @@ public final class AssessmentInfo {
             ImageResource imageResource = ref.getImageResource();
             hashValue(hc, imageResource.getName());
             hashValue(hc, imageResource.getModule());
-            if (imageResource.getLabel() != null) {
-                hashValue(hc, imageResource.getLabel().getLang());
-                hashValue(hc, imageResource.getLabel().getValue());
+            if (imageResource.getLabels() != null) {
+                for (Label imageResourceLabel : imageResource.getLabels()) {
+                    hashValue(hc, imageResourceLabel.getLang());
+                    hashValue(hc, imageResourceLabel.getValue());
+                }
             }
         }
         String hash = hc.hash().toString();

@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.models.schedules2.timelines;
 
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.LABELS;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 
@@ -52,8 +53,7 @@ public class AssessmentInfoTest extends Mockito {
         ImageResource imageResource = new ImageResource();
         imageResource.setName("default");
         imageResource.setModule("sage_survey");
-        Label label = new Label("en", "english label");
-        imageResource.setLabel(label);
+        imageResource.setLabels(LABELS);
         ref.setImageResource(imageResource);
 
         AssessmentInfo info = AssessmentInfo.create(ref);
@@ -65,7 +65,7 @@ public class AssessmentInfoTest extends Mockito {
         assertEquals(node.get("revision").intValue(), 5);
         assertEquals(node.get("label").textValue(), "English");
         assertEquals(node.get("minutesToComplete").intValue(), 10);
-        assertEquals(node.get("key").textValue(), "163c4b83163c4b83");
+        assertEquals(node.get("key").textValue(), "020a8323020a8323");
         assertEquals(node.get("configUrl").textValue(), url);
         assertEquals(node.get("type").textValue(), "AssessmentInfo");
         assertEquals(node.get("colorScheme").get("background").textValue(), "#111111");
@@ -75,8 +75,10 @@ public class AssessmentInfoTest extends Mockito {
         assertEquals(node.get("colorScheme").get("type").textValue(), "ColorScheme");
         assertEquals(node.get("imageResource").get("name").textValue(), "default");
         assertEquals(node.get("imageResource").get("module").textValue(), "sage_survey");
-        assertEquals(node.get("imageResource").get("label").get("lang").textValue(), "en");
-        assertEquals(node.get("imageResource").get("label").get("value").textValue(), "english label");
+        assertEquals(node.get("imageResource").get("labels").get(0).get("lang").textValue(), LABELS.get(0).getLang());
+        assertEquals(node.get("imageResource").get("labels").get(0).get("value").textValue(), LABELS.get(0).getValue());
+        assertEquals(node.get("imageResource").get("labels").get(1).get("lang").textValue(), LABELS.get(1).getLang());
+        assertEquals(node.get("imageResource").get("labels").get(1).get("value").textValue(), LABELS.get(1).getValue());
         assertEquals(node.get("imageResource").get("type").textValue(), "ImageResource");
         
         // shared ID also generates the correct URL

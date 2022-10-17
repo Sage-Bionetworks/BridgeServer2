@@ -127,7 +127,7 @@ public class HibernateAssessment {
     @AttributeOverrides({
             @AttributeOverride(name = "name", column = @Column(name = "imageResourceName")),
             @AttributeOverride(name = "module", column = @Column(name = "imageResourceModule")),
-            @AttributeOverride(name = "label", column = @Column(name = "imageResourceLabel"))
+            @AttributeOverride(name = "labels", column = @Column(name = "imageResourceLabels"))
     })
     private ImageResource imageResource;
 

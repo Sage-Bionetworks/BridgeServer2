@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.validators;
 
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
-import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateLabel;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateLabels;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateStringLength;
 
 import org.apache.commons.lang3.StringUtils;
@@ -26,10 +26,8 @@ public class ImageResourceValidator implements Validator {
         }
         validateStringLength(errors, 255, imageResource.getName(), "name");
         validateStringLength(errors, 255, imageResource.getModule(), "module");
-        if (imageResource.getLabel() != null) {
-            errors.pushNestedPath("label");
-            validateLabel(errors, imageResource.getLabel());
-            errors.popNestedPath();
+        if (imageResource.getLabels() != null) {
+            validateLabels(errors, imageResource.getLabels());
         }
     }
 }

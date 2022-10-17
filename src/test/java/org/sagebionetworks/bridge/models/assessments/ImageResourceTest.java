@@ -1,9 +1,10 @@
 package org.sagebionetworks.bridge.models.assessments;
 
+import static org.sagebionetworks.bridge.TestConstants.LABELS;
+
 import static org.testng.Assert.assertEquals;
 
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.Label;
 import org.testng.annotations.Test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -16,22 +17,25 @@ public class ImageResourceTest {
         ImageResource imageResource = new ImageResource();
         imageResource.setName("default");
         imageResource.setModule("sage_survey");
-        Label label = new Label("en", "english label");
-        imageResource.setLabel(label);
+        imageResource.setLabels(LABELS);
 
         JsonNode node = BridgeObjectMapper.get().valueToTree(imageResource);
 
         assertEquals(node.get("name").textValue(), "default");
         assertEquals(node.get("module").textValue(), "sage_survey");
-        assertEquals(node.get("label").get("lang").textValue(), "en");
-        assertEquals(node.get("label").get("value").textValue(), "english label");
+        assertEquals(node.get("labels").get(0).get("lang").textValue(), LABELS.get(0).getLang());
+        assertEquals(node.get("labels").get(0).get("value").textValue(), LABELS.get(0).getValue());
+        assertEquals(node.get("labels").get(1).get("lang").textValue(), LABELS.get(1).getLang());
+        assertEquals(node.get("labels").get(1).get("value").textValue(), LABELS.get(1).getValue());
 
         ImageResource deserialized = BridgeObjectMapper.get().readValue(node.toString(), ImageResource.class);
 
         assertEquals(deserialized.getName(), "default");
         assertEquals(deserialized.getModule(), "sage_survey");
-        assertEquals(deserialized.getLabel().getLang(), "en");
-        assertEquals(deserialized.getLabel().getValue(), "english label");
+        assertEquals(deserialized.getLabels().get(0).getLang(), LABELS.get(0).getLang());
+        assertEquals(deserialized.getLabels().get(0).getValue(), LABELS.get(0).getValue());
+        assertEquals(deserialized.getLabels().get(1).getLang(), LABELS.get(1).getLang());
+        assertEquals(deserialized.getLabels().get(1).getValue(), LABELS.get(1).getValue());
     }
 
     @Test

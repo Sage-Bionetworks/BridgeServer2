@@ -25,7 +25,6 @@ import com.google.common.collect.ImmutableSet;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.Label;
 
 public class AssessmentTest {
     @Test
@@ -65,8 +64,7 @@ public class AssessmentTest {
         ImageResource imageResource = new ImageResource();
         imageResource.setName("default");
         imageResource.setModule("sage_survey");
-        Label label = new Label("en", "english label");
-        imageResource.setLabel(label);
+        imageResource.setLabels(LABELS);
         assessment.setImageResource(imageResource);
 
         Assessment dto = Assessment.create(assessment);
@@ -108,8 +106,10 @@ public class AssessmentTest {
         assertEquals(node.get("version").longValue(), 8L);
         assertEquals(node.get("imageResource").get("name").textValue(), "default");
         assertEquals(node.get("imageResource").get("module").textValue(), "sage_survey");
-        assertEquals(node.get("imageResource").get("label").get("lang").textValue(), "en");
-        assertEquals(node.get("imageResource").get("label").get("value").textValue(), "english label");
+        assertEquals(node.get("imageResource").get("labels").get(0).get("lang").textValue(), LABELS.get(0).getLang());
+        assertEquals(node.get("imageResource").get("labels").get(0).get("value").textValue(), LABELS.get(0).getValue());
+        assertEquals(node.get("imageResource").get("labels").get(1).get("lang").textValue(), LABELS.get(1).getLang());
+        assertEquals(node.get("imageResource").get("labels").get(1).get("value").textValue(), LABELS.get(1).getValue());
         assertEquals(node.get("imageResource").get("type").textValue(), "ImageResource");
         assertEquals(node.get("type").textValue(), "Assessment");
         
@@ -134,8 +134,7 @@ public class AssessmentTest {
         assertEquals(propInfo2.get("label").textValue(), "bar label");
         assertEquals(propInfo2.get("description").textValue(), "a description");
         assertEquals(propInfo2.get("propType").textValue(), "string");
-        assertEquals(propInfo2.get("type").textValue(), "PropertyInfo");
-        
+
         Assessment deser = BridgeObjectMapper.get().readValue(node.toString(), Assessment.class);
         assertAssessment(deser);
     }
@@ -164,8 +163,7 @@ public class AssessmentTest {
         ImageResource imageResource = new ImageResource();
         imageResource.setName("default");
         imageResource.setModule("sage_survey");
-        Label label = new Label("en", "english label");
-        imageResource.setLabel(label);
+        imageResource.setLabels(LABELS);
         dto.setImageResource(imageResource);
         return dto;
     }
@@ -197,7 +195,9 @@ public class AssessmentTest {
         assertEquals(assessment.getVersion(), 8L);
         assertEquals(assessment.getImageResource().getName(), "default");
         assertEquals(assessment.getImageResource().getModule(), "sage_survey");
-        assertEquals(assessment.getImageResource().getLabel().getLang(), "en");
-        assertEquals(assessment.getImageResource().getLabel().getValue(), "english label");
+        assertEquals(assessment.getImageResource().getLabels().get(0).getLang(), LABELS.get(0).getLang());
+        assertEquals(assessment.getImageResource().getLabels().get(0).getValue(), LABELS.get(0).getValue());
+        assertEquals(assessment.getImageResource().getLabels().get(1).getLang(), LABELS.get(1).getLang());
+        assertEquals(assessment.getImageResource().getLabels().get(1).getValue(), LABELS.get(1).getValue());
     }
 }

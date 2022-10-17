@@ -1024,9 +1024,9 @@ CREATE TABLE IF NOT EXISTS `DemographicsValues` (
 ALTER TABLE `Assessments`
 ADD COLUMN `imageResourceName` varchar(255) DEFAULT NULL,
 ADD COLUMN `imageResourceModule` varchar(255) DEFAULT NULL,
-ADD COLUMN `imageResourceLabel` text DEFAULT NULL;
+ADD COLUMN `imageResourceLabels` text DEFAULT NULL;
 
 ALTER TABLE `SessionAssessments`
 ADD COLUMN `imageResourceName` varchar(255) DEFAULT NULL,
 ADD COLUMN `imageResourceModule` varchar(255) DEFAULT NULL,
-ADD COLUMN `imageResourceLabel` text DEFAULT NULL;
+ADD COLUMN `imageResourceLabels` text DEFAULT NULL;

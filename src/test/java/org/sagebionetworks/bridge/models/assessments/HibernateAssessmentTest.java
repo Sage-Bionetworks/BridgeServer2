@@ -4,6 +4,7 @@ import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.CUSTOMIZATION_FIELDS;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.IDENTIFIER;
+import static org.sagebionetworks.bridge.TestConstants.LABELS;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_OWNER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TAGS;
@@ -11,7 +12,6 @@ import static org.sagebionetworks.bridge.models.OperatingSystem.ANDROID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
-import org.sagebionetworks.bridge.models.Label;
 import org.testng.annotations.Test;
 
 public class HibernateAssessmentTest {
@@ -58,8 +58,7 @@ public class HibernateAssessmentTest {
         ImageResource imageResource = new ImageResource();
         imageResource.setName("default");
         imageResource.setModule("sage_survey");
-        Label label = new Label("en", "english label");
-        imageResource.setLabel(label);
+        imageResource.setLabels(LABELS);
         assessment.setImageResource(imageResource);
         return assessment;
     }
@@ -85,7 +84,9 @@ public class HibernateAssessmentTest {
         assertEquals(assessment.getVersion(), 8);
         assertEquals(assessment.getImageResource().getName(), "default");
         assertEquals(assessment.getImageResource().getModule(), "sage_survey");
-        assertEquals(assessment.getImageResource().getLabel().getLang(), "en");
-        assertEquals(assessment.getImageResource().getLabel().getValue(), "english label");
+        assertEquals(assessment.getImageResource().getLabels().get(0).getLang(), LABELS.get(0).getLang());
+        assertEquals(assessment.getImageResource().getLabels().get(0).getValue(), LABELS.get(0).getValue());
+        assertEquals(assessment.getImageResource().getLabels().get(1).getLang(), LABELS.get(1).getLang());
+        assertEquals(assessment.getImageResource().getLabels().get(1).getValue(), LABELS.get(1).getValue());
     }
 }
