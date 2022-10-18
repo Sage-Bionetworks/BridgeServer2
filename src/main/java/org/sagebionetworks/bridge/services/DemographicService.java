@@ -33,7 +33,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class DemographicService {
-    private static final String DEMOGRAPHICS_APP_CONFIG_KEY_PREFIX = "bridge-validation-demographics-";
+    private static final String DEMOGRAPHICS_APP_CONFIG_KEY_PREFIX = "bridge-validation-demographics-values-";
 
     private DemographicDao demographicDao;
 
@@ -87,23 +87,24 @@ public class DemographicService {
 
     /**
      * For every Demographic, checks the app config elements for keys in the form
-     * "bridge-validation-demographics-{categoryName}". If it exists, the data
-     * should be a JSON object in the form
+     * "bridge-validation-demographics-values-{categoryName}". If it exists, the
+     * data should be a JSON object in the form
      * {
      * "validationType": string,
      * "validationRules": object
      * }
      * 
-     * If "validationType" is "ENUM", "validationRules" should have the schema
+     * If "validationType" is "enum", "validationRules" should have the schema
      * {
      * "language": [
      * ]
      * }
-     * Where language is a "language" code. Other languages can be used but only
+     * Where "language" is a language code. Other languages can be used but only
      * English ("en") is currently supported. All values in the Demographic should
-     * be listed in the array of values.
+     * be listed in the array of values as strings.
      * 
-     * If "validationType" is NUMBER_RANGE, "validationRules" should have the schema
+     * If "validationType" is "number_range", "validationRules" should have the
+     * schema
      * {
      * "min": number (optional),
      * "max": number (optional)

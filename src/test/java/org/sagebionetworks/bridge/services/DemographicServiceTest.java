@@ -2,7 +2,9 @@ package org.sagebionetworks.bridge.services;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
@@ -28,24 +30,36 @@ import org.sagebionetworks.bridge.dao.DemographicDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.appconfig.AppConfigElement;
 import org.sagebionetworks.bridge.models.studies.Demographic;
 import org.sagebionetworks.bridge.models.studies.DemographicUser;
+import org.sagebionetworks.bridge.models.studies.DemographicValue;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 public class DemographicServiceTest {
     private static final String DEMOGRAPHIC_ID = "test-demographic-id";
     private static final String DEMOGRAPHIC_USER_ID = "test-demographic-user-id";
+    private static final String DEMOGRAPHICS_APP_CONFIG_KEY_PREFIX = "bridge-validation-demographics-values-";
 
     @Mock
     DemographicDao demographicDao;
 
     @Mock
     ParticipantVersionService participantVersionService;
+
+    @Mock
+    AppConfigElementService appConfigElementService;
 
     @InjectMocks
     @Spy
@@ -63,10 +77,10 @@ public class DemographicServiceTest {
     }
 
     /**
-     * Tests saving a DemographicUser.
+     * Tests saving a DemographicUser at the study level.
      */
     @Test
-    public void saveDemographicUser() {
+    public void saveDemographicUserStudy() {
         DemographicUser demographicUser = new DemographicUser("test-id", TEST_APP_ID, TEST_STUDY_ID,
                 TEST_USER_ID,
                 new HashMap<>());
@@ -79,8 +93,10 @@ public class DemographicServiceTest {
         when(demographicDao.saveDemographicUser(any(), any(), any(), any()))
                 .thenAnswer((invocation) -> invocation.getArgument(0));
 
+        // execute
         DemographicUser returnedDemographicUser = demographicService.saveDemographicUser(demographicUser, account);
 
+        // verify
         verify(demographicDao).saveDemographicUser(demographicUser, TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         assertEquals(returnedDemographicUser.getId(), "0");
         Iterator<Demographic> iter = returnedDemographicUser.getDemographics().values().iterator();
@@ -91,6 +107,195 @@ public class DemographicServiceTest {
         }
         assertSame(returnedDemographicUser, demographicUser);
         verify(participantVersionService).createParticipantVersionFromAccount(account);
+        verifyZeroInteractions(appConfigElementService);
+    }
+
+    /**
+     * Tests saving a DemographicUser at the app level.
+     */
+    @Test
+    public void saveDemographicUserApp() {
+        DemographicUser demographicUser = new DemographicUser("test-id", TEST_APP_ID, null, TEST_USER_ID,
+                new HashMap<>());
+        demographicUser.getDemographics().put("category-name1",
+                new Demographic(null, demographicUser, "category-name1", true, ImmutableList.of(),
+                        null));
+        demographicUser.getDemographics().put("category-name2",
+                new Demographic(null, demographicUser, "category-name2", true, ImmutableList.of(),
+                        null));
+        when(demographicDao.saveDemographicUser(any(), any(), any(), any()))
+                .thenAnswer((invocation) -> invocation.getArgument(0));
+
+        // execute
+        DemographicUser returnedDemographicUser = demographicService.saveDemographicUser(demographicUser, account);
+
+        // verify
+        verify(demographicDao).saveDemographicUser(demographicUser, TEST_APP_ID, null, TEST_USER_ID);
+        assertEquals(returnedDemographicUser.getId(), "0");
+        Iterator<Demographic> iter = returnedDemographicUser.getDemographics().values().iterator();
+        for (int i = 1; iter.hasNext(); i++) {
+            Demographic next = iter.next();
+            assertEquals(Integer.toString(i), next.getId());
+            assertSame(next.getDemographicUser(), demographicUser);
+        }
+        assertSame(returnedDemographicUser, demographicUser);
+        verify(participantVersionService).createParticipantVersionFromAccount(account);
+        verify(appConfigElementService).getMostRecentElements(TEST_APP_ID, false);
+    }
+
+    @Test
+    public void saveDemographicUserAppValidation_noDemographics() {
+        when(appConfigElementService.getMostRecentElements(TEST_APP_ID, false)).thenReturn(ImmutableList.of(AppConfigElement.create()));
+
+        DemographicUser demographicUser = new DemographicUser("test-id", TEST_APP_ID, null, TEST_USER_ID, new HashMap<>());
+
+        // execute
+        demographicService.saveDemographicUser(demographicUser, account);
+
+        // verify
+        verify(appConfigElementService).getMostRecentElements(TEST_APP_ID, false);
+    }
+
+    @Test
+    public void saveDemographicUserAppValidation_wrongValidationKey() {
+        AppConfigElement element = AppConfigElement.create();
+        element.setId(DEMOGRAPHICS_APP_CONFIG_KEY_PREFIX + "foo");
+        when(appConfigElementService.getMostRecentElements(TEST_APP_ID, false)).thenReturn(ImmutableList.of(element));
+
+        DemographicUser demographicUser = new DemographicUser("test-id", TEST_APP_ID, null, TEST_USER_ID, null);
+        Demographic demographic = new Demographic(TEST_APP_ID, demographicUser, "bar", false,
+                ImmutableList.of(new DemographicValue("random value")), null);
+        demographicUser.setDemographics(ImmutableMap.of("bar", demographic));
+
+        // execute
+        demographicService.saveDemographicUser(demographicUser, account);
+
+        // verify
+        verify(appConfigElementService).getMostRecentElements(TEST_APP_ID, false);
+        // nothing else should happen because the app config element key does nkot match
+        // the category name of the demographic
+    }
+
+    @Test(expectedExceptions = InvalidEntityException.class)
+    public void saveDemographicUserAppValidation_configurationJsonErrorIOException()
+            throws JsonMappingException, JsonProcessingException {
+        AppConfigElement element = AppConfigElement.create();
+        element.setId(DEMOGRAPHICS_APP_CONFIG_KEY_PREFIX + "category");
+        element.setData(BridgeObjectMapper.get().createArrayNode());
+        when(appConfigElementService.getMostRecentElements(TEST_APP_ID, false)).thenReturn(ImmutableList.of(element));
+
+        DemographicUser demographicUser = new DemographicUser("test-id", TEST_APP_ID, null, TEST_USER_ID, null);
+        Demographic demographic = new Demographic(TEST_APP_ID, demographicUser, "category", false,
+                ImmutableList.of(new DemographicValue("random value")), null);
+        demographicUser.setDemographics(ImmutableMap.of("category", demographic));
+
+        // execute
+        demographicService.saveDemographicUser(demographicUser, account);
+    }
+
+    @Test(expectedExceptions = InvalidEntityException.class)
+    public void saveDemographicUserAppValidation_configurationJsonErrorIllegalArgumentException() {
+        AppConfigElement element = mock(AppConfigElement.class);
+        when(element.getId()).thenReturn(DEMOGRAPHICS_APP_CONFIG_KEY_PREFIX + "category");
+        when(element.getData()).thenThrow(new IllegalArgumentException());
+        when(appConfigElementService.getMostRecentElements(TEST_APP_ID, false)).thenReturn(ImmutableList.of(element));
+
+        DemographicUser demographicUser = new DemographicUser("test-id", TEST_APP_ID, null, TEST_USER_ID, null);
+        Demographic demographic = new Demographic(TEST_APP_ID, demographicUser, "category", false,
+                ImmutableList.of(new DemographicValue("random value")), null);
+        demographicUser.setDemographics(ImmutableMap.of("category", demographic));
+
+        // execute
+        demographicService.saveDemographicUser(demographicUser, account);
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void saveDemographicUserAppValidation_nullConfiguration() {
+        AppConfigElement element = AppConfigElement.create();
+        element.setId(DEMOGRAPHICS_APP_CONFIG_KEY_PREFIX + "category");
+        element.setData(BridgeObjectMapper.get().nullNode());
+        when(appConfigElementService.getMostRecentElements(TEST_APP_ID, false)).thenReturn(ImmutableList.of(element));
+
+        DemographicUser demographicUser = new DemographicUser("test-id", TEST_APP_ID, null, TEST_USER_ID, null);
+        Demographic demographic = new Demographic(TEST_APP_ID, demographicUser, "category", false,
+                ImmutableList.of(new DemographicValue("random value")), null);
+        demographicUser.setDemographics(ImmutableMap.of("category", demographic));
+
+        // execute
+        demographicService.saveDemographicUser(demographicUser, account);
+    }
+
+    @Test(expectedExceptions = InvalidEntityException.class)
+    public void saveDemographicUserAppValidation_invalidConfiguration() {
+        AppConfigElement element = AppConfigElement.create();
+        element.setId(DEMOGRAPHICS_APP_CONFIG_KEY_PREFIX + "category");
+        ObjectNode config = BridgeObjectMapper.get().createObjectNode();
+        config.set("validationType", BridgeObjectMapper.get().nullNode());
+        config.set("validationRules", BridgeObjectMapper.get().nullNode());
+        element.setData(config);
+        when(appConfigElementService.getMostRecentElements(TEST_APP_ID, false)).thenReturn(ImmutableList.of(element));
+
+        DemographicUser demographicUser = new DemographicUser("test-id", TEST_APP_ID, null, TEST_USER_ID, null);
+        Demographic demographic = new Demographic(TEST_APP_ID, demographicUser, "category", false,
+                ImmutableList.of(new DemographicValue("random value")), null);
+        demographicUser.setDemographics(ImmutableMap.of("category", demographic));
+
+        // execute
+        demographicService.saveDemographicUser(demographicUser, account);
+    }
+
+    @Test(expectedExceptions = InvalidEntityException.class)
+    public void saveDemographicUserAppValidation_invalidDemographic()
+            throws JsonMappingException, JsonProcessingException {
+        AppConfigElement element = AppConfigElement.create();
+        element.setId(DEMOGRAPHICS_APP_CONFIG_KEY_PREFIX + "category");
+        JsonNode config = BridgeObjectMapper.get().readValue("{" +
+                "    \"validationType\": \"enum\"," +
+                "    \"validationRules\": {" +
+                "        \"en\": [" +
+                "            \"foo\"," +
+                "            \"bar\"" +
+                "        ]" +
+                "    }" +
+                "}", JsonNode.class);
+        element.setData(config);
+        when(appConfigElementService.getMostRecentElements(TEST_APP_ID, false)).thenReturn(ImmutableList.of(element));
+
+        DemographicUser demographicUser = new DemographicUser("test-id", TEST_APP_ID, null, TEST_USER_ID, null);
+        Demographic demographic = new Demographic(TEST_APP_ID, demographicUser, "category", false,
+                ImmutableList.of(new DemographicValue("random value")), null);
+        demographicUser.setDemographics(ImmutableMap.of("category", demographic));
+
+        // execute
+        demographicService.saveDemographicUser(demographicUser, account);
+    }
+
+    @Test
+    public void saveDemographicUserAppValidation_validDemographic() throws JsonMappingException, JsonProcessingException {
+        AppConfigElement element = AppConfigElement.create();
+        element.setId(DEMOGRAPHICS_APP_CONFIG_KEY_PREFIX + "category");
+        JsonNode config = BridgeObjectMapper.get().readValue("{" +
+                "    \"validationType\": \"enum\"," +
+                "    \"validationRules\": {" +
+                "        \"en\": [" +
+                "            \"foo\"," +
+                "            \"bar\"" +
+                "        ]" +
+                "    }" +
+                "}", JsonNode.class);
+        element.setData(config);
+        when(appConfigElementService.getMostRecentElements(TEST_APP_ID, false)).thenReturn(ImmutableList.of(element));
+
+        DemographicUser demographicUser = new DemographicUser("test-id", TEST_APP_ID, null, TEST_USER_ID, null);
+        Demographic demographic = new Demographic(TEST_APP_ID, demographicUser, "category", false,
+                ImmutableList.of(new DemographicValue("foo")), null);
+        demographicUser.setDemographics(ImmutableMap.of("category", demographic));
+
+        // execute
+        demographicService.saveDemographicUser(demographicUser, account);
+
+        // verify
+        verify(appConfigElementService).getMostRecentElements(TEST_APP_ID, false);
     }
 
     /**

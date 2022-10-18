@@ -5,6 +5,7 @@ import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.studies.Demographic;
@@ -24,9 +25,26 @@ public class DemographicValuesValidator implements Validator {
     private static final String DEMOGRAPHICS_ENUM_DEFAULT_LANGUAGE = "en";
     private static final String INVALID_CONFIGURATION = "invalid configuration for demographics validation";
     private static final String INVALID_ENUM_VALUE = "invalid enum value";
-    private static final String INVALID_NUMBER_VALUE_NOT_A_NUMBER = "invalid number value (not a number)";
+    private static final String INVALID_NUMBER_VALUE_NOT_A_NUMBER = "invalid number value (not an acceptable number; consult the documentation to see what numbers are valid)";
     private static final String INVALID_NUMBER_VALUE_MIN = "invalid number value (less than specified min)";
     private static final String INVALID_NUMBER_VALUE_MAX = "invalid number value (greater than specified max)";
+    private static final Pattern NUMBER_REGEX = Pattern.compile(
+            // optional sign
+            "[+-]?" +
+            // EITHER a) 1 to 300 digits
+            // - only allow 300 digits because java double max value is around 1.798*10^308,
+            // and parsing doubles above that will round to infinity, so we cut off slightly
+            // before
+            // - need at least 1 digit because otherwise this group will match an empty
+            // string
+            // - we can't just do a string length check because there can be >300 characters
+            // after the decimal point
+                    "(?:\\d{1,300}" +
+                    // optional decimal and 0 or more digits
+                    "(?:\\.\\d*)?)" +
+                    // OR b) any number of digits after a decimal point
+                    // - this is to allow decimals without a 0 before the decimal point
+                    "|(?:\\.\\d*)");
 
     private DemographicValuesValidationConfiguration configuration;
 
@@ -62,10 +80,12 @@ public class DemographicValuesValidator implements Validator {
                     validateNumberRange(demographic, errors);
                     break;
                 default:
+                    // should not be possible
                     break;
             }
         } catch (IOException | IllegalArgumentException e) {
-            errors.rejectValue(demographic.getCategoryName(), INVALID_CONFIGURATION);
+            errors.setNestedPath("");
+            errors.rejectValue(getConfigurationNestedPath(demographic), INVALID_CONFIGURATION);
         }
     }
 
@@ -120,10 +140,17 @@ public class DemographicValuesValidator implements Validator {
         errors.popNestedPath();
         for (int i = 0; i < demographic.getValues().size(); i++) {
             DemographicValue demographicValue = demographic.getValues().get(i);
+            // check with regex here because java double parser allows other weird things
+            // like "NaN", "Infinity", hex, and type suffixes
+            if (!NUMBER_REGEX.matcher(demographicValue.getValue()).matches()) {
+                errors.rejectValue(getDemographicField(demographic, i), INVALID_NUMBER_VALUE_NOT_A_NUMBER);
+            }
             double actualValue;
             try {
                 actualValue = Double.parseDouble(demographicValue.getValue());
             } catch (NumberFormatException e) {
+                // this should never happpen because the regex is stricter than the java double
+                // parser
                 errors.rejectValue(getDemographicField(demographic, i), INVALID_NUMBER_VALUE_NOT_A_NUMBER);
                 continue;
             }
