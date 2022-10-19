@@ -21,6 +21,7 @@ public class ImageResourceTest {
 
         JsonNode node = BridgeObjectMapper.get().valueToTree(imageResource);
 
+        assertEquals(node.size(), 4);
         assertEquals(node.get("name").textValue(), "default");
         assertEquals(node.get("module").textValue(), "sage_survey");
         assertEquals(node.get("labels").get(0).get("lang").textValue(), LABELS.get(0).getLang());
