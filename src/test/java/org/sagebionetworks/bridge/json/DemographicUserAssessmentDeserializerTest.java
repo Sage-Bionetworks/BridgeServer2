@@ -15,7 +15,6 @@ import org.testng.annotations.Test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 
 @Test
@@ -25,7 +24,7 @@ public class DemographicUserAssessmentDeserializerTest {
      */
     @Test
     public void deserializeNull() throws JsonProcessingException, JsonMappingException {
-        assertNull(new ObjectMapper().readValue("null", DemographicUserAssessment.class));
+        assertNull(BridgeObjectMapper.get().readValue("null", DemographicUserAssessment.class));
     }
 
     /**
@@ -33,7 +32,7 @@ public class DemographicUserAssessmentDeserializerTest {
      */
     @Test(expectedExceptions = JsonMappingException.class)
     public void deserializeValue() throws JsonMappingException, JsonProcessingException {
-        new ObjectMapper().readValue("5", DemographicUserAssessment.class);
+        BridgeObjectMapper.get().readValue("5", DemographicUserAssessment.class);
     }
 
     /**
@@ -41,7 +40,7 @@ public class DemographicUserAssessmentDeserializerTest {
      */
     @Test(expectedExceptions = JsonMappingException.class)
     public void deserializeArray() throws JsonProcessingException, JsonMappingException {
-        new ObjectMapper().readValue("[]", DemographicUserAssessment.class);
+        BridgeObjectMapper.get().readValue("[]", DemographicUserAssessment.class);
     }
 
     /**
@@ -52,7 +51,7 @@ public class DemographicUserAssessmentDeserializerTest {
     public void deserializeEmpty() throws JsonProcessingException, JsonMappingException {
         DemographicUser demographicUser = new DemographicUser(null, null, null, null, new HashMap<>());
 
-        assertEquals(new ObjectMapper().readValue("{}", DemographicUserAssessment.class).getDemographicUser()
+        assertEquals(BridgeObjectMapper.get().readValue("{}", DemographicUserAssessment.class).getDemographicUser()
                 .toString(),
                 demographicUser.toString());
     }
@@ -65,7 +64,7 @@ public class DemographicUserAssessmentDeserializerTest {
     public void deserializeNullStepHistory() throws JsonMappingException, JsonProcessingException {
         DemographicUser demographicUser = new DemographicUser(null, null, null, null, new HashMap<>());
 
-        assertEquals(new ObjectMapper().readValue("{\"stepHistory\": null}", DemographicUserAssessment.class)
+        assertEquals(BridgeObjectMapper.get().readValue("{\"stepHistory\": null}", DemographicUserAssessment.class)
                 .getDemographicUser().toString(), demographicUser.toString());
     }
 
@@ -74,7 +73,7 @@ public class DemographicUserAssessmentDeserializerTest {
      */
     @Test(expectedExceptions = JsonMappingException.class)
     public void deserializeValueStepHistory() throws JsonMappingException, JsonProcessingException {
-        new ObjectMapper().readValue("{\"stepHistory\": 5}", DemographicUserAssessment.class);
+        BridgeObjectMapper.get().readValue("{\"stepHistory\": 5}", DemographicUserAssessment.class);
     }
 
     /**
@@ -82,7 +81,7 @@ public class DemographicUserAssessmentDeserializerTest {
      */
     @Test(expectedExceptions = JsonMappingException.class)
     public void deserializeObjectStepHistory() throws JsonMappingException, JsonProcessingException {
-        new ObjectMapper().readValue("{\"stepHistory\": {}}", DemographicUserAssessment.class);
+        BridgeObjectMapper.get().readValue("{\"stepHistory\": {}}", DemographicUserAssessment.class);
     }
 
     /**
@@ -93,7 +92,7 @@ public class DemographicUserAssessmentDeserializerTest {
     public void deserializeNoChildren() throws JsonProcessingException, JsonMappingException {
         DemographicUser demographicUser = new DemographicUser(null, null, null, null, new HashMap<>());
 
-        assertEquals(new ObjectMapper().readValue("{\"stepHistory\": [5]}", DemographicUserAssessment.class)
+        assertEquals(BridgeObjectMapper.get().readValue("{\"stepHistory\": [5]}", DemographicUserAssessment.class)
                 .getDemographicUser().toString(),
                 demographicUser.toString());
     }
@@ -106,7 +105,7 @@ public class DemographicUserAssessmentDeserializerTest {
         DemographicUser demographicUser = new DemographicUser(null, null, null, null, new HashMap<>());
 
         assertEquals(
-                new ObjectMapper()
+                BridgeObjectMapper.get()
                         .readValue("{\"stepHistory\": [{\"children\": null}]}", DemographicUserAssessment.class)
                         .getDemographicUser().toString(),
                 demographicUser.toString());
@@ -117,7 +116,7 @@ public class DemographicUserAssessmentDeserializerTest {
      */
     @Test(expectedExceptions = JsonMappingException.class)
     public void deserializeChildrenValue() throws JsonMappingException, JsonProcessingException {
-        new ObjectMapper().readValue("{\"stepHistory\": [{\"children\": 5}]}", DemographicUserAssessment.class);
+        BridgeObjectMapper.get().readValue("{\"stepHistory\": [{\"children\": 5}]}", DemographicUserAssessment.class);
     }
 
     /**
@@ -125,7 +124,7 @@ public class DemographicUserAssessmentDeserializerTest {
      */
     @Test(expectedExceptions = JsonMappingException.class)
     public void deserializeChildrenObject() throws JsonMappingException, JsonProcessingException {
-        new ObjectMapper().readValue("{\"stepHistory\": [{\"children\": {}}]}", DemographicUserAssessment.class);
+        BridgeObjectMapper.get().readValue("{\"stepHistory\": [{\"children\": {}}]}", DemographicUserAssessment.class);
     }
 
     /**
@@ -133,7 +132,7 @@ public class DemographicUserAssessmentDeserializerTest {
      */
     @Test(expectedExceptions = JsonMappingException.class)
     public void deserializeNullChildren() throws JsonMappingException, JsonProcessingException {
-        new ObjectMapper().readValue("{\"stepHistory\": [{\"children\": [null]}]}", DemographicUserAssessment.class);
+        BridgeObjectMapper.get().readValue("{\"stepHistory\": [{\"children\": [null]}]}", DemographicUserAssessment.class);
     }
 
     /**
@@ -142,7 +141,7 @@ public class DemographicUserAssessmentDeserializerTest {
      */
     @Test(expectedExceptions = JsonMappingException.class)
     public void deserializeValueChildren() throws JsonMappingException, JsonProcessingException {
-        new ObjectMapper().readValue("{\"stepHistory\": [{\"children\": [5]}]}", DemographicUserAssessment.class);
+        BridgeObjectMapper.get().readValue("{\"stepHistory\": [{\"children\": [5]}]}", DemographicUserAssessment.class);
     }
 
     /**
@@ -150,7 +149,7 @@ public class DemographicUserAssessmentDeserializerTest {
      */
     @Test(expectedExceptions = JsonMappingException.class)
     public void deserializeArrayChildren() throws JsonMappingException, JsonProcessingException {
-        new ObjectMapper().readValue("{\"stepHistory\": [{\"children\": [[]]}]}", DemographicUserAssessment.class);
+        BridgeObjectMapper.get().readValue("{\"stepHistory\": [{\"children\": [[]]}]}", DemographicUserAssessment.class);
     }
 
     /**
@@ -158,7 +157,7 @@ public class DemographicUserAssessmentDeserializerTest {
      */
     @Test(expectedExceptions = JsonMappingException.class)
     public void deserializeMissingIdentifier() throws JsonProcessingException, JsonMappingException {
-        new ObjectMapper().readValue(
+        BridgeObjectMapper.get().readValue(
                 "{" +
                         "    \"stepHistory\": [" +
                         "        {" +
@@ -178,7 +177,7 @@ public class DemographicUserAssessmentDeserializerTest {
      */
     @Test(expectedExceptions = JsonMappingException.class)
     public void deserializeNullIdentifier() throws JsonProcessingException, JsonMappingException {
-        new ObjectMapper().readValue(
+        BridgeObjectMapper.get().readValue(
                 "{" +
                         "    \"stepHistory\": [" +
                         "        {" +
@@ -200,7 +199,7 @@ public class DemographicUserAssessmentDeserializerTest {
      */
     @Test(expectedExceptions = JsonMappingException.class)
     public void deserializeNonStringIdentifier() throws JsonProcessingException, JsonMappingException {
-        new ObjectMapper().readValue(
+        BridgeObjectMapper.get().readValue(
                 "{" +
                         "    \"stepHistory\": [" +
                         "        {" +
@@ -221,7 +220,7 @@ public class DemographicUserAssessmentDeserializerTest {
      */
     @Test(expectedExceptions = JsonMappingException.class)
     public void deserializeMissingValue() throws JsonProcessingException, JsonMappingException {
-        new ObjectMapper().readValue(
+        BridgeObjectMapper.get().readValue(
                 "{" +
                         "    \"stepHistory\": [" +
                         "        {" +
@@ -242,7 +241,7 @@ public class DemographicUserAssessmentDeserializerTest {
      */
     @Test(expectedExceptions = JsonMappingException.class)
     public void deserializeNestedObjectWithNullValue() throws JsonProcessingException, JsonMappingException {
-        new ObjectMapper().readValue(
+        BridgeObjectMapper.get().readValue(
                 "{" +
                         "    \"stepHistory\": [" +
                         "        {" +
@@ -264,7 +263,7 @@ public class DemographicUserAssessmentDeserializerTest {
      */
     @Test(expectedExceptions = JsonMappingException.class)
     public void deserializeNestedObjectWithObjectValue() throws JsonProcessingException, JsonMappingException {
-        new ObjectMapper().readValue(
+        BridgeObjectMapper.get().readValue(
                 "{" +
                         "    \"stepHistory\": [" +
                         "        {" +
@@ -286,7 +285,7 @@ public class DemographicUserAssessmentDeserializerTest {
      */
     @Test(expectedExceptions = JsonMappingException.class)
     public void deserializeNestedArrayWithObjectValue() throws JsonProcessingException, JsonMappingException {
-        new ObjectMapper().readValue(
+        BridgeObjectMapper.get().readValue(
                 "{" +
                         "    \"stepHistory\": [" +
                         "        {" +
@@ -308,7 +307,7 @@ public class DemographicUserAssessmentDeserializerTest {
      */
     @Test(expectedExceptions = JsonMappingException.class)
     public void deserializeNestedObjectWithArrayValue() throws JsonProcessingException, JsonMappingException {
-        new ObjectMapper().readValue(
+        BridgeObjectMapper.get().readValue(
                 "{" +
                         "    \"stepHistory\": [" +
                         "        {" +
@@ -330,7 +329,7 @@ public class DemographicUserAssessmentDeserializerTest {
      */
     @Test(expectedExceptions = JsonMappingException.class)
     public void deserializeNestedArrayWithArrayValue() throws JsonProcessingException, JsonMappingException {
-        new ObjectMapper().readValue(
+        BridgeObjectMapper.get().readValue(
                 "{" +
                         "    \"stepHistory\": [" +
                         "        {" +
@@ -370,7 +369,7 @@ public class DemographicUserAssessmentDeserializerTest {
                 null);
         demographicUser.getDemographics().put("category4", demographic4);
 
-        assertEquals(new ObjectMapper().readValue(
+        assertEquals(BridgeObjectMapper.get().readValue(
                 "{" +
                         "    \"unknown field\": null," +
                         "    \"stepHistory\": [" +
@@ -435,19 +434,23 @@ public class DemographicUserAssessmentDeserializerTest {
      */
     @Test
     public void deserializeMobileClientExample() throws JsonMappingException, JsonProcessingException {
+        // currently losing float precision because JsonNode uses float for number
+        // representation, we could use
+        // DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS but that would reduce
+        // performance
         DemographicUser demographicUser = new DemographicUser(null, null, null, null, null);
         Demographic demographic1 = new Demographic(null, demographicUser, "question1", false,
                 ImmutableList.of(new DemographicValue(true)), null);
         Demographic demographic2 = new Demographic(null, demographicUser, "question2", false,
                 ImmutableList.of(new DemographicValue(new BigDecimal("42"))), null);
         Demographic demographic3 = new Demographic(null, demographicUser, "question3", false,
-                ImmutableList.of(new DemographicValue(new BigDecimal("3.1400000000000001"))), null);
+                ImmutableList.of(new DemographicValue(new BigDecimal("3.14"))), null);
         Demographic demographic4 = new Demographic(null, demographicUser, "question4", true,
                 ImmutableList.of(new DemographicValue("foo", "ba")), null);
         Demographic demographic5 = new Demographic(null, demographicUser, "question5", false,
                 ImmutableList.of(new DemographicValue("foo")), null);
         Demographic demographic6 = new Demographic(null, demographicUser, "question6", true,
-                ImmutableList.of(new DemographicValue(new BigDecimal("3.2000000000000002")), new DemographicValue(new BigDecimal("5.0999999999999996"))),
+                ImmutableList.of(new DemographicValue(new BigDecimal("3.2")), new DemographicValue(new BigDecimal("5.1"))),
                 null);
         Demographic demographic7 = new Demographic(null, demographicUser, "question7", true,
                 ImmutableList.of(new DemographicValue(new BigDecimal("1")), new DemographicValue(new BigDecimal("5"))), null);
@@ -464,7 +467,7 @@ public class DemographicUserAssessmentDeserializerTest {
         Demographic demographic13 = new Demographic(null, demographicUser, "question13", false,
                 ImmutableList.of(new DemographicValue(new BigDecimal("75"))), null);
         Demographic demographic14 = new Demographic(null, demographicUser, "question14", false,
-                ImmutableList.of(new DemographicValue(new BigDecimal("170.19999999999999"))), "cm");
+                ImmutableList.of(new DemographicValue(new BigDecimal("170.2"))), "cm");
         Map<String, Demographic> demographics = new HashMap<>();
         demographics.put("question1", demographic1);
         demographics.put("question2", demographic2);
@@ -481,7 +484,7 @@ public class DemographicUserAssessmentDeserializerTest {
         demographics.put("question13", demographic13);
         demographics.put("question14", demographic14);
         demographicUser.setDemographics(demographics);
-        assertEquals(new ObjectMapper().readValue(
+        assertEquals(BridgeObjectMapper.get().readValue(
                 "{" +
                         "    \"stepHistory\": [" +
                         "        {" +
