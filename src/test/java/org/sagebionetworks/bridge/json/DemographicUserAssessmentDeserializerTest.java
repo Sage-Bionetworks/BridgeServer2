@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.json;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -353,12 +354,12 @@ public class DemographicUserAssessmentDeserializerTest {
     public void deserialize() throws JsonProcessingException, JsonMappingException {
         DemographicUser demographicUser = new DemographicUser(null, null, null, null, new HashMap<>());
         Demographic demographic1 = new Demographic(null, demographicUser, "category1", true,
-                ImmutableList.of(new DemographicValue(-7), new DemographicValue(-6.3), new DemographicValue(1),
+                ImmutableList.of(new DemographicValue(new BigDecimal("-7")), new DemographicValue(new BigDecimal("-6.3")), new DemographicValue(new BigDecimal("1")),
                         new DemographicValue("foo")),
                 null);
         demographicUser.getDemographics().put("category1", demographic1);
         Demographic demographic2 = new Demographic(null, demographicUser, "category2", false,
-                ImmutableList.of(new DemographicValue(5.3)), null);
+                ImmutableList.of(new DemographicValue(new BigDecimal("5.3"))), null);
         demographicUser.getDemographics().put("category2", demographic2);
         Demographic demographic3 = new Demographic(null, demographicUser, "category3", true,
                 ImmutableList.of(new DemographicValue("null")), "cm");
@@ -438,18 +439,18 @@ public class DemographicUserAssessmentDeserializerTest {
         Demographic demographic1 = new Demographic(null, demographicUser, "question1", false,
                 ImmutableList.of(new DemographicValue(true)), null);
         Demographic demographic2 = new Demographic(null, demographicUser, "question2", false,
-                ImmutableList.of(new DemographicValue(42)), null);
+                ImmutableList.of(new DemographicValue(new BigDecimal("42"))), null);
         Demographic demographic3 = new Demographic(null, demographicUser, "question3", false,
-                ImmutableList.of(new DemographicValue(3.1400000000000001)), null);
+                ImmutableList.of(new DemographicValue(new BigDecimal("3.1400000000000001"))), null);
         Demographic demographic4 = new Demographic(null, demographicUser, "question4", true,
                 ImmutableList.of(new DemographicValue("foo", "ba")), null);
         Demographic demographic5 = new Demographic(null, demographicUser, "question5", false,
                 ImmutableList.of(new DemographicValue("foo")), null);
         Demographic demographic6 = new Demographic(null, demographicUser, "question6", true,
-                ImmutableList.of(new DemographicValue(3.2000000000000002), new DemographicValue(5.0999999999999996)),
+                ImmutableList.of(new DemographicValue(new BigDecimal("3.2000000000000002")), new DemographicValue(new BigDecimal("5.0999999999999996"))),
                 null);
         Demographic demographic7 = new Demographic(null, demographicUser, "question7", true,
-                ImmutableList.of(new DemographicValue(1), new DemographicValue(5)), null);
+                ImmutableList.of(new DemographicValue(new BigDecimal("1")), new DemographicValue(new BigDecimal("5"))), null);
         Demographic demographic8 = new Demographic(null, demographicUser, "question8", true, ImmutableList
                 .of(new DemographicValue("foo"), new DemographicValue("ba"), new DemographicValue("lalala")), null);
         Demographic demographic9 = new Demographic(null, demographicUser, "question9", false,
@@ -461,9 +462,9 @@ public class DemographicUserAssessmentDeserializerTest {
         Demographic demographic12 = new Demographic(null, demographicUser, "question12", false,
                 ImmutableList.of(new DemographicValue("22:28:00.000")), null);
         Demographic demographic13 = new Demographic(null, demographicUser, "question13", false,
-                ImmutableList.of(new DemographicValue(75)), null);
+                ImmutableList.of(new DemographicValue(new BigDecimal("75"))), null);
         Demographic demographic14 = new Demographic(null, demographicUser, "question14", false,
-                ImmutableList.of(new DemographicValue(170.19999999999999)), "cm");
+                ImmutableList.of(new DemographicValue(new BigDecimal("170.19999999999999"))), "cm");
         Map<String, Demographic> demographics = new HashMap<>();
         demographics.put("question1", demographic1);
         demographics.put("question2", demographic2);

@@ -7,6 +7,8 @@ import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
+import java.math.BigDecimal;
+
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.studies.Demographic;
 import org.sagebionetworks.bridge.models.studies.DemographicUser;
@@ -25,10 +27,7 @@ public class DemographicValuesValidatorTest {
     private static final String INVALID_CONFIGURATION = "invalid configuration for demographics validation";
     private static final String INVALID_ENUM_VALUE = "invalid enum value";
     private static final String INVALID_MIN_LARGER_THAN_MAX = "invalid min (cannot be larger than specified max)";
-    private static final String INVALID_MIN_OUT_OF_RANGE = "invalid min (out of range)";
-    private static final String INVALID_MAX_OUT_OF_RANGE = "invalid max (out of range)";
     private static final String INVALID_NUMBER_VALUE_NOT_A_NUMBER = "invalid number value (not an acceptable number; consult the documentation to see what numbers are valid)";
-    private static final String INVALID_NUMBER_VALUE_OUT_OF_RANGE = "invalid number value (out of range; this number and the min/max are too large or too small to be validated)";
     private static final String INVALID_NUMBER_VALUE_LESS_THAN_MIN = "invalid number value (less than specified min)";
     private static final String INVALID_NUMBER_VALUE_GREATER_THAN_MAX = "invalid number value (greater than specified max)";
 
@@ -82,8 +81,8 @@ public class DemographicValuesValidatorTest {
                 new DemographicValue("foo"),
                 new DemographicValue("foo"),
                 new DemographicValue(""),
-                new DemographicValue(1.7),
-                new DemographicValue(-12)));
+                new DemographicValue(new BigDecimal("1.7")),
+                new DemographicValue(new BigDecimal("-12"))));
         Validate.entityThrowingException(validator, demographic);
     }
 
@@ -143,8 +142,8 @@ public class DemographicValuesValidatorTest {
                 "}", JsonNode.class));
         demographic.setValues(ImmutableList.of(
                 new DemographicValue("foo"),
-                new DemographicValue(1.7),
-                new DemographicValue(-12)));
+                new DemographicValue(new BigDecimal("1.7")),
+                new DemographicValue(new BigDecimal("-12"))));
         Validate.entityThrowingException(validator, demographic);
     }
 
@@ -157,8 +156,8 @@ public class DemographicValuesValidatorTest {
                 "}", JsonNode.class));
         demographic.setValues(ImmutableList.of(
                 new DemographicValue("foo"),
-                new DemographicValue(1.7),
-                new DemographicValue(-12)));
+                new DemographicValue(new BigDecimal("1.7")),
+                new DemographicValue(new BigDecimal("-12"))));
         assertValidatorMessage(validator, demographic, "demographics[" + CATEGORY_NAME + "][" + 0 + "]",
                 INVALID_ENUM_VALUE);
         assertValidatorMessage(validator, demographic, "demographics[" + CATEGORY_NAME + "][" + 1 + "]",
@@ -195,8 +194,8 @@ public class DemographicValuesValidatorTest {
                 "}", JsonNode.class));
         demographic.setValues(ImmutableList.of(
                 new DemographicValue("foo"),
-                new DemographicValue(1.7),
-                new DemographicValue(-12)));
+                new DemographicValue(new BigDecimal("1.7")),
+                new DemographicValue(new BigDecimal("-12"))));
         assertValidatorMessage(validator, demographic, "demographics[" + CATEGORY_NAME + "][0]",
                 INVALID_ENUM_VALUE);
         assertValidatorMessage(validator, demographic, "demographics[" + CATEGORY_NAME + "][1]",
@@ -217,8 +216,8 @@ public class DemographicValuesValidatorTest {
                 "}", JsonNode.class));
         demographic.setValues(ImmutableList.of(
                 new DemographicValue("foo"),
-                new DemographicValue(1.7),
-                new DemographicValue(-12)));
+                new DemographicValue(new BigDecimal("1.7")),
+                new DemographicValue(new BigDecimal("-12"))));
         assertValidatorMessage(validator, demographic, "demographics[" + CATEGORY_NAME + "][0]",
                 INVALID_ENUM_VALUE);
     }
@@ -229,13 +228,13 @@ public class DemographicValuesValidatorTest {
         config.setValidationRules(BridgeObjectMapper.get().createObjectNode());
         demographic.setValues(ImmutableList.of(
                 // with repetition
-                new DemographicValue(5),
-                new DemographicValue(5),
+                new DemographicValue(new BigDecimal("5")),
+                new DemographicValue(new BigDecimal("5")),
                 // positive and negative
                 // float and int
-                new DemographicValue(10.2),
-                new DemographicValue(-2),
-                new DemographicValue(-7.8),
+                new DemographicValue(new BigDecimal("10.2")),
+                new DemographicValue(new BigDecimal("-2")),
+                new DemographicValue(new BigDecimal("-7.8")),
                 new DemographicValue("1.7e308"),
                 new DemographicValue("-1.7e308")));
         Validate.entityThrowingException(validator, demographic);
@@ -250,15 +249,15 @@ public class DemographicValuesValidatorTest {
                 "}", JsonNode.class));
         demographic.setValues(ImmutableList.of(
                 // repetition
-                new DemographicValue(-50000),
-                new DemographicValue(-50000),
+                new DemographicValue(new BigDecimal("-50000")),
+                new DemographicValue(new BigDecimal("-50000")),
                 // close but not quite
-                new DemographicValue(-49999.9999999999999999),
-                new DemographicValue(48268.29999999999999),
+                new DemographicValue(new BigDecimal("-49999.9999999999999999")),
+                new DemographicValue(new BigDecimal("48268.29999999999999")),
                 // all combinations with +/-, exponent/non-exponent (capitalized and
                 // un-capitalized) with +/- exponent
                 // 0
-                new DemographicValue(0),
+                new DemographicValue(new BigDecimal(0)),
                 new DemographicValue("0"),
                 new DemographicValue("0e20"),
                 new DemographicValue("0E20"),
@@ -281,14 +280,14 @@ public class DemographicValuesValidatorTest {
                 new DemographicValue("-0e+20"),
                 new DemographicValue("-0E+20"),
                 // int
-                new DemographicValue(482),
+                new DemographicValue(new BigDecimal("482")),
                 new DemographicValue("482"),
-                new DemographicValue(482e2),
+                new DemographicValue(new BigDecimal("482e2")),
                 new DemographicValue("482e2"),
                 new DemographicValue("482E2"),
                 new DemographicValue("482e+2"),
                 new DemographicValue("482E+2"),
-                new DemographicValue(482e-7),
+                new DemographicValue(new BigDecimal("482e-7")),
                 new DemographicValue("482e-7"),
                 new DemographicValue("482E-7"),
                 new DemographicValue("+482"),
@@ -298,14 +297,14 @@ public class DemographicValuesValidatorTest {
                 new DemographicValue("+482E+2"),
                 new DemographicValue("+482e-7"),
                 new DemographicValue("+482E-7"),
-                new DemographicValue(-482),
+                new DemographicValue(new BigDecimal("-482")),
                 new DemographicValue("-482"),
-                new DemographicValue(-482e2),
+                new DemographicValue(new BigDecimal("-482e2")),
                 new DemographicValue("-482e2"),
                 new DemographicValue("-482E2"),
                 new DemographicValue("-482e+2"),
                 new DemographicValue("-482E+2"),
-                new DemographicValue(-482e-7),
+                new DemographicValue(new BigDecimal("-482e-7")),
                 new DemographicValue("-482e-7"),
                 new DemographicValue("-482E-7"),
                 // int with decimal
@@ -331,14 +330,14 @@ public class DemographicValuesValidatorTest {
                 new DemographicValue("-482.e-7"),
                 new DemographicValue("-482.E-7"),
                 // int with decimal and fraction part
-                new DemographicValue(482.683),
+                new DemographicValue(new BigDecimal("482.683")),
                 new DemographicValue("482.683"),
-                new DemographicValue(482.683e2),
+                new DemographicValue(new BigDecimal("482.683e2")),
                 new DemographicValue("482.683e2"),
                 new DemographicValue("482.683E2"),
                 new DemographicValue("482.683e+2"),
                 new DemographicValue("482.683E+2"),
-                new DemographicValue(482.683e-7),
+                new DemographicValue(new BigDecimal("482.683e-7")),
                 new DemographicValue("482.683e-7"),
                 new DemographicValue("482.683E-7"),
                 new DemographicValue("+482.683"),
@@ -348,25 +347,25 @@ public class DemographicValuesValidatorTest {
                 new DemographicValue("+482.683E+2"),
                 new DemographicValue("+482.683e-7"),
                 new DemographicValue("+482.683E-7"),
-                new DemographicValue(-482.683),
+                new DemographicValue(new BigDecimal("-482.683")),
                 new DemographicValue("-482.683"),
-                new DemographicValue(-482.683e2),
+                new DemographicValue(new BigDecimal("-482.683e2")),
                 new DemographicValue("-482.683e2"),
                 new DemographicValue("-482.683E2"),
                 new DemographicValue("-482.683e+2"),
                 new DemographicValue("-482.683E+2"),
-                new DemographicValue(-482.683e-7),
+                new DemographicValue(new BigDecimal("-482.683e-7")),
                 new DemographicValue("-482.683e-7"),
                 new DemographicValue("-482.683E-7"),
                 // fraction part only
-                new DemographicValue(.683),
+                new DemographicValue(new BigDecimal(".683")),
                 new DemographicValue(".683"),
-                new DemographicValue(.683e2),
+                new DemographicValue(new BigDecimal(".683e2")),
                 new DemographicValue(".683e2"),
                 new DemographicValue(".683E2"),
                 new DemographicValue(".683e+2"),
                 new DemographicValue(".683E+2"),
-                new DemographicValue(.683e-2),
+                new DemographicValue(new BigDecimal(".683e-2")),
                 new DemographicValue(".683e-2"),
                 new DemographicValue(".683E-2"),
                 new DemographicValue("+.683"),
@@ -376,14 +375,14 @@ public class DemographicValuesValidatorTest {
                 new DemographicValue("+.683E+2"),
                 new DemographicValue("+.683e-2"),
                 new DemographicValue("+.683E-2"),
-                new DemographicValue(-.683),
+                new DemographicValue(new BigDecimal("-.683")),
                 new DemographicValue("-.683"),
-                new DemographicValue(-.683e2),
+                new DemographicValue(new BigDecimal("-.683e2")),
                 new DemographicValue("-.683e2"),
                 new DemographicValue("-.683E2"),
                 new DemographicValue("-.683e+2"),
                 new DemographicValue("-.683E+2"),
-                new DemographicValue(-.683e-2),
+                new DemographicValue(new BigDecimal("-.683e-2")),
                 new DemographicValue("-.683e-2"),
                 new DemographicValue("-.683E-2")));
         Validate.entityThrowingException(validator, demographic);
@@ -397,15 +396,15 @@ public class DemographicValuesValidatorTest {
                 "}", JsonNode.class));
         demographic.setValues(ImmutableList.of(
                 // repetition
-                new DemographicValue(-999999999999999999999.),
-                new DemographicValue(-999999999999999999999.),
+                new DemographicValue(new BigDecimal("-999999999999999999999.")),
+                new DemographicValue(new BigDecimal("-999999999999999999999.")),
                 // out of range int but parsed as double
                 new DemographicValue("-999999999999999999999"),
                 new DemographicValue("-1.7e308"),
-                new DemographicValue(482.683),
+                new DemographicValue(new BigDecimal("482.683")),
                 new DemographicValue("482.683"),
-                new DemographicValue(0),
-                new DemographicValue(482.6829999999999)));
+                new DemographicValue(new BigDecimal("0")),
+                new DemographicValue(new BigDecimal("482.6829999999999"))));
         Validate.entityThrowingException(validator, demographic);
     }
 
@@ -417,15 +416,15 @@ public class DemographicValuesValidatorTest {
                 "}", JsonNode.class));
         demographic.setValues(ImmutableList.of(
                 // repetition
-                new DemographicValue(-500),
-                new DemographicValue(-500),
+                new DemographicValue(new BigDecimal("-500")),
+                new DemographicValue(new BigDecimal("-500")),
                 new DemographicValue("-500"),
-                new DemographicValue(999999999999999999999.),
+                new DemographicValue(new BigDecimal("999999999999999999999.")),
                 // out of range int but parsed as double
                 new DemographicValue("999999999999999999999"),
                 new DemographicValue("1.7e308"),
-                new DemographicValue(0),
-                new DemographicValue(999999999999999999999.9999999999999)));
+                new DemographicValue(new BigDecimal("0")),
+                new DemographicValue(new BigDecimal("999999999999999999999.9999999999999"))));
         Validate.entityThrowingException(validator, demographic);
     }
 
@@ -468,7 +467,7 @@ public class DemographicValuesValidatorTest {
         config.setValidationRules(BridgeObjectMapper.get().readValue("{" +
                 "    \"foo\": \"bar\"" +
                 "}", JsonNode.class));
-        demographic.setValues(ImmutableList.of(new DemographicValue(5)));
+        demographic.setValues(ImmutableList.of(new DemographicValue(new BigDecimal("5"))));
         // unknown fields should be ignored by BridgeObjectMapper
         Validate.entityThrowingException(validator, demographic);
     }
@@ -579,106 +578,6 @@ public class DemographicValuesValidatorTest {
         demographic.setValues(ImmutableList.of(new DemographicValue("0xa")));
         assertValidatorMessage(validator, demographic, "demographics[" + CATEGORY_NAME + "][0]",
                 INVALID_NUMBER_VALUE_NOT_A_NUMBER);
-    }
-
-    @Test
-    public void numberRange_minNotAllowedInf() throws JsonMappingException, JsonProcessingException {
-        // can never be inf
-        config.setValidationType(DemographicValuesValidationConfiguration.ValidationType.NUMBER_RANGE);
-        config.setValidationRules(BridgeObjectMapper.get().readValue("{" +
-                "    \"min\": \"1e309\"" +
-                "}", JsonNode.class));
-        demographic.setValues(ImmutableList.of(new DemographicValue("0")));
-        assertValidatorMessage(validator, demographic, "demographicsValidationConfiguration[" + CATEGORY_NAME + "].min",
-                INVALID_MIN_OUT_OF_RANGE);
-    }
-
-    @Test
-    public void numberRange_maxAllowedInf() throws JsonMappingException, JsonProcessingException {
-        // can be inf if value is not inf
-
-        config.setValidationType(DemographicValuesValidationConfiguration.ValidationType.NUMBER_RANGE);
-        config.setValidationRules(BridgeObjectMapper.get().readValue("{" +
-                "    \"min\": -20," +
-                "    \"max\": 1e309" +
-                "}", JsonNode.class));
-        demographic.setValues(ImmutableList.of(new DemographicValue("0")));
-        Validate.entityThrowingException(validator, demographic);
-    }
-
-    @Test
-    public void numberRange_maxNotAllowedInf() throws JsonMappingException, JsonProcessingException {
-        // can be inf if value is not inf
-        config.setValidationType(DemographicValuesValidationConfiguration.ValidationType.NUMBER_RANGE);
-        config.setValidationRules(BridgeObjectMapper.get().readValue("{" +
-                "    \"min\": -20," +
-                "    \"max\": 1e309" +
-                "}", JsonNode.class));
-        demographic.setValues(ImmutableList.of(new DemographicValue("1e309")));
-        assertValidatorMessage(validator, demographic, "demographics[" + CATEGORY_NAME + "][0]",
-                INVALID_NUMBER_VALUE_OUT_OF_RANGE);
-    }
-
-    @Test
-    public void numberRange_minAllowedNegInf() throws JsonMappingException, JsonProcessingException {
-        // can be -inf if value is not -inf
-
-        config.setValidationType(DemographicValuesValidationConfiguration.ValidationType.NUMBER_RANGE);
-        config.setValidationRules(BridgeObjectMapper.get().readValue("{" +
-                "    \"min\": -1e309," +
-                "    \"max\": 20" +
-                "}", JsonNode.class));
-        demographic.setValues(ImmutableList.of(new DemographicValue("0")));
-        Validate.entityThrowingException(validator, demographic);
-    }
-
-    @Test
-    public void numberRange_minNotAllowedNegInf() throws JsonMappingException, JsonProcessingException {
-        // can be -inf if value is not -inf
-        config.setValidationType(DemographicValuesValidationConfiguration.ValidationType.NUMBER_RANGE);
-        config.setValidationRules(BridgeObjectMapper.get().readValue("{" +
-                "    \"min\": -1e309," +
-                "    \"max\": 20" +
-                "}", JsonNode.class));
-        demographic.setValues(ImmutableList.of(new DemographicValue("-1e309")));
-        assertValidatorMessage(validator, demographic, "demographics[" + CATEGORY_NAME + "][0]",
-                INVALID_NUMBER_VALUE_OUT_OF_RANGE);
-    }
-
-    @Test
-    public void numberRange_maxNotAllowedNegInf() throws JsonMappingException, JsonProcessingException {
-        // can never be -inf
-
-        config.setValidationType(DemographicValuesValidationConfiguration.ValidationType.NUMBER_RANGE);
-        config.setValidationRules(BridgeObjectMapper.get().readValue("{" +
-                "    \"max\": -1e309" +
-                "}", JsonNode.class));
-        demographic.setValues(ImmutableList.of(new DemographicValue("0")));
-        assertValidatorMessage(validator, demographic, "demographicsValidationConfiguration[" + CATEGORY_NAME + "].max",
-                INVALID_MAX_OUT_OF_RANGE);
-    }
-
-    @Test
-    public void numberRange_valueAllowedInf() throws JsonMappingException, JsonProcessingException {
-        // can be inf if max not specified
-
-        config.setValidationType(DemographicValuesValidationConfiguration.ValidationType.NUMBER_RANGE);
-        config.setValidationRules(BridgeObjectMapper.get().readValue("{" +
-                "    \"min\": 0" +
-                "}", JsonNode.class));
-        demographic.setValues(ImmutableList.of(new DemographicValue("1e309")));
-        Validate.entityThrowingException(validator, demographic);
-    }
-
-    @Test
-    public void numberRange_valueAllowedNegInf() throws JsonMappingException, JsonProcessingException {
-        // can be -inf if min not specified
-        config.setValidationType(DemographicValuesValidationConfiguration.ValidationType.NUMBER_RANGE);
-        config.setValidationRules(BridgeObjectMapper.get().readValue("{" +
-                "    \"max\": 0" +
-                "}", JsonNode.class));
-        demographic.setValues(ImmutableList.of(new DemographicValue("-1e309")));
-        Validate.entityThrowingException(validator, demographic);
     }
 
     @Test

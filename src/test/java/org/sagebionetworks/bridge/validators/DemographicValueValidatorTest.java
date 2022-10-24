@@ -6,6 +6,8 @@ import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.generateS
 import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.getInvalidStringLengthMessage;
 import static org.testng.Assert.assertTrue;
 
+import java.math.BigDecimal;
+
 import org.sagebionetworks.bridge.models.studies.DemographicValue;
 import org.testng.annotations.Test;
 
@@ -26,11 +28,11 @@ public class DemographicValueValidatorTest {
     @Test
     public void valid() {
         Validate.entityThrowingException(demographicValueValidator, new DemographicValue("foo"));
-        Validate.entityThrowingException(demographicValueValidator, new DemographicValue(1.5));
-        Validate.entityThrowingException(demographicValueValidator, new DemographicValue(0.0));
+        Validate.entityThrowingException(demographicValueValidator, new DemographicValue(new BigDecimal("1.5")));
+        Validate.entityThrowingException(demographicValueValidator, new DemographicValue(new BigDecimal("0.0")));
         Validate.entityThrowingException(demographicValueValidator, new DemographicValue(false));
-        Validate.entityThrowingException(demographicValueValidator, new DemographicValue(7));
-        Validate.entityThrowingException(demographicValueValidator, new DemographicValue(0));
+        Validate.entityThrowingException(demographicValueValidator, new DemographicValue(new BigDecimal("7")));
+        Validate.entityThrowingException(demographicValueValidator, new DemographicValue(new BigDecimal("0")));
     }
 
     /**
@@ -39,7 +41,8 @@ public class DemographicValueValidatorTest {
     @Test
     public void blank() {
         assertValidatorMessage(demographicValueValidator, new DemographicValue(""), "value", CANNOT_BE_NULL_OR_EMPTY);
-        assertValidatorMessage(demographicValueValidator, new DemographicValue(null), "value", CANNOT_BE_NULL_OR_EMPTY);
+        assertValidatorMessage(demographicValueValidator, new DemographicValue((String) null), "value",
+                CANNOT_BE_NULL_OR_EMPTY);
     }
 
     /**

@@ -7,6 +7,7 @@ import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.generateS
 import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.getInvalidStringLengthMessage;
 import static org.testng.Assert.assertTrue;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 
 import org.sagebionetworks.bridge.models.studies.Demographic;
@@ -69,8 +70,8 @@ public class DemographicValidatorTest {
     @Test
     public void validMultipleSelectMultipleValues() {
         demographicMultipleSelect.getValues().add(new DemographicValue("value"));
-        demographicMultipleSelect.getValues().add(new DemographicValue(1));
-        demographicMultipleSelect.getValues().add(new DemographicValue(7.2));
+        demographicMultipleSelect.getValues().add(new DemographicValue(new BigDecimal(1)));
+        demographicMultipleSelect.getValues().add(new DemographicValue(new BigDecimal("7.2")));
         demographicMultipleSelect.getValues().add(new DemographicValue(true));
         Validate.entityThrowingException(demographicValidator, demographicMultipleSelect);
     }

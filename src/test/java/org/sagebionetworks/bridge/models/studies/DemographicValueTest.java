@@ -1,104 +1,112 @@
 package org.sagebionetworks.bridge.models.studies;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNull;
 
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.testng.annotations.Test;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+
 public class DemographicValueTest {
-    @Test
-    public void string() {
-        DemographicValue value = new DemographicValue("foo");
-        assertEquals(value.getValue(), "foo");
+    private void test(String jsonString, String expectedValue) throws JsonMappingException, JsonProcessingException {
+        DemographicValue value = BridgeObjectMapper.get().readValue(jsonString, DemographicValue.class);
+        if (value == null) {
+            assertNull(expectedValue);
+        } else {
+            assertEquals(value.getValue(), expectedValue);
+        }
     }
 
     @Test
-    public void stringNull() {
-        DemographicValue value = new DemographicValue(null);
-        assertEquals(value.getValue(), null);
+    public void string() throws JsonMappingException, JsonProcessingException {
+        test("\"foo\"", "foo");
     }
 
     @Test
-    public void longZero() {
-        DemographicValue value = new DemographicValue(0L);
-        assertEquals(value.getValue(), "0");
+    public void stringNull() throws JsonMappingException, JsonProcessingException {
+        test("null", null);
     }
 
     @Test
-    public void longPos() {
-        DemographicValue value = new DemographicValue(123456789L);
-        assertEquals(value.getValue(), "123456789");
+    public void intZero() throws JsonMappingException, JsonProcessingException {
+        test("0", "0");
     }
 
     @Test
-    public void longNeg() {
-        DemographicValue value = new DemographicValue(-123456789L);
-        assertEquals(value.getValue(), "-123456789");
+    public void intPos() throws JsonMappingException, JsonProcessingException {
+        test("123456789", "123456789");
     }
 
     @Test
-    public void doubleZero() {
-        DemographicValue value = new DemographicValue(0d);
-        assertEquals(value.getValue(), "0.0");
+    public void intNeg() throws JsonMappingException, JsonProcessingException {
+        test("-123456789", "-123456789");
     }
 
     @Test
-    public void doublePos() {
-        DemographicValue value = new DemographicValue(123456d);
-        assertEquals(value.getValue(), "123456.0");
+    public void decimalZero() throws JsonMappingException, JsonProcessingException {
+        test("0.0", "0.0");
     }
 
     @Test
-    public void doubleNeg() {
-        DemographicValue value = new DemographicValue(-123456d);
-        assertEquals(value.getValue(), "-123456.0");
+    public void decimalPos() throws JsonMappingException, JsonProcessingException {
+        test("123456.0", "123456.0");
     }
 
     @Test
-    public void doublePosDecimal() {
-        DemographicValue value = new DemographicValue(123456.789d);
-        assertEquals(value.getValue(), "123456.789");
+    public void decimalNeg() throws JsonMappingException, JsonProcessingException {
+        test("-123456.0", "-123456.0");
     }
 
     @Test
-    public void doubleNegDecimal() {
-        DemographicValue value = new DemographicValue(-123456.789d);
-        assertEquals(value.getValue(), "-123456.789");
+    public void decimalPosFraction() throws JsonMappingException, JsonProcessingException {
+        test("123456.789", "123456.789");
     }
 
     @Test
-    public void doublePosLarge() {
-        DemographicValue value = new DemographicValue(1.23456789e15);
-        assertEquals(value.getValue(), "1.23456789E15");
+    public void decimalNegFraction() throws JsonMappingException, JsonProcessingException {
+        test("-123456.789", "-123456.789");
     }
 
     @Test
-    public void doubleNegLarge() {
-        DemographicValue value = new DemographicValue(-1.23456789e15);
-        assertEquals(value.getValue(), "-1.23456789E15");
+    public void decimalPosFractionLessThanOne() throws JsonMappingException, JsonProcessingException {
+        test("0.12345678901234567890", "0.12345678901234567890");
     }
 
     @Test
-    public void doublePosSmall() {
-        DemographicValue value = new DemographicValue(1.23456789e-15);
-        assertEquals(value.getValue(), "1.23456789E-15");
+    public void decimalNegFractionGreaterThanNegOne() throws JsonMappingException, JsonProcessingException {
+        test("-0.12345678901234567890", "-0.12345678901234567890");
     }
 
     @Test
-    public void doubleNegSmall() {
-        DemographicValue value = new DemographicValue(-1.23456789e-15);
-        assertEquals(value.getValue(), "-1.23456789E-15");
+    public void decimalPosLarge() throws JsonMappingException, JsonProcessingException {
+        test("123456789000000000000000", "123456789000000000000000");
     }
 
     @Test
-    public void booleanTrue() {
-        DemographicValue value = new DemographicValue(true);
-        assertEquals(value.getValue(), "true");
+    public void decimalNegLarge() throws JsonMappingException, JsonProcessingException {
+        test("-123456789000000000000000", "-123456789000000000000000");
     }
 
     @Test
-    public void booleanFalse() {
-        DemographicValue value = new DemographicValue(false);
-        assertEquals(value.getValue(), "false");
+    public void decimalPosSmall() throws JsonMappingException, JsonProcessingException {
+        test("0.000000000000000123456789", "1.23456789E-16");
+    }
+
+    @Test
+    public void decimalNegSmall() throws JsonMappingException, JsonProcessingException {
+        test("-0.000000000000000123456789", "-1.23456789E-16");
+    }
+
+    @Test
+    public void booleanTrue() throws JsonMappingException, JsonProcessingException {
+        test("true", "true");
+    }
+
+    @Test
+    public void booleanFalse() throws JsonMappingException, JsonProcessingException {
+        test("false", "false");
     }
 
     @Test
