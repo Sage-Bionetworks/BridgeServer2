@@ -4,7 +4,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
-import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
 import java.math.BigDecimal;
@@ -43,20 +42,21 @@ public class DemographicValuesValidatorTest {
     }
 
     @Test
-    public void supports_nullConfig() {
-        assertFalse(new DemographicValuesValidator(null).supports(Demographic.class));
-    }
-
-    @Test
-    public void supports_nonNullConfig() {
-        assertTrue(new DemographicValuesValidator(new DemographicValuesValidationConfiguration())
-                .supports(Demographic.class));
+    public void supports() {
+        assertTrue(new DemographicValuesValidator(null).supports(Demographic.class));
     }
 
     @Test
     public void callsDemographicValuesValidationConfigurationValidator() {
         assertValidatorMessage(validator, demographic,
                 "demographicsValidationConfiguration[" + CATEGORY_NAME + "].validationType", CANNOT_BE_NULL);
+    }
+
+    @Test
+    public void nullConfiguration() {
+        validator = new DemographicValuesValidator(null);
+        assertValidatorMessage(validator, demographic,
+                "demographicsValidationConfiguration[" + CATEGORY_NAME + "]", CANNOT_BE_NULL);
     }
 
     @Test

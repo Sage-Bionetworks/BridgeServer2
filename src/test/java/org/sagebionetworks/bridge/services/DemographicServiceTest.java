@@ -209,7 +209,7 @@ public class DemographicServiceTest {
         demographicService.saveDemographicUser(demographicUser, account);
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class)
+    @Test(expectedExceptions = InvalidEntityException.class)
     public void saveDemographicUserAppValidation_nullConfiguration() {
         AppConfigElement element = AppConfigElement.create();
         element.setId(DEMOGRAPHICS_APP_CONFIG_KEY_PREFIX + "category");

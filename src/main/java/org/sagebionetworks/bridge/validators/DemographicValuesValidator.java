@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.validators;
 
+import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
+
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Map;
@@ -36,7 +38,7 @@ public class DemographicValuesValidator implements Validator {
 
     @Override
     public boolean supports(Class<?> clazz) {
-        return configuration != null && Demographic.class.isAssignableFrom(clazz);
+        return Demographic.class.isAssignableFrom(clazz);
     }
 
     // assumes demographic has already been validated by the DemographicValidator
@@ -45,6 +47,10 @@ public class DemographicValuesValidator implements Validator {
         Demographic demographic = (Demographic) target;
 
         // validate the configuration itself
+        if (configuration == null) {
+            errors.rejectValue(getConfigurationNestedPath(demographic), CANNOT_BE_NULL);
+            return;
+        }
         errors.pushNestedPath(getConfigurationNestedPath(demographic));
         Validate.entity(DemographicValuesValidationConfigurationValidator.INSTANCE, errors, configuration);
         errors.popNestedPath();
