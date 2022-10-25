@@ -85,6 +85,7 @@ public class AdherenceService {
     private static final Logger LOG = LoggerFactory.getLogger(AdherenceService.class);
     
     static final StudyReportWeek EMPTY_WEEK = new StudyReportWeek();
+    static final int MAX_UPDATE_NUM_RECORDS = 25;
     static final String THRESHOLD_OUT_OF_RANGE_ERROR = "Adherence threshold must be from 1-100.";
     static final String NO_THRESHOLD_VALUE_ERROR = "An adherence threshold value must be supplied in the request or set as a study default.";
 
@@ -142,6 +143,10 @@ public class AdherenceService {
         }
 
         LOG.info("Update adherence records for app " + appId + " with " + recordList.getRecords().size() + " records");
+
+        if (recordList.getRecords().size() > MAX_UPDATE_NUM_RECORDS) {
+            throw new BadRequestException("Too many records");
+        }
 
         Validate.entityThrowingException(INSTANCE, recordList);
 

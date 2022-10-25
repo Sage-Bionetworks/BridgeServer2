@@ -185,6 +185,15 @@ public class AdherenceServiceTest extends Mockito {
         service.updateAdherenceRecords(TEST_APP_ID, new AdherenceRecordList(ImmutableList.of()));
     }
 
+    @Test(expectedExceptions = BadRequestException.class)
+    public void updateAdherenceRecords_tooManyRecords() {
+        List<AdherenceRecord> recordList = new ArrayList<>();
+        for (int i = 0; i < AdherenceService.MAX_UPDATE_NUM_RECORDS + 1; i++) {
+            recordList.add(new AdherenceRecord());
+        }
+        service.updateAdherenceRecords(TEST_APP_ID, new AdherenceRecordList(recordList));
+    }
+
     @Test(expectedExceptions = UnauthorizedException.class)
     public void updateAdherenceRecords_notAuthorized() {
         AdherenceRecord rec1 = mockAssessmentRecord("AAA");
