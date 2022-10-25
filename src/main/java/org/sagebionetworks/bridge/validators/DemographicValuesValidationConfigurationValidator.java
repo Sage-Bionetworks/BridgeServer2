@@ -6,6 +6,12 @@ import org.sagebionetworks.bridge.models.studies.DemographicValuesValidationConf
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
+/**
+ * Demographics are validated to ensure they do not have malformed inputs, but
+ * they can also be validated using user-specified restrictions. Those
+ * restrictions are specified in a DemographicValuesValidationConfiguration.
+ * This validator validates the DemographicValuesValidationConfiguration.
+ */
 public class DemographicValuesValidationConfigurationValidator implements Validator {
     public static final DemographicValuesValidationConfigurationValidator INSTANCE = new DemographicValuesValidationConfigurationValidator();
 

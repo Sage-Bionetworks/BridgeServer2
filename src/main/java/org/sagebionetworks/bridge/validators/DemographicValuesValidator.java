@@ -21,6 +21,15 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonMappingException;
 
+/**
+ * This is NOT a validator to check if demographics have malformed inputs. For
+ * those validators, see DemographicUserValidator, DemographicValidator, and
+ * DemographicValueValidator.
+ * 
+ * This validator validates the values in demographics to ensure they meet
+ * user-specified restrictions listed in a
+ * DemographicValuesValidationConfiguration specified in an app config element.
+ */
 public class DemographicValuesValidator implements Validator {
     private static final String DEMOGRAPHICS_ENUM_DEFAULT_LANGUAGE = "en";
     private static final String INVALID_CONFIGURATION = "invalid configuration for demographics validation";
