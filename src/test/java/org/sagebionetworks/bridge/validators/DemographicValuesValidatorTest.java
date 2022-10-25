@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableList;
 public class DemographicValuesValidatorTest {
     private static final String CATEGORY_NAME = "category1";
     private static final String INVALID_CONFIGURATION = "invalid configuration for demographics validation";
+    private static final String INVALID_LANGUAGE_CODE = "invalid language code";
     private static final String INVALID_ENUM_VALUE = "invalid enum value";
     private static final String INVALID_MIN_LARGER_THAN_MAX = "invalid min (cannot be larger than specified max)";
     private static final String INVALID_NUMBER_VALUE_NOT_A_NUMBER = "invalid number value (not an acceptable number; consult the documentation to see what numbers are valid)";
@@ -71,7 +72,7 @@ public class DemographicValuesValidatorTest {
                 "        \"\"" +
                 "    ]," +
                 // another language, should be ignored
-                "    \"sp\": [" +
+                "    \"es\": [" +
                 "        \"baz\"," +
                 "        \"qux\"" +
                 "    ]" +
@@ -106,6 +107,18 @@ public class DemographicValuesValidatorTest {
         validator = new DemographicValuesValidator(config);
         assertValidatorMessage(validator, demographic, "demographicsValidationConfiguration[" + CATEGORY_NAME + "]",
                 INVALID_CONFIGURATION);
+    }
+
+    @Test
+    public void enum_invalidLanguageCode() throws JsonMappingException, JsonProcessingException {
+        config.setValidationType(DemographicValuesValidationConfiguration.ValidationType.ENUM);
+        config.setValidationRules(BridgeObjectMapper.get().readValue("{" +
+                "    \"abc\": [" +
+                "        \"foo\"" +
+                "    ]" +
+                "}", JsonNode.class));
+        assertValidatorMessage(validator, demographic,
+                "demographicsValidationConfiguration[" + CATEGORY_NAME + "].language", INVALID_LANGUAGE_CODE);
     }
 
     @Test
@@ -170,7 +183,7 @@ public class DemographicValuesValidatorTest {
     public void enum_noErrorWhenNoEnglish() throws JsonMappingException, JsonProcessingException {
         config.setValidationType(DemographicValuesValidationConfiguration.ValidationType.ENUM);
         config.setValidationRules(BridgeObjectMapper.get().readValue("{" +
-                "    \"sp\": [" +
+                "    \"es\": [" +
                 "        \"foo\"," +
                 "        \"bar\"," +
                 "        \"1.7\"," +

@@ -4,9 +4,11 @@ import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.lang3.LocaleUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.studies.Demographic;
 import org.sagebionetworks.bridge.models.studies.DemographicValue;
@@ -33,6 +35,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 public class DemographicValuesValidator implements Validator {
     private static final String DEMOGRAPHICS_ENUM_DEFAULT_LANGUAGE = "en";
     private static final String INVALID_CONFIGURATION = "invalid configuration for demographics validation";
+    private static final String INVALID_LANGUAGE_CODE = "invalid language code";
     private static final String INVALID_ENUM_VALUE = "invalid enum value";
     private static final String INVALID_MIN_LARGER_THAN_MAX = "invalid min (cannot be larger than specified max)";
     private static final String INVALID_NUMBER_VALUE_NOT_A_NUMBER = "invalid number value (not an acceptable number; consult the documentation to see what numbers are valid)";
@@ -106,6 +109,13 @@ public class DemographicValuesValidator implements Validator {
         // cannot be null because that is checked by
         // DemographicValuesValidationConfigurationValidator
         Map<String, Set<String>> enumValidationRules = BridgeObjectMapper.get().readValue(tokens, type);
+        // validate languages
+        for (String language : enumValidationRules.keySet()) {
+            Locale locale = new Locale.Builder().setLanguageTag(language).build();
+            if (!LocaleUtils.isAvailableLocale(locale)) {
+                errors.rejectValue("language", INVALID_LANGUAGE_CODE);
+            }
+        }
         // currently only English supported
         Set<String> allowedValues = enumValidationRules.get(DEMOGRAPHICS_ENUM_DEFAULT_LANGUAGE);
         if (allowedValues == null) {
