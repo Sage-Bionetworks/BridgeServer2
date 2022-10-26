@@ -1,7 +1,5 @@
 package org.sagebionetworks.bridge.validators;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
 import static org.testng.Assert.assertTrue;
@@ -13,6 +11,7 @@ import org.sagebionetworks.bridge.models.studies.Demographic;
 import org.sagebionetworks.bridge.models.studies.DemographicUser;
 import org.sagebionetworks.bridge.models.studies.DemographicValue;
 import org.sagebionetworks.bridge.models.studies.DemographicValuesValidationConfiguration;
+import org.sagebionetworks.bridge.validators.DemographicValuesValidator.DemographicValuesValidationType;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -62,7 +61,7 @@ public class DemographicValuesValidatorTest {
 
     @Test
     public void enum_valid() throws JsonMappingException, JsonProcessingException {
-        config.setValidationType(DemographicValuesValidationConfiguration.ValidationType.ENUM);
+        config.setValidationType(DemographicValuesValidationType.ENUM);
         config.setValidationRules(BridgeObjectMapper.get().readValue("{" +
                 "    \"en\": [" +
                 "        \"foo\"," +
@@ -89,29 +88,15 @@ public class DemographicValuesValidatorTest {
 
     @Test
     public void enum_IOException() {
-        config.setValidationType(DemographicValuesValidationConfiguration.ValidationType.ENUM);
+        config.setValidationType(DemographicValuesValidationType.ENUM);
         config.setValidationRules(BridgeObjectMapper.get().createArrayNode());
         assertValidatorMessage(validator, demographic, "demographicsValidationConfiguration[" + CATEGORY_NAME + "]",
                 INVALID_CONFIGURATION);
     }
 
     @Test
-    public void enum_IllegalArgumentException() {
-        DemographicValuesValidationConfiguration config = mock(DemographicValuesValidationConfiguration.class);
-        when(config.getValidationType()).thenReturn(DemographicValuesValidationConfiguration.ValidationType.ENUM);
-        // first call in configuration validator succeeds, second call in values
-        // validator fails
-        // (simulates exception when converting enum rules)
-        when(config.getValidationRules()).thenReturn(BridgeObjectMapper.get().createObjectNode())
-                .thenThrow(new IllegalArgumentException());
-        validator = new DemographicValuesValidator(config);
-        assertValidatorMessage(validator, demographic, "demographicsValidationConfiguration[" + CATEGORY_NAME + "]",
-                INVALID_CONFIGURATION);
-    }
-
-    @Test
     public void enum_invalidLanguageCode() throws JsonMappingException, JsonProcessingException {
-        config.setValidationType(DemographicValuesValidationConfiguration.ValidationType.ENUM);
+        config.setValidationType(DemographicValuesValidationType.ENUM);
         config.setValidationRules(BridgeObjectMapper.get().readValue("{" +
                 "    \"abc\": [" +
                 "        \"foo\"" +
@@ -123,7 +108,7 @@ public class DemographicValuesValidatorTest {
 
     @Test
     public void enum_wrongTypeAllowedValues() throws JsonMappingException, JsonProcessingException {
-        config.setValidationType(DemographicValuesValidationConfiguration.ValidationType.ENUM);
+        config.setValidationType(DemographicValuesValidationType.ENUM);
         config.setValidationRules(BridgeObjectMapper.get().readValue("{" +
                 "    \"en\": [" +
                 "        []" +
@@ -135,7 +120,7 @@ public class DemographicValuesValidatorTest {
 
     @Test
     public void enum_emptyRules() {
-        config.setValidationType(DemographicValuesValidationConfiguration.ValidationType.ENUM);
+        config.setValidationType(DemographicValuesValidationType.ENUM);
         config.setValidationRules(BridgeObjectMapper.get().createObjectNode());
         Validate.entityThrowingException(validator, demographic);
     }
@@ -143,7 +128,7 @@ public class DemographicValuesValidatorTest {
     @Test
     public void enum_nonStringAllowedValues() throws JsonMappingException, JsonProcessingException {
         // will not error, they will just be converted to strings
-        config.setValidationType(DemographicValuesValidationConfiguration.ValidationType.ENUM);
+        config.setValidationType(DemographicValuesValidationType.ENUM);
         config.setValidationRules(BridgeObjectMapper.get().readValue("{" +
                 "    \"en\": [" +
                 "        \"foo\"," +
@@ -162,7 +147,7 @@ public class DemographicValuesValidatorTest {
 
     @Test
     public void enum_noAllowedValuesSpecified() throws JsonMappingException, JsonProcessingException {
-        config.setValidationType(DemographicValuesValidationConfiguration.ValidationType.ENUM);
+        config.setValidationType(DemographicValuesValidationType.ENUM);
         config.setValidationRules(BridgeObjectMapper.get().readValue("{" +
                 "    \"en\": [" +
                 "    ]" +
@@ -181,7 +166,7 @@ public class DemographicValuesValidatorTest {
 
     @Test
     public void enum_noErrorWhenNoEnglish() throws JsonMappingException, JsonProcessingException {
-        config.setValidationType(DemographicValuesValidationConfiguration.ValidationType.ENUM);
+        config.setValidationType(DemographicValuesValidationType.ENUM);
         config.setValidationRules(BridgeObjectMapper.get().readValue("{" +
                 "    \"es\": [" +
                 "        \"foo\"," +
@@ -197,8 +182,8 @@ public class DemographicValuesValidatorTest {
 
     @Test
     public void enum_allInvalid() throws JsonMappingException, JsonProcessingException {
-        config.setValidationType(DemographicValuesValidationConfiguration.ValidationType.ENUM);
-        config.setValidationType(DemographicValuesValidationConfiguration.ValidationType.ENUM);
+        config.setValidationType(DemographicValuesValidationType.ENUM);
+        config.setValidationType(DemographicValuesValidationType.ENUM);
         config.setValidationRules(BridgeObjectMapper.get().readValue("{" +
                 "    \"en\": [" +
                 "        \"abc\"," +
@@ -219,7 +204,7 @@ public class DemographicValuesValidatorTest {
 
     @Test
     public void enum_someInvalid() throws JsonMappingException, JsonProcessingException {
-        config.setValidationType(DemographicValuesValidationConfiguration.ValidationType.ENUM);
+        config.setValidationType(DemographicValuesValidationType.ENUM);
         config.setValidationRules(BridgeObjectMapper.get().readValue("{" +
                 "    \"en\": [" +
                 "        \"bar\"," +
@@ -237,7 +222,7 @@ public class DemographicValuesValidatorTest {
 
     @Test
     public void numberRange_validNoMinNoMax() {
-        config.setValidationType(DemographicValuesValidationConfiguration.ValidationType.NUMBER_RANGE);
+        config.setValidationType(DemographicValuesValidationType.NUMBER_RANGE);
         config.setValidationRules(BridgeObjectMapper.get().createObjectNode());
         demographic.setValues(ImmutableList.of(
                 // with repetition
@@ -255,7 +240,7 @@ public class DemographicValuesValidatorTest {
 
     @Test
     public void numberRange_valid() throws JsonMappingException, JsonProcessingException {
-        config.setValidationType(DemographicValuesValidationConfiguration.ValidationType.NUMBER_RANGE);
+        config.setValidationType(DemographicValuesValidationType.NUMBER_RANGE);
         config.setValidationRules(BridgeObjectMapper.get().readValue("{" +
                 "    \"min\": -50000," +
                 "    \"max\": 48268.3" +
@@ -403,7 +388,7 @@ public class DemographicValuesValidatorTest {
 
     @Test
     public void numberRange_validNoMin() throws JsonMappingException, JsonProcessingException {
-        config.setValidationType(DemographicValuesValidationConfiguration.ValidationType.NUMBER_RANGE);
+        config.setValidationType(DemographicValuesValidationType.NUMBER_RANGE);
         config.setValidationRules(BridgeObjectMapper.get().readValue("{" +
                 "    \"max\": 482.683" +
                 "}", JsonNode.class));
@@ -423,7 +408,7 @@ public class DemographicValuesValidatorTest {
 
     @Test
     public void numberRange_validNoMax() throws JsonMappingException, JsonProcessingException {
-        config.setValidationType(DemographicValuesValidationConfiguration.ValidationType.NUMBER_RANGE);
+        config.setValidationType(DemographicValuesValidationType.NUMBER_RANGE);
         config.setValidationRules(BridgeObjectMapper.get().readValue("{" +
                 "    \"min\": -500" +
                 "}", JsonNode.class));
@@ -443,30 +428,15 @@ public class DemographicValuesValidatorTest {
 
     @Test
     public void numberRange_IOException() {
-        config.setValidationType(DemographicValuesValidationConfiguration.ValidationType.NUMBER_RANGE);
+        config.setValidationType(DemographicValuesValidationType.NUMBER_RANGE);
         config.setValidationRules(BridgeObjectMapper.get().createArrayNode());
         assertValidatorMessage(validator, demographic, "demographicsValidationConfiguration[" + CATEGORY_NAME + "]",
                 INVALID_CONFIGURATION);
     }
 
     @Test
-    public void numberRange_IllegalArgumentException() {
-        DemographicValuesValidationConfiguration config = mock(DemographicValuesValidationConfiguration.class);
-        when(config.getValidationType())
-                .thenReturn(DemographicValuesValidationConfiguration.ValidationType.NUMBER_RANGE);
-        // first call in configuration validator succeeds, second call in values
-        // validator fails
-        // (simulates exception when converting enum rules)
-        when(config.getValidationRules()).thenReturn(BridgeObjectMapper.get().createObjectNode())
-                .thenThrow(new IllegalArgumentException());
-        validator = new DemographicValuesValidator(config);
-        assertValidatorMessage(validator, demographic, "demographicsValidationConfiguration[" + CATEGORY_NAME + "]",
-                INVALID_CONFIGURATION);
-    }
-
-    @Test
     public void numberRange_wrongTypeMinMax() throws JsonMappingException, JsonProcessingException {
-        config.setValidationType(DemographicValuesValidationConfiguration.ValidationType.NUMBER_RANGE);
+        config.setValidationType(DemographicValuesValidationType.NUMBER_RANGE);
         config.setValidationRules(BridgeObjectMapper.get().readValue("{" +
                 "    \"min\": []" +
                 "}", JsonNode.class));
@@ -476,7 +446,7 @@ public class DemographicValuesValidatorTest {
 
     @Test
     public void numberRange_invalidFields() throws JsonMappingException, JsonProcessingException {
-        config.setValidationType(DemographicValuesValidationConfiguration.ValidationType.NUMBER_RANGE);
+        config.setValidationType(DemographicValuesValidationType.NUMBER_RANGE);
         config.setValidationRules(BridgeObjectMapper.get().readValue("{" +
                 "    \"foo\": \"bar\"" +
                 "}", JsonNode.class));
@@ -487,7 +457,7 @@ public class DemographicValuesValidatorTest {
 
     @Test
     public void numberRange_valueEmpty() throws JsonMappingException, JsonProcessingException {
-        config.setValidationType(DemographicValuesValidationConfiguration.ValidationType.NUMBER_RANGE);
+        config.setValidationType(DemographicValuesValidationType.NUMBER_RANGE);
         config.setValidationRules(BridgeObjectMapper.get().readValue("{" +
                 "    \"min\": -10," +
                 "    \"max\": 10" +
@@ -499,7 +469,7 @@ public class DemographicValuesValidatorTest {
 
     @Test
     public void numberRange_notANumber_decimalOnly() throws JsonMappingException, JsonProcessingException {
-        config.setValidationType(DemographicValuesValidationConfiguration.ValidationType.NUMBER_RANGE);
+        config.setValidationType(DemographicValuesValidationType.NUMBER_RANGE);
         config.setValidationRules(BridgeObjectMapper.get().readValue("{" +
                 "    \"min\": -10," +
                 "    \"max\": 10" +
@@ -511,7 +481,7 @@ public class DemographicValuesValidatorTest {
 
     @Test
     public void numberRange_notANumber_notDigits() throws JsonMappingException, JsonProcessingException {
-        config.setValidationType(DemographicValuesValidationConfiguration.ValidationType.NUMBER_RANGE);
+        config.setValidationType(DemographicValuesValidationType.NUMBER_RANGE);
         config.setValidationRules(BridgeObjectMapper.get().readValue("{" +
                 "    \"min\": -10," +
                 "    \"max\": 10" +
@@ -523,7 +493,7 @@ public class DemographicValuesValidatorTest {
 
     @Test
     public void numberRange_notANumber_exponentNoDigits() throws JsonMappingException, JsonProcessingException {
-        config.setValidationType(DemographicValuesValidationConfiguration.ValidationType.NUMBER_RANGE);
+        config.setValidationType(DemographicValuesValidationType.NUMBER_RANGE);
         config.setValidationRules(BridgeObjectMapper.get().readValue("{" +
                 "    \"min\": -10," +
                 "    \"max\": 10" +
@@ -535,7 +505,7 @@ public class DemographicValuesValidatorTest {
 
     @Test
     public void numberRange_notANumber_exponentSignNoDigits() throws JsonMappingException, JsonProcessingException {
-        config.setValidationType(DemographicValuesValidationConfiguration.ValidationType.NUMBER_RANGE);
+        config.setValidationType(DemographicValuesValidationType.NUMBER_RANGE);
         config.setValidationRules(BridgeObjectMapper.get().readValue("{" +
                 "    \"min\": -10," +
                 "    \"max\": 10" +
@@ -547,7 +517,7 @@ public class DemographicValuesValidatorTest {
 
     @Test
     public void numberRange_notANumber_signNoDigits() throws JsonMappingException, JsonProcessingException {
-        config.setValidationType(DemographicValuesValidationConfiguration.ValidationType.NUMBER_RANGE);
+        config.setValidationType(DemographicValuesValidationType.NUMBER_RANGE);
         config.setValidationRules(BridgeObjectMapper.get().readValue("{" +
                 "    \"min\": -10," +
                 "    \"max\": 10" +
@@ -559,7 +529,7 @@ public class DemographicValuesValidatorTest {
 
     @Test
     public void numberRange_notANumber_nanString() throws JsonMappingException, JsonProcessingException {
-        config.setValidationType(DemographicValuesValidationConfiguration.ValidationType.NUMBER_RANGE);
+        config.setValidationType(DemographicValuesValidationType.NUMBER_RANGE);
         config.setValidationRules(BridgeObjectMapper.get().readValue("{" +
                 "    \"min\": -10," +
                 "    \"max\": 10" +
@@ -571,7 +541,7 @@ public class DemographicValuesValidatorTest {
 
     @Test
     public void numberRange_notANumber_infinityString() throws JsonMappingException, JsonProcessingException {
-        config.setValidationType(DemographicValuesValidationConfiguration.ValidationType.NUMBER_RANGE);
+        config.setValidationType(DemographicValuesValidationType.NUMBER_RANGE);
         config.setValidationRules(BridgeObjectMapper.get().readValue("{" +
                 "    \"min\": -10," +
                 "    \"max\": 10" +
@@ -583,7 +553,7 @@ public class DemographicValuesValidatorTest {
 
     @Test
     public void numberRange_notANumber_hex() throws JsonMappingException, JsonProcessingException {
-        config.setValidationType(DemographicValuesValidationConfiguration.ValidationType.NUMBER_RANGE);
+        config.setValidationType(DemographicValuesValidationType.NUMBER_RANGE);
         config.setValidationRules(BridgeObjectMapper.get().readValue("{" +
                 "    \"min\": -20," +
                 "    \"max\": 20" +
@@ -595,7 +565,7 @@ public class DemographicValuesValidatorTest {
 
     @Test
     public void minGreaterThanMax() throws JsonMappingException, JsonProcessingException {
-        config.setValidationType(DemographicValuesValidationConfiguration.ValidationType.NUMBER_RANGE);
+        config.setValidationType(DemographicValuesValidationType.NUMBER_RANGE);
         config.setValidationRules(BridgeObjectMapper.get().readValue("{" +
                 "    \"min\": 20," +
                 "    \"max\": -20" +
@@ -609,7 +579,7 @@ public class DemographicValuesValidatorTest {
     public void minEqualToMax() throws JsonMappingException, JsonProcessingException {
         // allowed because range check is inclusive
 
-        config.setValidationType(DemographicValuesValidationConfiguration.ValidationType.NUMBER_RANGE);
+        config.setValidationType(DemographicValuesValidationType.NUMBER_RANGE);
         config.setValidationRules(BridgeObjectMapper.get().readValue("{" +
                 "    \"min\": 20," +
                 "    \"max\": 20" +
@@ -620,7 +590,7 @@ public class DemographicValuesValidatorTest {
 
     @Test
     public void numberRange_lessThanMin() throws JsonMappingException, JsonProcessingException {
-        config.setValidationType(DemographicValuesValidationConfiguration.ValidationType.NUMBER_RANGE);
+        config.setValidationType(DemographicValuesValidationType.NUMBER_RANGE);
         config.setValidationRules(BridgeObjectMapper.get().readValue("{" +
                 "    \"min\": -20," +
                 "    \"max\": 20" +
@@ -632,7 +602,7 @@ public class DemographicValuesValidatorTest {
 
     @Test
     public void numberRange_moreThanMax() throws JsonMappingException, JsonProcessingException {
-        config.setValidationType(DemographicValuesValidationConfiguration.ValidationType.NUMBER_RANGE);
+        config.setValidationType(DemographicValuesValidationType.NUMBER_RANGE);
         config.setValidationRules(BridgeObjectMapper.get().readValue("{" +
                 "    \"min\": -20," +
                 "    \"max\": 20" +

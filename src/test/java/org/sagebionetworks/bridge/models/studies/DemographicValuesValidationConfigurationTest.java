@@ -5,6 +5,7 @@ import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.validators.DemographicValuesValidator.DemographicValuesValidationType;
 import org.testng.annotations.Test;
 
 import com.fasterxml.jackson.core.JsonParseException;
@@ -17,7 +18,7 @@ public class DemographicValuesValidationConfigurationTest {
     @Test
     public void serialize() throws JsonProcessingException {
         DemographicValuesValidationConfiguration config = new DemographicValuesValidationConfiguration();
-        config.setValidationType(DemographicValuesValidationConfiguration.ValidationType.ENUM);
+        config.setValidationType(DemographicValuesValidationType.ENUM);
         JsonNode rules = BridgeObjectMapper.get().createObjectNode().set("en",
                 BridgeObjectMapper.get().createArrayNode().add("foo").add("bar"));
         config.setValidationRules(rules);
@@ -56,11 +57,11 @@ public class DemographicValuesValidationConfigurationTest {
         DemographicValuesValidationConfiguration result1 = BridgeObjectMapper.get().readValue(
                 "{\"validationType\": \"nUmBeR_rAnGe\", \"validationRules\": {}}",
                 DemographicValuesValidationConfiguration.class);
-        assertEquals(result1.getValidationType(), DemographicValuesValidationConfiguration.ValidationType.NUMBER_RANGE);
+        assertEquals(result1.getValidationType(), DemographicValuesValidationType.NUMBER_RANGE);
         DemographicValuesValidationConfiguration result2 = BridgeObjectMapper.get().readValue(
                 "{\"validationType\": \"eNuM\", \"validationRules\": {}}",
                 DemographicValuesValidationConfiguration.class);
-        assertEquals(result2.getValidationType(), DemographicValuesValidationConfiguration.ValidationType.ENUM);
+        assertEquals(result2.getValidationType(), DemographicValuesValidationType.ENUM);
     }
 
     @Test

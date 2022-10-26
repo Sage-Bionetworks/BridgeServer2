@@ -6,6 +6,7 @@ import static org.testng.Assert.assertTrue;
 
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.studies.DemographicValuesValidationConfiguration;
+import org.sagebionetworks.bridge.validators.DemographicValuesValidator.DemographicValuesValidationType;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -17,7 +18,7 @@ public class DemographicValuesValidationConfigurationValidatorTest {
     @BeforeMethod
     public void beforeMethod() {
         config = new DemographicValuesValidationConfiguration();
-        config.setValidationType(DemographicValuesValidationConfiguration.ValidationType.ENUM);
+        config.setValidationType(DemographicValuesValidationType.ENUM);
         JsonNode rules = BridgeObjectMapper.get().createObjectNode().set("en",
                 BridgeObjectMapper.get().createArrayNode().add("foo").add("bar"));
         config.setValidationRules(rules);

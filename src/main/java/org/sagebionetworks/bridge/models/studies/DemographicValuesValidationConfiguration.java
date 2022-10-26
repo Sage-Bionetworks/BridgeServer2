@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.models.studies;
 
 import org.sagebionetworks.bridge.models.BridgeEntity;
+import org.sagebionetworks.bridge.validators.DemographicValuesValidator.DemographicValuesValidationType;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -23,19 +24,14 @@ import com.fasterxml.jackson.databind.JsonNode;
  * ends of the allowed range, both of which are optional.
  */
 public class DemographicValuesValidationConfiguration implements BridgeEntity {
-    private ValidationType validationType;
+    private DemographicValuesValidationType validationType;
     private JsonNode validationRules;
 
-    public static enum ValidationType {
-        NUMBER_RANGE,
-        ENUM
-    }
-
-    public ValidationType getValidationType() {
+    public DemographicValuesValidationType getValidationType() {
         return validationType;
     }
 
-    public void setValidationType(ValidationType validationType) {
+    public void setValidationType(DemographicValuesValidationType validationType) {
         this.validationType = validationType;
     }
 
