@@ -226,7 +226,79 @@ public class DemographicServiceTest {
     }
 
     @Test(expectedExceptions = InvalidEntityException.class)
-    public void saveDemographicUserAppValidation_invalidConfiguration() {
+    public void saveDemographicUserAppValidation_blankType() throws JsonMappingException, JsonProcessingException {
+        AppConfigElement element = AppConfigElement.create();
+        element.setId(DEMOGRAPHICS_APP_CONFIG_KEY_PREFIX + "category");
+        JsonNode config = BridgeObjectMapper.get().readValue("{" +
+                "    \"validationType\": \"\"," +
+                "    \"validationRules\": {" +
+                "        \"en\": [" +
+                "            \"foo\"," +
+                "            \"bar\"" +
+                "        ]" +
+                "    }" +
+                "}", JsonNode.class);
+        element.setData(config);
+        when(appConfigElementService.getMostRecentElements(TEST_APP_ID, false)).thenReturn(ImmutableList.of(element));
+
+        DemographicUser demographicUser = new DemographicUser("test-id", TEST_APP_ID, null, TEST_USER_ID, null);
+        Demographic demographic = new Demographic(TEST_APP_ID, demographicUser, "category", false,
+                ImmutableList.of(new DemographicValue("random value")), null);
+        demographicUser.setDemographics(ImmutableMap.of("category", demographic));
+
+        // execute
+        demographicService.saveDemographicUser(demographicUser, account);
+    }
+
+    @Test(expectedExceptions = InvalidEntityException.class)
+    public void saveDemographicUserAppValidation_invalidConfigurationNullType()
+            throws JsonMappingException, JsonProcessingException {
+        AppConfigElement element = AppConfigElement.create();
+        element.setId(DEMOGRAPHICS_APP_CONFIG_KEY_PREFIX + "category");
+        JsonNode config = BridgeObjectMapper.get().readValue("{" +
+                "    \"validationType\": null," +
+                "    \"validationRules\": {" +
+                "        \"en\": [" +
+                "            \"foo\"," +
+                "            \"bar\"" +
+                "        ]" +
+                "    }" +
+                "}", JsonNode.class);
+        element.setData(config);
+        when(appConfigElementService.getMostRecentElements(TEST_APP_ID, false)).thenReturn(ImmutableList.of(element));
+
+        DemographicUser demographicUser = new DemographicUser("test-id", TEST_APP_ID, null, TEST_USER_ID, null);
+        Demographic demographic = new Demographic(TEST_APP_ID, demographicUser, "category", false,
+                ImmutableList.of(new DemographicValue("random value")), null);
+        demographicUser.setDemographics(ImmutableMap.of("category", demographic));
+
+        // execute
+        demographicService.saveDemographicUser(demographicUser, account);
+    }
+
+    @Test(expectedExceptions = InvalidEntityException.class)
+    public void saveDemographicUserAppValidation_invalidConfigurationNullRules()
+            throws JsonMappingException, JsonProcessingException {
+        AppConfigElement element = AppConfigElement.create();
+        element.setId(DEMOGRAPHICS_APP_CONFIG_KEY_PREFIX + "category");
+        JsonNode config = BridgeObjectMapper.get().readValue("{" +
+                "    \"validationType\": \"enum\"," +
+                "    \"validationRules\": null" +
+                "}", JsonNode.class);
+        element.setData(config);
+        when(appConfigElementService.getMostRecentElements(TEST_APP_ID, false)).thenReturn(ImmutableList.of(element));
+
+        DemographicUser demographicUser = new DemographicUser("test-id", TEST_APP_ID, null, TEST_USER_ID, null);
+        Demographic demographic = new Demographic(TEST_APP_ID, demographicUser, "category", false,
+                ImmutableList.of(new DemographicValue("random value")), null);
+        demographicUser.setDemographics(ImmutableMap.of("category", demographic));
+
+        // execute
+        demographicService.saveDemographicUser(demographicUser, account);
+    }
+
+    @Test(expectedExceptions = InvalidEntityException.class)
+    public void saveDemographicUserAppValidation_invalidConfigurationNullTypeAndRules() {
         AppConfigElement element = AppConfigElement.create();
         element.setId(DEMOGRAPHICS_APP_CONFIG_KEY_PREFIX + "category");
         ObjectNode config = BridgeObjectMapper.get().createObjectNode();
@@ -271,7 +343,8 @@ public class DemographicServiceTest {
     }
 
     @Test
-    public void saveDemographicUserAppValidation_validDemographic() throws JsonMappingException, JsonProcessingException {
+    public void saveDemographicUserAppValidation_validDemographic()
+            throws JsonMappingException, JsonProcessingException {
         AppConfigElement element = AppConfigElement.create();
         element.setId(DEMOGRAPHICS_APP_CONFIG_KEY_PREFIX + "category");
         JsonNode config = BridgeObjectMapper.get().readValue("{" +

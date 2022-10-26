@@ -28,6 +28,8 @@ public class DemographicValuesValidationConfigurationValidator implements Valida
         }
         if (configuration.getValidationRules() == null) {
             errors.rejectValue("validationRules", CANNOT_BE_NULL);
+        } else if (configuration.getValidationRules().isNull()) {
+            errors.rejectValue("validationRules", CANNOT_BE_NULL);
         }
     }
 }

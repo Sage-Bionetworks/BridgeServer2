@@ -50,6 +50,13 @@ public class DemographicValuesValidationConfigurationValidatorTest {
     }
 
     @Test
+    public void nullNodeRules() {
+        config.setValidationRules(BridgeObjectMapper.get().nullNode());
+        assertValidatorMessage(new DemographicValuesValidationConfigurationValidator(), config, "validationRules",
+                CANNOT_BE_NULL);
+    }
+
+    @Test
     public void bothNull() {
         config.setValidationType(null);
         config.setValidationRules(null);
