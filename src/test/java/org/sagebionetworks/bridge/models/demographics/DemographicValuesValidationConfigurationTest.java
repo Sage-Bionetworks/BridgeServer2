@@ -1,4 +1,4 @@
-package org.sagebionetworks.bridge.models.studies;
+package org.sagebionetworks.bridge.models.demographics;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;

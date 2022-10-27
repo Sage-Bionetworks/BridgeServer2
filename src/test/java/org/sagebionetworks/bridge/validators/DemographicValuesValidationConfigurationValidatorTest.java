@@ -5,7 +5,7 @@ import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
 import static org.testng.Assert.assertTrue;
 
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.studies.DemographicValuesValidationConfiguration;
+import org.sagebionetworks.bridge.models.demographics.DemographicValuesValidationConfiguration;
 import org.sagebionetworks.bridge.validators.DemographicValuesValidator.DemographicValuesValidationType;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;

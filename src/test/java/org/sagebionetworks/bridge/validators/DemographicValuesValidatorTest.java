@@ -7,10 +7,10 @@ import static org.testng.Assert.assertTrue;
 import java.math.BigDecimal;
 
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.studies.Demographic;
-import org.sagebionetworks.bridge.models.studies.DemographicUser;
-import org.sagebionetworks.bridge.models.studies.DemographicValue;
-import org.sagebionetworks.bridge.models.studies.DemographicValuesValidationConfiguration;
+import org.sagebionetworks.bridge.models.demographics.Demographic;
+import org.sagebionetworks.bridge.models.demographics.DemographicUser;
+import org.sagebionetworks.bridge.models.demographics.DemographicValue;
+import org.sagebionetworks.bridge.models.demographics.DemographicValuesValidationConfiguration;
 import org.sagebionetworks.bridge.validators.DemographicValuesValidator.DemographicValuesValidationType;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;

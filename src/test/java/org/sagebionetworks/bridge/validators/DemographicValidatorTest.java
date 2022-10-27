@@ -10,9 +10,9 @@ import static org.testng.Assert.assertTrue;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 
-import org.sagebionetworks.bridge.models.studies.Demographic;
-import org.sagebionetworks.bridge.models.studies.DemographicUser;
-import org.sagebionetworks.bridge.models.studies.DemographicValue;
+import org.sagebionetworks.bridge.models.demographics.Demographic;
+import org.sagebionetworks.bridge.models.demographics.DemographicUser;
+import org.sagebionetworks.bridge.models.demographics.DemographicValue;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 

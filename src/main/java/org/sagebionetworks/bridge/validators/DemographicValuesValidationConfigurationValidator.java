@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.validators;
 
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
 
-import org.sagebionetworks.bridge.models.studies.DemographicValuesValidationConfiguration;
+import org.sagebionetworks.bridge.models.demographics.DemographicValuesValidationConfiguration;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
