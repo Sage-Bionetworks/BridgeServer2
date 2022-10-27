@@ -179,7 +179,16 @@ public class AdherenceServiceTest extends Mockito {
         // Nothing is finished, nothing is published.
         verify(mockStudyActivityEventService, never()).publishEvent(any(), eq(false), eq(true));
     }
-    
+
+    @Test(expectedExceptions = BadRequestException.class)
+    public void updateAdherenceRecords_disableBiaffect() {
+        AdherenceRecordList records = mockRecordUpdate(
+                ar(STARTED_ON, null, "AAA", false),
+                ar(null, null, "BBB", false),
+                null);
+        service.updateAdherenceRecords("biaffect", records);
+    }
+
     @Test(expectedExceptions = BadRequestException.class)
     public void updateAdherenceRecords_noRecords() {
         service.updateAdherenceRecords(TEST_APP_ID, new AdherenceRecordList(ImmutableList.of()));
