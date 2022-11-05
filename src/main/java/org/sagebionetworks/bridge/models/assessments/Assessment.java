@@ -38,6 +38,7 @@ public class Assessment implements BridgeEntity {
         dto.setModifiedOn(assessment.getModifiedOn());
         dto.setDeleted(assessment.isDeleted());
         dto.setVersion(assessment.getVersion());
+        dto.setImageResource(assessment.getImageResource());
         return dto;
     }
     
@@ -65,7 +66,8 @@ public class Assessment implements BridgeEntity {
     private DateTime modifiedOn;
     private boolean deleted;
     private long version;
-    
+    private ImageResource imageResource;
+
     public String getAppId() {
         return appId;
     }
@@ -191,5 +193,11 @@ public class Assessment implements BridgeEntity {
     }
     public void setVersion(long version) {
         this.version = version;
-    }    
+    }
+    public ImageResource getImageResource() {
+        return imageResource;
+    }
+    public void setImageResource(ImageResource imageResource) {
+        this.imageResource = imageResource;
+    }
 }

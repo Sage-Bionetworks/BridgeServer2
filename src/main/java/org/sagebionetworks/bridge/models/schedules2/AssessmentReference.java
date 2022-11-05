@@ -3,8 +3,12 @@ package org.sagebionetworks.bridge.models.schedules2;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.persistence.AttributeOverride;
+import javax.persistence.AttributeOverrides;
+import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.Embeddable;
+import javax.persistence.Embedded;
 import javax.persistence.Table;
 
 import org.sagebionetworks.bridge.hibernate.ColorSchemeConverter;
@@ -12,6 +16,7 @@ import org.sagebionetworks.bridge.hibernate.LabelListConverter;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.Label;
 import org.sagebionetworks.bridge.models.assessments.ColorScheme;
+import org.sagebionetworks.bridge.models.assessments.ImageResource;
 
 /**
  * When a session is created it can include display metadata about the assessments, and this
@@ -36,6 +41,13 @@ public class AssessmentReference {
     private Integer minutesToComplete;
     @Convert(converter = ColorSchemeConverter.class)
     private ColorScheme colorScheme;
+    @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "name", column = @Column(name = "imageResourceName")),
+            @AttributeOverride(name = "module", column = @Column(name = "imageResourceModule")),
+            @AttributeOverride(name = "labels", column = @Column(name = "imageResourceLabels"))
+    })
+    private ImageResource imageResource;
 
     public String getAppId() {
         return appId;
@@ -87,5 +99,11 @@ public class AssessmentReference {
     }
     public void setColorScheme(ColorScheme colorScheme) {
         this.colorScheme = colorScheme;
+    }
+    public ImageResource getImageResource() {
+        return imageResource;
+    }
+    public void setImageResource(ImageResource imageResource) {
+        this.imageResource = imageResource;
     }
 }
