@@ -1030,3 +1030,8 @@ ALTER TABLE `SessionAssessments`
 ADD COLUMN `imageResourceName` varchar(255) DEFAULT NULL,
 ADD COLUMN `imageResourceModule` varchar(255) DEFAULT NULL,
 ADD COLUMN `imageResourceLabels` text DEFAULT NULL;
+
+-- changeset bridge:74
+
+ALTER TABLE `TimelineMetadata`
+ADD INDEX `TimelineMetadata-SessionInstanceGuid` (sessionInstanceGuid);
