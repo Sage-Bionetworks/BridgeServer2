@@ -57,7 +57,7 @@ public class Alert implements BridgeEntity {
         TIMELINE_ACCESSED,
         LOW_ADHERENCE,
         UPCOMING_STUDY_BURST,
-        STUDY_BURST_DATE_CHANGE
+        TEST_WINDOW_CHANGE
     }
 
     public Alert(String id, DateTime createdOn, String studyId, String appId, AccountRef participant,

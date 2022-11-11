@@ -65,8 +65,10 @@ public class HibernateAlertDao implements AlertDao {
 
     @Override
     public void deleteAlerts(List<String> alertIds) {
-        for (String alertId : alertIds) {
-            hibernateHelper.deleteById(Alert.class, alertId);
-        }
+        QueryBuilder builder = new QueryBuilder();
+        builder.append("DELETE FROM Alert a");
+        WhereClauseBuilder where = builder.startWhere(SearchTermPredicate.AND);
+        where.append("a.id in (:alertIds)", "alertIds", alertIds);
+        hibernateHelper.query(builder.getQuery(), builder.getParameters());
     }
 }

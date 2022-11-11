@@ -17,9 +17,9 @@ import org.sagebionetworks.bridge.models.studies.Alert;
 import org.sagebionetworks.bridge.services.AlertService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -62,6 +62,8 @@ public class AlertController extends BaseController {
     /**
      * Deletes alerts given a list of their ids.
      * 
+     * This uses the POST method because DELETE cannot have a body.
+     * 
      * @param studyId The studyId to delete the alerts from.
      * @return A status message indicating the alerts were deleted.
      * @throws NotAuthenticatedException if the caller is not authenticated.
@@ -70,7 +72,7 @@ public class AlertController extends BaseController {
      * @throws EntityNotFoundException   if the alerts to delete do not exist or are
      *                                   not from this study.
      */
-    @DeleteMapping("/v5/studies/{studyId}/alerts")
+    @PostMapping("/v5/studies/{studyId}/deleteAlerts")
     public StatusMessage deleteAlerts(@PathVariable String studyId)
             throws NotAuthenticatedException, UnauthorizedException, EntityNotFoundException {
         UserSession session = getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
