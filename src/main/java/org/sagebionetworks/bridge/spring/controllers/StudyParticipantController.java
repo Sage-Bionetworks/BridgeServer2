@@ -59,6 +59,7 @@ import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.accounts.AccountRef;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.Phone;
@@ -67,6 +68,7 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEventIdsMap;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEventRequest;
+import org.sagebionetworks.bridge.models.alerts.Alert;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
@@ -89,6 +91,7 @@ import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.spring.util.EtagSupport;
 import org.sagebionetworks.bridge.spring.util.EtagCacheKey;
 import org.sagebionetworks.bridge.services.AccountWorkflowService;
+import org.sagebionetworks.bridge.services.AlertService;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.services.EnrollmentService;
 
@@ -116,6 +119,8 @@ public class StudyParticipantController extends BaseController {
     static final StatusMessage REPORT_SAVED_MSG = new StatusMessage("Participant report saved.");
     static final StatusMessage REPORT_INDEX_DELETED_MSG = new StatusMessage("Participant report index deleted.");
 
+    private AlertService alertService;
+
     private ParticipantService participantService;
     
     private EnrollmentService enrollmentService;
@@ -129,6 +134,11 @@ public class StudyParticipantController extends BaseController {
     private ReportService reportService;
     
     private AccountWorkflowService accountWorkflowService;
+
+    @Autowired
+    final void setAlertService(AlertService alertService) {
+        this.alertService = alertService;
+    }
     
     @Autowired
     final void setParticipantService(ParticipantService participantService) {
@@ -203,7 +213,15 @@ public class StudyParticipantController extends BaseController {
                 .withUserId(session.getId())
                 .withObjectType(TIMELINE_RETRIEVED)
                 .withTimestamp(timelineRequestedOn).build(), false, true);
-        
+
+        // trigger alert for timeline retrieval
+        AccountId accountId = BridgeUtils.parseAccountId(session.getAppId(), session.getId());
+        // should never throw an exception because StudyParticipants should always have
+        // an associated account
+        Account account = accountService.getAccount(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+        alertService.createAlert(Alert.timelineAccessed(session.getAppId(), studyId, new AccountRef(account, studyId)));
+
         return new ResponseEntity<>(INSTANCE.calculateTimeline(schedule), OK);
     }
     

@@ -5,11 +5,14 @@ import java.util.Optional;
 
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.alerts.Alert;
+import org.sagebionetworks.bridge.models.alerts.Alert.AlertCategory;
 
 public interface AlertDao {
     void createAlert(Alert alert);
 
-    Optional<Alert> getAlert(String alertId);
+    Optional<Alert> getAlert(String studyId, String appId, String accountIdentifier, AlertCategory category);
+
+    Optional<Alert> getAlertById(String alertId);
 
     PagedResourceList<Alert> getAlerts(String appId, String studyId, int offsetBy, int pageSize);
 

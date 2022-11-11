@@ -12,6 +12,7 @@ import org.sagebionetworks.bridge.hibernate.QueryBuilder.WhereClauseBuilder;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.SearchTermPredicate;
 import org.sagebionetworks.bridge.models.alerts.Alert;
+import org.sagebionetworks.bridge.models.alerts.Alert.AlertCategory;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -29,7 +30,19 @@ public class HibernateAlertDao implements AlertDao {
     }
 
     @Override
-    public Optional<Alert> getAlert(String alertId) {
+    public Optional<Alert> getAlert(String studyId, String appId, String accountIdentifier, AlertCategory category) {
+        QueryBuilder builder = new QueryBuilder();
+        builder.append("FROM Alert a");
+        WhereClauseBuilder where = builder.startWhere(SearchTermPredicate.AND);
+        where.append("a.studyId = :studyId", "studyId", studyId);
+        where.append("a.appId = :appId", "appId", appId);
+        where.append("a.participant.identifier = :accountIdentifier", "accountIdentifier", accountIdentifier);
+        where.append("a.category = :category", "category", category);
+        return hibernateHelper.queryGetOne(builder.getQuery(), builder.getParameters(), Alert.class);
+    }
+
+    @Override
+    public Optional<Alert> getAlertById(String alertId) {
         return Optional.ofNullable(hibernateHelper.getById(Alert.class, alertId));
     }
 

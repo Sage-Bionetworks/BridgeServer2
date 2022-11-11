@@ -57,6 +57,7 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountRef;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEventIdsMap;
+import org.sagebionetworks.bridge.models.alerts.Alert;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordList;
@@ -84,6 +85,7 @@ import org.slf4j.LoggerFactory;
 public class AdherenceService {
     private static final Logger LOG = LoggerFactory.getLogger(AdherenceService.class);
     
+    private static final int WEEKLY_ADHERENCE_PERCENT_ALERT_THRESHOLD = 60;
     static final StudyReportWeek EMPTY_WEEK = new StudyReportWeek();
     static final String THRESHOLD_OUT_OF_RANGE_ERROR = "Adherence threshold must be from 1-100.";
     static final String NO_THRESHOLD_VALUE_ERROR = "An adherence threshold value must be supplied in the request or set as a study default.";
@@ -91,6 +93,8 @@ public class AdherenceService {
     private AdherenceRecordDao recordDao;
     
     private AdherenceReportDao reportDao;
+
+    private AlertService alertService;
     
     private StudyService studyService;
 
@@ -109,7 +113,12 @@ public class AdherenceService {
     final void setAdherenceReportDao(AdherenceReportDao reportDao) {
         this.reportDao = reportDao;
     }
-    
+
+    @Autowired
+    final void setAlertService(AlertService alertService) {
+        this.alertService = alertService;
+    }
+
     @Autowired
     final void setStudyService(StudyService studyService) {
         this.studyService = studyService;
@@ -416,7 +425,14 @@ public class AdherenceService {
         report.setClientTimeZone(zoneId);
         
         WeeklyAdherenceReport weeklyReport = deriveWeeklyAdherenceFromStudyReportWeek(studyId, account, report);
-        
+
+        // trigger alert for low weekly adherence
+        if (weeklyReport.getWeeklyAdherencePercent() != null
+                && weeklyReport.getWeeklyAdherencePercent() <= WEEKLY_ADHERENCE_PERCENT_ALERT_THRESHOLD) {
+            alertService.createAlert(Alert.lowAdherence(studyId, appId, new AccountRef(account, studyId),
+                    WEEKLY_ADHERENCE_PERCENT_ALERT_THRESHOLD));
+        }
+
         watch.stop();
         LOG.info("Weekly adherence report took " + watch.elapsed(TimeUnit.MILLISECONDS) + "ms");
         return weeklyReport;

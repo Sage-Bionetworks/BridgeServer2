@@ -6,12 +6,15 @@ import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.Embedded;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.Id;
 import javax.persistence.Table;
 
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.hibernate.DateTimeToLongAttributeConverter;
 import org.sagebionetworks.bridge.hibernate.JsonNodeAttributeConverter;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.accounts.AccountRef;
@@ -44,12 +47,21 @@ public class Alert implements BridgeEntity {
             @AttributeOverride(name = "externalId", column = @Column(name = "accountExternalId"))
     })
     private AccountRef participant;
-    private String category;
+    @Enumerated(EnumType.STRING)
+    private AlertCategory category;
     @Convert(converter = JsonNodeAttributeConverter.class)
     private JsonNode data;
 
-    public Alert(String id, DateTime createdOn, String studyId, String appId, AccountRef participant, String category,
-            JsonNode data) {
+    public enum AlertCategory {
+        NEW_ENROLLMENT,
+        TIMELINE_ACCESSED,
+        LOW_ADHERENCE,
+        UPCOMING_STUDY_BURST,
+        STUDY_BURST_DATE_CHANGE
+    }
+
+    public Alert(String id, DateTime createdOn, String studyId, String appId, AccountRef participant,
+            AlertCategory category, JsonNode data) {
         this.id = id;
         this.createdOn = createdOn;
         this.studyId = studyId;
@@ -57,6 +69,37 @@ public class Alert implements BridgeEntity {
         this.participant = participant;
         this.category = category;
         this.data = data;
+    }
+
+    public static Alert newEnrollment(String studyId, String appId, AccountRef participant) {
+        return new Alert(null, null, studyId, appId, participant, AlertCategory.NEW_ENROLLMENT,
+                BridgeObjectMapper.get().nullNode());
+    }
+
+    public static Alert timelineAccessed(String studyId, String appId, AccountRef participant) {
+        return new Alert(null, null, studyId, appId, participant, AlertCategory.TIMELINE_ACCESSED,
+                BridgeObjectMapper.get().nullNode());
+    }
+
+    public static Alert lowAdherence(String studyId, String appId, AccountRef participant, double adherenceThreshold) {
+        return new Alert(null, null, studyId, appId, participant, AlertCategory.LOW_ADHERENCE,
+                BridgeObjectMapper.get().valueToTree(new LowAdherenceAlertData(adherenceThreshold)));
+    }
+
+    public static class LowAdherenceAlertData {
+        double adherenceThreshold;
+
+        public LowAdherenceAlertData(double adherenceThreshold) {
+            this.adherenceThreshold = adherenceThreshold;
+        }
+
+        public double getAdherenceThreshold() {
+            return adherenceThreshold;
+        }
+
+        public void setAdherenceThreshold(double adherenceThreshold) {
+            this.adherenceThreshold = adherenceThreshold;
+        }
     }
 
     public String getId() {
@@ -99,11 +142,11 @@ public class Alert implements BridgeEntity {
         this.participant = participant;
     }
 
-    public String getCategory() {
+    public AlertCategory getCategory() {
         return category;
     }
 
-    public void setCategory(String category) {
+    public void setCategory(AlertCategory category) {
         this.category = category;
     }
 
