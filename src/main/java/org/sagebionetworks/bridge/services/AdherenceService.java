@@ -137,12 +137,6 @@ public class AdherenceService {
     public void updateAdherenceRecords(String appId, AdherenceRecordList recordList) {
         checkNotNull(recordList);
 
-        // BRIDGE-3354 - Temporarily disable Biaffect from using this API, since their calls are causing performance
-        // issues that is causing issues globally for Bridge Server.
-        if ("biaffect".equals(appId)) {
-            throw new BadRequestException("Adherence is not available for this app");
-        }
-
         if (recordList.getRecords().isEmpty()) {
             throw new BadRequestException("No adherence records submitted for update.");
         }
