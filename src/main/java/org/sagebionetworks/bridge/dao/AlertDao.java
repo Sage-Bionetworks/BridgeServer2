@@ -4,8 +4,8 @@ import java.util.List;
 import java.util.Optional;
 
 import org.sagebionetworks.bridge.models.PagedResourceList;
-import org.sagebionetworks.bridge.models.alerts.Alert;
-import org.sagebionetworks.bridge.models.alerts.Alert.AlertCategory;
+import org.sagebionetworks.bridge.models.studies.Alert;
+import org.sagebionetworks.bridge.models.studies.Alert.AlertCategory;
 
 public interface AlertDao {
     void createAlert(Alert alert);

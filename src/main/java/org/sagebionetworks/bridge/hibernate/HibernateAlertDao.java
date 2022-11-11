@@ -11,8 +11,8 @@ import org.sagebionetworks.bridge.dao.AlertDao;
 import org.sagebionetworks.bridge.hibernate.QueryBuilder.WhereClauseBuilder;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.SearchTermPredicate;
-import org.sagebionetworks.bridge.models.alerts.Alert;
-import org.sagebionetworks.bridge.models.alerts.Alert.AlertCategory;
+import org.sagebionetworks.bridge.models.studies.Alert;
+import org.sagebionetworks.bridge.models.studies.Alert.AlertCategory;
 import org.springframework.stereotype.Component;
 
 @Component

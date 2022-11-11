@@ -1,4 +1,4 @@
-package org.sagebionetworks.bridge.models.alerts;
+package org.sagebionetworks.bridge.models.studies;
 
 import javax.persistence.AttributeOverride;
 import javax.persistence.AttributeOverrides;
