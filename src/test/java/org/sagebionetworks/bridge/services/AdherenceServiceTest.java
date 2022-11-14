@@ -32,6 +32,7 @@ import static org.sagebionetworks.bridge.models.ResourceList.TIME_WINDOW_GUIDS;
 import static org.sagebionetworks.bridge.models.SearchTermPredicate.AND;
 import static org.sagebionetworks.bridge.models.StringSearchPosition.INFIX;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.IMMUTABLE;
+import static org.sagebionetworks.bridge.models.schedules2.Schedule2Test.createValidSchedule;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordType.ASSESSMENT;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantStudyProgress.UNSTARTED;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.SortOrder.ASC;
@@ -84,7 +85,6 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEventIdsMap;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
-import org.sagebionetworks.bridge.models.schedules2.Schedule2Test;
 import org.sagebionetworks.bridge.models.schedules2.Session;
 import org.sagebionetworks.bridge.models.schedules2.StudyBurst;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
@@ -836,7 +836,9 @@ public class AdherenceServiceTest extends Mockito {
         when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
         when(mockStudyService.getZoneId(TEST_APP_ID, TEST_STUDY_ID, TEST_CLIENT_TIME_ZONE)).thenReturn(TEST_CLIENT_TIME_ZONE);
         
-        Schedule2 schedule = Schedule2Test.createValidSchedule();
+        Schedule2 schedule = createValidSchedule();
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(Optional.of(schedule));
+        
         List<TimelineMetadata> metadata = Scheduler.INSTANCE.calculateTimeline(schedule).getMetadata();
         when(mockScheduleService.getScheduleMetadata(SCHEDULE_GUID)).thenReturn(metadata);
         
@@ -888,9 +890,10 @@ public class AdherenceServiceTest extends Mockito {
         PagedResourceList<AdherenceRecord> page2 = new PagedResourceList<>(ImmutableList.of(), 0);
         when(mockRecordDao.getAdherenceRecords(any())).thenReturn(page2);
 
-        Schedule2 schedule = Schedule2Test.createValidSchedule();
+        Schedule2 schedule = createValidSchedule();
         when(mockScheduleService.getScheduleMetadata(SCHEDULE_GUID))
             .thenReturn(Scheduler.INSTANCE.calculateTimeline(schedule).getMetadata());
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(Optional.of(schedule));
         
         WeeklyAdherenceReport retValue = service.getWeeklyAdherenceReport(
                 TEST_APP_ID, TEST_STUDY_ID, account);
@@ -929,9 +932,10 @@ public class AdherenceServiceTest extends Mockito {
         when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
         when(mockStudyService.getZoneId(TEST_APP_ID, TEST_STUDY_ID, null)).thenReturn(TEST_CLIENT_TIME_ZONE);
         
-        Schedule2 schedule = Schedule2Test.createValidSchedule();
+        Schedule2 schedule = createValidSchedule();
         when(mockScheduleService.getScheduleMetadata(SCHEDULE_GUID))
             .thenReturn(Scheduler.INSTANCE.calculateTimeline(schedule).getMetadata());
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(Optional.of(schedule));
         
         List<StudyActivityEvent> events = ImmutableList.of();
         ResourceList<StudyActivityEvent> page = new ResourceList<>(events, true);
@@ -1006,9 +1010,10 @@ public class AdherenceServiceTest extends Mockito {
         when(mockRequestInfoService.getRequestInfo(TEST_USER_ID)).thenReturn(null);
         
         // Add a schedule so we can see "UNSTARTED" as the state of this report
-        Schedule2 schedule = Schedule2Test.createValidSchedule();
+        Schedule2 schedule = createValidSchedule();
         Timeline timeline = Scheduler.INSTANCE.calculateTimeline(schedule);
         when(mockScheduleService.getScheduleMetadata(SCHEDULE_GUID)).thenReturn(timeline.getMetadata());
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(Optional.of(schedule));
         
         WeeklyAdherenceReport retValue = service.getWeeklyAdherenceReport(
                 TEST_APP_ID, TEST_STUDY_ID, account);
@@ -1046,6 +1051,7 @@ public class AdherenceServiceTest extends Mockito {
         
         when(mockScheduleService.getScheduleMetadata(SCHEDULE_GUID))
             .thenReturn(timeline.getMetadata());
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(Optional.of(schedule));
         
         RequestInfo info = new RequestInfo.Builder().withSignedInOn(CREATED_ON).build();
         when(mockRequestInfoService.getRequestInfo(TEST_USER_ID)).thenReturn(info);
@@ -1163,6 +1169,9 @@ public class AdherenceServiceTest extends Mockito {
         PagedResourceList<AdherenceRecord> records = new PagedResourceList<>(StudyAdherenceReportGeneratorTest.createAdherenceRecords(), 10);
         when(mockRecordDao.getAdherenceRecords(any())).thenReturn(records);
         
+        Schedule2 schedule = createValidSchedule();
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(Optional.of(schedule));
+        
         StudyAdherenceReport report = service.getStudyAdherenceReport(TEST_APP_ID, TEST_STUDY_ID, account);
         assertEquals(report.getParticipant().getIdentifier(), TEST_USER_ID);
         assertTrue(report.isTestAccount());
@@ -1237,7 +1246,7 @@ public class AdherenceServiceTest extends Mockito {
         study.setScheduleGuid(SCHEDULE_GUID);
         when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
         
-        Schedule2 schedule = Schedule2Test.createValidSchedule();
+        Schedule2 schedule = createValidSchedule();
         when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(Optional.of(schedule));
         
         AdherenceStatistics stats = new AdherenceStatistics();

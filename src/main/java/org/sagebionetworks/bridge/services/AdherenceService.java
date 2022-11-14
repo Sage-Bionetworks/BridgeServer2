@@ -35,7 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 import java.util.Optional;
 
 import com.google.common.base.Stopwatch;
@@ -370,7 +370,7 @@ public class AdherenceService {
         String zoneId = studyService.getZoneId(appId, studyId, clientTimeZone);
         
         EventStreamAdherenceReport report = generateReport(appId, studyId, userId, now,
-                zoneId, (state) -> EventStreamAdherenceReportGenerator.INSTANCE.generate(state));
+                zoneId, (state, schedule) -> EventStreamAdherenceReportGenerator.INSTANCE.generate(state, schedule));
         
         watch.stop();
         LOG.info("Event stream adherence report took " + watch.elapsed(TimeUnit.MILLISECONDS) + "ms");
@@ -388,7 +388,7 @@ public class AdherenceService {
         String zoneId = studyService.getZoneId(appId, studyId, account.getClientTimeZone());
 
         StudyAdherenceReport report = generateReport(appId, studyId, account.getId(), createdOn, zoneId,
-                (state) -> StudyAdherenceReportGenerator.INSTANCE.generate(state));
+                (state, schedule) -> StudyAdherenceReportGenerator.INSTANCE.generate(state, schedule));
         report.setParticipant(new AccountRef(account, studyId));
         report.setTestAccount(account.getDataGroups().contains(TEST_USER_GROUP));
         report.setCreatedOn(createdOn);
@@ -409,7 +409,7 @@ public class AdherenceService {
         String zoneId = studyService.getZoneId(appId, studyId, account.getClientTimeZone());
 
         StudyAdherenceReport report = generateReport(appId, studyId, account.getId(), createdOn, zoneId,
-                (state) -> StudyAdherenceReportGenerator.INSTANCE.generate(state));
+                (state, schedule) -> StudyAdherenceReportGenerator.INSTANCE.generate(state, schedule));
         report.setParticipant(new AccountRef(account, studyId));
         report.setTestAccount(account.getDataGroups().contains(TEST_USER_GROUP));
         report.setCreatedOn(createdOn);
@@ -478,15 +478,14 @@ public class AdherenceService {
     }
     
     private <T> T generateReport(String appId, String studyId, String userId,
-            DateTime createdOn, String clientTimeZone, Function<AdherenceState, T> func) {
+            DateTime createdOn, String clientTimeZone, BiFunction<AdherenceState, Schedule2, T> func) {
         AdherenceState.Builder builder = new AdherenceState.Builder();
         builder.withNow(createdOn);
         builder.withClientTimeZone(clientTimeZone);
         
         Study study = studyService.getStudy(appId, studyId, true);
-        if (study.getScheduleGuid() == null) {
-            throw new EntityNotFoundException(Schedule2.class);
-        }
+        Schedule2 schedule = scheduleService.getScheduleForStudy(appId, studyId)
+                .orElseThrow(() -> new EntityNotFoundException(Schedule2.class));
         List<TimelineMetadata> metadata = scheduleService.getScheduleMetadata(study.getScheduleGuid());
 
         List<StudyActivityEvent> events = studyActivityEventService.getRecentStudyActivityEvents(
@@ -506,7 +505,8 @@ public class AdherenceService {
         builder.withEvents(events);
         builder.withAdherenceRecords(adherenceRecords);
         builder.withStudyStartEventId(study.getStudyStartEventId());
-        return func.apply(builder.build());
+        AdherenceState state = builder.build();
+        return func.apply(state, schedule);
     }
     
     public AdherenceStatistics getAdherenceStatistics(String appId, String studyId, Integer adherenceThreshold) {
