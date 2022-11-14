@@ -119,5 +119,10 @@ public class AssessmentValidator implements Validator {
         validateStringLength(errors, TEXT_SIZE, assessment.getSummary(), "summary");
         validateStringLength(errors, TEXT_SIZE, assessment.getValidationStatus(), "validationStatus");
         validateStringLength(errors, TEXT_SIZE, assessment.getNormingStatus(), "normingStatus");
+        if (assessment.getImageResource() != null) {
+            errors.pushNestedPath("imageResource");
+            Validate.entity(ImageResourceValidator.INSTANCE, errors, assessment.getImageResource());
+            errors.popNestedPath();
+        }
     }
 }

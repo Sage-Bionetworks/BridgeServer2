@@ -118,12 +118,14 @@ public class ValidatorUtilsTest extends Mockito {
     public void validateLabels_emptyValid() {
         Errors errors = mock(Errors.class);
         ValidatorUtils.validateLabels(errors, ImmutableList.of());
+        verifyZeroInteractions(errors);
     }
 
     @Test
     public void validateLabels_nullValid() {
         Errors errors = mock(Errors.class);
         ValidatorUtils.validateLabels(errors, null);
+        verifyZeroInteractions(errors);
     }
 
     @Test
@@ -179,6 +181,50 @@ public class ValidatorUtilsTest extends Mockito {
 
         verify(errors, times(2)).pushNestedPath("labels[0]");
         verify(errors).rejectValue("value", CANNOT_BE_BLANK);
+    }
+
+    @Test
+    public void validateLabel_valid() {
+        Errors errors = mock(Errors.class);
+        ValidatorUtils.validateLabel(errors, new Label("en", "foo"));
+        verifyZeroInteractions(errors);
+    }
+
+    @Test
+    public void validateLabel_nullValid() {
+        Errors errors = mock(Errors.class);
+        ValidatorUtils.validateLabel(errors, null);
+        verifyZeroInteractions(errors);
+    }
+
+    @Test
+    public void validateLabel_invalidLang() {
+        Errors errors = mock(Errors.class);
+
+        Label label = new Label("yyyy", "foo");
+        ValidatorUtils.validateLabel(errors, label);
+
+        verify(errors).rejectValue("lang", INVALID_LANG);
+    }
+
+    @Test
+    public void validateLabel_blankLang() {
+        Errors errors = mock(Errors.class);
+
+        Label label = new Label("", "foo");
+        ValidatorUtils.validateLabel(errors, label);
+
+        verify(errors).rejectValue("lang", CANNOT_BE_BLANK);
+    }
+
+    @Test
+    public void validateLabel_nullLang() {
+        Errors errors = mock(Errors.class);
+
+        Label label = new Label(null, "foo");
+        ValidatorUtils.validateLabel(errors, label);
+
+        verify(errors).rejectValue("lang", CANNOT_BE_BLANK);
     }
 
     // Only minutes, hours, days, and weeks are allowed for the more fine-grained

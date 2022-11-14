@@ -112,6 +112,20 @@ class ValidatorUtils {
         }
     }
 
+    private static void validateLanguage(Errors errors, HasLang hasLang) {
+        if (hasLang == null) {
+            return;
+        }
+        if (isBlank(hasLang.getLang())) {
+            errors.rejectValue("lang", CANNOT_BE_BLANK);
+        } else {
+            Locale locale = new Locale.Builder().setLanguageTag(hasLang.getLang()).build();
+            if (!LocaleUtils.isAvailableLocale(locale)) {
+                errors.rejectValue("lang", INVALID_LANG);
+            }
+        }
+    }
+
     static void validateLabels(Errors errors, List<Label> labels) {
         if (labels == null || labels.isEmpty()) {
             return;
@@ -125,6 +139,16 @@ class ValidatorUtils {
                 errors.rejectValue("value", CANNOT_BE_BLANK);
                 errors.popNestedPath();
             }
+        }
+    }
+
+    static void validateLabel(Errors errors, Label label) {
+        if (label == null) {
+            return;
+        }
+        validateLanguage(errors, label);
+        if (isBlank(label.getValue())) {
+            errors.rejectValue("value", CANNOT_BE_BLANK);
         }
     }
 

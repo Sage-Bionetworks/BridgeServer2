@@ -4,6 +4,7 @@ import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.CUSTOMIZATION_FIELDS;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.IDENTIFIER;
+import static org.sagebionetworks.bridge.TestConstants.LABELS;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_OWNER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TAGS;
@@ -54,6 +55,11 @@ public class HibernateAssessmentTest {
         assessment.setDeleted(true);
         assessment.setRevision(5);
         assessment.setVersion(8L);
+        ImageResource imageResource = new ImageResource();
+        imageResource.setName("default");
+        imageResource.setModule("sage_survey");
+        imageResource.setLabels(LABELS);
+        assessment.setImageResource(imageResource);
         return assessment;
     }
     
@@ -76,5 +82,11 @@ public class HibernateAssessmentTest {
         assertTrue(assessment.isDeleted());
         assertEquals(assessment.getRevision(), 5);
         assertEquals(assessment.getVersion(), 8);
+        assertEquals(assessment.getImageResource().getName(), "default");
+        assertEquals(assessment.getImageResource().getModule(), "sage_survey");
+        assertEquals(assessment.getImageResource().getLabels().get(0).getLang(), LABELS.get(0).getLang());
+        assertEquals(assessment.getImageResource().getLabels().get(0).getValue(), LABELS.get(0).getValue());
+        assertEquals(assessment.getImageResource().getLabels().get(1).getLang(), LABELS.get(1).getLang());
+        assertEquals(assessment.getImageResource().getLabels().get(1).getValue(), LABELS.get(1).getValue());
     }
 }
