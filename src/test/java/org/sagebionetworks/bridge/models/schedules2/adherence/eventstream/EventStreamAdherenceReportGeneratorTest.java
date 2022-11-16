@@ -60,51 +60,6 @@ public class EventStreamAdherenceReportGeneratorTest {
             "Main Sequence", 1, "*", "Session #1", false);
     private static final Schedule2 SCHEDULE = createSchedule();
     
-    public static Schedule2 createSchedule() {
-        // TimeWindow 1A
-        TimeWindow win1 = new TimeWindow();
-        win1.setGuid("timeWindowGuid");
-        win1.setStartTime(LocalTime.parse("01:00"));
-        win1.setExpiration(Period.parse("P2DT1H"));
-        
-        // Session 1
-        Session s1 = new Session();
-        s1.setDelay(Period.parse("P14D"));
-        s1.setStartEventIds(ImmutableList.of("sessionStartEventId"));
-        s1.setTimeWindows(ImmutableList.of(win1));
-        s1.setGuid("sessionGuid");
-        s1.setName("sessionName");
-        s1.setPerformanceOrder(SEQUENTIAL);
-        
-        // TimeWindow 2A
-        TimeWindow win2 = new TimeWindow();
-        win2.setGuid("ksuWqp17x3i9zjQBh0FHSDS2");
-        win2.setStartTime(LocalTime.parse("00:00"));
-        win2.setExpiration(Period.parse("P2D"));
-        
-        // Session 2
-        Session s2 = new Session();
-        s2.setDelay(Period.parse("P14D"));
-        s2.setStartEventIds(ImmutableList.of("study_burst:Main Sequence:01"));
-        s2.setTimeWindows(ImmutableList.of(win2));
-        s2.setGuid("u90_okqrmPgKptcc9E8lORwC");
-        s2.setName("Session #1");
-        s2.setPerformanceOrder(SEQUENTIAL);
-        
-        // Schedule
-        Schedule2 schedule = new Schedule2();
-        schedule.setSessions(ImmutableList.of(s1, s2));
-        schedule.setAppId(TEST_APP_ID);
-        schedule.setGuid(SCHEDULE_GUID);
-        schedule.setName("Test Schedule");
-        schedule.setOwnerId("sage-bionetworks");
-        schedule.setDuration(Period.parse("P4W"));
-        schedule.setCreatedOn(CREATED_ON);
-        schedule.setModifiedOn(MODIFIED_ON);
-        
-        return schedule;
-    }
-    
     @Test
     public void calculatesReport() throws Exception {
         AdherenceRecord adherenceRecord = createRecord(STARTED_ON, FINISHED_ON, "sessionInstanceGuid", false);
@@ -420,7 +375,6 @@ public class EventStreamAdherenceReportGeneratorTest {
     
     @Test
     public void populatesWindowTimes() throws Exception {
-        AdherenceRecord adherenceRecord = createRecord(STARTED_ON, FINISHED_ON, "sessionInstanceGuid", false);
         StudyActivityEvent event = createEvent("sessionStartEventId", NOW.minusDays(14));
         
         AdherenceState state = createState(NOW, META1, event, null);
@@ -451,23 +405,16 @@ public class EventStreamAdherenceReportGeneratorTest {
     
     @Test
     public void endTimeNullWithoutDuration() throws Exception {
-        AdherenceRecord adherenceRecord = createRecord(STARTED_ON, FINISHED_ON, "sessionInstanceGuid", false);
         StudyActivityEvent event = createEvent("sessionStartEventId", NOW.minusDays(14));
         
-        AdherenceState state = createState(NOW, META1, event, null);
-        EventStreamAdherenceReport report = INSTANCE.generate(state, SCHEDULE);
+        Schedule2 schedule = createSchedule();
+        schedule.getSessions().get(0).getTimeWindows().get(0).setExpiration(null);
         
-        assertEquals(report.getTimestamp(), NOW.withZone(DateTimeZone.forID("America/Chicago")));
-        assertEquals(report.getAdherencePercent(), 0);
-        assertEquals(report.getStreams().size(), 1);
+        AdherenceState state = createState(NOW, META1, event, null);
+        EventStreamAdherenceReport report = INSTANCE.generate(state, schedule);
         
         EventStream stream = report.getStreams().get(0);
-        assertEquals(stream.getStartEventId(), "sessionStartEventId");
-        assertEquals(stream.getByDayEntries().size(), 1);
-        assertEquals(stream.getByDayEntries().get(Integer.valueOf(13)).size(), 1);
-        
         EventStreamDay day = stream.getByDayEntries().get(Integer.valueOf(13)).get(0);
-        assertEquals(day.getStartDay(), (Integer)13);
         
         EventStreamWindow window = day.getTimeWindows().get(0);
         assertEquals(window.getSessionInstanceGuid(), "sessionInstanceGuid");
@@ -476,7 +423,7 @@ public class EventStreamAdherenceReportGeneratorTest {
         assertEquals(window.getStartDate(), LocalDate.parse("2021-10-14"));
         assertEquals(window.getEndDate(), LocalDate.parse("2021-10-16"));
         assertEquals(window.getStartTime(), LocalTime.parse("01:00"));
-        assertEquals(window.getEndTime(), LocalTime.parse("02:00"));
+        assertNull(window.getEndTime());
         assertEquals(window.getState(), UNSTARTED);
     }
     
@@ -552,5 +499,50 @@ public class EventStreamAdherenceReportGeneratorTest {
             .flatMap(day -> day.getTimeWindows().stream())
             .map(EventStreamWindow::getState)
             .collect(toList());
+    }
+    
+    public static Schedule2 createSchedule() {
+        // TimeWindow 1A
+        TimeWindow win1 = new TimeWindow();
+        win1.setGuid("timeWindowGuid");
+        win1.setStartTime(LocalTime.parse("01:00"));
+        win1.setExpiration(Period.parse("P2DT1H"));
+        
+        // Session 1
+        Session s1 = new Session();
+        s1.setDelay(Period.parse("P14D"));
+        s1.setStartEventIds(ImmutableList.of("sessionStartEventId"));
+        s1.setTimeWindows(ImmutableList.of(win1));
+        s1.setGuid("sessionGuid");
+        s1.setName("sessionName");
+        s1.setPerformanceOrder(SEQUENTIAL);
+        
+        // TimeWindow 2A
+        TimeWindow win2 = new TimeWindow();
+        win2.setGuid("ksuWqp17x3i9zjQBh0FHSDS2");
+        win2.setStartTime(LocalTime.parse("00:00"));
+        win2.setExpiration(Period.parse("P2D"));
+        
+        // Session 2
+        Session s2 = new Session();
+        s2.setDelay(Period.parse("P14D"));
+        s2.setStartEventIds(ImmutableList.of("study_burst:Main Sequence:01"));
+        s2.setTimeWindows(ImmutableList.of(win2));
+        s2.setGuid("u90_okqrmPgKptcc9E8lORwC");
+        s2.setName("Session #1");
+        s2.setPerformanceOrder(SEQUENTIAL);
+        
+        // Schedule
+        Schedule2 schedule = new Schedule2();
+        schedule.setSessions(ImmutableList.of(s1, s2));
+        schedule.setAppId(TEST_APP_ID);
+        schedule.setGuid(SCHEDULE_GUID);
+        schedule.setName("Test Schedule");
+        schedule.setOwnerId("sage-bionetworks");
+        schedule.setDuration(Period.parse("P4W"));
+        schedule.setCreatedOn(CREATED_ON);
+        schedule.setModifiedOn(MODIFIED_ON);
+        
+        return schedule;
     }
 }
