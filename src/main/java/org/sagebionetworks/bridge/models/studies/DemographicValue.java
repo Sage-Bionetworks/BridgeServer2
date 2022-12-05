@@ -1,7 +1,5 @@
 package org.sagebionetworks.bridge.models.studies;
 
-import java.math.BigDecimal;
-
 import javax.persistence.Embeddable;
 import javax.validation.constraints.NotNull;
 
@@ -28,14 +26,6 @@ public class DemographicValue implements BridgeEntity {
 
     public DemographicValue(String value) {
         this.value = value;
-    }
-
-    public DemographicValue(BigDecimal value) {
-        this.value = String.valueOf(value);
-    }
-
-    public DemographicValue(boolean value) {
-        this.value = String.valueOf(value);
     }
 
     public DemographicValue(String key, String value) {

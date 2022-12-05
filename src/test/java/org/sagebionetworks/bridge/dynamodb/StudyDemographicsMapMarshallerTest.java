@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import static org.testng.Assert.assertEquals;
 
-import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -26,8 +25,8 @@ public class StudyDemographicsMapMarshallerTest {
         study1Demographics.put("category1", demographicNullUnitsEmptyValues);
         Demographic demographicMultipleValues = new Demographic("id2", demographicUser, "category2", true,
                 ImmutableList.of(new DemographicValue("value1"), new DemographicValue("value2"),
-                        new DemographicValue(true), new DemographicValue(false),
-                        new DemographicValue(new BigDecimal(5)), new DemographicValue(new BigDecimal("-7.2"))),
+                        new DemographicValue("true"), new DemographicValue("false"),
+                        new DemographicValue("5"), new DemographicValue("-7.2")),
                 "units1");
         study1Demographics.put("category2", demographicMultipleValues);
         Map<String, Demographic> study2Demographics = new HashMap<>();

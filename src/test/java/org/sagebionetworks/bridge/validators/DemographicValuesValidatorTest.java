@@ -3,8 +3,6 @@ package org.sagebionetworks.bridge.validators;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 
-import java.math.BigDecimal;
-
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.studies.Demographic;
 import org.sagebionetworks.bridge.models.studies.DemographicUser;
@@ -117,8 +115,8 @@ public class DemographicValuesValidatorTest {
                 new DemographicValue("foo"),
                 new DemographicValue("foo"),
                 new DemographicValue(""),
-                new DemographicValue(new BigDecimal("1.7")),
-                new DemographicValue(new BigDecimal("-12"))));
+                new DemographicValue("1.7"),
+                new DemographicValue("-12")));
         validator.validate(demographic);
         assertNoValuesInvalid(demographic);
     }
@@ -178,8 +176,8 @@ public class DemographicValuesValidatorTest {
                 "}", JsonNode.class));
         demographic.setValues(ImmutableList.of(
                 new DemographicValue("foo"),
-                new DemographicValue(new BigDecimal("1.7")),
-                new DemographicValue(new BigDecimal("-12"))));
+                new DemographicValue("1.7"),
+                new DemographicValue("-12")));
         validator.validate(demographic);
         assertNoValuesInvalid(demographic);
     }
@@ -194,8 +192,8 @@ public class DemographicValuesValidatorTest {
                 "}", JsonNode.class));
         demographic.setValues(ImmutableList.of(
                 new DemographicValue("foo"),
-                new DemographicValue(new BigDecimal("1.7")),
-                new DemographicValue(new BigDecimal("-12"))));
+                new DemographicValue("1.7"),
+                new DemographicValue("-12")));
         validator.validate(demographic);
         assertAllValuesInvalidity(demographic, INVALID_ENUM_VALUE);
     }
@@ -229,8 +227,8 @@ public class DemographicValuesValidatorTest {
                 "}", JsonNode.class));
         demographic.setValues(ImmutableList.of(
                 new DemographicValue("foo"),
-                new DemographicValue(new BigDecimal("1.7")),
-                new DemographicValue(new BigDecimal("-12"))));
+                new DemographicValue("1.7"),
+                new DemographicValue("-12")));
         validator.validate(demographic);
         assertAllValuesInvalidity(demographic, INVALID_ENUM_VALUE);
     }
@@ -247,8 +245,8 @@ public class DemographicValuesValidatorTest {
                 "}", JsonNode.class));
         demographic.setValues(ImmutableList.of(
                 new DemographicValue("foo"),
-                new DemographicValue(new BigDecimal("1.7")),
-                new DemographicValue(new BigDecimal("-12"))));
+                new DemographicValue("1.7"),
+                new DemographicValue("-12")));
         validator.validate(demographic);
         assertOneValueInvalidity(demographic, 0, INVALID_ENUM_VALUE);
     }
@@ -259,13 +257,13 @@ public class DemographicValuesValidatorTest {
         config.setValidationRules(BridgeObjectMapper.get().createObjectNode());
         demographic.setValues(ImmutableList.of(
                 // with repetition
-                new DemographicValue(new BigDecimal("5")),
-                new DemographicValue(new BigDecimal("5")),
+                new DemographicValue("5"),
+                new DemographicValue("5"),
                 // positive and negative
                 // float and int
-                new DemographicValue(new BigDecimal("10.2")),
-                new DemographicValue(new BigDecimal("-2")),
-                new DemographicValue(new BigDecimal("-7.8")),
+                new DemographicValue("10.2"),
+                new DemographicValue("-2"),
+                new DemographicValue("-7.8"),
                 new DemographicValue("1.7e308"),
                 new DemographicValue("-1.7e308")));
         validator.validate(demographic);
@@ -281,15 +279,15 @@ public class DemographicValuesValidatorTest {
                 "}", JsonNode.class));
         demographic.setValues(ImmutableList.of(
                 // repetition
-                new DemographicValue(new BigDecimal("-50000")),
-                new DemographicValue(new BigDecimal("-50000")),
+                new DemographicValue("-50000"),
+                new DemographicValue("-50000"),
                 // close but not quite
-                new DemographicValue(new BigDecimal("-49999.9999999999999999")),
-                new DemographicValue(new BigDecimal("48268.29999999999999")),
+                new DemographicValue("-49999.9999999999999999"),
+                new DemographicValue("48268.29999999999999"),
                 // all combinations with +/-, exponent/non-exponent (capitalized and
                 // un-capitalized) with +/- exponent
                 // 0
-                new DemographicValue(new BigDecimal(0)),
+                new DemographicValue("0"),
                 new DemographicValue("0"),
                 new DemographicValue("0e20"),
                 new DemographicValue("0E20"),
@@ -312,14 +310,14 @@ public class DemographicValuesValidatorTest {
                 new DemographicValue("-0e+20"),
                 new DemographicValue("-0E+20"),
                 // int
-                new DemographicValue(new BigDecimal("482")),
                 new DemographicValue("482"),
-                new DemographicValue(new BigDecimal("482e2")),
+                new DemographicValue("482"),
+                new DemographicValue("482e2"),
                 new DemographicValue("482e2"),
                 new DemographicValue("482E2"),
                 new DemographicValue("482e+2"),
                 new DemographicValue("482E+2"),
-                new DemographicValue(new BigDecimal("482e-7")),
+                new DemographicValue("482e-7"),
                 new DemographicValue("482e-7"),
                 new DemographicValue("482E-7"),
                 new DemographicValue("+482"),
@@ -329,14 +327,14 @@ public class DemographicValuesValidatorTest {
                 new DemographicValue("+482E+2"),
                 new DemographicValue("+482e-7"),
                 new DemographicValue("+482E-7"),
-                new DemographicValue(new BigDecimal("-482")),
                 new DemographicValue("-482"),
-                new DemographicValue(new BigDecimal("-482e2")),
+                new DemographicValue("-482"),
+                new DemographicValue("-482e2"),
                 new DemographicValue("-482e2"),
                 new DemographicValue("-482E2"),
                 new DemographicValue("-482e+2"),
                 new DemographicValue("-482E+2"),
-                new DemographicValue(new BigDecimal("-482e-7")),
+                new DemographicValue("-482e-7"),
                 new DemographicValue("-482e-7"),
                 new DemographicValue("-482E-7"),
                 // int with decimal
@@ -362,14 +360,14 @@ public class DemographicValuesValidatorTest {
                 new DemographicValue("-482.e-7"),
                 new DemographicValue("-482.E-7"),
                 // int with decimal and fraction part
-                new DemographicValue(new BigDecimal("482.683")),
                 new DemographicValue("482.683"),
-                new DemographicValue(new BigDecimal("482.683e2")),
+                new DemographicValue("482.683"),
+                new DemographicValue("482.683e2"),
                 new DemographicValue("482.683e2"),
                 new DemographicValue("482.683E2"),
                 new DemographicValue("482.683e+2"),
                 new DemographicValue("482.683E+2"),
-                new DemographicValue(new BigDecimal("482.683e-7")),
+                new DemographicValue("482.683e-7"),
                 new DemographicValue("482.683e-7"),
                 new DemographicValue("482.683E-7"),
                 new DemographicValue("+482.683"),
@@ -379,25 +377,25 @@ public class DemographicValuesValidatorTest {
                 new DemographicValue("+482.683E+2"),
                 new DemographicValue("+482.683e-7"),
                 new DemographicValue("+482.683E-7"),
-                new DemographicValue(new BigDecimal("-482.683")),
                 new DemographicValue("-482.683"),
-                new DemographicValue(new BigDecimal("-482.683e2")),
+                new DemographicValue("-482.683"),
+                new DemographicValue("-482.683e2"),
                 new DemographicValue("-482.683e2"),
                 new DemographicValue("-482.683E2"),
                 new DemographicValue("-482.683e+2"),
                 new DemographicValue("-482.683E+2"),
-                new DemographicValue(new BigDecimal("-482.683e-7")),
+                new DemographicValue("-482.683e-7"),
                 new DemographicValue("-482.683e-7"),
                 new DemographicValue("-482.683E-7"),
                 // fraction part only
-                new DemographicValue(new BigDecimal(".683")),
                 new DemographicValue(".683"),
-                new DemographicValue(new BigDecimal(".683e2")),
+                new DemographicValue(".683"),
+                new DemographicValue(".683e2"),
                 new DemographicValue(".683e2"),
                 new DemographicValue(".683E2"),
                 new DemographicValue(".683e+2"),
                 new DemographicValue(".683E+2"),
-                new DemographicValue(new BigDecimal(".683e-2")),
+                new DemographicValue(".683e-2"),
                 new DemographicValue(".683e-2"),
                 new DemographicValue(".683E-2"),
                 new DemographicValue("+.683"),
@@ -407,14 +405,14 @@ public class DemographicValuesValidatorTest {
                 new DemographicValue("+.683E+2"),
                 new DemographicValue("+.683e-2"),
                 new DemographicValue("+.683E-2"),
-                new DemographicValue(new BigDecimal("-.683")),
                 new DemographicValue("-.683"),
-                new DemographicValue(new BigDecimal("-.683e2")),
+                new DemographicValue("-.683"),
+                new DemographicValue("-.683e2"),
                 new DemographicValue("-.683e2"),
                 new DemographicValue("-.683E2"),
                 new DemographicValue("-.683e+2"),
                 new DemographicValue("-.683E+2"),
-                new DemographicValue(new BigDecimal("-.683e-2")),
+                new DemographicValue("-.683e-2"),
                 new DemographicValue("-.683e-2"),
                 new DemographicValue("-.683E-2")));
         validator.validate(demographic);
@@ -429,15 +427,15 @@ public class DemographicValuesValidatorTest {
                 "}", JsonNode.class));
         demographic.setValues(ImmutableList.of(
                 // repetition
-                new DemographicValue(new BigDecimal("-999999999999999999999.")),
-                new DemographicValue(new BigDecimal("-999999999999999999999.")),
+                new DemographicValue("-999999999999999999999."),
+                new DemographicValue("-999999999999999999999."),
                 // out of range int but parsed as double
                 new DemographicValue("-999999999999999999999"),
                 new DemographicValue("-1.7e308"),
-                new DemographicValue(new BigDecimal("482.683")),
                 new DemographicValue("482.683"),
-                new DemographicValue(new BigDecimal("0")),
-                new DemographicValue(new BigDecimal("482.6829999999999"))));
+                new DemographicValue("482.683"),
+                new DemographicValue("0"),
+                new DemographicValue("482.6829999999999")));
         validator.validate(demographic);
         assertNoValuesInvalid(demographic);
     }
@@ -450,15 +448,15 @@ public class DemographicValuesValidatorTest {
                 "}", JsonNode.class));
         demographic.setValues(ImmutableList.of(
                 // repetition
-                new DemographicValue(new BigDecimal("-500")),
-                new DemographicValue(new BigDecimal("-500")),
                 new DemographicValue("-500"),
-                new DemographicValue(new BigDecimal("999999999999999999999.")),
+                new DemographicValue("-500"),
+                new DemographicValue("-500"),
+                new DemographicValue("999999999999999999999."),
                 // out of range int but parsed as double
                 new DemographicValue("999999999999999999999"),
                 new DemographicValue("1.7e308"),
-                new DemographicValue(new BigDecimal("0")),
-                new DemographicValue(new BigDecimal("999999999999999999999.9999999999999"))));
+                new DemographicValue("0"),
+                new DemographicValue("999999999999999999999.9999999999999")));
         validator.validate(demographic);
         assertNoValuesInvalid(demographic);
     }
@@ -468,7 +466,7 @@ public class DemographicValuesValidatorTest {
         config.setValidationType(DemographicValuesValidationType.NUMBER_RANGE);
         config.setValidationRules(BridgeObjectMapper.get().createArrayNode());
         demographic.setValues(ImmutableList.of(
-                new DemographicValue(new BigDecimal(5))));
+                new DemographicValue("5")));
         validator.validate(demographic);
         assertAllValuesInvalidity(demographic, INVALID_CONFIGURATION);
     }
@@ -489,7 +487,7 @@ public class DemographicValuesValidatorTest {
         config.setValidationRules(BridgeObjectMapper.get().readValue("{" +
                 "    \"foo\": \"bar\"" +
                 "}", JsonNode.class));
-        demographic.setValues(ImmutableList.of(new DemographicValue(new BigDecimal("5"))));
+        demographic.setValues(ImmutableList.of(new DemographicValue("5")));
         // unknown fields should be ignored by BridgeObjectMapper
         validator.validate(demographic);
         assertNoValuesInvalid(demographic);
