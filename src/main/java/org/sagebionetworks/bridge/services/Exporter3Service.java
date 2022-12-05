@@ -226,8 +226,8 @@ public class Exporter3Service {
         listBuilder.add(demographicUnitsColumn);
 
         ColumnModel demographicInvalidityColumn = new ColumnModel();
-        demographicUnitsColumn.setName("demographicInvalidity");
-        demographicUnitsColumn.setColumnType(ColumnType.STRING);
+        demographicInvalidityColumn.setName("demographicInvalidity");
+        demographicInvalidityColumn.setColumnType(ColumnType.STRING);
         healthCodeColumn.setMaximumSize(512L);
         listBuilder.add(demographicInvalidityColumn);
 
