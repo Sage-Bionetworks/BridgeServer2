@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.services;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
+import static org.sagebionetworks.bridge.validators.DemographicValuesValidator.INVALID_CONFIGURATION;
 
 import java.io.IOException;
 import java.util.Map;
@@ -131,12 +132,13 @@ public class DemographicService {
                             elementIdToElement.get(appConfigElementId).getData(),
                             DemographicValuesValidationConfiguration.class);
                 } catch (IOException | IllegalArgumentException e) {
-                    throw new InvalidEntityException(demographicUser,
-                            "error validating demographics: " + e.getMessage());
+                    DemographicValuesValidator.invalidateDemographic(demographic, INVALID_CONFIGURATION);
+                    return;
                 }
                 // validate the demographic using the validation configuration
                 // the configuration itself is validated by the DemographicValuesValidator
-                Validate.entityThrowingException(new DemographicValuesValidator(configuration), demographic);
+                // Validate.entityThrowingException(new DemographicValuesValidator(configuration), demographic);
+                new DemographicValuesValidator(configuration).validate(demographic);
             }
         }
     }

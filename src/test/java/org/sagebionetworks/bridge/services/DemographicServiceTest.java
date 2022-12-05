@@ -51,6 +51,8 @@ public class DemographicServiceTest {
     private static final String DEMOGRAPHIC_ID = "test-demographic-id";
     private static final String DEMOGRAPHIC_USER_ID = "test-demographic-user-id";
     private static final String DEMOGRAPHICS_APP_CONFIG_KEY_PREFIX = "bridge-validation-demographics-values-";
+    private static final String INVALID_CONFIGURATION = "invalid data";
+    private static final String INVALID_ENUM_VALUE = "invalid enum value";
 
     @Mock
     DemographicDao demographicDao;
@@ -74,6 +76,12 @@ public class DemographicServiceTest {
 
         doReturn("0", IntStream.range(1, 1000).mapToObj(Integer::toString).toArray()).when(demographicService)
                 .generateGuid();
+    }
+
+    private void assertAllInvalid(Demographic demographic, String errorMessage) {
+        for (DemographicValue value : demographic.getValues()) {
+            assertEquals(value.getInvalidity(), errorMessage);
+        }
     }
 
     /**
@@ -146,6 +154,7 @@ public class DemographicServiceTest {
     @Test
     public void saveDemographicUserAppValidation_noDemographics() {
         when(appConfigElementService.getMostRecentElements(TEST_APP_ID, false)).thenReturn(ImmutableList.of(AppConfigElement.create()));
+        when(demographicDao.saveDemographicUser(any(), any(), any(), any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         DemographicUser demographicUser = new DemographicUser("test-id", TEST_APP_ID, null, TEST_USER_ID, new HashMap<>());
 
@@ -161,6 +170,7 @@ public class DemographicServiceTest {
         AppConfigElement element = AppConfigElement.create();
         element.setId(DEMOGRAPHICS_APP_CONFIG_KEY_PREFIX + "foo");
         when(appConfigElementService.getMostRecentElements(TEST_APP_ID, false)).thenReturn(ImmutableList.of(element));
+        when(demographicDao.saveDemographicUser(any(), any(), any(), any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         DemographicUser demographicUser = new DemographicUser("test-id", TEST_APP_ID, null, TEST_USER_ID, null);
         Demographic demographic = new Demographic(TEST_APP_ID, demographicUser, "bar", false,
@@ -176,13 +186,14 @@ public class DemographicServiceTest {
         // the category name of the demographic
     }
 
-    @Test(expectedExceptions = InvalidEntityException.class)
+    @Test
     public void saveDemographicUserAppValidation_configurationJsonErrorIOException()
             throws JsonMappingException, JsonProcessingException {
         AppConfigElement element = AppConfigElement.create();
         element.setId(DEMOGRAPHICS_APP_CONFIG_KEY_PREFIX + "category");
         element.setData(BridgeObjectMapper.get().createArrayNode());
         when(appConfigElementService.getMostRecentElements(TEST_APP_ID, false)).thenReturn(ImmutableList.of(element));
+        when(demographicDao.saveDemographicUser(any(), any(), any(), any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         DemographicUser demographicUser = new DemographicUser("test-id", TEST_APP_ID, null, TEST_USER_ID, null);
         Demographic demographic = new Demographic(TEST_APP_ID, demographicUser, "category", false,
@@ -190,15 +201,17 @@ public class DemographicServiceTest {
         demographicUser.setDemographics(ImmutableMap.of("category", demographic));
 
         // execute
-        demographicService.saveDemographicUser(demographicUser, account);
+        DemographicUser savedDemographicUser = demographicService.saveDemographicUser(demographicUser, account);
+        assertAllInvalid(savedDemographicUser.getDemographics().get("category"), INVALID_CONFIGURATION);
     }
 
-    @Test(expectedExceptions = InvalidEntityException.class)
+    @Test
     public void saveDemographicUserAppValidation_configurationJsonErrorIllegalArgumentException() {
         AppConfigElement element = mock(AppConfigElement.class);
         when(element.getId()).thenReturn(DEMOGRAPHICS_APP_CONFIG_KEY_PREFIX + "category");
         when(element.getData()).thenThrow(new IllegalArgumentException());
         when(appConfigElementService.getMostRecentElements(TEST_APP_ID, false)).thenReturn(ImmutableList.of(element));
+        when(demographicDao.saveDemographicUser(any(), any(), any(), any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         DemographicUser demographicUser = new DemographicUser("test-id", TEST_APP_ID, null, TEST_USER_ID, null);
         Demographic demographic = new Demographic(TEST_APP_ID, demographicUser, "category", false,
@@ -206,15 +219,17 @@ public class DemographicServiceTest {
         demographicUser.setDemographics(ImmutableMap.of("category", demographic));
 
         // execute
-        demographicService.saveDemographicUser(demographicUser, account);
+        DemographicUser savedDemographicUser = demographicService.saveDemographicUser(demographicUser, account);
+        assertAllInvalid(savedDemographicUser.getDemographics().get("category"), INVALID_CONFIGURATION);
     }
 
-    @Test(expectedExceptions = InvalidEntityException.class)
+    @Test
     public void saveDemographicUserAppValidation_nullConfiguration() {
         AppConfigElement element = AppConfigElement.create();
         element.setId(DEMOGRAPHICS_APP_CONFIG_KEY_PREFIX + "category");
         element.setData(BridgeObjectMapper.get().nullNode());
         when(appConfigElementService.getMostRecentElements(TEST_APP_ID, false)).thenReturn(ImmutableList.of(element));
+        when(demographicDao.saveDemographicUser(any(), any(), any(), any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         DemographicUser demographicUser = new DemographicUser("test-id", TEST_APP_ID, null, TEST_USER_ID, null);
         Demographic demographic = new Demographic(TEST_APP_ID, demographicUser, "category", false,
@@ -222,10 +237,11 @@ public class DemographicServiceTest {
         demographicUser.setDemographics(ImmutableMap.of("category", demographic));
 
         // execute
-        demographicService.saveDemographicUser(demographicUser, account);
+        DemographicUser savedDemographicUser = demographicService.saveDemographicUser(demographicUser, account);
+        assertAllInvalid(savedDemographicUser.getDemographics().get("category"), INVALID_CONFIGURATION);
     }
 
-    @Test(expectedExceptions = InvalidEntityException.class)
+    @Test
     public void saveDemographicUserAppValidation_blankType() throws JsonMappingException, JsonProcessingException {
         AppConfigElement element = AppConfigElement.create();
         element.setId(DEMOGRAPHICS_APP_CONFIG_KEY_PREFIX + "category");
@@ -240,6 +256,7 @@ public class DemographicServiceTest {
                 "}", JsonNode.class);
         element.setData(config);
         when(appConfigElementService.getMostRecentElements(TEST_APP_ID, false)).thenReturn(ImmutableList.of(element));
+        when(demographicDao.saveDemographicUser(any(), any(), any(), any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         DemographicUser demographicUser = new DemographicUser("test-id", TEST_APP_ID, null, TEST_USER_ID, null);
         Demographic demographic = new Demographic(TEST_APP_ID, demographicUser, "category", false,
@@ -247,10 +264,11 @@ public class DemographicServiceTest {
         demographicUser.setDemographics(ImmutableMap.of("category", demographic));
 
         // execute
-        demographicService.saveDemographicUser(demographicUser, account);
+        DemographicUser savedDemographicUser = demographicService.saveDemographicUser(demographicUser, account);
+        assertAllInvalid(savedDemographicUser.getDemographics().get("category"), INVALID_CONFIGURATION);
     }
 
-    @Test(expectedExceptions = InvalidEntityException.class)
+    @Test
     public void saveDemographicUserAppValidation_invalidConfigurationNullType()
             throws JsonMappingException, JsonProcessingException {
         AppConfigElement element = AppConfigElement.create();
@@ -266,6 +284,7 @@ public class DemographicServiceTest {
                 "}", JsonNode.class);
         element.setData(config);
         when(appConfigElementService.getMostRecentElements(TEST_APP_ID, false)).thenReturn(ImmutableList.of(element));
+        when(demographicDao.saveDemographicUser(any(), any(), any(), any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         DemographicUser demographicUser = new DemographicUser("test-id", TEST_APP_ID, null, TEST_USER_ID, null);
         Demographic demographic = new Demographic(TEST_APP_ID, demographicUser, "category", false,
@@ -273,10 +292,11 @@ public class DemographicServiceTest {
         demographicUser.setDemographics(ImmutableMap.of("category", demographic));
 
         // execute
-        demographicService.saveDemographicUser(demographicUser, account);
+        DemographicUser savedDemographicUser = demographicService.saveDemographicUser(demographicUser, account);
+        assertAllInvalid(savedDemographicUser.getDemographics().get("category"), INVALID_CONFIGURATION);
     }
 
-    @Test(expectedExceptions = InvalidEntityException.class)
+    @Test
     public void saveDemographicUserAppValidation_invalidConfigurationNullRules()
             throws JsonMappingException, JsonProcessingException {
         AppConfigElement element = AppConfigElement.create();
@@ -287,6 +307,7 @@ public class DemographicServiceTest {
                 "}", JsonNode.class);
         element.setData(config);
         when(appConfigElementService.getMostRecentElements(TEST_APP_ID, false)).thenReturn(ImmutableList.of(element));
+        when(demographicDao.saveDemographicUser(any(), any(), any(), any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         DemographicUser demographicUser = new DemographicUser("test-id", TEST_APP_ID, null, TEST_USER_ID, null);
         Demographic demographic = new Demographic(TEST_APP_ID, demographicUser, "category", false,
@@ -294,10 +315,11 @@ public class DemographicServiceTest {
         demographicUser.setDemographics(ImmutableMap.of("category", demographic));
 
         // execute
-        demographicService.saveDemographicUser(demographicUser, account);
+        DemographicUser savedDemographicUser = demographicService.saveDemographicUser(demographicUser, account);
+        assertAllInvalid(savedDemographicUser.getDemographics().get("category"), INVALID_CONFIGURATION);
     }
 
-    @Test(expectedExceptions = InvalidEntityException.class)
+    @Test
     public void saveDemographicUserAppValidation_invalidConfigurationNullTypeAndRules() {
         AppConfigElement element = AppConfigElement.create();
         element.setId(DEMOGRAPHICS_APP_CONFIG_KEY_PREFIX + "category");
@@ -306,6 +328,7 @@ public class DemographicServiceTest {
         config.set("validationRules", BridgeObjectMapper.get().nullNode());
         element.setData(config);
         when(appConfigElementService.getMostRecentElements(TEST_APP_ID, false)).thenReturn(ImmutableList.of(element));
+        when(demographicDao.saveDemographicUser(any(), any(), any(), any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         DemographicUser demographicUser = new DemographicUser("test-id", TEST_APP_ID, null, TEST_USER_ID, null);
         Demographic demographic = new Demographic(TEST_APP_ID, demographicUser, "category", false,
@@ -313,10 +336,11 @@ public class DemographicServiceTest {
         demographicUser.setDemographics(ImmutableMap.of("category", demographic));
 
         // execute
-        demographicService.saveDemographicUser(demographicUser, account);
+        DemographicUser savedDemographicUser = demographicService.saveDemographicUser(demographicUser, account);
+        assertAllInvalid(savedDemographicUser.getDemographics().get("category"), INVALID_CONFIGURATION);
     }
 
-    @Test(expectedExceptions = InvalidEntityException.class)
+    @Test
     public void saveDemographicUserAppValidation_invalidDemographic()
             throws JsonMappingException, JsonProcessingException {
         AppConfigElement element = AppConfigElement.create();
@@ -332,6 +356,7 @@ public class DemographicServiceTest {
                 "}", JsonNode.class);
         element.setData(config);
         when(appConfigElementService.getMostRecentElements(TEST_APP_ID, false)).thenReturn(ImmutableList.of(element));
+        when(demographicDao.saveDemographicUser(any(), any(), any(), any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         DemographicUser demographicUser = new DemographicUser("test-id", TEST_APP_ID, null, TEST_USER_ID, null);
         Demographic demographic = new Demographic(TEST_APP_ID, demographicUser, "category", false,
@@ -339,7 +364,8 @@ public class DemographicServiceTest {
         demographicUser.setDemographics(ImmutableMap.of("category", demographic));
 
         // execute
-        demographicService.saveDemographicUser(demographicUser, account);
+        DemographicUser savedDemographicUser = demographicService.saveDemographicUser(demographicUser, account);
+        assertAllInvalid(savedDemographicUser.getDemographics().get("category"), INVALID_ENUM_VALUE);
     }
 
     @Test
