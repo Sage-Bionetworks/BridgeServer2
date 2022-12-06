@@ -48,8 +48,20 @@ public class DemographicValueValidatorTest {
      * length.
      */
     @Test
-    public void stringLength() {
+    public void valueStringLength() {
         assertValidatorMessage(demographicValueValidator, new DemographicValue(generateStringOfLength(1025)), "value",
                 getInvalidStringLengthMessage(1024));
+    }
+
+    /**
+     * Tests that the validator rejects a DemographicValue with an invalid
+     * invalidity
+     * length.
+     */
+    @Test
+    public void invalidityStringLength() {
+        assertValidatorMessage(demographicValueValidator,
+                new DemographicValue("foo").withInvalidity(generateStringOfLength(513)), "invalidity",
+                getInvalidStringLengthMessage(512));
     }
 }

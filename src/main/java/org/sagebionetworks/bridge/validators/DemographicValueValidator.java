@@ -28,5 +28,6 @@ public class DemographicValueValidator implements Validator {
         }
 
         validateStringLength(errors, 1024, demographicValue.getValue(), "value");
+        validateStringLength(errors, 512, demographicValue.getInvalidity(), "invalidity");
     }
 }
