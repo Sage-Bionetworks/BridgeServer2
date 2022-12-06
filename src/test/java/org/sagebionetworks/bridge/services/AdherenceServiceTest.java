@@ -179,7 +179,7 @@ public class AdherenceServiceTest extends Mockito {
         // Nothing is finished, nothing is published.
         verify(mockStudyActivityEventService, never()).publishEvent(any(), eq(false), eq(true));
     }
-    
+
     @Test(expectedExceptions = BadRequestException.class)
     public void updateAdherenceRecords_noRecords() {
         service.updateAdherenceRecords(TEST_APP_ID, new AdherenceRecordList(ImmutableList.of()));

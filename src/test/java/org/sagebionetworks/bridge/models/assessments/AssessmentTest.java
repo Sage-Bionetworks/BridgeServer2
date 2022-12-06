@@ -61,7 +61,12 @@ public class AssessmentTest {
         assessment.setModifiedOn(MODIFIED_ON);
         assessment.setDeleted(true);
         assessment.setVersion(8L);
-        
+        ImageResource imageResource = new ImageResource();
+        imageResource.setName("default");
+        imageResource.setModule("sage_survey");
+        imageResource.setLabels(LABELS);
+        assessment.setImageResource(imageResource);
+
         Assessment dto = Assessment.create(assessment);
         assertAssessment(dto);
     }
@@ -82,7 +87,7 @@ public class AssessmentTest {
         Assessment dto = createAssessment();
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(dto);
-        assertEquals(node.size(), 20);
+        assertEquals(node.size(), 21);
         assertEquals(node.get("guid").textValue(), GUID);
         assertEquals(node.get("identifier").textValue(), IDENTIFIER);
         assertEquals(node.get("revision").intValue(), 5);
@@ -99,6 +104,13 @@ public class AssessmentTest {
         assertEquals(node.get("modifiedOn").textValue(), MODIFIED_ON.toString());
         assertTrue(node.get("deleted").booleanValue());
         assertEquals(node.get("version").longValue(), 8L);
+        assertEquals(node.get("imageResource").get("name").textValue(), "default");
+        assertEquals(node.get("imageResource").get("module").textValue(), "sage_survey");
+        assertEquals(node.get("imageResource").get("labels").get(0).get("lang").textValue(), LABELS.get(0).getLang());
+        assertEquals(node.get("imageResource").get("labels").get(0).get("value").textValue(), LABELS.get(0).getValue());
+        assertEquals(node.get("imageResource").get("labels").get(1).get("lang").textValue(), LABELS.get(1).getLang());
+        assertEquals(node.get("imageResource").get("labels").get(1).get("value").textValue(), LABELS.get(1).getValue());
+        assertEquals(node.get("imageResource").get("type").textValue(), "ImageResource");
         assertEquals(node.get("type").textValue(), "Assessment");
         
         ArrayNode tags = (ArrayNode)node.get("tags");
@@ -122,8 +134,7 @@ public class AssessmentTest {
         assertEquals(propInfo2.get("label").textValue(), "bar label");
         assertEquals(propInfo2.get("description").textValue(), "a description");
         assertEquals(propInfo2.get("propType").textValue(), "string");
-        assertEquals(propInfo2.get("type").textValue(), "PropertyInfo");
-        
+
         Assessment deser = BridgeObjectMapper.get().readValue(node.toString(), Assessment.class);
         assertAssessment(deser);
     }
@@ -149,6 +160,11 @@ public class AssessmentTest {
         dto.setModifiedOn(MODIFIED_ON);
         dto.setDeleted(true);
         dto.setVersion(8L);
+        ImageResource imageResource = new ImageResource();
+        imageResource.setName("default");
+        imageResource.setModule("sage_survey");
+        imageResource.setLabels(LABELS);
+        dto.setImageResource(imageResource);
         return dto;
     }
     
@@ -176,6 +192,12 @@ public class AssessmentTest {
         assertEquals(assessment.getCreatedOn(), CREATED_ON);
         assertEquals(assessment.getModifiedOn(), MODIFIED_ON);
         assertTrue(assessment.isDeleted());
-        assertEquals(assessment.getVersion(), 8L);         
+        assertEquals(assessment.getVersion(), 8L);
+        assertEquals(assessment.getImageResource().getName(), "default");
+        assertEquals(assessment.getImageResource().getModule(), "sage_survey");
+        assertEquals(assessment.getImageResource().getLabels().get(0).getLang(), LABELS.get(0).getLang());
+        assertEquals(assessment.getImageResource().getLabels().get(0).getValue(), LABELS.get(0).getValue());
+        assertEquals(assessment.getImageResource().getLabels().get(1).getLang(), LABELS.get(1).getLang());
+        assertEquals(assessment.getImageResource().getLabels().get(1).getValue(), LABELS.get(1).getValue());
     }
 }

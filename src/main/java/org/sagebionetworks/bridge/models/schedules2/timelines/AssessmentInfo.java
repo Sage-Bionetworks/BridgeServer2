@@ -15,6 +15,7 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.models.Label;
 import org.sagebionetworks.bridge.models.assessments.ColorScheme;
+import org.sagebionetworks.bridge.models.assessments.ImageResource;
 import org.sagebionetworks.bridge.models.schedules2.AssessmentReference;
 
 public final class AssessmentInfo {
@@ -30,7 +31,8 @@ public final class AssessmentInfo {
     private final String label;
     private final Integer minutesToComplete;
     private final ColorScheme colorScheme;
-    
+    private final ImageResource imageResource;
+
     public static AssessmentInfo create(AssessmentReference ref) {
         List<String> languages = RequestContext.get().getCallerLanguages();
         
@@ -53,9 +55,21 @@ public final class AssessmentInfo {
             hashValue(hc, cs.getActivated());
             hashValue(hc, cs.getInactivated());
         }
+        if (ref.getImageResource() != null) {
+            ImageResource imageResource = ref.getImageResource();
+            hashValue(hc, imageResource.getName());
+            hashValue(hc, imageResource.getModule());
+            if (imageResource.getLabels() != null) {
+                for (Label imageResourceLabel : imageResource.getLabels()) {
+                    hashValue(hc, imageResourceLabel.getLang());
+                    hashValue(hc, imageResourceLabel.getValue());
+                }
+            }
+        }
         String hash = hc.hash().toString();
         return new AssessmentInfo(hash, ref.getGuid(), ref.getAppId(), ref.getIdentifier(),
-                ref.getRevision(), label.getValue(), ref.getMinutesToComplete(), ref.getColorScheme());
+                ref.getRevision(), label.getValue(), ref.getMinutesToComplete(), ref.getColorScheme(),
+                ref.getImageResource());
     }
     private static void hashValue(Hasher hc, String value) {
         if (value != null) {
@@ -69,7 +83,8 @@ public final class AssessmentInfo {
     }
     
     private AssessmentInfo(String key, String guid, String appId, String identifier,
-            Integer revision, String label, Integer minutesToComplete, ColorScheme colorScheme) {
+            Integer revision, String label, Integer minutesToComplete, ColorScheme colorScheme,
+            ImageResource imageResource) {
         this.key = key;
         this.guid = guid;
         this.appId = appId;
@@ -78,6 +93,7 @@ public final class AssessmentInfo {
         this.label = label;
         this.colorScheme = colorScheme;
         this.minutesToComplete = minutesToComplete;
+        this.imageResource = imageResource;
     }
     
     public String getKey() {
@@ -119,10 +135,14 @@ public final class AssessmentInfo {
         String path = SHARED_APP_ID.equals(appId) ? "/v1/sharedassessments/" : "/v1/assessments/";
         return INSTANCE.url("ws", path + guid + "/config");
     }
-    
+
+    public ImageResource getImageResource() {
+        return imageResource;
+    }
+
     @Override
     public int hashCode() {
-        return Objects.hash(appId, colorScheme, guid, identifier, revision, label, minutesToComplete);
+        return Objects.hash(appId, colorScheme, guid, identifier, revision, label, minutesToComplete, imageResource);
     }
 
     @Override
@@ -138,6 +158,7 @@ public final class AssessmentInfo {
                 Objects.equals(identifier, other.identifier) &&
                 Objects.equals(revision, other.revision) &&
                 Objects.equals(label, other.label) &&
-                Objects.equals(minutesToComplete, other.minutesToComplete);
+                Objects.equals(minutesToComplete, other.minutesToComplete) &&
+                Objects.equals(imageResource, other.imageResource);
     }
 }

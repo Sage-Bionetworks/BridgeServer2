@@ -136,11 +136,13 @@ public class AdherenceService {
     
     public void updateAdherenceRecords(String appId, AdherenceRecordList recordList) {
         checkNotNull(recordList);
-        
+
         if (recordList.getRecords().isEmpty()) {
             throw new BadRequestException("No adherence records submitted for update.");
         }
-        
+
+        LOG.info("Update adherence records for app " + appId + " with " + recordList.getRecords().size() + " records");
+
         Validate.entityThrowingException(INSTANCE, recordList);
 
         // The only caller of this method sets all the userId and studyId fields, 
