@@ -636,6 +636,10 @@ public class Exporter3Service {
             } catch (RuntimeException ex) {
                 LOG.error("Error notifying export for app-wide project, app=" + appId + ", record=" + recordId, ex);
             }
+        } else {
+            // This could happen if the study is configured for export, but not the app. Log at info level, so we can
+            // trace with our logs.
+            LOG.info("Export not enabled for app-wide project, app=" + appId + ", record=" + recordId);
         }
 
         // Send study-specific notifications. Note that getStudyRecords() is never null.
@@ -717,9 +721,6 @@ public class Exporter3Service {
 
         boolean isAppModified = false;
         App app = appService.getApp(appId);
-        if (!app.isExporter3Enabled()) {
-            throw new BadRequestException("App does not have Exporter 3.0 enabled");
-        }
 
         // Init the Exporter3Config object.
         Exporter3Configuration ex3Config = app.getExporter3Configuration();
@@ -775,22 +776,13 @@ public class Exporter3Service {
             Function<Exporter3Configuration, String> getter, BiConsumer<Exporter3Configuration, String> setter) {
         Validate.entityThrowingException(ExporterSubscriptionRequestValidator.INSTANCE, subscriptionRequest);
 
-        App app = appService.getApp(appId);
-        if (!app.isExporter3Enabled()) {
-            throw new BadRequestException("App does not have Exporter 3.0 enabled");
-        }
-
         boolean isStudyModified = false;
         Study study = studyService.getStudy(appId, studyId, true);
-        if (!study.isExporter3Enabled()) {
-            throw new BadRequestException("Study does not have Exporter 3.0 enabled");
-        }
-
         Exporter3Configuration ex3Config = study.getExporter3Configuration();
-        if (ex3Config == null || !ex3Config.isConfigured()) {
-            // Unlike the app-wide notifications, we care about ex3Config, because without it, there's nothing to
-            // notify for.
-            throw new BadRequestException("Study is not configured for Exporter 3.0");
+        if (ex3Config == null) {
+            ex3Config = new Exporter3Configuration();
+            study.setExporter3Configuration(ex3Config);
+            isStudyModified = true;
         }
 
         // Has the SNS topic been created for this app?

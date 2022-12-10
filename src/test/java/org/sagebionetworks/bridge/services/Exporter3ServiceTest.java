@@ -1004,13 +1004,6 @@ public class Exporter3ServiceTest {
                 new ExporterSubscriptionRequest());
     }
 
-    @Test(expectedExceptions = BadRequestException.class)
-    public void subscribeToCreateStudyNotifications_Ex3Disabled() {
-        app.setExporter3Enabled(false);
-        exporter3Service.subscribeToCreateStudyNotifications(TestConstants.TEST_APP_ID,
-                makeSubscriptionRequest());
-    }
-
     @Test
     public void subscribeToCreateStudyNotifications_ConfigureTopic() {
         // App has no exporter3config.
@@ -1078,50 +1071,11 @@ public class Exporter3ServiceTest {
                 new ExporterSubscriptionRequest());
     }
 
-    @Test(expectedExceptions = BadRequestException.class)
-    public void subscribeToExportNotificationsForStudy_AppNotEnabled() {
-        // App is not enabled for EX3.
-        app.setExporter3Enabled(false);
-
-        // Execute.
-        exporter3Service.subscribeToExportNotificationsForStudy(TEST_APP_ID, TEST_STUDY_ID, makeSubscriptionRequest());
-    }
-
-    @Test(expectedExceptions = BadRequestException.class)
-    public void subscribeToExportNotificationsForStudy_StudyNotEnabled() {
-        // Study is not enabled for EX3.
-        setupSnsSubscribeTest(TOPIC_ARN_EXPORT_FOR_STUDY);
-        study.setExporter3Enabled(false);
-
-        // Execute.
-        exporter3Service.subscribeToExportNotificationsForStudy(TEST_APP_ID, TEST_STUDY_ID, makeSubscriptionRequest());
-    }
-
-    @Test(expectedExceptions = BadRequestException.class)
-    public void subscribeToExportNotificationsForStudy_StudyNoEx3Config() {
+    @Test
+    public void subscribeToExportNotificationsForStudy_CreateTopic() {
         // Study has no EX3 config.
         setupSnsSubscribeTest(TOPIC_ARN_EXPORT_FOR_STUDY);
         study.setExporter3Configuration(null);
-
-        // Execute.
-        exporter3Service.subscribeToExportNotificationsForStudy(TEST_APP_ID, TEST_STUDY_ID, makeSubscriptionRequest());
-    }
-
-    @Test(expectedExceptions = BadRequestException.class)
-    public void subscribeToExportNotificationsForStudy_StudyNotConfigured() {
-        // Study is not configured for EX3.
-        setupSnsSubscribeTest(TOPIC_ARN_EXPORT_FOR_STUDY);
-        study.setExporter3Configuration(new Exporter3Configuration());
-
-        // Execute.
-        exporter3Service.subscribeToExportNotificationsForStudy(TEST_APP_ID, TEST_STUDY_ID, makeSubscriptionRequest());
-    }
-
-    @Test
-    public void subscribeToExportNotificationsForStudy_CreateTopic() {
-        // Study has an exporter3config without a topic arn.
-        setupSnsSubscribeTest(TOPIC_ARN_EXPORT_FOR_STUDY);
-        study.getExporter3Configuration().setExportNotificationTopicArn(null);
 
         // Execute.
         ExporterSubscriptionResult exporterSubscriptionResult = exporter3Service
@@ -1160,7 +1114,6 @@ public class Exporter3ServiceTest {
         // Set up app.
         app.setIdentifier(TEST_APP_ID);
         app.setName(APP_NAME);
-        app.setExporter3Enabled(true);
         app.setExporter3Configuration(makeConfiguredEx3Config());
 
         // Setup study.
