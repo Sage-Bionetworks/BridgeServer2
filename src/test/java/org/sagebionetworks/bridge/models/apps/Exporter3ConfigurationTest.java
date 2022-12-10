@@ -76,6 +76,7 @@ public class Exporter3ConfigurationTest {
         Exporter3Configuration config = new Exporter3Configuration();
         config.setCreateStudyNotificationTopicArn("arn:1111:test-topic");
         config.setDataAccessTeamId(1L);
+        config.setExportNotificationTopicArn("arn:2222:export-topic");
         config.setParticipantVersionTableId("test-table-id");
         config.setParticipantVersionDemographicsTableId("test-table-id");
         config.setParticipantVersionDemographicsViewId("test-view-id");
@@ -85,10 +86,11 @@ public class Exporter3ConfigurationTest {
 
         // Convert to JsonNode.
         JsonNode jsonNode = BridgeObjectMapper.get().convertValue(config, JsonNode.class);
-        assertEquals(jsonNode.size(), 10);
+        assertEquals(jsonNode.size(), 11);
         assertTrue(jsonNode.get("configured").booleanValue());
         assertEquals(jsonNode.get("createStudyNotificationTopicArn").textValue(), "arn:1111:test-topic");
         assertEquals(jsonNode.get("dataAccessTeamId").intValue(), 1);
+        assertEquals(jsonNode.get("exportNotificationTopicArn").textValue(), "arn:2222:export-topic");
         assertEquals(jsonNode.get("participantVersionTableId").textValue(), "test-table-id");
         assertEquals(jsonNode.get("participantVersionDemographicsTableId").textValue(), "test-table-id");
         assertEquals(jsonNode.get("participantVersionDemographicsViewId").textValue(), "test-view-id");
