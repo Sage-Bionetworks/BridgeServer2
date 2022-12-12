@@ -225,6 +225,20 @@ public class DemographicService {
         return demographicDao.getDemographicUsers(appId, studyId, offsetBy, pageSize);
     }
 
+    public DemographicValuesValidationConfiguration saveValidationConfig(String appId, String studyIdNull,
+            String categoryName, DemographicValuesValidationConfiguration validationConfig) {
+        return null;
+    }
+
+    public DemographicValuesValidationConfiguration getValidationConfig(String appId, String studyIdNull,
+            String categoryName) {
+        return null;
+    }
+
+    public void deleteValidationConfig(String appId, String studyIdNull,
+            String categoryName) {
+    }
+
     /**
      * Generates a guid.
      * 

@@ -19,6 +19,7 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.DemographicUser;
 import org.sagebionetworks.bridge.models.studies.DemographicUserAssessment;
+import org.sagebionetworks.bridge.models.studies.DemographicValuesValidationConfiguration;
 import org.sagebionetworks.bridge.services.DemographicService;
 import org.sagebionetworks.bridge.services.ParticipantService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,6 +41,8 @@ public class DemographicController extends BaseController {
             "Demographic successfully deleted");
     private static final StatusMessage DELETE_DEMOGRAPHIC_USER_MESSAGE = new StatusMessage(
             "Demographic user successfully deleted");
+    private static final StatusMessage DELETE_DEMOGRAPIC_VALIDATION_CONFIG_MESSAGE = new StatusMessage(
+            "Demographic validation configuration successfully deleted");
 
     private DemographicService demographicService;
 
@@ -105,6 +108,8 @@ public class DemographicController extends BaseController {
             session = getAuthenticatedAndConsentedSession();
             userIdUnwrapped = session.getId();
         }
+        // fetch the account and ensure the user whose demographics are being saved is
+        // in a study managed by the person performing this operation
         Account account = participantService.getAccountInStudy(session.getAppId(), studyIdNullable, userIdUnwrapped);
 
         DemographicUser demographicUser = parseJson(DemographicUser.class);
@@ -168,6 +173,8 @@ public class DemographicController extends BaseController {
             session = getAuthenticatedAndConsentedSession();
             userIdUnwrapped = session.getId();
         }
+        // fetch the account and ensure the user whose demographics are being saved is
+        // in a study managed by the person performing this operation
         Account account = participantService.getAccountInStudy(session.getAppId(), studyIdNullable, userIdUnwrapped);
 
         DemographicUserAssessment demographicUserAssessment = parseJson(DemographicUserAssessment.class);
@@ -217,6 +224,8 @@ public class DemographicController extends BaseController {
             // app level demographics
             session = getAuthenticatedSession(Roles.ADMIN);
         }
+        // fetch the account and ensure the user whose demographics are being deleted is
+        // in a study managed by the person performing this operation
         Account account = participantService.getAccountInStudy(session.getAppId(), studyIdNull, userId);
 
         demographicService.deleteDemographic(userId, demographicId, account);
@@ -256,6 +265,8 @@ public class DemographicController extends BaseController {
             // app level demographics
             session = getAuthenticatedSession(Roles.ADMIN);
         }
+        // fetch the account and ensure the user whose demographics are being deleted is
+        // in a study managed by the person performing this operation
         Account account = participantService.getAccountInStudy(session.getAppId(), studyIdNull, userId);
 
         demographicService.deleteDemographicUser(session.getAppId(), studyIdNull, userId, account);
@@ -295,6 +306,8 @@ public class DemographicController extends BaseController {
             // app level demographics
             session = getAuthenticatedSession(Roles.ADMIN);
         }
+        // ensure the user whose demographics are being fetched is in a study managed by
+        // the person performing this operation
         participantService.getAccountInStudy(session.getAppId(), studyIdNull, userId);
 
         return demographicService.getDemographicUser(session.getAppId(), studyIdNull, userId)
@@ -338,5 +351,68 @@ public class DemographicController extends BaseController {
         int pageSizeInt = BridgeUtils.getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
 
         return demographicService.getDemographicUsers(session.getAppId(), studyIdNull, offsetInt, pageSizeInt);
+    }
+
+    @PostMapping({ "/v5/studies/{studyId}/participants/demographics/validation/{categoryName}",
+            "/v3/participants/demographics/validation/{categoryName}" })
+    public DemographicValuesValidationConfiguration saveValidationConfig(
+            @PathVariable(required = false) Optional<String> studyId, @PathVariable String categoryName)
+            throws BadRequestException, NotAuthenticatedException, UnauthorizedException {
+        String studyIdNull = studyId.orElse(null);
+
+        UserSession session;
+        if (studyId.isPresent()) {
+            // study level demographics
+            session = getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
+        } else {
+            // app level demographics
+            session = getAuthenticatedSession(Roles.ADMIN);
+        }
+
+        DemographicValuesValidationConfiguration validationConfig = parseJson(
+                DemographicValuesValidationConfiguration.class);
+        if (validationConfig == null) {
+            throw new BadRequestException("invalid JSON for demographics validation configuration");
+        }
+        return demographicService.saveValidationConfig(session.getAppId(), studyIdNull, categoryName, validationConfig);
+    }
+
+    @GetMapping({ "/v5/studies/{studyId}/participants/demographics/validation/{categoryName}",
+            "/v3/participants/demographics/validation/{categoryName}" })
+    public DemographicValuesValidationConfiguration getValidationConfig(
+            @PathVariable(required = false) Optional<String> studyId, @PathVariable String categoryName)
+            throws BadRequestException, NotAuthenticatedException, UnauthorizedException {
+        String studyIdNull = studyId.orElse(null);
+
+        UserSession session;
+        if (studyId.isPresent()) {
+            // study level demographics
+            session = getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
+        } else {
+            // app level demographics
+            session = getAuthenticatedSession(Roles.ADMIN);
+        }
+
+        return demographicService.getValidationConfig(session.getAppId(), studyIdNull, categoryName);
+    }
+
+    @DeleteMapping({ "/v5/studies/{studyId}/participants/demographics/validation/{categoryName}",
+            "/v3/participants/demographics/validation/{categoryName}" })
+    public StatusMessage deleteValidationConfig(
+            @PathVariable(required = false) Optional<String> studyId, @PathVariable String categoryName)
+            throws BadRequestException, NotAuthenticatedException, UnauthorizedException {
+        String studyIdNull = studyId.orElse(null);
+
+        UserSession session;
+        if (studyId.isPresent()) {
+            // study level demographics
+            session = getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
+        } else {
+            // app level demographics
+            session = getAuthenticatedSession(Roles.ADMIN);
+        }
+
+        demographicService.deleteValidationConfig(session.getAppId(), studyIdNull, categoryName);
+        return DELETE_DEMOGRAPIC_VALIDATION_CONFIG_MESSAGE;
     }
 }
