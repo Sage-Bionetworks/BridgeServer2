@@ -5,7 +5,6 @@ import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
 import java.io.IOException;
 
 import org.sagebionetworks.bridge.models.studies.DemographicValuesValidationConfig;
-import org.sagebionetworks.bridge.validators.DemographicValuesValidationType.DemographicValuesValidator;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 

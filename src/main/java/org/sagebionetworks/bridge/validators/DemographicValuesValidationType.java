@@ -33,14 +33,6 @@ public enum DemographicValuesValidationType {
 
     public abstract DemographicValuesValidator getValidator();
 
-    public interface DemographicValuesValidator {
-        void deserializeRules(JsonNode validationRules) throws IOException;
-
-        void validateRules(Errors errors);
-
-        void validateDemographicUsingRules(Demographic demographic);
-    }
-
     private class EnumValidator implements DemographicValuesValidator {
         static final String DEMOGRAPHICS_ENUM_DEFAULT_LANGUAGE = "en";
         static final String INVALID_CONFIGURATION_BAD_LANGUAGE_CODE = "bad language code";
