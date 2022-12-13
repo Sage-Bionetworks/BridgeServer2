@@ -7,8 +7,7 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.studies.Demographic;
 import org.sagebionetworks.bridge.models.studies.DemographicUser;
 import org.sagebionetworks.bridge.models.studies.DemographicValue;
-import org.sagebionetworks.bridge.models.studies.DemographicValuesValidationConfiguration;
-import org.sagebionetworks.bridge.validators.DemographicValuesValidator.DemographicValuesValidationType;
+import org.sagebionetworks.bridge.models.studies.DemographicValuesValidationConfig;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -29,13 +28,13 @@ public class DemographicValuesValidatorTest {
     private static final String INVALID_NUMBER_VALUE_GREATER_THAN_MAX = "invalid number (larger than max)";
 
     private Demographic demographic;
-    private DemographicValuesValidationConfiguration config;
+    private DemographicValuesValidationConfig config;
     private DemographicValuesValidator validator;
 
     @BeforeMethod
     public void beforeMethod() {
         demographic = new Demographic("test id", new DemographicUser(), CATEGORY_NAME, true, ImmutableList.of(), null);
-        config = new DemographicValuesValidationConfiguration();
+        config = DemographicValuesValidationConfig.create();
         validator = new DemographicValuesValidator(config);
     }
 
@@ -217,7 +216,6 @@ public class DemographicValuesValidatorTest {
 
     @Test
     public void enum_allInvalid() throws JsonMappingException, JsonProcessingException {
-        config.setValidationType(DemographicValuesValidationType.ENUM);
         config.setValidationType(DemographicValuesValidationType.ENUM);
         config.setValidationRules(BridgeObjectMapper.get().readValue("{" +
                 "    \"en\": [" +

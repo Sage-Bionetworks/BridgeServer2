@@ -1,7 +1,8 @@
 package org.sagebionetworks.bridge.models.studies;
 
+import org.sagebionetworks.bridge.dynamodb.DynamoDemographicValuesValidationConfig;
 import org.sagebionetworks.bridge.models.BridgeEntity;
-import org.sagebionetworks.bridge.validators.DemographicValuesValidator.DemographicValuesValidationType;
+import org.sagebionetworks.bridge.validators.DemographicValuesValidationType;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -23,23 +24,23 @@ import com.fasterxml.jackson.databind.JsonNode;
  * number_range: object containing up to 2 keys, "min" and "max", specifying the
  * ends of the allowed range, both of which are optional.
  */
-public class DemographicValuesValidationConfiguration implements BridgeEntity {
-    private DemographicValuesValidationType validationType;
-    private JsonNode validationRules;
-
-    public DemographicValuesValidationType getValidationType() {
-        return validationType;
+public interface DemographicValuesValidationConfig extends BridgeEntity {
+    public static DemographicValuesValidationConfig create() {
+        return new DynamoDemographicValuesValidationConfig();
     }
 
-    public void setValidationType(DemographicValuesValidationType validationType) {
-        this.validationType = validationType;
-    }
+    public String getAppId();
+    public void setAppId(String appId);
 
-    public JsonNode getValidationRules() {
-        return validationRules;
-    }
+    public String getStudyId();
+    public void setStudyId(String studyId);
 
-    public void setValidationRules(JsonNode validationRules) {
-        this.validationRules = validationRules;
-    }
+    public String getCategoryName();
+    public void setCategoryName(String categoryName);
+
+    public DemographicValuesValidationType getValidationType();
+    public void setValidationType(DemographicValuesValidationType validationType);
+
+    public JsonNode getValidationRules();
+    public void setValidationRules(JsonNode validationRules);
 }

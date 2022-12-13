@@ -19,7 +19,7 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.DemographicUser;
 import org.sagebionetworks.bridge.models.studies.DemographicUserAssessment;
-import org.sagebionetworks.bridge.models.studies.DemographicValuesValidationConfiguration;
+import org.sagebionetworks.bridge.models.studies.DemographicValuesValidationConfig;
 import org.sagebionetworks.bridge.services.DemographicService;
 import org.sagebionetworks.bridge.services.ParticipantService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -355,7 +355,7 @@ public class DemographicController extends BaseController {
 
     @PostMapping({ "/v5/studies/{studyId}/participants/demographics/validation/{categoryName}",
             "/v3/participants/demographics/validation/{categoryName}" })
-    public DemographicValuesValidationConfiguration saveValidationConfig(
+    public DemographicValuesValidationConfig saveValidationConfig(
             @PathVariable(required = false) Optional<String> studyId, @PathVariable String categoryName)
             throws BadRequestException, NotAuthenticatedException, UnauthorizedException {
         String studyIdNull = studyId.orElse(null);
@@ -369,17 +369,20 @@ public class DemographicController extends BaseController {
             session = getAuthenticatedSession(Roles.ADMIN);
         }
 
-        DemographicValuesValidationConfiguration validationConfig = parseJson(
-                DemographicValuesValidationConfiguration.class);
+        DemographicValuesValidationConfig validationConfig = parseJson(
+                DemographicValuesValidationConfig.class);
         if (validationConfig == null) {
             throw new BadRequestException("invalid JSON for demographics validation configuration");
         }
-        return demographicService.saveValidationConfig(session.getAppId(), studyIdNull, categoryName, validationConfig);
+        validationConfig.setAppId(session.getAppId());
+        validationConfig.setStudyId(studyIdNull);
+        validationConfig.setCategoryName(categoryName);
+        return demographicService.saveValidationConfig(validationConfig);
     }
 
     @GetMapping({ "/v5/studies/{studyId}/participants/demographics/validation/{categoryName}",
             "/v3/participants/demographics/validation/{categoryName}" })
-    public DemographicValuesValidationConfiguration getValidationConfig(
+    public DemographicValuesValidationConfig getValidationConfig(
             @PathVariable(required = false) Optional<String> studyId, @PathVariable String categoryName)
             throws BadRequestException, NotAuthenticatedException, UnauthorizedException {
         String studyIdNull = studyId.orElse(null);
@@ -393,7 +396,10 @@ public class DemographicController extends BaseController {
             session = getAuthenticatedSession(Roles.ADMIN);
         }
 
-        return demographicService.getValidationConfig(session.getAppId(), studyIdNull, categoryName);
+        DemographicValuesValidationConfig validationConfig = demographicService
+                .getValidationConfig(session.getAppId(), studyIdNull, categoryName)
+                .orElseThrow(() -> new EntityNotFoundException(DemographicValuesValidationConfig.class));
+        return validationConfig;
     }
 
     @DeleteMapping({ "/v5/studies/{studyId}/participants/demographics/validation/{categoryName}",

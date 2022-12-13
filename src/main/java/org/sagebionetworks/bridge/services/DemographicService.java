@@ -3,29 +3,28 @@ package org.sagebionetworks.bridge.services;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
-import static org.sagebionetworks.bridge.validators.DemographicValuesValidator.INVALID_CONFIGURATION;
 
 import java.io.IOException;
-import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.DemographicDao;
+import org.sagebionetworks.bridge.dao.DemographicValidationDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
-import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
-import org.sagebionetworks.bridge.models.appconfig.AppConfigElement;
 import org.sagebionetworks.bridge.models.studies.Demographic;
 import org.sagebionetworks.bridge.models.studies.DemographicUser;
-import org.sagebionetworks.bridge.models.studies.DemographicValuesValidationConfiguration;
+import org.sagebionetworks.bridge.models.studies.DemographicValue;
+import org.sagebionetworks.bridge.models.studies.DemographicValuesValidationConfig;
 import org.sagebionetworks.bridge.validators.DemographicUserValidator;
-import org.sagebionetworks.bridge.validators.DemographicValuesValidator;
+import org.sagebionetworks.bridge.validators.DemographicValuesValidationType;
 import org.sagebionetworks.bridge.validators.Validate;
+import org.sagebionetworks.bridge.validators.DemographicValuesValidationType.DemographicValuesValidator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -34,13 +33,15 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class DemographicService {
-    private static final String DEMOGRAPHICS_APP_CONFIG_KEY_PREFIX = "bridge-validation-demographics-values-";
+    private static final String INVALID_VALIDATION_CONFIGURATION = "invalid demographics validation configuration";
+
+    private static Logger LOG = LoggerFactory.getLogger(DemographicService.class);
 
     private DemographicDao demographicDao;
 
-    private ParticipantVersionService participantVersionService;
+    private DemographicValidationDao demographicValidationDao;
 
-    private AppConfigElementService appConfigElementService;
+    private ParticipantVersionService participantVersionService;
 
     @Autowired
     public final void setDemographicDao(DemographicDao demographicDao) {
@@ -48,13 +49,13 @@ public class DemographicService {
     }
 
     @Autowired
-    public final void setParticipantVersionService(ParticipantVersionService participantVersionService) {
-        this.participantVersionService = participantVersionService;
+    public final void setDemographicValidationDao(DemographicValidationDao demographicValidationDao) {
+        this.demographicValidationDao = demographicValidationDao;
     }
 
     @Autowired
-    public final void setAppConfigElementService(AppConfigElementService appConfigElementService) {
-        this.appConfigElementService = appConfigElementService;
+    public final void setParticipantVersionService(ParticipantVersionService participantVersionService) {
+        this.participantVersionService = participantVersionService;
     }
 
     /**
@@ -117,28 +118,36 @@ public class DemographicService {
      * @throws InvalidEntityException if any value in any Demographic is not valid
      */
     private void validateAppLevelDemographics(DemographicUser demographicUser) throws InvalidEntityException {
-        // map of ids to the elements for constant lookup
-        Map<String, AppConfigElement> elementIdToElement = appConfigElementService
-                .getMostRecentElements(demographicUser.getAppId(), false)
-                .stream()
-                .collect(Collectors.toMap(AppConfigElement::getId, Function.identity()));
         for (Demographic demographic : demographicUser.getDemographics().values()) {
-            // calculate what the key would be if it exists
-            String appConfigElementId = DEMOGRAPHICS_APP_CONFIG_KEY_PREFIX + demographic.getCategoryName();
-            if (elementIdToElement.containsKey(appConfigElementId)) {
-                DemographicValuesValidationConfiguration configuration;
+            // get validation config
+            Optional<DemographicValuesValidationConfig> validationConfigOpt = getValidationConfig(
+                    demographicUser.getAppId(), demographicUser.getStudyId(), demographic.getCategoryName());
+            if (validationConfigOpt.isPresent()) {
+                DemographicValuesValidationConfig validationConfig = validationConfigOpt.get();
+                // get values validator
+                DemographicValuesValidator valuesValidator = validationConfig
+                        .getValidationType().getValidator();
                 try {
-                    configuration = BridgeObjectMapper.get().treeToValue(
-                            elementIdToElement.get(appConfigElementId).getData(),
-                            DemographicValuesValidationConfiguration.class);
-                } catch (IOException | IllegalArgumentException e) {
-                    DemographicValuesValidator.invalidateDemographic(demographic, INVALID_CONFIGURATION);
-                    return;
+                    valuesValidator.deserializeRules(validationConfig.getValidationRules());
+                } catch (IOException e) {
+                    // should not happen because rules are validated for deserialization by
+                    // DemographicValuesValidationConfigValidator when uploaded to Bridge
+                    LOG.error(
+                            "Demographic validation rules failed deserialization when attempting to validate a demographic "
+                                    + "but rules should have been validated for deserialization already,"
+                                    + " appId " + demographicUser.getAppId()
+                                    + " studyId " + demographicUser.getStudyId()
+                                    + " userId " + demographicUser.getUserId()
+                                    + " demographics categoryName " + demographic.getCategoryName()
+                                    + " demographics validationType " + validationConfig.getValidationType().toString(),
+                            e);
+                    for (DemographicValue demographicValue : demographic.getValues()) {
+                        demographicValue.setInvalidity(INVALID_VALIDATION_CONFIGURATION);
+                    }
+                    continue;
                 }
-                // validate the demographic using the validation configuration
-                // the configuration itself is validated by the DemographicValuesValidator
-                // Validate.entityThrowingException(new DemographicValuesValidator(configuration), demographic);
-                new DemographicValuesValidator(configuration).validate(demographic);
+                // validate the demographic
+                valuesValidator.validateDemographicUsingRules(demographic);
             }
         }
     }
@@ -225,18 +234,22 @@ public class DemographicService {
         return demographicDao.getDemographicUsers(appId, studyId, offsetBy, pageSize);
     }
 
-    public DemographicValuesValidationConfiguration saveValidationConfig(String appId, String studyIdNull,
-            String categoryName, DemographicValuesValidationConfiguration validationConfig) {
-        return null;
+    public DemographicValuesValidationConfig saveValidationConfig(DemographicValuesValidationConfig validationConfig) {
+        return demographicValidationDao.saveDemographicValuesValidationConfig(validationConfig);
     }
 
-    public DemographicValuesValidationConfiguration getValidationConfig(String appId, String studyIdNull,
+    public Optional<DemographicValuesValidationConfig> getValidationConfig(String appId, String studyIdNull,
             String categoryName) {
-        return null;
+        return demographicValidationDao.getDemographicValuesValidationConfig(appId, studyIdNull, categoryName);
     }
 
     public void deleteValidationConfig(String appId, String studyIdNull,
             String categoryName) {
+        demographicValidationDao.deleteDemographicValuesValidationConfig(appId, studyIdNull, categoryName);
+    }
+
+    public void deleteAllValidationConfigs(String appId, String studyId) {
+        demographicValidationDao.deleteAllValidationConfigs(appId, studyId);
     }
 
     /**
