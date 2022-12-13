@@ -17,6 +17,11 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonNode;
 
+/**
+ * This determines the type of demographics values validation to perform, as
+ * well as the schema of the validation rules. It is stored along with the rules
+ * in a DemographicValuesValidationConfig.
+ */
 public enum DemographicValuesValidationType {
     NUMBER_RANGE {
         @Override
@@ -34,9 +39,9 @@ public enum DemographicValuesValidationType {
     public abstract DemographicValuesValidator getValidator();
 
     private class EnumValidator implements DemographicValuesValidator {
-        static final String DEMOGRAPHICS_ENUM_DEFAULT_LANGUAGE = "en";
-        static final String INVALID_CONFIGURATION_BAD_LANGUAGE_CODE = "bad language code";
-        static final String INVALID_ENUM_VALUE = "invalid enum value";
+        private static final String DEMOGRAPHICS_ENUM_DEFAULT_LANGUAGE = "en";
+        private static final String INVALID_CONFIGURATION_BAD_LANGUAGE_CODE = "bad language code";
+        private static final String INVALID_ENUM_VALUE = "invalid enum value";
 
         Map<String, Set<String>> deserializedRules;
 
@@ -98,10 +103,10 @@ public enum DemographicValuesValidationType {
     }
 
     private class NumberRangeValidator implements DemographicValuesValidator {
-        static final String INVALID_CONFIGURATION_MIN_LARGER_THAN_MAX = "min cannot be larger than max";
-        static final String INVALID_NUMBER_VALUE_NOT_A_NUMBER = "invalid number";
-        static final String INVALID_NUMBER_VALUE_LESS_THAN_MIN = "invalid number value (less than min)";
-        static final String INVALID_NUMBER_VALUE_GREATER_THAN_MAX = "invalid number (larger than max)";
+        private static final String INVALID_CONFIGURATION_MIN_LARGER_THAN_MAX = "min cannot be larger than max";
+        private static final String INVALID_NUMBER_VALUE_NOT_A_NUMBER = "invalid number";
+        private static final String INVALID_NUMBER_VALUE_LESS_THAN_MIN = "invalid number value (less than min)";
+        private static final String INVALID_NUMBER_VALUE_GREATER_THAN_MAX = "invalid number (larger than max)";
 
         NumberRangeValidationRules deserializedRules;
 
