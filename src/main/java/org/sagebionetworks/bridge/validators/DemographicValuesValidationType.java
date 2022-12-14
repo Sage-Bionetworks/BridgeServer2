@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.lang3.LocaleUtils;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.studies.Demographic;
 import org.sagebionetworks.bridge.models.studies.DemographicValue;
@@ -38,6 +39,14 @@ public enum DemographicValuesValidationType {
 
     public abstract DemographicValuesValidator getValidatorWithRules(JsonNode validationRules) throws IOException;
 
+    private void checkRulesNull(Object validationRules) {
+        if (validationRules == null) {
+            // should not ever happen because config validator should reject null on config
+            // upload
+            throw new InvalidEntityException("demographics validation configuration cannot have null rules");
+        }
+    }
+
     private class EnumValidator implements DemographicValuesValidator {
         private static final String DEMOGRAPHICS_ENUM_DEFAULT_LANGUAGE = "en";
         private static final String INVALID_CONFIGURATION_BAD_LANGUAGE_CODE = "bad language code";
@@ -46,13 +55,19 @@ public enum DemographicValuesValidationType {
         Map<String, Set<String>> deserializedRules;
 
         public EnumValidator(JsonNode validationRules) throws IOException {
+            // check before so jackson doesn't throw a different exception
+            checkRulesNull(validationRules);
             // workaround because ObjectMapper does not have treeToValue method that accepts
             // a TypeReference
+            // 
+            // should not throw IOException in practice because config validator should be
+            // able to successfully deserialize on config upload
             JsonParser tokens = BridgeObjectMapper.get().treeAsTokens(validationRules);
             JavaType type = BridgeObjectMapper.get().getTypeFactory()
                     .constructType(new TypeReference<Map<String, Set<String>>>() {
                     });
             deserializedRules = BridgeObjectMapper.get().readValue(tokens, type);
+            checkRulesNull(deserializedRules);
         }
 
         @Override
@@ -110,8 +125,13 @@ public enum DemographicValuesValidationType {
         NumberRangeValidationRules deserializedRules;
 
         public NumberRangeValidator(JsonNode validationRules) throws IOException {
+            // check before so jackson doesn't throw a different exception
+            checkRulesNull(validationRules);
+            // should not throw IOException in practice because config validator should be
+            // able to successfully deserialize on config upload
             deserializedRules = BridgeObjectMapper.get()
                     .treeToValue(validationRules, NumberRangeValidationRules.class);
+            checkRulesNull(deserializedRules);
         }
 
         @Override

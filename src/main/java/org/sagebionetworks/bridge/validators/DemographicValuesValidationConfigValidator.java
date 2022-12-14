@@ -40,6 +40,7 @@ public class DemographicValuesValidationConfigValidator implements Validator {
             errors.rejectValue("validationRules", INVALID_VALIDATION_RULES);
             return;
         }
+        // perform validation on the rules
         valuesValidator.validateRules(errors);
     }
 }
