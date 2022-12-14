@@ -122,10 +122,10 @@ public class DemographicService {
             if (validationConfigOpt.isPresent()) {
                 DemographicValuesValidationConfig validationConfig = validationConfigOpt.get();
                 // get values validator
-                DemographicValuesValidator valuesValidator = validationConfig
-                        .getValidationType().getValidator();
+                DemographicValuesValidator valuesValidator;
                 try {
-                    valuesValidator.deserializeRules(validationConfig.getValidationRules());
+                    valuesValidator = validationConfig.getValidationType()
+                            .getValidatorWithRules(validationConfig.getValidationRules());
                 } catch (IOException e) {
                     // should not happen because rules are validated for deserialization by
                     // DemographicValuesValidationConfigValidator when uploaded to Bridge

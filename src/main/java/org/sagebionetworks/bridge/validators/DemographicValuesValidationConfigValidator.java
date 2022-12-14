@@ -33,10 +33,9 @@ public class DemographicValuesValidationConfigValidator implements Validator {
             return;
         }
 
-        DemographicValuesValidator valuesValidator = config.getValidationType()
-                .getValidator();
+        DemographicValuesValidator valuesValidator;
         try {
-            valuesValidator.deserializeRules(config.getValidationRules());
+            valuesValidator = config.getValidationType().getValidatorWithRules(config.getValidationRules());
         } catch (IOException e) {
             errors.rejectValue("validationRules", INVALID_VALIDATION_RULES);
             return;

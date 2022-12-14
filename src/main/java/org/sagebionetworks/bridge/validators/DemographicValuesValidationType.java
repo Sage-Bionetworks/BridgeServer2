@@ -25,18 +25,18 @@ import com.fasterxml.jackson.databind.JsonNode;
 public enum DemographicValuesValidationType {
     NUMBER_RANGE {
         @Override
-        public DemographicValuesValidator getValidator() {
-            return new NumberRangeValidator();
+        public DemographicValuesValidator getValidatorWithRules(JsonNode validationRules) throws IOException {
+            return new NumberRangeValidator(validationRules);
         }
     },
     ENUM {
         @Override
-        public DemographicValuesValidator getValidator() {
-            return new EnumValidator();
+        public DemographicValuesValidator getValidatorWithRules(JsonNode validationRules) throws IOException {
+            return new EnumValidator(validationRules);
         }
     };
 
-    public abstract DemographicValuesValidator getValidator();
+    public abstract DemographicValuesValidator getValidatorWithRules(JsonNode validationRules) throws IOException;
 
     private class EnumValidator implements DemographicValuesValidator {
         private static final String DEMOGRAPHICS_ENUM_DEFAULT_LANGUAGE = "en";
@@ -45,8 +45,7 @@ public enum DemographicValuesValidationType {
 
         Map<String, Set<String>> deserializedRules;
 
-        @Override
-        public void deserializeRules(JsonNode validationRules) throws IOException {
+        public EnumValidator(JsonNode validationRules) throws IOException {
             // workaround because ObjectMapper does not have treeToValue method that accepts
             // a TypeReference
             JsonParser tokens = BridgeObjectMapper.get().treeAsTokens(validationRules);
@@ -110,8 +109,7 @@ public enum DemographicValuesValidationType {
 
         NumberRangeValidationRules deserializedRules;
 
-        @Override
-        public void deserializeRules(JsonNode validationRules) throws IOException {
+        public NumberRangeValidator(JsonNode validationRules) throws IOException {
             deserializedRules = BridgeObjectMapper.get()
                     .treeToValue(validationRules, NumberRangeValidationRules.class);
         }
