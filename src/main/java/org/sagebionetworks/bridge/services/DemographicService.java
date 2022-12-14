@@ -75,11 +75,10 @@ public class DemographicService {
                 demographic.setDemographicUser(demographicUser);
             }
         }
+        // validate demographic for malformed inputs
         Validate.entityThrowingException(DemographicUserValidator.INSTANCE, demographicUser);
-        if (demographicUser.getStudyId() == null) {
-            // app-level demographics
-            validateAppLevelDemographics(demographicUser);
-        }
+        // validate demographic values with user defined rules
+        validateDemographics(demographicUser);
         DemographicUser savedDemographicUser = demographicDao.saveDemographicUser(demographicUser,
                 demographicUser.getAppId(),
                 demographicUser.getStudyId(), demographicUser.getUserId());
@@ -88,9 +87,7 @@ public class DemographicService {
     }
 
     /**
-     * For every Demographic, checks the app config elements for keys in the form
-     * "bridge-validation-demographics-values-{categoryName}". If it exists, the
-     * data should be a JSON object in the form
+     * For every Demographic, checks for validation configs in the form
      * {
      * "validationType": string,
      * "validationRules": object
@@ -117,7 +114,7 @@ public class DemographicService {
      * @param demographicUser The DemographicUser whose values should be validated
      * @throws InvalidEntityException if any value in any Demographic is not valid
      */
-    private void validateAppLevelDemographics(DemographicUser demographicUser) throws InvalidEntityException {
+    private void validateDemographics(DemographicUser demographicUser) throws InvalidEntityException {
         for (Demographic demographic : demographicUser.getDemographics().values()) {
             // get validation config
             Optional<DemographicValuesValidationConfig> validationConfigOpt = getValidationConfig(
