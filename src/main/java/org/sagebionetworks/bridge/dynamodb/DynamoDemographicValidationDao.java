@@ -33,8 +33,8 @@ public class DynamoDemographicValidationDao implements DemographicValidationDao 
     }
 
     @Override
-    public Optional<DemographicValuesValidationConfig> getDemographicValuesValidationConfig(String appId, String studyId,
-            String categoryName) {
+    public Optional<DemographicValuesValidationConfig> getDemographicValuesValidationConfig(String appId,
+            String studyId, String categoryName) {
         // studyId can be null for app demographics validation
         checkNotNull(appId);
         checkNotNull(categoryName);
@@ -52,7 +52,7 @@ public class DynamoDemographicValidationDao implements DemographicValidationDao 
     public void deleteDemographicValuesValidationConfig(String appId, String studyId, String categoryName)
             throws EntityNotFoundException {
         DemographicValuesValidationConfig validationConfig = getDemographicValuesValidationConfig(appId, studyId,
-                categoryName);
+                categoryName).orElseThrow(() -> new EntityNotFoundException(DemographicValuesValidationConfig.class));
         mapper.delete(validationConfig);
     }
 

@@ -384,7 +384,7 @@ public class DemographicController extends BaseController {
             "/v3/participants/demographics/validation/{categoryName}" })
     public DemographicValuesValidationConfig getValidationConfig(
             @PathVariable(required = false) Optional<String> studyId, @PathVariable String categoryName)
-            throws BadRequestException, NotAuthenticatedException, UnauthorizedException {
+            throws EntityNotFoundException, NotAuthenticatedException, UnauthorizedException {
         String studyIdNull = studyId.orElse(null);
 
         UserSession session;
@@ -406,7 +406,7 @@ public class DemographicController extends BaseController {
             "/v3/participants/demographics/validation/{categoryName}" })
     public StatusMessage deleteValidationConfig(
             @PathVariable(required = false) Optional<String> studyId, @PathVariable String categoryName)
-            throws BadRequestException, NotAuthenticatedException, UnauthorizedException {
+            throws EntityNotFoundException, NotAuthenticatedException, UnauthorizedException {
         String studyIdNull = studyId.orElse(null);
 
         UserSession session;

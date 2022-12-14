@@ -5,6 +5,7 @@ import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.validators.DemographicValuesValidationType;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 /**
  * Demographics are validated to ensure the inputs are not malformed, but they
@@ -24,6 +25,7 @@ import com.fasterxml.jackson.databind.JsonNode;
  * number_range: object containing up to 2 keys, "min" and "max", specifying the
  * ends of the allowed range, both of which are optional.
  */
+@JsonDeserialize(as = DynamoDemographicValuesValidationConfig.class)
 public interface DemographicValuesValidationConfig extends BridgeEntity {
     public static DemographicValuesValidationConfig create() {
         return new DynamoDemographicValuesValidationConfig();

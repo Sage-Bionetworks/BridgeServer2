@@ -1,14 +1,18 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.studies.DemographicValuesValidationConfig;
 import org.sagebionetworks.bridge.validators.DemographicValuesValidationType;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverted;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 
+@DynamoDBTable(tableName = "DemographicValuesValidationConfig")
+@BridgeTypeName("DemographicValuesValidationConfig")
 public class DynamoDemographicValuesValidationConfig implements DemographicValuesValidationConfig {
     @JsonIgnore
     private String appId;
@@ -27,9 +31,17 @@ public class DynamoDemographicValuesValidationConfig implements DemographicValue
         return appId + ":" + studyId;
     }
 
-    @DynamoDBRangeKey
-    public String getRangeKey() {
-        return categoryName;
+    public void setHashKey(String key) {
+        if (key != null) {
+            String[] parts = key.split(":", 2);
+            if (parts.length == 2) {
+                appId = parts[0];
+                studyId = parts[1];
+            } else if (parts.length == 1) {
+                appId = parts[0];
+                studyId = null;
+            }
+        }
     }
 
     @Override
@@ -53,6 +65,7 @@ public class DynamoDemographicValuesValidationConfig implements DemographicValue
     }
 
     @Override
+    @DynamoDBRangeKey
     public String getCategoryName() {
         return categoryName;
     }
@@ -63,13 +76,13 @@ public class DynamoDemographicValuesValidationConfig implements DemographicValue
     }
 
     @Override
-    @DynamoDBTypeConverted(converter=EnumMarshaller.class)
+    @DynamoDBTypeConverted(converter = EnumMarshaller.class)
     public DemographicValuesValidationType getValidationType() {
         return validationType;
     }
 
     @Override
-    @DynamoDBTypeConverted(converter=EnumMarshaller.class)
+    @DynamoDBTypeConverted(converter = EnumMarshaller.class)
     public void setValidationType(DemographicValuesValidationType validationType) {
         this.validationType = validationType;
     }

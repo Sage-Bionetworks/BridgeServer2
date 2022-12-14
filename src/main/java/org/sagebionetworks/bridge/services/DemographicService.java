@@ -20,6 +20,7 @@ import org.sagebionetworks.bridge.models.studies.DemographicUser;
 import org.sagebionetworks.bridge.models.studies.DemographicValue;
 import org.sagebionetworks.bridge.models.studies.DemographicValuesValidationConfig;
 import org.sagebionetworks.bridge.validators.DemographicUserValidator;
+import org.sagebionetworks.bridge.validators.DemographicValuesValidationConfigValidator;
 import org.sagebionetworks.bridge.validators.DemographicValuesValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.slf4j.Logger;
@@ -233,7 +234,9 @@ public class DemographicService {
         return demographicDao.getDemographicUsers(appId, studyId, offsetBy, pageSize);
     }
 
-    public DemographicValuesValidationConfig saveValidationConfig(DemographicValuesValidationConfig validationConfig) {
+    public DemographicValuesValidationConfig saveValidationConfig(DemographicValuesValidationConfig validationConfig)
+            throws InvalidEntityException {
+        Validate.entityThrowingException(DemographicValuesValidationConfigValidator.INSTANCE, validationConfig);
         return demographicValidationDao.saveDemographicValuesValidationConfig(validationConfig);
     }
 
@@ -243,7 +246,7 @@ public class DemographicService {
     }
 
     public void deleteValidationConfig(String appId, String studyIdNull,
-            String categoryName) {
+            String categoryName) throws EntityNotFoundException {
         demographicValidationDao.deleteDemographicValuesValidationConfig(appId, studyIdNull, categoryName);
     }
 
