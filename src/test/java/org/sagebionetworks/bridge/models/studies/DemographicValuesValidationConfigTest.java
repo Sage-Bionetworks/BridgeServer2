@@ -16,7 +16,7 @@ import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 
 public class DemographicValuesValidationConfigTest {
     @Test
-    public void serialize() throws JsonProcessingException {
+    public void serializeEnum() throws JsonProcessingException {
         DemographicValuesValidationConfig config = DemographicValuesValidationConfig.create();
         config.setValidationType(DemographicValuesValidationType.ENUM);
         JsonNode rules = BridgeObjectMapper.get().createObjectNode().set("en",
@@ -25,7 +25,50 @@ public class DemographicValuesValidationConfigTest {
 
         String serialized = BridgeObjectMapper.get().writeValueAsString(config);
         assertEquals(serialized,
-                "{\"validationType\":\"enum\",\"validationRules\":{\"en\":[\"foo\",\"bar\"]},\"type\":\"DemographicValuesValidationConfiguration\"}");
+                "{\"validationType\":\"enum\",\"validationRules\":{\"en\":[\"foo\",\"bar\"]},\"type\":\"DemographicValuesValidationConfig\"}");
+    }
+
+    @Test
+    public void serializeNumberRange() throws JsonProcessingException {
+        DemographicValuesValidationConfig config = DemographicValuesValidationConfig.create();
+        config.setValidationType(DemographicValuesValidationType.NUMBER_RANGE);
+        JsonNode rules = BridgeObjectMapper.get().createObjectNode().put("min", 5).put("max", 10d);
+        config.setValidationRules(rules);
+
+        String serialized = BridgeObjectMapper.get().writeValueAsString(config);
+        assertEquals(serialized,
+                "{\"validationType\":\"number_range\",\"validationRules\":{\"min\":5,\"max\":10.0},\"type\":\"DemographicValuesValidationConfig\"}");
+    }
+
+    @Test
+    public void deserializeValidEnum() throws JsonMappingException, JsonProcessingException {
+        DemographicValuesValidationConfig deserialized = BridgeObjectMapper.get().readValue(
+                "{\"validationType\":\"enum\",\"validationRules\":{\"en\":[\"foo\",\"bar\"]},\"type\":\"DemographicValuesValidationConfiguration\"}",
+                DemographicValuesValidationConfig.class);
+        assertEquals(deserialized.getValidationType(), DemographicValuesValidationType.ENUM);
+        assertTrue(deserialized.getValidationRules().isObject());
+        assertEquals(deserialized.getValidationRules().size(), 1);
+        assertTrue(deserialized.getValidationRules().has("en"));
+        assertTrue(deserialized.getValidationRules().get("en").isArray());
+        assertEquals(deserialized.getValidationRules().get("en").size(), 2);
+        assertEquals(deserialized.getValidationRules().get("en").get(0).asText(), "foo");
+        assertEquals(deserialized.getValidationRules().get("en").get(1).asText(), "bar");
+    }
+
+    @Test
+    public void deserializeValidNumberRange() throws JsonMappingException, JsonProcessingException {
+        DemographicValuesValidationConfig deserialized = BridgeObjectMapper.get().readValue(
+                "{\"validationType\":\"number_range\",\"validationRules\":{\"min\":5,\"max\":10.0},\"type\":\"DemographicValuesValidationConfiguration\"}",
+                DemographicValuesValidationConfig.class);
+        assertEquals(deserialized.getValidationType(), DemographicValuesValidationType.NUMBER_RANGE);
+        assertTrue(deserialized.getValidationRules().isObject());
+        assertEquals(deserialized.getValidationRules().size(), 2);
+        assertTrue(deserialized.getValidationRules().has("min"));
+        assertTrue(deserialized.getValidationRules().get("min").isNumber());
+        assertEquals(deserialized.getValidationRules().get("min").asDouble(), 5d);
+        assertTrue(deserialized.getValidationRules().has("max"));
+        assertTrue(deserialized.getValidationRules().get("max").isNumber());
+        assertEquals(deserialized.getValidationRules().get("max").asDouble(), 10d);
     }
 
     @Test(expectedExceptions = JsonParseException.class)

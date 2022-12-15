@@ -24,6 +24,7 @@ public class DynamoDemographicValuesValidationConfig implements DemographicValue
     private JsonNode validationRules;
 
     @DynamoDBHashKey
+    @JsonIgnore
     public String getHashKey() {
         if (studyId == null) {
             return appId + ":";

@@ -112,6 +112,10 @@ public class DemographicValuesValidatorTest {
     public void enum_emptyRules() throws IOException {
         config.setValidationType(DemographicValuesValidationType.ENUM);
         config.setValidationRules(BridgeObjectMapper.get().createObjectNode());
+        demographic.setValues(ImmutableList.of(
+                new DemographicValue("foo"),
+                new DemographicValue("1.7"),
+                new DemographicValue("-12")));
         tryValidate(demographic);
         assertNoValuesInvalid(demographic);
     }

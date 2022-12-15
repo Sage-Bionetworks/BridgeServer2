@@ -41,6 +41,8 @@ public class DemographicValuesValidationConfigValidator implements Validator {
             return;
         }
         // perform validation on the rules
+        errors.pushNestedPath("validationRules");
         valuesValidator.validateRules(errors);
+        errors.popNestedPath();
     }
 }
