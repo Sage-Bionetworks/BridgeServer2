@@ -125,6 +125,9 @@ public class DemographicServiceTest {
                 "category-name1");
         verify(demographicValidationDao).getDemographicValuesValidationConfig(TEST_APP_ID, TEST_STUDY_ID,
                 "category-name2");
+        // all valid
+        assertAllInvalidity(demographicUser.getDemographics().get("category-name1"), null);
+        assertAllInvalidity(demographicUser.getDemographics().get("category-name2"), null);
     }
 
     /**
@@ -161,6 +164,9 @@ public class DemographicServiceTest {
         verify(participantVersionService).createParticipantVersionFromAccount(account);
         verify(demographicValidationDao).getDemographicValuesValidationConfig(TEST_APP_ID, null, "category-name1");
         verify(demographicValidationDao).getDemographicValuesValidationConfig(TEST_APP_ID, null, "category-name2");
+        // all valid
+        assertAllInvalidity(demographicUser.getDemographics().get("category-name1"), null);
+        assertAllInvalidity(demographicUser.getDemographics().get("category-name2"), null);
     }
 
     @Test
