@@ -35,7 +35,7 @@ import org.springframework.stereotype.Component;
 public class DemographicService {
     private static final String INVALID_VALIDATION_CONFIGURATION = "invalid demographics validation configuration";
 
-    private static Logger LOG = LoggerFactory.getLogger(DemographicService.class);
+    private Logger LOG = LoggerFactory.getLogger(DemographicService.class);
 
     private DemographicDao demographicDao;
 
@@ -56,6 +56,10 @@ public class DemographicService {
     @Autowired
     public final void setParticipantVersionService(ParticipantVersionService participantVersionService) {
         this.participantVersionService = participantVersionService;
+    }
+
+    void setLogger(Logger logger) {
+        this.LOG = logger;
     }
 
     /**

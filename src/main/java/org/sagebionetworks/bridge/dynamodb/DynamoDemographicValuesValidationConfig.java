@@ -10,6 +10,8 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverted;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.base.Splitter;
+import com.google.common.collect.Iterables;
 
 @DynamoDBTable(tableName = "DemographicValuesValidationConfig")
 @BridgeTypeName("DemographicValuesValidationConfig")
@@ -26,6 +28,10 @@ public class DynamoDemographicValuesValidationConfig implements DemographicValue
     @DynamoDBHashKey
     @JsonIgnore
     public String getHashKey() {
+        if (appId == null) {
+            // cannot make key
+            return null;
+        }
         if (studyId == null) {
             return appId + ":";
         }
@@ -34,7 +40,9 @@ public class DynamoDemographicValuesValidationConfig implements DemographicValue
 
     public void setHashKey(String key) {
         if (key != null) {
-            String[] parts = key.split(":", 2);
+            // results can be empty string in java splitter
+            Iterable<String> iterableParts = Splitter.on(":").omitEmptyStrings().limit(2).split(key);
+            String[] parts = Iterables.toArray(iterableParts, String.class);
             if (parts.length == 2) {
                 appId = parts[0];
                 studyId = parts[1];

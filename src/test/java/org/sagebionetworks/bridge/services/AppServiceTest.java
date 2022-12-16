@@ -193,6 +193,8 @@ public class AppServiceTest extends Mockito {
     Schedule2Service mockScheduleService;
     @Mock
     AccountWorkflowService mockAccountWorkflowService;
+    @Mock
+    DemographicService mockDemographicService;
 
     @Captor
     ArgumentCaptor<Project> projectCaptor;
@@ -798,6 +800,7 @@ public class AppServiceTest extends Mockito {
         verify(mockCacheProvider).removeApp(TEST_APP_ID);
         verify(mockTemplateService).deleteAllTemplates(TEST_APP_ID);
         verify(mockFileService).deleteAllAppFiles(TEST_APP_ID);
+        verify(mockDemographicService).deleteAllValidationConfigs(TEST_APP_ID, null);
 
         verify(mockAppConfigService).getAppConfigs(TEST_APP_ID, true);
         verify(mockAppConfigService).deleteAppConfigPermanently(TEST_APP_ID, APP_CONFIG_GUID_1);

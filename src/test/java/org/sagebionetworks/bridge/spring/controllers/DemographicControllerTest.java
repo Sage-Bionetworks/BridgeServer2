@@ -5,6 +5,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
@@ -36,6 +37,7 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Demographic;
 import org.sagebionetworks.bridge.models.studies.DemographicUser;
 import org.sagebionetworks.bridge.models.studies.DemographicUserAssessment;
+import org.sagebionetworks.bridge.models.studies.DemographicValuesValidationConfig;
 import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.DemographicService;
 import org.sagebionetworks.bridge.services.ParticipantService;
@@ -47,6 +49,10 @@ import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 
 public class DemographicControllerTest {
     private static final String TEST_DEMOGRAPHIC_ID = "test-demographic-id";
+    private static final String CATEGORY = "category";
+    private static final String DELETE_DEMOGRAPHIC_MESSAGE = "Demographic successfully deleted";
+    private static final String DELETE_DEMOGRAPHIC_USER_MESSAGE = "Demographic user successfully deleted";
+    private static final String DELETE_DEMOGRAPHIC_VALIDATION_CONFIG_MESSAGE = "Demographic validation configuration successfully deleted";
 
     @Spy
     @InjectMocks
@@ -98,6 +104,9 @@ public class DemographicControllerTest {
         assertDelete(DemographicController.class, "deleteDemographicUser");
         assertGet(DemographicController.class, "getDemographicUser");
         assertGet(DemographicController.class, "getDemographicUsers");
+        assertPost(DemographicController.class, "saveValidationConfig");
+        assertGet(DemographicController.class, "getValidationConfig");
+        assertDelete(DemographicController.class, "deleteValidationConfig");
     }
 
     /**
@@ -374,7 +383,7 @@ public class DemographicControllerTest {
         verify(controller).getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
         verify(participantService).getAccountInStudy(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         verify(demographicService).deleteDemographic(TEST_USER_ID, TEST_DEMOGRAPHIC_ID, account);
-        assertEquals(message.getMessage(), "Demographic successfully deleted");
+        assertEquals(message.getMessage(), DELETE_DEMOGRAPHIC_MESSAGE);
     }
 
     /**
@@ -413,7 +422,7 @@ public class DemographicControllerTest {
         verify(controller).getAuthenticatedSession(Roles.ADMIN);
         verify(participantService).getAccountInStudy(TEST_APP_ID, null, TEST_USER_ID);
         verify(demographicService).deleteDemographic(TEST_USER_ID, TEST_DEMOGRAPHIC_ID, account);
-        assertEquals(message.getMessage(), "Demographic successfully deleted");
+        assertEquals(message.getMessage(), DELETE_DEMOGRAPHIC_MESSAGE);
     }
 
     /**
@@ -428,7 +437,7 @@ public class DemographicControllerTest {
         verify(controller).getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
         verify(participantService).getAccountInStudy(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         verify(demographicService).deleteDemographicUser(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, account);
-        assertEquals(message.getMessage(), "Demographic user successfully deleted");
+        assertEquals(message.getMessage(), DELETE_DEMOGRAPHIC_USER_MESSAGE);
     }
 
     /**
@@ -467,7 +476,7 @@ public class DemographicControllerTest {
         verify(controller).getAuthenticatedSession(Roles.ADMIN);
         verify(participantService).getAccountInStudy(TEST_APP_ID, null, TEST_USER_ID);
         verify(demographicService).deleteDemographicUser(TEST_APP_ID, null, TEST_USER_ID, account);
-        assertEquals(message.getMessage(), "Demographic user successfully deleted");
+        assertEquals(message.getMessage(), DELETE_DEMOGRAPHIC_USER_MESSAGE);
     }
 
     /**
@@ -478,7 +487,8 @@ public class DemographicControllerTest {
         DemographicUser demographicUser = new DemographicUser();
         doReturn(Optional.of(demographicUser)).when(demographicService).getDemographicUser(any(), any(), any());
 
-        DemographicUser returnedDemographicUser = controller.getDemographicUser(Optional.of(TEST_STUDY_ID), TEST_USER_ID);
+        DemographicUser returnedDemographicUser = controller.getDemographicUser(Optional.of(TEST_STUDY_ID),
+                TEST_USER_ID);
 
         verify(controller).getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
         verify(participantService).getAccountInStudy(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
@@ -571,5 +581,141 @@ public class DemographicControllerTest {
     public void getDemographicUsersInvalidParams() {
 
         controller.getDemographicUsers(Optional.of(TEST_STUDY_ID), "foo", "7.2");
+    }
+
+    @Test
+    public void saveValidationConfig_studyLevel() {
+        DemographicValuesValidationConfig config = DemographicValuesValidationConfig.create();
+        doReturn(config).when(controller).parseJson(DemographicValuesValidationConfig.class);
+        when(demographicService.saveValidationConfig(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        DemographicValuesValidationConfig returnedConfig = controller.saveValidationConfig(Optional.of(TEST_STUDY_ID),
+                CATEGORY);
+
+        verify(controller).getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
+        verify(controller).parseJson(DemographicValuesValidationConfig.class);
+        verify(demographicService).saveValidationConfig(config);
+        assertSame(returnedConfig, config);
+        assertEquals(config.getAppId(), TEST_APP_ID);
+        assertEquals(config.getStudyId(), TEST_STUDY_ID);
+        assertEquals(config.getCategoryName(), CATEGORY);
+    }
+
+    @Test
+    public void saveValidationConfig_appLevel() {
+        DemographicValuesValidationConfig config = DemographicValuesValidationConfig.create();
+        doReturn(config).when(controller).parseJson(DemographicValuesValidationConfig.class);
+        when(demographicService.saveValidationConfig(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        DemographicValuesValidationConfig returnedConfig = controller.saveValidationConfig(Optional.empty(), CATEGORY);
+
+        verify(controller).getAuthenticatedSession(Roles.ADMIN);
+        verify(controller).parseJson(DemographicValuesValidationConfig.class);
+        verify(demographicService).saveValidationConfig(config);
+        assertSame(returnedConfig, config);
+        assertEquals(config.getAppId(), TEST_APP_ID);
+        assertEquals(config.getStudyId(), null);
+        assertEquals(config.getCategoryName(), CATEGORY);
+    }
+
+    @Test
+    public void saveValidationConfig_nullConfig() {
+        doReturn(null).when(controller).parseJson(DemographicValuesValidationConfig.class);
+
+        try {
+            controller.saveValidationConfig(Optional.empty(), CATEGORY);
+            fail("should have thrown BadRequestException");
+        } catch (BadRequestException e) {
+        }
+
+        verify(controller).getAuthenticatedSession(Roles.ADMIN);
+        verify(controller).parseJson(DemographicValuesValidationConfig.class);
+    }
+
+    @Test(expectedExceptions = MismatchedInputException.class)
+    public void saveValidationConfig_invalidConfig() {
+        doAnswer((invocation) -> {
+            throw MismatchedInputException.from(new JsonFactory().createParser("[]"),
+                    DemographicValuesValidationConfig.class,
+                    "bad json");
+        }).when(controller).parseJson(DemographicValuesValidationConfig.class);
+
+        controller.saveValidationConfig(Optional.empty(), CATEGORY);
+    }
+
+    @Test
+    public void getValidationConfig_studyLevel() {
+        DemographicValuesValidationConfig config = DemographicValuesValidationConfig.create();
+        when(demographicService.getValidationConfig(TEST_APP_ID, TEST_STUDY_ID, CATEGORY))
+                .thenReturn(Optional.of(config));
+
+        DemographicValuesValidationConfig returnedConfig = controller.getValidationConfig(Optional.of(TEST_STUDY_ID),
+                CATEGORY);
+
+        verify(controller).getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
+        verify(demographicService).getValidationConfig(TEST_APP_ID, TEST_STUDY_ID, CATEGORY);
+        assertSame(returnedConfig, config);
+    }
+
+    @Test
+    public void getValidationConfig_appLevel() {
+        DemographicValuesValidationConfig config = DemographicValuesValidationConfig.create();
+        when(demographicService.getValidationConfig(TEST_APP_ID, null, CATEGORY)).thenReturn(Optional.of(config));
+
+        DemographicValuesValidationConfig returnedConfig = controller.getValidationConfig(Optional.empty(),
+                CATEGORY);
+
+        verify(controller).getAuthenticatedSession(Roles.ADMIN);
+        verify(demographicService).getValidationConfig(TEST_APP_ID, null, CATEGORY);
+        assertSame(returnedConfig, config);
+    }
+
+    @Test
+    public void getValidationConfig_nonexistent() {
+        when(demographicService.getValidationConfig(TEST_APP_ID, null, CATEGORY)).thenReturn(Optional.empty());
+
+        try{
+            controller.getValidationConfig(Optional.empty(), CATEGORY);
+            fail("should have thrown EntityNotFoundException");
+        } catch (EntityNotFoundException e) {
+        }
+
+        verify(controller).getAuthenticatedSession(Roles.ADMIN);
+        verify(demographicService).getValidationConfig(TEST_APP_ID, null, CATEGORY);
+    }
+
+    @Test
+    public void deleteValidationConfig_studyLevel() {
+
+        StatusMessage message = controller.deleteValidationConfig(Optional.of(TEST_STUDY_ID), CATEGORY);
+
+        verify(controller).getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
+        verify(demographicService).deleteValidationConfig(TEST_APP_ID, TEST_STUDY_ID, CATEGORY);
+        assertEquals(message.getMessage(), DELETE_DEMOGRAPHIC_VALIDATION_CONFIG_MESSAGE);
+    }
+
+    @Test
+    public void deleteValidationConfig_appLevel() {
+
+        StatusMessage message = controller.deleteValidationConfig(Optional.empty(), CATEGORY);
+
+        verify(controller).getAuthenticatedSession(Roles.ADMIN);
+        verify(demographicService).deleteValidationConfig(TEST_APP_ID, null, CATEGORY);
+        assertEquals(message.getMessage(), DELETE_DEMOGRAPHIC_VALIDATION_CONFIG_MESSAGE);
+    }
+
+    @Test
+    public void deleteValidationConfig_nonexistent() {
+        doThrow(new EntityNotFoundException(DemographicValuesValidationConfig.class)).when(demographicService)
+                .deleteValidationConfig(any(), any(), any());
+
+        try {
+            controller.deleteValidationConfig(Optional.empty(), CATEGORY);
+            fail("should have thrown EntityNotFoundException");
+        } catch (EntityNotFoundException e) {
+        }
+
+        verify(controller).getAuthenticatedSession(Roles.ADMIN);
+        verify(demographicService).deleteValidationConfig(TEST_APP_ID, null, CATEGORY);
     }
 }

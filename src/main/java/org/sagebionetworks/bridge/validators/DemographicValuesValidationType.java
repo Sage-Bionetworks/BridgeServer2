@@ -59,9 +59,6 @@ public enum DemographicValuesValidationType {
             checkRulesNull(validationRules);
             // workaround because ObjectMapper does not have treeToValue method that accepts
             // a TypeReference
-            // 
-            // should not throw IOException in practice because config validator should be
-            // able to successfully deserialize on config upload
             JsonParser tokens = BridgeObjectMapper.get().treeAsTokens(validationRules);
             JavaType type = BridgeObjectMapper.get().getTypeFactory()
                     .constructType(new TypeReference<Map<String, Set<String>>>() {
@@ -127,8 +124,6 @@ public enum DemographicValuesValidationType {
         public NumberRangeValidator(JsonNode validationRules) throws IOException {
             // check before so jackson doesn't throw a different exception
             checkRulesNull(validationRules);
-            // should not throw IOException in practice because config validator should be
-            // able to successfully deserialize on config upload
             deserializedRules = BridgeObjectMapper.get()
                     .treeToValue(validationRules, NumberRangeValidationRules.class);
             checkRulesNull(deserializedRules);
