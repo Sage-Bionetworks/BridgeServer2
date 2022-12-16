@@ -23,13 +23,16 @@ import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -41,13 +44,16 @@ import org.sagebionetworks.bridge.models.studies.DemographicValuesValidationConf
 import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.DemographicService;
 import org.sagebionetworks.bridge.services.ParticipantService;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
+import com.google.common.collect.ImmutableSet;
 
 public class DemographicControllerTest {
+    private static final String TEST_STUDY_ID_2 = "study2";
     private static final String TEST_DEMOGRAPHIC_ID = "test-demographic-id";
     private static final String CATEGORY = "category";
     private static final String DELETE_DEMOGRAPHIC_MESSAGE = "Demographic successfully deleted";
@@ -85,11 +91,15 @@ public class DemographicControllerTest {
         session = new UserSession();
         session.setAppId(TEST_APP_ID);
         session.setParticipant(new StudyParticipant.Builder().withId(TEST_USER_ID).build());
-        doReturn(session).when(controller).getAuthenticatedSession(Roles.ADMIN);
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
-        doReturn(session).when(controller).getAuthenticatedSession(any());
+        doReturn(session).when(controller).getAuthenticatedSession(ArgumentMatchers.<Roles>any());
         doReturn(mockRequest).when(controller).request();
         doReturn(mockResponse).when(controller).response();
+    }
+
+    @AfterMethod
+    public void afterMethod() {
+        RequestContext.set(RequestContext.NULL_INSTANCE);
     }
 
     /**
@@ -585,6 +595,9 @@ public class DemographicControllerTest {
 
     @Test
     public void saveValidationConfig_studyLevel() {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .withCallerRoles(ImmutableSet.of(Roles.STUDY_DESIGNER)).build());
         DemographicValuesValidationConfig config = DemographicValuesValidationConfig.create();
         doReturn(config).when(controller).parseJson(DemographicValuesValidationConfig.class);
         when(demographicService.saveValidationConfig(any())).thenAnswer(invocation -> invocation.getArgument(0));
@@ -592,13 +605,30 @@ public class DemographicControllerTest {
         DemographicValuesValidationConfig returnedConfig = controller.saveValidationConfig(Optional.of(TEST_STUDY_ID),
                 CATEGORY);
 
-        verify(controller).getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
+        verify(controller).getAuthenticatedSession(Roles.DEVELOPER, Roles.STUDY_DESIGNER);
         verify(controller).parseJson(DemographicValuesValidationConfig.class);
         verify(demographicService).saveValidationConfig(config);
         assertSame(returnedConfig, config);
         assertEquals(config.getAppId(), TEST_APP_ID);
         assertEquals(config.getStudyId(), TEST_STUDY_ID);
         assertEquals(config.getCategoryName(), CATEGORY);
+    }
+
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void saveValidationConfig_studyLevel_cannotUpdateStudy_noRoles() {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID)).build());
+
+        controller.saveValidationConfig(Optional.of(TEST_STUDY_ID), CATEGORY);
+    }
+
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void saveValidationConfig_studyLevel_cannotUpdateStudy_wrongStudy() {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID_2))
+                .withCallerRoles(ImmutableSet.of(Roles.STUDY_DESIGNER)).build());
+
+        controller.saveValidationConfig(Optional.of(TEST_STUDY_ID), CATEGORY);
     }
 
     @Test
@@ -609,7 +639,7 @@ public class DemographicControllerTest {
 
         DemographicValuesValidationConfig returnedConfig = controller.saveValidationConfig(Optional.empty(), CATEGORY);
 
-        verify(controller).getAuthenticatedSession(Roles.ADMIN);
+        verify(controller).getAuthenticatedSession(Roles.DEVELOPER);
         verify(controller).parseJson(DemographicValuesValidationConfig.class);
         verify(demographicService).saveValidationConfig(config);
         assertSame(returnedConfig, config);
@@ -628,7 +658,7 @@ public class DemographicControllerTest {
         } catch (BadRequestException e) {
         }
 
-        verify(controller).getAuthenticatedSession(Roles.ADMIN);
+        verify(controller).getAuthenticatedSession(Roles.DEVELOPER);
         verify(controller).parseJson(DemographicValuesValidationConfig.class);
     }
 
@@ -645,6 +675,9 @@ public class DemographicControllerTest {
 
     @Test
     public void getValidationConfig_studyLevel() {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .withCallerRoles(ImmutableSet.of(Roles.STUDY_COORDINATOR)).build());
         DemographicValuesValidationConfig config = DemographicValuesValidationConfig.create();
         when(demographicService.getValidationConfig(TEST_APP_ID, TEST_STUDY_ID, CATEGORY))
                 .thenReturn(Optional.of(config));
@@ -652,9 +685,27 @@ public class DemographicControllerTest {
         DemographicValuesValidationConfig returnedConfig = controller.getValidationConfig(Optional.of(TEST_STUDY_ID),
                 CATEGORY);
 
-        verify(controller).getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
+        verify(controller).getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR, Roles.DEVELOPER,
+                Roles.STUDY_DESIGNER);
         verify(demographicService).getValidationConfig(TEST_APP_ID, TEST_STUDY_ID, CATEGORY);
         assertSame(returnedConfig, config);
+    }
+
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void getValidationConfig_studyLevel_cannotReadStudy_noRoles() {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID)).build());
+
+        controller.getValidationConfig(Optional.of(TEST_STUDY_ID), CATEGORY);
+    }
+
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void getValidationConfig_studyLevel_cannotReadStudy_wrongStudy() {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID_2))
+                .withCallerRoles(ImmutableSet.of(Roles.STUDY_COORDINATOR)).build());
+
+        controller.getValidationConfig(Optional.of(TEST_STUDY_ID), CATEGORY);
     }
 
     @Test
@@ -665,7 +716,7 @@ public class DemographicControllerTest {
         DemographicValuesValidationConfig returnedConfig = controller.getValidationConfig(Optional.empty(),
                 CATEGORY);
 
-        verify(controller).getAuthenticatedSession(Roles.ADMIN);
+        verify(controller).getAuthenticatedSession(Roles.DEVELOPER);
         verify(demographicService).getValidationConfig(TEST_APP_ID, null, CATEGORY);
         assertSame(returnedConfig, config);
     }
@@ -680,18 +731,37 @@ public class DemographicControllerTest {
         } catch (EntityNotFoundException e) {
         }
 
-        verify(controller).getAuthenticatedSession(Roles.ADMIN);
+        verify(controller).getAuthenticatedSession(Roles.DEVELOPER);
         verify(demographicService).getValidationConfig(TEST_APP_ID, null, CATEGORY);
     }
 
     @Test
     public void deleteValidationConfig_studyLevel() {
-
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .withCallerRoles(ImmutableSet.of(Roles.STUDY_DESIGNER)).build());
         StatusMessage message = controller.deleteValidationConfig(Optional.of(TEST_STUDY_ID), CATEGORY);
 
-        verify(controller).getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
+        verify(controller).getAuthenticatedSession(Roles.DEVELOPER, Roles.STUDY_DESIGNER);
         verify(demographicService).deleteValidationConfig(TEST_APP_ID, TEST_STUDY_ID, CATEGORY);
         assertEquals(message.getMessage(), DELETE_DEMOGRAPHIC_VALIDATION_CONFIG_MESSAGE);
+    }
+
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void deleteValidationConfig_studyLevel_cannotUpdateStudy_noRoles() {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID)).build());
+
+        controller.deleteValidationConfig(Optional.of(TEST_STUDY_ID), CATEGORY);
+    }
+
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void deleteValidationConfig_studyLevel_cannotUpdateStudy_wrongStudy() {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID_2))
+                .withCallerRoles(ImmutableSet.of(Roles.STUDY_DESIGNER)).build());
+
+        controller.deleteValidationConfig(Optional.of(TEST_STUDY_ID), CATEGORY);
     }
 
     @Test
@@ -699,7 +769,7 @@ public class DemographicControllerTest {
 
         StatusMessage message = controller.deleteValidationConfig(Optional.empty(), CATEGORY);
 
-        verify(controller).getAuthenticatedSession(Roles.ADMIN);
+        verify(controller).getAuthenticatedSession(Roles.DEVELOPER);
         verify(demographicService).deleteValidationConfig(TEST_APP_ID, null, CATEGORY);
         assertEquals(message.getMessage(), DELETE_DEMOGRAPHIC_VALIDATION_CONFIG_MESSAGE);
     }
@@ -715,7 +785,7 @@ public class DemographicControllerTest {
         } catch (EntityNotFoundException e) {
         }
 
-        verify(controller).getAuthenticatedSession(Roles.ADMIN);
+        verify(controller).getAuthenticatedSession(Roles.DEVELOPER);
         verify(demographicService).deleteValidationConfig(TEST_APP_ID, null, CATEGORY);
     }
 }

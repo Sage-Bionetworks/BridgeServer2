@@ -1,5 +1,8 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_STUDIES;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_UPDATE_STUDIES;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 
 import java.util.Optional;
@@ -363,10 +366,11 @@ public class DemographicController extends BaseController {
         UserSession session;
         if (studyId.isPresent()) {
             // study level demographics
-            session = getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
+            session = getAuthenticatedSession(Roles.DEVELOPER, Roles.STUDY_DESIGNER);
+            CAN_UPDATE_STUDIES.checkAndThrow(STUDY_ID, studyId.get());
         } else {
             // app level demographics
-            session = getAuthenticatedSession(Roles.ADMIN);
+            session = getAuthenticatedSession(Roles.DEVELOPER);
         }
 
         DemographicValuesValidationConfig validationConfig = parseJson(
@@ -390,10 +394,12 @@ public class DemographicController extends BaseController {
         UserSession session;
         if (studyId.isPresent()) {
             // study level demographics
-            session = getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
+            session = getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR, Roles.DEVELOPER,
+                    Roles.STUDY_DESIGNER);
+            CAN_READ_STUDIES.checkAndThrow(STUDY_ID, studyId.get());
         } else {
             // app level demographics
-            session = getAuthenticatedSession(Roles.ADMIN);
+            session = getAuthenticatedSession(Roles.DEVELOPER);
         }
 
         DemographicValuesValidationConfig validationConfig = demographicService
@@ -412,10 +418,11 @@ public class DemographicController extends BaseController {
         UserSession session;
         if (studyId.isPresent()) {
             // study level demographics
-            session = getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
+            session = getAuthenticatedSession(Roles.DEVELOPER, Roles.STUDY_DESIGNER);
+            CAN_UPDATE_STUDIES.checkAndThrow(STUDY_ID, studyId.get());
         } else {
             // app level demographics
-            session = getAuthenticatedSession(Roles.ADMIN);
+            session = getAuthenticatedSession(Roles.DEVELOPER);
         }
 
         demographicService.deleteValidationConfig(session.getAppId(), studyIdNull, categoryName);
