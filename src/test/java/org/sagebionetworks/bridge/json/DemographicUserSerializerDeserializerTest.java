@@ -197,9 +197,9 @@ public class DemographicUserSerializerDeserializerTest {
     public void setNullDemographicValueInner() {
         Demographic demographic = new Demographic();
         List<DemographicValue> values = new ArrayList<>();
-        values.add(new DemographicValue((String) null));
+        values.add(new DemographicValue(null));
         values.add(new DemographicValue("foo"));
-        values.add(new DemographicValue((String) null));
+        values.add(new DemographicValue( null));
 
         demographic.setValues(values);
 

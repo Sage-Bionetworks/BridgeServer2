@@ -87,22 +87,22 @@ public class DemographicValueDeserializerTest {
     }
 
     @Test
-    public void decimalPosLarge() throws JsonMappingException, JsonProcessingException {
+    public void intVeryPos() throws JsonMappingException, JsonProcessingException {
         test("123456789000000000000000", "123456789000000000000000");
     }
 
     @Test
-    public void decimalNegLarge() throws JsonMappingException, JsonProcessingException {
+    public void intVeryNeg() throws JsonMappingException, JsonProcessingException {
         test("-123456789000000000000000", "-123456789000000000000000");
     }
 
     @Test
-    public void decimalPosSmall() throws JsonMappingException, JsonProcessingException {
+    public void decimalSlightPos() throws JsonMappingException, JsonProcessingException {
         test("0.000000000000000123456789", "1.23456789E-16");
     }
 
     @Test
-    public void decimalNegSmall() throws JsonMappingException, JsonProcessingException {
+    public void decimalSlightNeg() throws JsonMappingException, JsonProcessingException {
         test("-0.000000000000000123456789", "-1.23456789E-16");
     }
 
