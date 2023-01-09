@@ -20,7 +20,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class EventStreamAdherenceReportGenerator {
@@ -33,8 +32,6 @@ public class EventStreamAdherenceReportGenerator {
     
     public EventStreamAdherenceReport generate(AdherenceState state, Schedule2 schedule) {
     
-        List<TimelineMetadata> metadataList = state.getMetadata();
-        
         Map<String, TimeWindow> timeWindowMap = getTimeWindowMapFromSchedule(schedule);
         
         LocalDate earliestDate = LATEST_LOCAL_DATE;
@@ -97,7 +94,7 @@ public class EventStreamAdherenceReportGenerator {
                 }
             } else {
                 // This could only happen if a schedule updates without refreshing metadata
-                LOG.info("Metadata time window does not exist in schedule. appId: " + schedule.getAppId() +
+                LOG.warn("Metadata time window does not exist in schedule. appId: " + schedule.getAppId() +
                         ", sessionGuid: " + meta.getSessionGuid() + ", timeWindowGuid: " + meta.getTimeWindowGuid());
             }
             

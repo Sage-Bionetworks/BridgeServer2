@@ -478,6 +478,9 @@ public class AdherenceService {
         builder.withClientTimeZone(clientTimeZone);
         
         Study study = studyService.getStudy(appId, studyId, true);
+        if (study.getScheduleGuid() == null) {
+            throw new EntityNotFoundException(Schedule2.class);
+        }
         Schedule2 schedule = scheduleService.getScheduleForStudy(appId, studyId)
                 .orElseThrow(() -> new EntityNotFoundException(Schedule2.class));
         List<TimelineMetadata> metadata = scheduleService.getScheduleMetadata(study.getScheduleGuid());
