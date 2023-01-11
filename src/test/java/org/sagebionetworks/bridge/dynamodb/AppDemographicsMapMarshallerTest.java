@@ -23,9 +23,10 @@ public class AppDemographicsMapMarshallerTest {
                 ImmutableList.of(), null);
         demographics.put("category1", demographicNullUnitsEmptyValues);
         Demographic demographicMultipleValues = new Demographic("id2", demographicUser, "category2", true,
-                ImmutableList.of(new DemographicValue("value1"), new DemographicValue("value2"),
-                        new DemographicValue(true), new DemographicValue(false),
-                        new DemographicValue(5), new DemographicValue(-7.2)),
+                ImmutableList.of(new DemographicValue("value1"),
+                        new DemographicValue("value2").withInvalidity("invalid data"),
+                        new DemographicValue("true"), new DemographicValue("false"),
+                        new DemographicValue("5"), new DemographicValue("-7.2")),
                 "units1");
         demographics.put("category2", demographicMultipleValues);
         Demographic demographicNotMultipleSelect = new Demographic("id3", demographicUser, "category3", false,

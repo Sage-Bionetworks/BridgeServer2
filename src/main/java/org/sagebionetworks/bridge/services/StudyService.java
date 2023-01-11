@@ -67,6 +67,8 @@ public class StudyService {
     private Schedule2Service scheduleService;
     @Autowired
     private AccountService accountService;
+    @Autowired
+    private DemographicService demographicService;
     
     protected String getDefaultTimeZoneId() { 
         return DateTimeZone.getDefault().getID();
@@ -312,6 +314,8 @@ public class StudyService {
 
         cacheKey = CacheKey.etag(Study.class, appId, studyId);
         cacheProvider.removeObject(cacheKey);
+
+        demographicService.deleteAllValidationConfigs(appId, studyId);
     }
     
     public void deleteAllStudies(String appId) {

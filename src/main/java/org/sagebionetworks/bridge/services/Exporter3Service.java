@@ -117,7 +117,8 @@ public class Exporter3Service {
             "    demographics.studyId AS studyId,%n" +
             "    demographics.demographicCategoryName AS demographicCategoryName,%n" +
             "    demographics.demographicValue AS demographicValue,%n" +
-            "    demographics.demographicUnits AS demographicUnits%n" +
+            "    demographics.demographicUnits AS demographicUnits,%n" +
+            "    demographics.demographicInvalidity AS demographicInvalidity%n" +
             "FROM %s as participants JOIN %s as demographics%n" +
             "    ON participants.healthCode = demographics.healthCode AND participants.participantVersion = demographics.participantVersion";
     static final String WORKER_NAME_EXPORTER_3 = "Exporter3Worker";
@@ -230,6 +231,12 @@ public class Exporter3Service {
         demographicUnitsColumn.setColumnType(ColumnType.STRING);
         healthCodeColumn.setMaximumSize(512L);
         listBuilder.add(demographicUnitsColumn);
+
+        ColumnModel demographicInvalidityColumn = new ColumnModel();
+        demographicInvalidityColumn.setName("demographicInvalidity");
+        demographicInvalidityColumn.setColumnType(ColumnType.STRING);
+        healthCodeColumn.setMaximumSize(512L);
+        listBuilder.add(demographicInvalidityColumn);
 
         PARTICIPANT_VERSION_DEMOGRAPHICS_COLUMN_MODELS = listBuilder.build();
     }

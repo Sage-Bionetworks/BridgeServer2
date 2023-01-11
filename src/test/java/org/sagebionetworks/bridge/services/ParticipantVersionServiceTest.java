@@ -19,22 +19,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import com.amazonaws.services.sqs.AmazonSQS;
-import com.amazonaws.services.sqs.model.SendMessageResult;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
-
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
@@ -53,6 +43,16 @@ import org.sagebionetworks.bridge.models.studies.DemographicValue;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.worker.Ex3ParticipantVersionRequest;
 import org.sagebionetworks.bridge.models.worker.WorkerRequest;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
+
+import com.amazonaws.services.sqs.AmazonSQS;
+import com.amazonaws.services.sqs.model.SendMessageResult;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 
 public class ParticipantVersionServiceTest {
     private static final String ACCOUNT_ID = "test-account-id";
@@ -71,8 +71,9 @@ public class ParticipantVersionServiceTest {
     private static final Map<String, Map<String, Demographic>> STUDY_DEMOGRAPHICS = ImmutableMap.of(
             STUDY_ID_1,
             ImmutableMap.of("category2", new Demographic("id2", null, "category2", true,
-                    ImmutableList.of(new DemographicValue("value2"), new DemographicValue(3),
-                            new DemographicValue(-4), new DemographicValue(true), new DemographicValue("k", "v")),
+                    ImmutableList.of(new DemographicValue("value2"), new DemographicValue("3"),
+                            new DemographicValue("-4"), new DemographicValue("true"),
+                            new DemographicValue("k", "v")),
                     null)));
     private static final String WORKER_QUEUE_URL = "http://example.com/dummy-sqs-url";
 
@@ -467,8 +468,8 @@ public class ParticipantVersionServiceTest {
         participantVersion1.setStudyDemographics(ImmutableMap.of(
             STUDY_ID_1,
             ImmutableMap.of("category2", new Demographic("id2", new DemographicUser(), "category2", true,
-                    ImmutableList.of(new DemographicValue("value2"), new DemographicValue(3),
-                            new DemographicValue(-4), new DemographicValue(true), new DemographicValue("k", "v")),
+                    ImmutableList.of(new DemographicValue("value2"), new DemographicValue("3"),
+                            new DemographicValue("-4"), new DemographicValue("true"), new DemographicValue("k", "v")),
                     null))));
 
         ParticipantVersion participantVersion2 = makeParticipantVersion();
@@ -477,8 +478,8 @@ public class ParticipantVersionServiceTest {
         participantVersion2.setStudyDemographics(ImmutableMap.of(
                 STUDY_ID_1,
                 ImmutableMap.of("category2", new Demographic(null, null, null, true,
-                        ImmutableList.of(new DemographicValue("value2"), new DemographicValue(3),
-                                new DemographicValue(-4), new DemographicValue(true), new DemographicValue("k", "v")),
+                        ImmutableList.of(new DemographicValue("value2"), new DemographicValue("3"),
+                                new DemographicValue("-4"), new DemographicValue("true"), new DemographicValue("k", "v")),
                         null))));
 
         assertTrue(ParticipantVersionService.isIdenticalParticipantVersion(participantVersion1, participantVersion2));

@@ -69,9 +69,9 @@ public class DemographicValidatorTest {
     @Test
     public void validMultipleSelectMultipleValues() {
         demographicMultipleSelect.getValues().add(new DemographicValue("value"));
-        demographicMultipleSelect.getValues().add(new DemographicValue(1));
-        demographicMultipleSelect.getValues().add(new DemographicValue(7.2));
-        demographicMultipleSelect.getValues().add(new DemographicValue(true));
+        demographicMultipleSelect.getValues().add(new DemographicValue("1"));
+        demographicMultipleSelect.getValues().add(new DemographicValue("7.2"));
+        demographicMultipleSelect.getValues().add(new DemographicValue("true"));
         Validate.entityThrowingException(demographicValidator, demographicMultipleSelect);
     }
 

@@ -33,9 +33,9 @@ public class DemographicUserSerializerDeserializerTest {
                 ImmutableList.of(), null);
         demographicUser.getDemographics().put("category1", demographicNullUnitsEmptyValues);
         Demographic demographicMultipleValues = new Demographic("id2", demographicUser, "category2", true,
-                ImmutableList.of(new DemographicValue("value1"), new DemographicValue("value2"),
-                        new DemographicValue(true), new DemographicValue(false),
-                        new DemographicValue(5), new DemographicValue(-7.2)),
+                ImmutableList.of(new DemographicValue("value1").withInvalidity("invalid data"), new DemographicValue("value2"),
+                        new DemographicValue("true"), new DemographicValue("false"),
+                        new DemographicValue("5"), new DemographicValue("-7.2")),
                 "units1");
         demographicUser.getDemographics().put("category2", demographicMultipleValues);
         Demographic demographicNotMultipleSelect = new Demographic("id3", demographicUser, "category3", false,
@@ -50,12 +50,30 @@ public class DemographicUserSerializerDeserializerTest {
         //             "multipleSelect": true,
         //             "units": "units1",
         //             "values": [
-        //                 "value1",
-        //                 "value2"
-        //                 "true",
-        //                 "false",
-        //                 "5",
-        //                 "-7.2",
+        //                 {
+        //                     "value": "value1",
+        //                     "invalidity": "invalid data"
+        //                 },
+        //                 {
+        //                     "value": "value2",
+        //                     "invalidity": null
+        //                 },
+        //                 {
+        //                     "value": "true",
+        //                     "invalidity": null
+        //                 },
+        //                 {
+        //                     "value": "false",
+        //                     "invalidity": null
+        //                 },
+        //                 {
+        //                     "value": "5",
+        //                     "invalidity": null
+        //                 },
+        //                 {
+        //                     "value": "-7.2",
+        //                     "invalidity": null
+        //                 }
         //             ]
         //         },
         //         "category3": {
@@ -63,7 +81,10 @@ public class DemographicUserSerializerDeserializerTest {
         //             "multipleSelect": false,
         //             "units": "units2",
         //             "values": [
-        //                 "value3"
+        //                 {
+        //                     "value": "value3",
+        //                     "invalidity": null
+        //                 }
         //             ]
         //         },
         //         "category1": {
@@ -74,7 +95,7 @@ public class DemographicUserSerializerDeserializerTest {
         //     }
         // }
         assertEquals(new ObjectMapper().writeValueAsString(demographicUser),
-                "{\"userId\":\"userid1\",\"demographics\":{\"category2\":{\"id\":\"id2\",\"multipleSelect\":true,\"units\":\"units1\",\"values\":[\"value1\",\"value2\",\"true\",\"false\",\"5\",\"-7.2\"]},\"category3\":{\"id\":\"id3\",\"multipleSelect\":false,\"units\":\"units2\",\"values\":[\"value3\"]},\"category1\":{\"id\":\"id1\",\"multipleSelect\":true,\"values\":[]}}}");
+                "{\"userId\":\"userid1\",\"demographics\":{\"category2\":{\"id\":\"id2\",\"multipleSelect\":true,\"units\":\"units1\",\"values\":[{\"value\":\"value1\",\"invalidity\":\"invalid data\"},{\"value\":\"value2\",\"invalidity\":null},{\"value\":\"true\",\"invalidity\":null},{\"value\":\"false\",\"invalidity\":null},{\"value\":\"5\",\"invalidity\":null},{\"value\":\"-7.2\",\"invalidity\":null}]},\"category3\":{\"id\":\"id3\",\"multipleSelect\":false,\"units\":\"units2\",\"values\":[{\"value\":\"value3\",\"invalidity\":null}]},\"category1\":{\"id\":\"id1\",\"multipleSelect\":true,\"values\":[]}}}");
     }
 
     /**
@@ -178,7 +199,7 @@ public class DemographicUserSerializerDeserializerTest {
         List<DemographicValue> values = new ArrayList<>();
         values.add(new DemographicValue(null));
         values.add(new DemographicValue("foo"));
-        values.add(new DemographicValue(null));
+        values.add(new DemographicValue( null));
 
         demographic.setValues(values);
 
@@ -205,12 +226,12 @@ public class DemographicUserSerializerDeserializerTest {
     public void deserialize() throws JsonProcessingException, JsonMappingException {
         DemographicUser demographicUser = new DemographicUser(null, null, null, "testuserid", new LinkedHashMap<>());
         Demographic demographic1 = new Demographic(null, demographicUser, "category1", true,
-                ImmutableList.of(new DemographicValue(-7), new DemographicValue(-6.3), new DemographicValue(1),
+                ImmutableList.of(new DemographicValue("-7"), new DemographicValue("-6.3"), new DemographicValue("1"),
                         new DemographicValue("foo")),
                 null);
         demographicUser.getDemographics().put("category1", demographic1);
         Demographic demographic2 = new Demographic(null, demographicUser, "category2", false,
-                ImmutableList.of(new DemographicValue(5.3)),
+                ImmutableList.of(new DemographicValue("5.3")),
                 null);
         demographicUser.getDemographics().put("category2", demographic2);
         Demographic demographic3 = new Demographic(null, demographicUser, "category3", true, ImmutableList.of(),

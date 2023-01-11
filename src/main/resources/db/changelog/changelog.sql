@@ -1035,3 +1035,8 @@ ADD COLUMN `imageResourceLabels` text DEFAULT NULL;
 
 ALTER TABLE `TimelineMetadata`
 ADD INDEX `TimelineMetadata-SessionInstanceGuid` (sessionInstanceGuid);
+
+-- changeset bridge:75
+
+ALTER TABLE `DemographicsValues`
+ADD COLUMN `invalidity` varchar(512) DEFAULT NULL;

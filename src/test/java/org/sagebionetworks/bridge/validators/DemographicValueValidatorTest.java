@@ -26,11 +26,11 @@ public class DemographicValueValidatorTest {
     @Test
     public void valid() {
         Validate.entityThrowingException(demographicValueValidator, new DemographicValue("foo"));
-        Validate.entityThrowingException(demographicValueValidator, new DemographicValue(1.5));
-        Validate.entityThrowingException(demographicValueValidator, new DemographicValue(0.0));
-        Validate.entityThrowingException(demographicValueValidator, new DemographicValue(false));
-        Validate.entityThrowingException(demographicValueValidator, new DemographicValue(7));
-        Validate.entityThrowingException(demographicValueValidator, new DemographicValue(0));
+        Validate.entityThrowingException(demographicValueValidator, new DemographicValue("1.5"));
+        Validate.entityThrowingException(demographicValueValidator, new DemographicValue("0.0"));
+        Validate.entityThrowingException(demographicValueValidator, new DemographicValue("false"));
+        Validate.entityThrowingException(demographicValueValidator, new DemographicValue("7"));
+        Validate.entityThrowingException(demographicValueValidator, new DemographicValue("0"));
     }
 
     /**
@@ -39,7 +39,8 @@ public class DemographicValueValidatorTest {
     @Test
     public void blank() {
         assertValidatorMessage(demographicValueValidator, new DemographicValue(""), "value", CANNOT_BE_NULL_OR_EMPTY);
-        assertValidatorMessage(demographicValueValidator, new DemographicValue(null), "value", CANNOT_BE_NULL_OR_EMPTY);
+        assertValidatorMessage(demographicValueValidator, new DemographicValue((String) null), "value",
+                CANNOT_BE_NULL_OR_EMPTY);
     }
 
     /**
@@ -47,8 +48,20 @@ public class DemographicValueValidatorTest {
      * length.
      */
     @Test
-    public void stringLength() {
+    public void valueStringLength() {
         assertValidatorMessage(demographicValueValidator, new DemographicValue(generateStringOfLength(1025)), "value",
                 getInvalidStringLengthMessage(1024));
+    }
+
+    /**
+     * Tests that the validator rejects a DemographicValue with an invalid
+     * invalidity
+     * length.
+     */
+    @Test
+    public void invalidityStringLength() {
+        assertValidatorMessage(demographicValueValidator,
+                new DemographicValue("foo").withInvalidity(generateStringOfLength(513)), "invalidity",
+                getInvalidStringLengthMessage(512));
     }
 }
