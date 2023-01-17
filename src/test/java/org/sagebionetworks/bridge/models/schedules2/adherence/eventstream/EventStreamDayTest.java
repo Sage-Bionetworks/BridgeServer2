@@ -85,6 +85,11 @@ public class EventStreamDayTest {
     
     @Test
     public void copy() {
+        EventStreamWindow win1 = createWindow("guid1", LocalDate.parse("2020-01-03"), LocalTime.parse("18:00"),
+                LocalDate.parse("2020-01-04"), LocalTime.parse("18:00"));
+        EventStreamWindow win2 = createWindow("guid2", LocalDate.parse("2020-01-02"), LocalTime.parse("19:00"),
+                LocalDate.parse("2020-01-05"), LocalTime.parse("19:00"));
+        
         EventStreamDay day = new EventStreamDay();
         day.setLabel("Label");
         day.setSessionGuid("sessionGuid");
@@ -97,7 +102,7 @@ public class EventStreamDayTest {
         day.setStudyBurstId("studyBurstId");
         day.setStudyBurstNum(2);
         day.addTimeWindow(createWindow("guid1"));
-        day.setTimeWindows(ImmutableList.of(createWindow("guid2"), createWindow("guid1")));
+        day.setTimeWindows(ImmutableList.of(win2, win1));
         day.setToday(true);
 
         EventStreamDay copy = day.copy();

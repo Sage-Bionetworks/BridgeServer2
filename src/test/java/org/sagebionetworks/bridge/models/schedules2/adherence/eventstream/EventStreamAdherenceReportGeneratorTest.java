@@ -153,9 +153,8 @@ public class EventStreamAdherenceReportGeneratorTest {
         // We will focus on calculation of the completion states in the report, but here let's 
         // verify the metadata is being copied over into the report.
         AdherenceState state = createState(NOW, META1, null, null);
-        Schedule2 schedule = createSchedule();
 
-        EventStreamAdherenceReport report = INSTANCE.generate(state, schedule);
+        EventStreamAdherenceReport report = INSTANCE.generate(state, SCHEDULE);
         assertEquals(getReportStates(report), ImmutableList.of(NOT_APPLICABLE));
     }
     
@@ -569,11 +568,11 @@ public class EventStreamAdherenceReportGeneratorTest {
             .collect(toList());
     }
     
-    public static Schedule2 createSchedule() {
+    private static Schedule2 createSchedule() {
         return createSchedule("P2DT1H");
     }
     
-    public static Schedule2 createSchedule(String expiration) {
+    private static Schedule2 createSchedule(String expiration) {
         // TimeWindow 1A
         TimeWindow win1 = new TimeWindow();
         win1.setGuid("timeWindowGuid");
