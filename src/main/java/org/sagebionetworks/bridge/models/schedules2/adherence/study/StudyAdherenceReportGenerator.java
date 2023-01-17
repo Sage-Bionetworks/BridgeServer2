@@ -21,6 +21,7 @@ import org.joda.time.DateTime;
 import org.joda.time.Days;
 import org.joda.time.LocalDate;
 import org.sagebionetworks.bridge.models.DateRange;
+import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceState;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceUtils;
 import org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantStudyProgress;
@@ -52,9 +53,9 @@ public class StudyAdherenceReportGenerator {
         return (timestamp != null) ? timestamp.toLocalDate() : null;
     }
 
-    public StudyAdherenceReport generate(AdherenceState state) {
+    public StudyAdherenceReport generate(AdherenceState state, Schedule2 schedule) {
         
-        EventStreamAdherenceReport eventReport = EventStreamAdherenceReportGenerator.INSTANCE.generate(state);
+        EventStreamAdherenceReport eventReport = EventStreamAdherenceReportGenerator.INSTANCE.generate(state, schedule);
         
         // Get the earliest date present in the report. The report starts from this date so week and day 
         // calculations are correct.
@@ -365,7 +366,6 @@ public class StudyAdherenceReportGenerator {
     /**
      * @param oneWeek
      * @param localToday
-     * @param setTodayUniformly
      */
     private void clearUnusedFields(StudyReportWeek oneWeek, LocalDate localToday) { 
         oneWeek.visitDays((day, i) -> {

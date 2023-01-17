@@ -1,10 +1,14 @@
 package org.sagebionetworks.bridge.models.schedules2.adherence.eventstream;
 
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
+import com.google.common.collect.ComparisonChain;
+import com.google.common.collect.Ordering;
 import org.joda.time.LocalDate;
 
 import com.google.common.collect.ImmutableList;
@@ -87,7 +91,18 @@ public final class EventStreamDay {
         this.studyBurstNum = studyBurstNum;
     }
     public List<EventStreamWindow> getTimeWindows() {
-        return ImmutableList.copyOf(timeWindows.values());
+        return ImmutableList.copyOf(timeWindows.values().stream().sorted(new Comparator<EventStreamWindow>() {
+            @Override
+            public int compare(EventStreamWindow win1, EventStreamWindow win2) {
+                return ComparisonChain.start()
+                        .compare(win1.getStartDate(), win2.getStartDate(), Ordering.natural().nullsLast())
+                        .compare(win1.getStartTime(), win2.getStartTime(), Ordering.natural().nullsLast())
+                        .compare(win1.getEndDate(), win2.getEndDate(), Ordering.natural().nullsLast())
+                        .compare(win1.getEndTime(), win2.getEndTime(), Ordering.natural().nullsLast())
+                        .compare(win1.getTimeWindowGuid(), win2.getTimeWindowGuid())
+                        .result();
+            }
+        }).collect(Collectors.toList()));
     }
     public void setTimeWindows(List<EventStreamWindow> timeWindows) {
         if (timeWindows != null) {
@@ -122,9 +137,12 @@ public final class EventStreamDay {
             EventStreamWindow newWindow = new EventStreamWindow();
             newWindow.setTimeWindowGuid(win.getTimeWindowGuid());
             newWindow.setState(win.getState());
+            newWindow.setStartDate(win.getStartDate());
+            newWindow.setStartTime(win.getStartTime());
             newWindow.setSessionInstanceGuid(win.getSessionInstanceGuid());
             newWindow.setEndDay(win.getEndDay());
             newWindow.setEndDate(win.getEndDate());
+            newWindow.setEndTime(win.getEndTime());
             newDay.addTimeWindow(newWindow);
         }
         return newDay;
