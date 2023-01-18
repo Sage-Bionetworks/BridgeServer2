@@ -55,6 +55,7 @@ public class HibernateAlertDao implements AlertDao {
         WhereClauseBuilder where = builder.startWhere(SearchTermPredicate.AND);
         where.append("a.appId = :appId", "appId", appId);
         where.append("a.studyId = :studyId", "studyId", studyId);
+        builder.append("ORDER BY createdOn DESC");
         int count = hibernateHelper.queryCount("SELECT COUNT(*) " + builder.getQuery(), builder.getParameters());
         List<Alert> alerts = hibernateHelper.queryGet(builder.getQuery(), builder.getParameters(), offsetBy, pageSize,
                 Alert.class);
