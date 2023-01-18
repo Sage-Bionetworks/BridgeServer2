@@ -284,4 +284,12 @@ public class AssessmentValidatorTest extends Mockito {
         assessment.setLabels(ImmutableList.of(new Label("en", generateStringOfLength(TEXT_SIZE))));
         assertValidatorMessage(validator, assessment, "labels", getInvalidStringLengthMessage(TEXT_SIZE));
     }
+
+    @Test
+    public void callsImageResourceValidator() {
+        // use invalid ImageResource
+        assessment.getImageResource().setName(null);
+        // check there's an error with the correct field name
+        assertValidatorMessage(validator, assessment, "imageResource.name", CANNOT_BE_BLANK);
+    }
 }

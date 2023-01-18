@@ -16,7 +16,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * Represents all demographics for a single user. Contains multiple Demographics.
+ * Represents all demographics for a single user at either the app or study
+ * level. Study-level demographics have studyId=null. Contains multiple
+ * Demographics.
  */
 @Entity
 @Table(name = "DemographicsUsers")

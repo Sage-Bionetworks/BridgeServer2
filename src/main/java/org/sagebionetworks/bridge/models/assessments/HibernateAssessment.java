@@ -10,8 +10,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.persistence.AttributeOverride;
+import javax.persistence.AttributeOverrides;
 import javax.persistence.Column;
 import javax.persistence.Convert;
+import javax.persistence.Embedded;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
@@ -65,6 +68,7 @@ public class HibernateAssessment {
         assessment.setModifiedOn(dto.getModifiedOn());
         assessment.setDeleted(dto.isDeleted());
         assessment.setVersion(dto.getVersion());
+        assessment.setImageResource(dto.getImageResource());
         return assessment;
     }
 
@@ -118,6 +122,14 @@ public class HibernateAssessment {
     
     @Version
     private long version;
+
+    @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "name", column = @Column(name = "imageResourceName")),
+            @AttributeOverride(name = "module", column = @Column(name = "imageResourceModule")),
+            @AttributeOverride(name = "labels", column = @Column(name = "imageResourceLabels"))
+    })
+    private ImageResource imageResource;
 
     public String getGuid() {
         return guid;
@@ -241,6 +253,12 @@ public class HibernateAssessment {
     }
     public void setVersion(long version) {
         this.version = version;
-    }    
+    }
+    public ImageResource getImageResource() {
+        return imageResource;
+    }
+    public void setImageResource(ImageResource imageResource) {
+        this.imageResource = imageResource;
+    }
 }
 

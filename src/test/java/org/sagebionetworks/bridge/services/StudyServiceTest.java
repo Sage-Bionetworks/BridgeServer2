@@ -94,7 +94,10 @@ public class StudyServiceTest extends Mockito {
     
     @Mock
     private AccountService mockAccountService;
-    
+
+    @Mock
+    private DemographicService mockDemographicService;
+
     @Captor
     private ArgumentCaptor<Study> studyCaptor;
     
@@ -671,6 +674,7 @@ public class StudyServiceTest extends Mockito {
         service.deleteStudyPermanently(TEST_APP_ID, TEST_STUDY_ID);
         
         verify(mockScheduleService, never()).deleteSchedulePermanently(any(), any());
+        verify(mockDemographicService).deleteAllValidationConfigs(TEST_APP_ID, TEST_STUDY_ID);
         verify(mockStudyDao).deleteStudyPermanently(TEST_APP_ID, TEST_STUDY_ID);
         verify(mockCacheProvider).removeObject(CACHE_KEY);
         

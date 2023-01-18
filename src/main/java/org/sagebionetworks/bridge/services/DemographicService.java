@@ -4,10 +4,12 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 
+import java.io.IOException;
 import java.util.Optional;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.DemographicDao;
+import org.sagebionetworks.bridge.dao.DemographicValidationDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
@@ -15,8 +17,14 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.studies.Demographic;
 import org.sagebionetworks.bridge.models.studies.DemographicUser;
+import org.sagebionetworks.bridge.models.studies.DemographicValue;
+import org.sagebionetworks.bridge.models.studies.DemographicValuesValidationConfig;
 import org.sagebionetworks.bridge.validators.DemographicUserValidator;
+import org.sagebionetworks.bridge.validators.DemographicValuesValidationConfigValidator;
+import org.sagebionetworks.bridge.validators.DemographicValuesValidator;
 import org.sagebionetworks.bridge.validators.Validate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -25,9 +33,15 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class DemographicService {
-    private ParticipantVersionService participantVersionService;
+    private static final String INVALID_VALIDATION_CONFIGURATION = "invalid demographics validation configuration";
+
+    private Logger LOG = LoggerFactory.getLogger(DemographicService.class);
 
     private DemographicDao demographicDao;
+
+    private DemographicValidationDao demographicValidationDao;
+
+    private ParticipantVersionService participantVersionService;
 
     @Autowired
     public final void setDemographicDao(DemographicDao demographicDao) {
@@ -35,8 +49,17 @@ public class DemographicService {
     }
 
     @Autowired
+    public final void setDemographicValidationDao(DemographicValidationDao demographicValidationDao) {
+        this.demographicValidationDao = demographicValidationDao;
+    }
+
+    @Autowired
     public final void setParticipantVersionService(ParticipantVersionService participantVersionService) {
         this.participantVersionService = participantVersionService;
+    }
+
+    void setLogger(Logger logger) {
+        this.LOG = logger;
     }
 
     /**
@@ -56,12 +79,78 @@ public class DemographicService {
                 demographic.setDemographicUser(demographicUser);
             }
         }
+        // validate demographic for malformed inputs
         Validate.entityThrowingException(DemographicUserValidator.INSTANCE, demographicUser);
+        // validate demographic values with user defined rules
+        validateDemographics(demographicUser);
         DemographicUser savedDemographicUser = demographicDao.saveDemographicUser(demographicUser,
                 demographicUser.getAppId(),
                 demographicUser.getStudyId(), demographicUser.getUserId());
         participantVersionService.createParticipantVersionFromAccount(account);
         return savedDemographicUser;
+    }
+
+    /**
+     * For every Demographic, checks for validation configs in the form
+     * {
+     * "validationType": string,
+     * "validationRules": object
+     * }
+     * 
+     * If "validationType" is "enum", "validationRules" should have the schema
+     * {
+     * "language": [
+     * ]
+     * }
+     * Where "language" is a language code. Other languages can be used but only
+     * English ("en") is currently supported. All values in the Demographic should
+     * be listed in the array of values as strings.
+     * 
+     * If "validationType" is "number_range", "validationRules" should have the
+     * schema
+     * {
+     * "min": number (optional),
+     * "max": number (optional)
+     * }
+     * All values in the Demographic must be numbers and should be greater than or
+     * equal to the min if it exists, or less than or equal to the max if it exists.
+     * 
+     * @param demographicUser The DemographicUser whose values should be validated
+     * @throws InvalidEntityException if any value in any Demographic is not valid
+     */
+    private void validateDemographics(DemographicUser demographicUser) throws InvalidEntityException {
+        for (Demographic demographic : demographicUser.getDemographics().values()) {
+            // get validation config
+            Optional<DemographicValuesValidationConfig> validationConfigOpt = getValidationConfig(
+                    demographicUser.getAppId(), demographicUser.getStudyId(), demographic.getCategoryName());
+            if (validationConfigOpt.isPresent()) {
+                DemographicValuesValidationConfig validationConfig = validationConfigOpt.get();
+                // get values validator
+                DemographicValuesValidator valuesValidator;
+                try {
+                    valuesValidator = validationConfig.getValidationType()
+                            .getValidatorWithRules(validationConfig.getValidationRules());
+                } catch (IOException e) {
+                    // should not happen because rules are validated for deserialization by
+                    // DemographicValuesValidationConfigValidator when uploaded to Bridge
+                    LOG.error(
+                            "Demographic validation rules failed deserialization when attempting to validate a demographic "
+                                    + "but rules should have been validated for deserialization already,"
+                                    + " appId " + demographicUser.getAppId()
+                                    + " studyId " + demographicUser.getStudyId()
+                                    + " userId " + demographicUser.getUserId()
+                                    + " demographics categoryName " + demographic.getCategoryName()
+                                    + " demographics validationType " + validationConfig.getValidationType().toString(),
+                            e);
+                    for (DemographicValue demographicValue : demographic.getValues()) {
+                        demographicValue.setInvalidity(INVALID_VALIDATION_CONFIGURATION);
+                    }
+                    continue;
+                }
+                // validate the demographic
+                valuesValidator.validateDemographicUsingRules(demographic);
+            }
+        }
     }
 
     /**
@@ -144,6 +233,26 @@ public class DemographicService {
             throw new BadRequestException(PAGE_SIZE_ERROR);
         }
         return demographicDao.getDemographicUsers(appId, studyId, offsetBy, pageSize);
+    }
+
+    public DemographicValuesValidationConfig saveValidationConfig(DemographicValuesValidationConfig validationConfig)
+            throws InvalidEntityException {
+        Validate.entityThrowingException(DemographicValuesValidationConfigValidator.INSTANCE, validationConfig);
+        return demographicValidationDao.saveDemographicValuesValidationConfig(validationConfig);
+    }
+
+    public Optional<DemographicValuesValidationConfig> getValidationConfig(String appId, String studyIdNull,
+            String categoryName) {
+        return demographicValidationDao.getDemographicValuesValidationConfig(appId, studyIdNull, categoryName);
+    }
+
+    public void deleteValidationConfig(String appId, String studyIdNull,
+            String categoryName) throws EntityNotFoundException {
+        demographicValidationDao.deleteDemographicValuesValidationConfig(appId, studyIdNull, categoryName);
+    }
+
+    public void deleteAllValidationConfigs(String appId, String studyId) {
+        demographicValidationDao.deleteAllValidationConfigs(appId, studyId);
     }
 
     /**

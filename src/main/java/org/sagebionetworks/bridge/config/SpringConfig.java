@@ -74,6 +74,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoAppConfig;
 import org.sagebionetworks.bridge.dynamodb.DynamoAppConfigElement;
 import org.sagebionetworks.bridge.dynamodb.DynamoCompoundActivityDefinition;
 import org.sagebionetworks.bridge.dynamodb.DynamoCriteria;
+import org.sagebionetworks.bridge.dynamodb.DynamoDemographicValuesValidationConfig;
 import org.sagebionetworks.bridge.dynamodb.DynamoExternalIdentifier;
 import org.sagebionetworks.bridge.dynamodb.DynamoFPHSExternalIdentifier;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthCode;
@@ -407,6 +408,12 @@ public class SpringConfig {
     @Autowired
     public DynamoDBMapper appConfigElementDdbMapper(DynamoUtils dynamoUtils) {
         return dynamoUtils.getMapper(DynamoAppConfigElement.class);
+    }
+
+    @Bean(name = "demographicValidationDdbMapper")
+    @Autowired
+    public DynamoDBMapper demographicValidationDdbMapper(DynamoUtils dynamoUtils) {
+        return dynamoUtils.getMapper(DynamoDemographicValuesValidationConfig.class);
     }
     
     @Bean(name = "surveyMapper")

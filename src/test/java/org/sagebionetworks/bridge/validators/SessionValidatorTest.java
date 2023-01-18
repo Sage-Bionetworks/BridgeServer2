@@ -59,6 +59,7 @@ import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.models.Label;
+import org.sagebionetworks.bridge.models.assessments.ImageResource;
 import org.sagebionetworks.bridge.models.schedules2.Session;
 import org.sagebionetworks.bridge.models.schedules2.SessionTest;
 import org.sagebionetworks.bridge.models.schedules2.TimeWindow;
@@ -698,7 +699,18 @@ public class SessionValidatorTest extends Mockito {
         
         Validate.entityThrowingException(INSTANCE, session);
     }
-    
+
+    @Test
+    public void callsImageResourceValidator() {
+        // use invalid ImageResource
+        Session session = createValidSession();
+        ImageResource imageResource = new ImageResource();
+        imageResource.setName(null);
+        session.getAssessments().get(0).setImageResource(imageResource);
+        // check there's an error with the correct field name
+        assertValidatorMessage(INSTANCE, session, ASSESSMENTS_FIELD + "[0].imageResource.name", CANNOT_BE_BLANK);
+    }
+
     private Session makeWindows(String time1, String exp1, String time2, String exp2, 
             String time3, String exp3) {
         Session session = createValidSession();

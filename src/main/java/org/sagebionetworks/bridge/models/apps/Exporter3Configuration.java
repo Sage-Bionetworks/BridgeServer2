@@ -6,6 +6,7 @@ import java.util.Objects;
 public final class Exporter3Configuration {
     private String createStudyNotificationTopicArn;
     private Long dataAccessTeamId;
+    private String exportNotificationTopicArn;
     private String participantVersionTableId;
     private String participantVersionDemographicsTableId;
     private String participantVersionDemographicsViewId;
@@ -38,6 +39,18 @@ public final class Exporter3Configuration {
 
     public void setDataAccessTeamId(Long dataAccessTeamId) {
         this.dataAccessTeamId = dataAccessTeamId;
+    }
+
+    /**
+     * SNS topic to publish to when health data is exported to Synapse. This can be configured both for app-wide
+     * notifications and for study-specific notifications.
+     */
+    public String getExportNotificationTopicArn() {
+        return exportNotificationTopicArn;
+    }
+
+    public void setExportNotificationTopicArn(String exportNotificationTopicArn) {
+        this.exportNotificationTopicArn = exportNotificationTopicArn;
     }
 
     /** The Synapse table to where we export Participant Versions. */
@@ -101,7 +114,7 @@ public final class Exporter3Configuration {
 
     @Override
     public int hashCode() {
-        return Objects.hash(createStudyNotificationTopicArn, dataAccessTeamId, participantVersionDemographicsTableId,
+        return Objects.hash(createStudyNotificationTopicArn, dataAccessTeamId, exportNotificationTopicArn, participantVersionDemographicsTableId,
                 participantVersionDemographicsViewId, participantVersionTableId, projectId, rawDataFolderId,
                 storageLocationId);
     }
@@ -117,6 +130,7 @@ public final class Exporter3Configuration {
         Exporter3Configuration other = (Exporter3Configuration) obj;
         return Objects.equals(createStudyNotificationTopicArn, other.createStudyNotificationTopicArn)
                 && Objects.equals(dataAccessTeamId, other.dataAccessTeamId)
+                && Objects.equals(exportNotificationTopicArn, other.exportNotificationTopicArn)
                 && Objects.equals(participantVersionDemographicsTableId, other.participantVersionDemographicsTableId)
                 && Objects.equals(participantVersionDemographicsViewId, other.participantVersionDemographicsViewId)
                 && Objects.equals(participantVersionTableId, other.participantVersionTableId)
@@ -127,7 +141,7 @@ public final class Exporter3Configuration {
     @Override
     public String toString() {
         return "Exporter3Configuration [createStudyNotificationTopicArn=" + createStudyNotificationTopicArn
-                + ", dataAccessTeamId=" + dataAccessTeamId + ", participantVersionDemographicsTableId="
+                + ", dataAccessTeamId=" + dataAccessTeamId + ", exportNotificationTopicArn=" + exportNotificationTopicArn + ", participantVersionDemographicsTableId="
                 + participantVersionDemographicsTableId + ", participantVersionDemographicsViewId="
                 + participantVersionDemographicsViewId + ", participantVersionTableId=" + participantVersionTableId
                 + ", projectId=" + projectId + ", rawDataFolderId=" + rawDataFolderId + ", storageLocationId="

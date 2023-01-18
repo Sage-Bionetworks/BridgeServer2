@@ -169,6 +169,8 @@ public class AppService {
     private AccountWorkflowService accountWorkflowService;
     @Autowired
     private AdminAccountService adminAccountService;
+    @Autowired
+    private DemographicService demographicService;
     
     // Not defaults, if you wish to change these, change in source. Not configurable per app
     private String appEmailVerificationTemplate;
@@ -606,6 +608,7 @@ public class AppService {
             subpopService.deleteAllSubpopulations(existing.getIdentifier());
             topicService.deleteAllTopics(existing.getIdentifier());
             fileService.deleteAllAppFiles(existing.getIdentifier());
+            demographicService.deleteAllValidationConfigs(existing.getIdentifier(), null);
 
             List<AppConfig> appConfigList = appConfigService.getAppConfigs(identifier, true);
             for (AppConfig appConfig : appConfigList) {

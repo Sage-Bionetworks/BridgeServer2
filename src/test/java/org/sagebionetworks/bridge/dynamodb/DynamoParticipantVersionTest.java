@@ -37,7 +37,7 @@ public class DynamoParticipantVersionTest {
     private static final Map<String, String> STUDY_MEMBERSHIPS = ImmutableMap.of("test-study", "test-ext-id");
     private static final String TIME_ZONE = "America/Los_Angeles";
     private static final Map<String, Demographic> APP_DEMOGRAPHICS = ImmutableMap.of("category1", new Demographic("id1",
-            null, "category1", false, ImmutableList.of(new DemographicValue("value1")), "units"));
+            null, "category1", false, ImmutableList.of(new DemographicValue("value1").withInvalidity("invalid data")), "units"));
     private static final Map<String, Map<String, Demographic>> STUDY_DEMOGRAPHICS = ImmutableMap.of("test-study",
             ImmutableMap.of("category2", new Demographic("id2", null, "category2", true,
                     ImmutableList.of(new DemographicValue("value2"), new DemographicValue("value3")), null)));
@@ -199,7 +199,8 @@ public class DynamoParticipantVersionTest {
         assertNotNull(appDemographicsDemographicValuesNode);
         assertEquals(appDemographicsDemographicValuesNode.size(), 1);
         assertTrue(appDemographicsDemographicValuesNode.isArray());
-        assertEquals(appDemographicsDemographicValuesNode.get(0).textValue(), "value1");
+        assertEquals(appDemographicsDemographicValuesNode.get(0).get("value").textValue(), "value1");
+        assertEquals(appDemographicsDemographicValuesNode.get(0).get("invalidity").textValue(), "invalid data");
         assertEquals(appDemographicsDemographicNode.get("units").textValue(), "units");
 
         JsonNode studyDemographicsNode = jsonNode.get("studyDemographics");
@@ -219,8 +220,8 @@ public class DynamoParticipantVersionTest {
         assertNotNull(studyDemographicsInnerDemographicValuesNode);
         assertEquals(studyDemographicsInnerDemographicValuesNode.size(), 2);
         assertTrue(studyDemographicsInnerDemographicValuesNode.isArray());
-        assertEquals(studyDemographicsInnerDemographicValuesNode.get(0).textValue(), "value2");
-        assertEquals(studyDemographicsInnerDemographicValuesNode.get(1).textValue(), "value3");
+        assertEquals(studyDemographicsInnerDemographicValuesNode.get(0).get("value").textValue(), "value2");
+        assertEquals(studyDemographicsInnerDemographicValuesNode.get(1).get("value").textValue(), "value3");
         assertFalse(studyDemographicsInnerDemographicNode.has("units"));
 
         // These fields don't get converted to JSON.

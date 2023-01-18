@@ -8,6 +8,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 import javax.annotation.Resource;
 
 import com.amazonaws.services.sns.AmazonSNS;
@@ -43,6 +45,7 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.SecureTokenGenerator;
 import org.sagebionetworks.bridge.config.BridgeConfig;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.BridgeSynapseException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -56,6 +59,8 @@ import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.Exporter3Configuration;
+import org.sagebionetworks.bridge.models.exporter.ExportToAppNotification;
+import org.sagebionetworks.bridge.models.exporter.ExportToStudyNotification;
 import org.sagebionetworks.bridge.models.exporter.ExporterCreateStudyNotification;
 import org.sagebionetworks.bridge.models.exporter.ExporterSubscriptionRequest;
 import org.sagebionetworks.bridge.models.exporter.ExporterSubscriptionResult;
@@ -66,6 +71,7 @@ import org.sagebionetworks.bridge.models.worker.Exporter3Request;
 import org.sagebionetworks.bridge.models.worker.WorkerRequest;
 import org.sagebionetworks.bridge.s3.S3Helper;
 import org.sagebionetworks.bridge.synapse.SynapseHelper;
+import org.sagebionetworks.bridge.validators.ExportToAppNotificationValidator;
 import org.sagebionetworks.bridge.validators.ExporterSubscriptionRequestValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
@@ -93,9 +99,10 @@ public class Exporter3Service {
     static final String CONFIG_KEY_TEAM_BRIDGE_ADMIN = "team.bridge.admin";
     static final String CONFIG_KEY_TEAM_BRIDGE_STAFF = "team.bridge.staff";
     static final String FOLDER_NAME_BRIDGE_RAW_DATA = "Bridge Raw Data";
-    static final String FORMAT_CREATE_STUDY_TOPIC_NAME = "Bridge-Create-Study-Notification-%s";
     static final String TABLE_NAME_PARTICIPANT_VERSIONS = "Participant Versions";
     static final String TABLE_NAME_PARTICIPANT_VERSIONS_DEMOGRAPHICS = "Participant Versions Demographics";
+    static final String TOPIC_PREFIX_CREATE_STUDY = "Bridge-Create-Study-Notification";
+    static final String TOPIC_PREFIX_EXPORT = "Bridge-Export-Notification";
     static final String VIEW_NAME_PARTICIPANT_VERSIONS_DEMOGRAPHICS = "Participant Versions Demographics Joined View";
     static final String VIEW_DEFINING_SQL = "SELECT%n" +
             "    participants.healthCode AS healthCode,%n" +
@@ -110,7 +117,8 @@ public class Exporter3Service {
             "    demographics.studyId AS studyId,%n" +
             "    demographics.demographicCategoryName AS demographicCategoryName,%n" +
             "    demographics.demographicValue AS demographicValue,%n" +
-            "    demographics.demographicUnits AS demographicUnits%n" +
+            "    demographics.demographicUnits AS demographicUnits,%n" +
+            "    demographics.demographicInvalidity AS demographicInvalidity%n" +
             "FROM %s as participants JOIN %s as demographics%n" +
             "    ON participants.healthCode = demographics.healthCode AND participants.participantVersion = demographics.participantVersion";
     static final String WORKER_NAME_EXPORTER_3 = "Exporter3Worker";
@@ -223,6 +231,12 @@ public class Exporter3Service {
         demographicUnitsColumn.setColumnType(ColumnType.STRING);
         healthCodeColumn.setMaximumSize(512L);
         listBuilder.add(demographicUnitsColumn);
+
+        ColumnModel demographicInvalidityColumn = new ColumnModel();
+        demographicInvalidityColumn.setName("demographicInvalidity");
+        demographicInvalidityColumn.setColumnType(ColumnType.STRING);
+        healthCodeColumn.setMaximumSize(512L);
+        listBuilder.add(demographicInvalidityColumn);
 
         PARTICIPANT_VERSION_DEMOGRAPHICS_COLUMN_MODELS = listBuilder.build();
     }
@@ -415,17 +429,7 @@ public class Exporter3Service {
                 notification.setRawFolderId(ex3Config.getRawDataFolderId());
                 notification.setStudyId(studyId);
 
-                // Convert notification to JSON and publish.
-                String notificationJson;
-                try {
-                    notificationJson = BridgeObjectMapper.get().writeValueAsString(notification);
-                    PublishResult publishResult = snsClient.publish(createStudyNotificationTopicArn, notificationJson);
-                    LOG.info("Sent notification for initializing study " + studyId + " in app " + appId +
-                            ", message ID " + publishResult.getMessageId());
-                } catch (JsonProcessingException ex) {
-                    // This should never happen, but catch it and log.
-                    LOG.error("Error creating notification for initializing study " + studyId + " in app " + appId, ex);
-                }
+                sendNotification(appId, studyId, "create study", createStudyNotificationTopicArn, notification);
             }
         }
 
@@ -614,9 +618,112 @@ public class Exporter3Service {
         return SecureTokenGenerator.NAME_SCOPE_INSTANCE.nextToken();
     }
 
+    /**
+     * This is called by the Worker when a health data record is exported to Synapse. This sends notifications to all
+     * subscribers for both the app-wide Synapse project and all study-specific Synapse projects that the record was
+     * exported to.
+     */
+    public void sendExportNotifications(ExportToAppNotification exportToAppNotification) {
+        Validate.entityThrowingException(ExportToAppNotificationValidator.INSTANCE, exportToAppNotification);
+        String appId = exportToAppNotification.getAppId();
+        String recordId = exportToAppNotification.getRecordId();
+        final String type = "export record " + recordId;
+
+        App app = appService.getApp(appId);
+        if (!app.isExporter3Enabled()) {
+            throw new BadRequestException("App does not have Exporter 3.0 enabled");
+        }
+
+        // Send app-wide notification.
+        Exporter3Configuration ex3Config = app.getExporter3Configuration();
+        if (ex3Config != null && ex3Config.getExportNotificationTopicArn() != null) {
+            String appNotificationTopicArn = ex3Config.getExportNotificationTopicArn();
+            try {
+                sendNotification(appId, null, type, appNotificationTopicArn, exportToAppNotification);
+            } catch (RuntimeException ex) {
+                LOG.error("Error notifying export for app-wide project, app=" + appId + ", record=" + recordId, ex);
+            }
+        } else {
+            // This could happen if the study is configured for export, but not the app. Log at info level, so we can
+            // trace with our logs.
+            LOG.info("Export not enabled for app-wide project, app=" + appId + ", record=" + recordId);
+        }
+
+        // Send study-specific notifications. Note that getStudyRecords() is never null.
+        Map<String, ExportToAppNotification.RecordInfo> studyRecordMap = exportToAppNotification.getStudyRecords();
+        for (Map.Entry<String, ExportToAppNotification.RecordInfo> entry : studyRecordMap.entrySet()) {
+            String studyId = entry.getKey();
+
+            try {
+                Study study = studyService.getStudy(appId, studyId, false);
+                if (study == null || !study.isExporter3Enabled() || study.getExporter3Configuration() == null) {
+                    // This is very unusual. Log and move on.
+                    LOG.error("Export for non-existent or non-configured study, app=" + appId + ", study=" +
+                            studyId + ", record=" + recordId);
+                    continue;
+                }
+                String studyNotificationTopicArn = study.getExporter3Configuration()
+                        .getExportNotificationTopicArn();
+                if (studyNotificationTopicArn == null) {
+                    // This is normal. Skip.
+                    continue;
+                }
+
+                ExportToAppNotification.RecordInfo recordInfo = entry.getValue();
+                ExportToStudyNotification exportToStudyNotification = new ExportToStudyNotification();
+                exportToStudyNotification.setAppId(appId);
+                exportToStudyNotification.setStudyId(studyId);
+                exportToStudyNotification.setRecordId(recordId);
+                exportToStudyNotification.setParentProjectId(recordInfo.getParentProjectId());
+                exportToStudyNotification.setRawFolderId(recordInfo.getRawFolderId());
+                exportToStudyNotification.setFileEntityId(recordInfo.getFileEntityId());
+                exportToStudyNotification.setS3Bucket(recordInfo.getS3Bucket());
+                exportToStudyNotification.setS3Key(recordInfo.getS3Key());
+
+                sendNotification(appId, studyId, type, studyNotificationTopicArn, exportToStudyNotification);
+            } catch (RuntimeException ex) {
+                LOG.error("Error notifying export for study-specific project, app=" + appId + ", study=" +
+                        studyId + ", record=" + recordId, ex);
+            }
+        }
+    }
+
+    // Helper method for sending SNS notifications. appId, studyId, and type are used for logging. topicArn is the SNS
+    // topic to send the notification to. Object is the notification to send, which will be converted to JSON and sent
+    // in JSON format.
+    private void sendNotification(String appId, String studyId, String type, String topicArn, Object notification) {
+        // Convert notification to JSON and publish.
+        String notificationJson;
+        try {
+            notificationJson = BridgeObjectMapper.get().writeValueAsString(notification);
+            PublishResult publishResult = snsClient.publish(topicArn, notificationJson);
+            LOG.info("Sent notification for app=" + appId + ", study=" + studyId + ", type=" + type + ", message ID " +
+                    publishResult.getMessageId());
+        } catch (JsonProcessingException ex) {
+            // This should never happen, but catch it and log.
+            LOG.error("Error creating notification for app=" + appId + ", study=" + studyId + ", type=" + type, ex);
+        }
+    }
+
     /** Subscribe to be notified when a study is initialized for Exporter 3.0 in the given app. */
     public ExporterSubscriptionResult subscribeToCreateStudyNotifications(String appId,
             ExporterSubscriptionRequest subscriptionRequest) {
+        return subscribeToNotificationsForApp(appId, TOPIC_PREFIX_CREATE_STUDY, subscriptionRequest,
+                Exporter3Configuration::getCreateStudyNotificationTopicArn,
+                Exporter3Configuration::setCreateStudyNotificationTopicArn);
+    }
+
+    /** Subscribe to be notified when health data is exported to any Synapse projects in the app. */
+    public ExporterSubscriptionResult subscribeToExportNotificationsForApp(String appId,
+            ExporterSubscriptionRequest subscriptionRequest) {
+        return subscribeToNotificationsForApp(appId, TOPIC_PREFIX_EXPORT, subscriptionRequest,
+                Exporter3Configuration::getExportNotificationTopicArn,
+                Exporter3Configuration::setExportNotificationTopicArn);
+    }
+
+    private ExporterSubscriptionResult subscribeToNotificationsForApp(String appId, String topicPrefix,
+            ExporterSubscriptionRequest subscriptionRequest, Function<Exporter3Configuration, String> getter,
+            BiConsumer<Exporter3Configuration, String> setter) {
         Validate.entityThrowingException(ExporterSubscriptionRequestValidator.INSTANCE, subscriptionRequest);
 
         boolean isAppModified = false;
@@ -631,14 +738,14 @@ public class Exporter3Service {
         }
 
         // Has the SNS topic been created for this app?
-        String topicArn = ex3Config.getCreateStudyNotificationTopicArn();
+        String topicArn = getter.apply(ex3Config);
         if (topicArn == null) {
-            String topicName = String.format(FORMAT_CREATE_STUDY_TOPIC_NAME, appId);
+            String topicName = topicPrefix + '-' + appId;
             CreateTopicResult createTopicResult = snsClient.createTopic(topicName);
             topicArn = createTopicResult.getTopicArn();
-            LOG.info("Created create study notification topic " + topicArn);
+            LOG.info("Created SNS topic name=" + topicName + ", arn=" + topicArn);
 
-            ex3Config.setCreateStudyNotificationTopicArn(topicArn);
+            setter.accept(ex3Config, topicArn);
             isAppModified = true;
         }
 
@@ -646,6 +753,61 @@ public class Exporter3Service {
         // exporter3config.
         if (isAppModified) {
             appService.updateApp(app, true);
+        }
+
+        // Subscribe to the topic.
+        SubscribeRequest snsSubscribeRequest = new SubscribeRequest();
+        snsSubscribeRequest.setAttributes(subscriptionRequest.getAttributes());
+        snsSubscribeRequest.setEndpoint(subscriptionRequest.getEndpoint());
+        snsSubscribeRequest.setProtocol(subscriptionRequest.getProtocol());
+        snsSubscribeRequest.setReturnSubscriptionArn(true);
+        snsSubscribeRequest.setTopicArn(topicArn);
+        SubscribeResult snsSubscribeResult = snsClient.subscribe(snsSubscribeRequest);
+
+        ExporterSubscriptionResult subscriptionResult = new ExporterSubscriptionResult();
+        subscriptionResult.setSubscriptionArn(snsSubscribeResult.getSubscriptionArn());
+        return subscriptionResult;
+    }
+
+    /** Subscribe to be notified when health data is exported to the study-specific Synapse project. */
+    public ExporterSubscriptionResult subscribeToExportNotificationsForStudy(String appId, String studyId,
+            ExporterSubscriptionRequest subscriptionRequest) {
+        return subscribeToNotificationsForStudy(appId, studyId, TOPIC_PREFIX_EXPORT, subscriptionRequest,
+                Exporter3Configuration::getExportNotificationTopicArn,
+                Exporter3Configuration::setExportNotificationTopicArn);
+    }
+
+    @SuppressWarnings("SameParameterValue")
+    private ExporterSubscriptionResult subscribeToNotificationsForStudy(String appId, String studyId,
+            String topicPrefix, ExporterSubscriptionRequest subscriptionRequest,
+            Function<Exporter3Configuration, String> getter, BiConsumer<Exporter3Configuration, String> setter) {
+        Validate.entityThrowingException(ExporterSubscriptionRequestValidator.INSTANCE, subscriptionRequest);
+
+        boolean isStudyModified = false;
+        Study study = studyService.getStudy(appId, studyId, true);
+        Exporter3Configuration ex3Config = study.getExporter3Configuration();
+        if (ex3Config == null) {
+            ex3Config = new Exporter3Configuration();
+            study.setExporter3Configuration(ex3Config);
+            isStudyModified = true;
+        }
+
+        // Has the SNS topic been created for this app?
+        String topicArn = getter.apply(ex3Config);
+        if (topicArn == null) {
+            String topicName = topicPrefix + '-' + appId + '-' + studyId;
+            CreateTopicResult createTopicResult = snsClient.createTopic(topicName);
+            topicArn = createTopicResult.getTopicArn();
+            LOG.info("Created SNS topic name=" + topicName + ", arn=" + topicArn);
+
+            setter.accept(ex3Config, topicArn);
+            isStudyModified = true;
+        }
+
+        // Update app if necessary. We mark this as an admin update, because the only field that changed is
+        // exporter3config.
+        if (isStudyModified) {
+            studyService.updateStudy(appId, study);
         }
 
         // Subscribe to the topic.

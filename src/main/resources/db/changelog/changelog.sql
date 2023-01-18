@@ -1019,7 +1019,29 @@ CREATE TABLE IF NOT EXISTS `DemographicsValues` (
     CONSTRAINT `DemographicValue-Demographic-Constraint` FOREIGN KEY (`demographicId`) REFERENCES `Demographics` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
+-- changeset bridge:73
+
+ALTER TABLE `Assessments`
+ADD COLUMN `imageResourceName` varchar(255) DEFAULT NULL,
+ADD COLUMN `imageResourceModule` varchar(255) DEFAULT NULL,
+ADD COLUMN `imageResourceLabels` text DEFAULT NULL;
+
+ALTER TABLE `SessionAssessments`
+ADD COLUMN `imageResourceName` varchar(255) DEFAULT NULL,
+ADD COLUMN `imageResourceModule` varchar(255) DEFAULT NULL,
+ADD COLUMN `imageResourceLabels` text DEFAULT NULL;
+
 -- changeset bridge:74
+
+ALTER TABLE `TimelineMetadata`
+ADD INDEX `TimelineMetadata-SessionInstanceGuid` (sessionInstanceGuid);
+
+-- changeset bridge:75
+
+ALTER TABLE `DemographicsValues`
+ADD COLUMN `invalidity` varchar(512) DEFAULT NULL;
+
+-- changeset bridge:76
 
 CREATE TABLE IF NOT EXISTS `Alerts` (
     `id` varchar(60) NOT NULL,
