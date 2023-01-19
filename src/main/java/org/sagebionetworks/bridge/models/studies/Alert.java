@@ -57,7 +57,7 @@ public class Alert implements BridgeEntity {
         TIMELINE_ACCESSED,
         LOW_ADHERENCE,
         UPCOMING_STUDY_BURST,
-        TEST_WINDOW_CHANGE
+        STUDY_BURST_CHANGE
     }
 
     public Alert(String id, DateTime createdOn, String studyId, String appId, AccountRef participant,
@@ -84,6 +84,11 @@ public class Alert implements BridgeEntity {
     public static Alert lowAdherence(String studyId, String appId, AccountRef participant, double adherenceThreshold) {
         return new Alert(null, null, studyId, appId, participant, AlertCategory.LOW_ADHERENCE,
                 BridgeObjectMapper.get().valueToTree(new LowAdherenceAlertData(adherenceThreshold)));
+    }
+
+    public static Alert studyBurstChange(String studyId, String appId, AccountRef participant) {
+        return new Alert(null, null, studyId, appId, participant, AlertCategory.STUDY_BURST_CHANGE,
+                BridgeObjectMapper.get().nullNode());
     }
 
     public static class LowAdherenceAlertData {

@@ -171,7 +171,7 @@ public enum ActivityEventObjectType {
             if (isBlank(objectId)) {
                 return null;
             }
-            return "study_burst:" + objectId + ":" + answerValue;
+            return STUDY_BURST_PREFIX + objectId + ":" + answerValue;
         }
     };
     
@@ -182,6 +182,8 @@ public enum ActivityEventObjectType {
     public abstract String getEventId(String objectId, ActivityEventType eventType, String answerValue);
     
     private final ActivityEventUpdateType updateType;
+
+    public static final String STUDY_BURST_PREFIX = "study_burst:";
     
     public ActivityEventUpdateType getUpdateType() {
         return updateType;

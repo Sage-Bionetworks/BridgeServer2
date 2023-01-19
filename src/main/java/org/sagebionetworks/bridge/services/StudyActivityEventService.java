@@ -28,6 +28,7 @@ import org.joda.time.DateTime;
 import org.joda.time.Period;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.StudyActivityEventDao;
@@ -37,10 +38,13 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.accounts.AccountRef;
+import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEventIdsMap;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.schedules2.StudyBurst;
+import org.sagebionetworks.bridge.models.studies.Alert;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.slf4j.Logger;
@@ -79,6 +83,7 @@ public class StudyActivityEventService {
     private ActivityEventService activityEventService;
     private Schedule2Service scheduleService;
     private CacheProvider cacheProvider;
+    private AlertService alertService;
     
     @Autowired
     final void setStudyActivityEventDao(StudyActivityEventDao dao) {
@@ -103,6 +108,10 @@ public class StudyActivityEventService {
     @Autowired
     final void setCacheProvider(CacheProvider cacheProvider) {
         this.cacheProvider = cacheProvider;
+    }
+    @Autowired
+    final void setAlertService(AlertService alertService) {
+        this.alertService = alertService;
     }
     
     DateTime getCreatedOn() { 
@@ -203,6 +212,15 @@ public class StudyActivityEventService {
                     event.getAppId(), event.getStudyId()).orElse(null);
             if (schedule != null) {
                 createStudyBurstEvents(schedule, event, failedEventIds);
+
+                // trigger alert for study burst change
+                if (event.getEventId().startsWith(ActivityEventObjectType.STUDY_BURST_PREFIX)) {
+                    AccountId accountId = BridgeUtils.parseAccountId(event.getAppId(), event.getUserId());
+                    Account account = accountService.getAccount(accountId)
+                            .orElseThrow(() -> new EntityNotFoundException(Account.class));
+                    alertService.createAlert(Alert.studyBurstChange(event.getStudyId(), event.getAppId(),
+                            new AccountRef(account, event.getStudyId())));
+                }
             }
         }
         if (!failedEventIds.isEmpty()) {
