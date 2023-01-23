@@ -220,7 +220,7 @@ public class StudyParticipantController extends BaseController {
         // an associated account
         Account account = accountService.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
-        alertService.createAlert(Alert.timelineAccessed(session.getAppId(), studyId, new AccountRef(account, studyId)));
+        alertService.createAlert(Alert.timelineAccessed(studyId, session.getAppId(), new AccountRef(account, studyId)));
 
         return new ResponseEntity<>(INSTANCE.calculateTimeline(schedule), OK);
     }

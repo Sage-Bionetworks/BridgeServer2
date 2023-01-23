@@ -60,6 +60,9 @@ public class Alert implements BridgeEntity {
         STUDY_BURST_CHANGE
     }
 
+    public Alert() {
+    }
+
     public Alert(String id, DateTime createdOn, String studyId, String appId, AccountRef participant,
             AlertCategory category, JsonNode data) {
         this.id = id;

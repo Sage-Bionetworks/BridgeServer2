@@ -198,7 +198,7 @@ public class EnrollmentService {
         account.getEnrollments().add(newEnrollment);
 
         // trigger alert for new enrollment
-        alertService.createAlert(Alert.newEnrollment(newEnrollment.getAppId(), newEnrollment.getStudyId(),
+        alertService.createAlert(Alert.newEnrollment(newEnrollment.getStudyId(), newEnrollment.getAppId(),
                 new AccountRef(account, newEnrollment.getStudyId())));
 
         return newEnrollment;

@@ -211,10 +211,8 @@ public class StudyActivityEventService {
             Schedule2 schedule = scheduleService.getScheduleForStudy(
                     event.getAppId(), event.getStudyId()).orElse(null);
             if (schedule != null) {
-                createStudyBurstEvents(schedule, event, failedEventIds);
-
-                // trigger alert for study burst change
-                if (event.getEventId().startsWith(ActivityEventObjectType.STUDY_BURST_PREFIX)) {
+                if (createStudyBurstEvents(schedule, event, failedEventIds)) {
+                    // trigger alert for study burst change if this is a study burst event
                     AccountId accountId = BridgeUtils.parseAccountId(event.getAppId(), event.getUserId());
                     Account account = accountService.getAccount(accountId)
                             .orElseThrow(() -> new EntityNotFoundException(Account.class));
@@ -348,9 +346,11 @@ public class StudyActivityEventService {
     
     /**
      * If the triggering event is mutable, study burst events can be created as well. Any errors
-     * that occur are collected in the list of failedEventIds. 
+     * that occur are collected in the list of failedEventIds.
+     * 
+     * @return whether any study burst events were created
      */
-    private void createStudyBurstEvents(Schedule2 schedule, StudyActivityEvent event, List<String> failedEventIds) {
+    private boolean createStudyBurstEvents(Schedule2 schedule, StudyActivityEvent event, List<String> failedEventIds) {
         String eventId = event.getEventId();
         
         StudyActivityEvent.Builder builder = new StudyActivityEvent.Builder()
@@ -361,6 +361,7 @@ public class StudyActivityEventService {
             .withCreatedOn(event.getCreatedOn())
             .withObjectType(STUDY_BURST);
         
+        boolean createdBurstEvents = false;
         for(StudyBurst burst : schedule.getStudyBursts()) {
             if (burst.getOriginEventId().equals(eventId)) {
                 builder.withUpdateType(burst.getUpdateType());
@@ -392,12 +393,14 @@ public class StudyActivityEventService {
                     // Study bursts also have an update type that must be respected.
                     if (burst.getUpdateType().canUpdate(mostRecent, burstEvent)) {
                         dao.publishEvent(burstEvent);
+                        createdBurstEvents = true;
                     }  else {
                         failedEventIds.add(burstEvent.getEventId());
                     } 
                 }
             }
         }
+        return createdBurstEvents;
     }
     
     private void deleteStudyBurstEvents(Schedule2 schedule, StudyActivityEvent event) {
