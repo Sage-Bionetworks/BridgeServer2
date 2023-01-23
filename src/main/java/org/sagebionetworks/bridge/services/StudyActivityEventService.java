@@ -39,7 +39,6 @@ import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountRef;
-import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEventIdsMap;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
@@ -211,14 +210,7 @@ public class StudyActivityEventService {
             Schedule2 schedule = scheduleService.getScheduleForStudy(
                     event.getAppId(), event.getStudyId()).orElse(null);
             if (schedule != null) {
-                if (createStudyBurstEvents(schedule, event, failedEventIds)) {
-                    // trigger alert for study burst change if this is a study burst event
-                    AccountId accountId = BridgeUtils.parseAccountId(event.getAppId(), event.getUserId());
-                    Account account = accountService.getAccount(accountId)
-                            .orElseThrow(() -> new EntityNotFoundException(Account.class));
-                    alertService.createAlert(Alert.studyBurstChange(event.getStudyId(), event.getAppId(),
-                            new AccountRef(account, event.getStudyId())));
-                }
+                createStudyBurstEvents(schedule, event, failedEventIds);
             }
         }
         if (!failedEventIds.isEmpty()) {
@@ -347,10 +339,8 @@ public class StudyActivityEventService {
     /**
      * If the triggering event is mutable, study burst events can be created as well. Any errors
      * that occur are collected in the list of failedEventIds.
-     * 
-     * @return whether any study burst events were created
      */
-    private boolean createStudyBurstEvents(Schedule2 schedule, StudyActivityEvent event, List<String> failedEventIds) {
+    private void createStudyBurstEvents(Schedule2 schedule, StudyActivityEvent event, List<String> failedEventIds) {
         String eventId = event.getEventId();
         
         StudyActivityEvent.Builder builder = new StudyActivityEvent.Builder()
@@ -400,7 +390,14 @@ public class StudyActivityEventService {
                 }
             }
         }
-        return createdBurstEvents;
+        if (createdBurstEvents) {
+            // trigger alert for study burst change if this is a study burst event
+            AccountId accountId = BridgeUtils.parseAccountId(event.getAppId(), event.getUserId());
+            Account account = accountService.getAccount(accountId)
+                    .orElseThrow(() -> new EntityNotFoundException(Account.class));
+            alertService.createAlert(Alert.studyBurstChange(event.getStudyId(), event.getAppId(),
+                    new AccountRef(account, event.getStudyId())));
+        }
     }
     
     private void deleteStudyBurstEvents(Schedule2 schedule, StudyActivityEvent event) {
