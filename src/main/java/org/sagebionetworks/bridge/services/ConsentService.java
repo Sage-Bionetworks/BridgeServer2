@@ -82,6 +82,7 @@ public class ConsentService {
     private UrlShortenerService urlShortenerService;
     private TemplateService templateService;
     private EnrollmentService enrollmentService;
+    private AlertService alertService;
     
     @Value("classpath:conf/app-defaults/consent-page.xhtml")
     final void setConsentTemplate(org.springframework.core.io.Resource resource) throws IOException {
@@ -130,6 +131,10 @@ public class ConsentService {
     @Autowired
     final void setEnrollmentService(EnrollmentService enrollmentService) {
         this.enrollmentService = enrollmentService;
+    }
+    @Autowired
+    final void setAlertService(AlertService alertService) {
+        this.alertService = alertService;
     }
 
     /**
@@ -335,6 +340,9 @@ public class ConsentService {
         
         sendWithdrawEmail(app, account, withdrawal, withdrewOn);
 
+        // delete alerts for participant
+        alertService.deleteAlertsForUserInApp(app.getIdentifier(), account.getId());
+
         return statuses;
     }
     
@@ -385,6 +393,9 @@ public class ConsentService {
         accountService.updateAccount(account);
 
         notificationsService.deleteAllRegistrations(app.getIdentifier(), participant.getHealthCode());
+
+        // delete alerts for user
+        alertService.deleteAlertsForUserInApp(app.getIdentifier(), account.getId());
     }
 
     // Helper method, which abstracts away logic for sending withdraw notification email.

@@ -79,6 +79,28 @@ public class AlertService {
         alertDao.deleteAlerts(alertIds);
     }
 
+    public void deleteAlertsForStudy(String appId, String studyId) {
+        checkNotNull(appId);
+        checkNotNull(studyId);
+
+        alertDao.deleteAlertsForStudy(appId, studyId);
+    }
+
+    public void deleteAlertsForUserInApp(String appId, String userId) {
+        checkNotNull(appId);
+        checkNotNull(userId);
+
+        alertDao.deleteAlertsForUserInApp(appId, userId);
+    }
+
+    public void deleteAlertsForUserInStudy(String appId, String studyId, String userId) {
+        checkNotNull(appId);
+        checkNotNull(studyId);
+        checkNotNull(userId);
+
+        alertDao.deleteAlertsForUserInStudy(appId, studyId, userId);
+    }
+
     private void injectAccountRef(Alert alert) {
         AccountId accountId = BridgeUtils.parseAccountId(alert.getAppId(), alert.getUserId());
         Account account = accountService.getAccount(accountId)

@@ -17,4 +17,10 @@ public interface AlertDao {
     PagedResourceList<Alert> getAlerts(String appId, String studyId, int offsetBy, int pageSize);
 
     void deleteAlerts(List<String> alertIds);
+
+    void deleteAlertsForStudy(String appId, String studyId);
+
+    void deleteAlertsForUserInApp(String appId, String userId);
+
+    void deleteAlertsForUserInStudy(String appId, String studyId, String userId);
 }

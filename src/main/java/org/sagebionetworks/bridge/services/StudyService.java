@@ -69,6 +69,8 @@ public class StudyService {
     private AccountService accountService;
     @Autowired
     private DemographicService demographicService;
+    @Autowired
+    private AlertService alertService;
     
     protected String getDefaultTimeZoneId() { 
         return DateTimeZone.getDefault().getID();
@@ -290,6 +292,9 @@ public class StudyService {
         
         cacheKey = CacheKey.etag(Study.class, appId, studyId);
         cacheProvider.removeObject(cacheKey);
+
+        // delete alerts for this study
+        alertService.deleteAlertsForStudy(appId, studyId);
     }
     
     public void deleteStudyPermanently(String appId, String studyId) {
@@ -445,6 +450,11 @@ public class StudyService {
         
         cacheKey = CacheKey.etag(Study.class, appId, studyId);
         cacheProvider.setObject(cacheKey, study.getModifiedOn());
+
+        // delete alerts for this study if it is transitioned to completed
+        if (targetPhase == StudyPhase.COMPLETED) {
+            alertService.deleteAlertsForStudy(appId, studyId);
+        }
 
         return study;
     }

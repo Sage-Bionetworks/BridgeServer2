@@ -72,4 +72,35 @@ public class HibernateAlertDao implements AlertDao {
         where.append("a.id in (:alertIds)", "alertIds", alertIds);
         hibernateHelper.query(builder.getQuery(), builder.getParameters());
     }
+
+    @Override
+    public void deleteAlertsForStudy(String appId, String studyId) {
+        QueryBuilder builder = new QueryBuilder();
+        builder.append("DELETE FROM Alert a");
+        WhereClauseBuilder where = builder.startWhere(SearchTermPredicate.AND);
+        where.append("a.appId = :appId", "appId", appId);
+        where.append("a.studyId = :studyId", "studyId", studyId);
+        hibernateHelper.query(builder.getQuery(), builder.getParameters());
+    }
+
+    @Override
+    public void deleteAlertsForUserInApp(String appId, String userId) {
+        QueryBuilder builder = new QueryBuilder();
+        builder.append("DELETE FROM Alert a");
+        WhereClauseBuilder where = builder.startWhere(SearchTermPredicate.AND);
+        where.append("a.appId = :appId", "appId", appId);
+        where.append("a.userId = :userId", "userId", userId);
+        hibernateHelper.query(builder.getQuery(), builder.getParameters());
+    }
+
+    @Override
+    public void deleteAlertsForUserInStudy(String appId, String studyId, String userId) {
+        QueryBuilder builder = new QueryBuilder();
+        builder.append("DELETE FROM Alert a");
+        WhereClauseBuilder where = builder.startWhere(SearchTermPredicate.AND);
+        where.append("a.appId = :appId", "appId", appId);
+        where.append("a.studyId = :studyId", "studyId", studyId);
+        where.append("a.userId = :userId", "userId", userId);
+        hibernateHelper.query(builder.getQuery(), builder.getParameters());
+    }
 }
