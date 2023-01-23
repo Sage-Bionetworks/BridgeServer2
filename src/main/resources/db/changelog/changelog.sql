@@ -1048,19 +1048,11 @@ CREATE TABLE IF NOT EXISTS `Alerts` (
     `createdOn` bigint(20) NOT NULL,
     `studyId` varchar(60) NOT NULL,
     `appId` varchar(60) NOT NULL,
-    `accountIdentifier` varchar(255) NULL,
-    `accountFirstName` varchar(255) NULL,
-    `accountLastName` varchar(255) NULL,
-    `accountEmail` varchar(255) NULL,
-    `accountOrgMembership` varchar(255) NULL,
-    `accountPhone` varchar(20) NULL,
-    `accountPhoneRegion` varchar(2) NULL,
-    `accountSynapseUserId` varchar(255) NULL,
-    `accountExternalId` varchar(255) NULL,
+    `userId` varchar(255) NOT NULL,
     `category` varchar(255) NOT NULL,
     `data` varchar(2048) NOT NULL,
     PRIMARY KEY (`id`),
-    UNIQUE KEY (`studyId`, `appId`, `accountIdentifier`, `category`),
-    CONSTRAINT `Alert-Account-Constraint` FOREIGN KEY (`accountIdentifier`) REFERENCES `Accounts` (`id`), -- do not cascade so alerts on deleted accounts remain
+    UNIQUE KEY (`studyId`, `appId`, `userId`, `category`),
+    CONSTRAINT `Alert-Account-Constraint` FOREIGN KEY (`userId`) REFERENCES `Accounts` (`id`) ON DELETE CASCADE,
     CONSTRAINT `Alert-Study-Constraint` FOREIGN KEY (`studyId`, `appId`) REFERENCES `Substudies` (`id`, `studyId`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;

@@ -1,15 +1,12 @@
 package org.sagebionetworks.bridge.models.studies;
 
-import javax.persistence.AttributeOverride;
-import javax.persistence.AttributeOverrides;
-import javax.persistence.Column;
 import javax.persistence.Convert;
-import javax.persistence.Embedded;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
 import javax.persistence.Id;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.hibernate.DateTimeToLongAttributeConverter;
@@ -34,18 +31,9 @@ public class Alert implements BridgeEntity {
     private String studyId;
     @JsonIgnore
     private String appId;
-    @Embedded
-    @AttributeOverrides({
-            @AttributeOverride(name = "firstName", column = @Column(name = "accountFirstName")),
-            @AttributeOverride(name = "lastName", column = @Column(name = "accountLastName")),
-            @AttributeOverride(name = "email", column = @Column(name = "accountEmail")),
-            @AttributeOverride(name = "phone.number", column = @Column(name = "accountPhone")),
-            @AttributeOverride(name = "phone.regionCode", column = @Column(name = "accountPhoneRegion")),
-            @AttributeOverride(name = "synapseUserId", column = @Column(name = "accountSynapseUserId")),
-            @AttributeOverride(name = "orgMembership", column = @Column(name = "accountOrgMembership")),
-            @AttributeOverride(name = "identifier", column = @Column(name = "accountIdentifier")),
-            @AttributeOverride(name = "externalId", column = @Column(name = "accountExternalId"))
-    })
+    @JsonIgnore
+    private String userId;
+    @Transient
     private AccountRef participant;
     @Enumerated(EnumType.STRING)
     private AlertCategory category;
@@ -63,34 +51,34 @@ public class Alert implements BridgeEntity {
     public Alert() {
     }
 
-    public Alert(String id, DateTime createdOn, String studyId, String appId, AccountRef participant,
-            AlertCategory category, JsonNode data) {
+    public Alert(String id, DateTime createdOn, String studyId, String appId, String userId, AlertCategory category,
+            JsonNode data) {
         this.id = id;
         this.createdOn = createdOn;
         this.studyId = studyId;
         this.appId = appId;
-        this.participant = participant;
+        this.userId = userId;
         this.category = category;
         this.data = data;
     }
 
-    public static Alert newEnrollment(String studyId, String appId, AccountRef participant) {
-        return new Alert(null, null, studyId, appId, participant, AlertCategory.NEW_ENROLLMENT,
+    public static Alert newEnrollment(String studyId, String appId, String userId) {
+        return new Alert(null, null, studyId, appId, userId, AlertCategory.NEW_ENROLLMENT,
                 BridgeObjectMapper.get().nullNode());
     }
 
-    public static Alert timelineAccessed(String studyId, String appId, AccountRef participant) {
-        return new Alert(null, null, studyId, appId, participant, AlertCategory.TIMELINE_ACCESSED,
+    public static Alert timelineAccessed(String studyId, String appId, String userId) {
+        return new Alert(null, null, studyId, appId, userId, AlertCategory.TIMELINE_ACCESSED,
                 BridgeObjectMapper.get().nullNode());
     }
 
-    public static Alert lowAdherence(String studyId, String appId, AccountRef participant, double adherenceThreshold) {
-        return new Alert(null, null, studyId, appId, participant, AlertCategory.LOW_ADHERENCE,
+    public static Alert lowAdherence(String studyId, String appId, String userId, double adherenceThreshold) {
+        return new Alert(null, null, studyId, appId, userId, AlertCategory.LOW_ADHERENCE,
                 BridgeObjectMapper.get().valueToTree(new LowAdherenceAlertData(adherenceThreshold)));
     }
 
-    public static Alert studyBurstChange(String studyId, String appId, AccountRef participant) {
-        return new Alert(null, null, studyId, appId, participant, AlertCategory.STUDY_BURST_CHANGE,
+    public static Alert studyBurstChange(String studyId, String appId, String userId) {
+        return new Alert(null, null, studyId, appId, userId, AlertCategory.STUDY_BURST_CHANGE,
                 BridgeObjectMapper.get().nullNode());
     }
 
@@ -142,6 +130,14 @@ public class Alert implements BridgeEntity {
         this.appId = appId;
     }
 
+    public String getUserId() {
+        return userId;
+    }
+
+    public void setUserId(String userId) {
+        this.userId = userId;
+    }
+
     public AccountRef getParticipant() {
         return participant;
     }
@@ -169,8 +165,6 @@ public class Alert implements BridgeEntity {
     @Override
     public String toString() {
         return "Alert [id=" + id + ", createdOn=" + createdOn + ", studyId=" + studyId + ", appId=" + appId
-                + participant == null ? ""
-                        : ", participant=" + participant.getIdentifier() + ", category=" + category + ", data=" + data
-                                + "]";
+                + ", userId=" + userId + ", category=" + category + ", data=" + data + "]";
     }
 }

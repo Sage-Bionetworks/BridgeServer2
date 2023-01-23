@@ -423,8 +423,8 @@ public class AdherenceService {
         // trigger alert for low weekly adherence
         if (weeklyReport.getWeeklyAdherencePercent() != null
                 && weeklyReport.getWeeklyAdherencePercent() <= WEEKLY_ADHERENCE_PERCENT_ALERT_THRESHOLD) {
-            alertService.createAlert(Alert.lowAdherence(studyId, appId, new AccountRef(account, studyId),
-                    WEEKLY_ADHERENCE_PERCENT_ALERT_THRESHOLD));
+            alertService.createAlert(
+                    Alert.lowAdherence(studyId, appId, account.getId(), WEEKLY_ADHERENCE_PERCENT_ALERT_THRESHOLD));
         }
 
         watch.stop();

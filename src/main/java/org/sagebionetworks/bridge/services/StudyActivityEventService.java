@@ -28,7 +28,6 @@ import org.joda.time.DateTime;
 import org.joda.time.Period;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.StudyActivityEventDao;
@@ -38,7 +37,7 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
-import org.sagebionetworks.bridge.models.accounts.AccountRef;
+import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEventIdsMap;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
@@ -199,7 +198,13 @@ public class StudyActivityEventService {
         List<String> failedEventIds = new ArrayList<>();
         if (event.getUpdateType().canUpdate(mostRecent, event)) {
             dao.publishEvent(event);
-            
+
+            if (event.getEventId().equals(ActivityEventObjectType.TIMELINE_RETRIEVED_ID)) {
+                // trigger alert for timeline retrieval
+                alertService
+                        .createAlert(Alert.timelineAccessed(event.getStudyId(), event.getAppId(), event.getUserId()));
+            }
+
             CacheKey cacheKey = CacheKey.etag(StudyActivityEvent.class, event.getUserId());
             cacheProvider.setObject(cacheKey, event.getCreatedOn());
         } else {
@@ -391,12 +396,8 @@ public class StudyActivityEventService {
             }
         }
         if (createdBurstEvents) {
-            // trigger alert for study burst change if this is a study burst event
-            AccountId accountId = BridgeUtils.parseAccountId(event.getAppId(), event.getUserId());
-            Account account = accountService.getAccount(accountId)
-                    .orElseThrow(() -> new EntityNotFoundException(Account.class));
-            alertService.createAlert(Alert.studyBurstChange(event.getStudyId(), event.getAppId(),
-                    new AccountRef(account, event.getStudyId())));
+            // trigger alert for study burst change if study burst events were created
+            alertService.createAlert(Alert.studyBurstChange(event.getStudyId(), event.getAppId(), event.getUserId()));
         }
     }
     

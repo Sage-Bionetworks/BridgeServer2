@@ -30,13 +30,13 @@ public class HibernateAlertDao implements AlertDao {
     }
 
     @Override
-    public Optional<Alert> getAlert(String studyId, String appId, String accountIdentifier, AlertCategory category) {
+    public Optional<Alert> getAlert(String studyId, String appId, String userId, AlertCategory category) {
         QueryBuilder builder = new QueryBuilder();
         builder.append("FROM Alert a");
         WhereClauseBuilder where = builder.startWhere(SearchTermPredicate.AND);
         where.append("a.studyId = :studyId", "studyId", studyId);
         where.append("a.appId = :appId", "appId", appId);
-        where.append("a.participant.identifier = :accountIdentifier", "accountIdentifier", accountIdentifier);
+        where.append("a.userId = :userId", "userId", userId);
         where.append("a.category = :category", "category", category);
         return hibernateHelper.queryGetOne(builder.getQuery(), builder.getParameters(), Alert.class);
     }

@@ -157,7 +157,7 @@ public enum ActivityEventObjectType {
      */
     INSTALL_LINK_SENT(FUTURE_ONLY) {
         public String getEventId(String objectId, ActivityEventType eventType, String answerValue) {
-            return this.name().toLowerCase();
+            return TIMELINE_RETRIEVED_ID;
         }
     },
     
@@ -180,6 +180,8 @@ public enum ActivityEventObjectType {
     }
     
     public abstract String getEventId(String objectId, ActivityEventType eventType, String answerValue);
+
+    public static final String TIMELINE_RETRIEVED_ID = TIMELINE_RETRIEVED.name().toLowerCase();
     
     private final ActivityEventUpdateType updateType;
 

@@ -10,7 +10,7 @@ import org.sagebionetworks.bridge.models.studies.Alert.AlertCategory;
 public interface AlertDao {
     void createAlert(Alert alert);
 
-    Optional<Alert> getAlert(String studyId, String appId, String accountIdentifier, AlertCategory category);
+    Optional<Alert> getAlert(String studyId, String appId, String userId, AlertCategory category);
 
     Optional<Alert> getAlertById(String alertId);
 

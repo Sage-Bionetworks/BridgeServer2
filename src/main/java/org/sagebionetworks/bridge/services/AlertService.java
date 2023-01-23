@@ -1,11 +1,16 @@
 package org.sagebionetworks.bridge.services;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.util.List;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.AlertDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.accounts.AccountRef;
 import org.sagebionetworks.bridge.models.studies.Alert;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,10 +19,16 @@ import org.springframework.stereotype.Component;
 @Component
 public class AlertService {
     private AlertDao alertDao;
+    private AccountService accountService;
 
     @Autowired
     public final void setAlertDao(AlertDao alertDao) {
         this.alertDao = alertDao;
+    }
+
+    @Autowired
+    public final void setAccountService(AccountService accountService) {
+        this.accountService = accountService;
     }
 
     /**
@@ -28,8 +39,13 @@ public class AlertService {
      * @param alert The alert to create.
      */
     public void createAlert(Alert alert) {
-        if (alertDao.getAlert(alert.getStudyId(), alert.getAppId(), alert.getParticipant().getIdentifier(),
-                alert.getCategory()).isPresent()) {
+        checkNotNull(alert.getStudyId());
+        checkNotNull(alert.getAppId());
+        checkNotNull(alert.getUserId());
+        checkNotNull(alert.getCategory());
+
+        if (alertDao.getAlert(alert.getStudyId(), alert.getAppId(), alert.getUserId(), alert.getCategory())
+                .isPresent()) {
             // alert already exists (don't want duplicate alerts for the same topic)
             return;
         }
@@ -39,10 +55,20 @@ public class AlertService {
     }
 
     public PagedResourceList<Alert> getAlerts(String appId, String studyId, int offsetBy, int pageSize) {
-        return alertDao.getAlerts(appId, studyId, offsetBy, pageSize);
+        checkNotNull(appId);
+        checkNotNull(studyId);
+
+        PagedResourceList<Alert> alerts = alertDao.getAlerts(appId, studyId, offsetBy, pageSize);
+        for (Alert alert : alerts.getItems()) {
+            injectAccountRef(alert);
+        }
+        return alerts;
     }
 
     public void deleteAlerts(String appId, String studyId, List<String> alertIds) throws EntityNotFoundException {
+        checkNotNull(appId);
+        checkNotNull(studyId);
+
         for (String alertId : alertIds) {
             Alert alert = alertDao.getAlertById(alertId).orElseThrow(() -> new EntityNotFoundException(Alert.class));
             if (!appId.equals(alert.getAppId()) || !studyId.equals(alert.getStudyId())) {
@@ -51,6 +77,13 @@ public class AlertService {
             }
         }
         alertDao.deleteAlerts(alertIds);
+    }
+
+    private void injectAccountRef(Alert alert) {
+        AccountId accountId = BridgeUtils.parseAccountId(alert.getAppId(), alert.getUserId());
+        Account account = accountService.getAccount(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+        alert.setParticipant(new AccountRef(account, alert.getStudyId()));
     }
 
     /**
