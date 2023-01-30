@@ -1,7 +1,5 @@
 package org.sagebionetworks.bridge.hibernate;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import java.util.List;
 import java.util.Optional;
 
@@ -48,8 +46,6 @@ public class HibernateAlertDao implements AlertDao {
 
     @Override
     public PagedResourceList<Alert> getAlerts(String appId, String studyId, int offsetBy, int pageSize) {
-        checkNotNull(appId);
-        checkNotNull(studyId);
         QueryBuilder builder = new QueryBuilder();
         builder.append("FROM Alert a");
         WhereClauseBuilder where = builder.startWhere(SearchTermPredicate.AND);

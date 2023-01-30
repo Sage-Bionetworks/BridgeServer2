@@ -60,10 +60,12 @@ import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.studies.Alert;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.studies.EnrollmentDetail;
 import org.sagebionetworks.bridge.models.studies.EnrollmentFilter;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.Alert.AlertCategory;
 
 public class EnrollmentServiceTest extends Mockito {
 
@@ -78,6 +80,9 @@ public class EnrollmentServiceTest extends Mockito {
     
     @Mock
     EnrollmentDao mockEnrollmentDao;
+
+    @Mock
+    AlertService alertService;
     
     @InjectMocks
     @Spy
@@ -85,7 +90,10 @@ public class EnrollmentServiceTest extends Mockito {
     
     @Captor
     ArgumentCaptor<Account> accountCaptor;
-    
+
+    @Captor
+    ArgumentCaptor<Alert> alertCaptor;
+
     @BeforeMethod
     public void beforeMethod() {
         MockitoAnnotations.initMocks(this);
@@ -227,6 +235,10 @@ public class EnrollmentServiceTest extends Mockito {
         assertEquals(retValue.getNote(), TEST_NOTE);
         
         assertTrue(account.getEnrollments().contains(retValue));
+
+        // verify new enrollment alert created
+        verify(alertService).createAlert(alertCaptor.capture());
+        assertNewEnrollmentAlert(alertCaptor.getValue());
     }
     
     @Test
@@ -250,6 +262,10 @@ public class EnrollmentServiceTest extends Mockito {
         assertEquals(retValue.getAccountId(), TEST_USER_ID);
         assertEquals(retValue.getEnrolledBy(), "adminUser");
         assertEquals(retValue.getNote(), TEST_NOTE);
+
+        // verify new enrollment alert created
+        verify(alertService).createAlert(alertCaptor.capture());
+        assertNewEnrollmentAlert(alertCaptor.getValue());
     }
     
     @Test
@@ -275,6 +291,10 @@ public class EnrollmentServiceTest extends Mockito {
         assertEquals(retValue.getAccountId(), TEST_USER_ID);
         assertEquals(retValue.getEnrolledBy(), "adminUser");
         assertEquals(retValue.getNote(), TEST_NOTE);
+
+        // verify new enrollment alert created
+        verify(alertService).createAlert(alertCaptor.capture());
+        assertNewEnrollmentAlert(alertCaptor.getValue());
     }
     
     @Test
@@ -297,6 +317,10 @@ public class EnrollmentServiceTest extends Mockito {
         Enrollment retValue = service.enroll(enrollment);
         assertEquals(retValue.getAccountId(), TEST_USER_ID);
         assertEquals(retValue.getNote(), TEST_NOTE);
+
+        // verify new enrollment alert created
+        verify(alertService).createAlert(alertCaptor.capture());
+        assertNewEnrollmentAlert(alertCaptor.getValue());
     }
     
     @Test
@@ -322,6 +346,9 @@ public class EnrollmentServiceTest extends Mockito {
         
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         service.enroll(enrollment);
+
+        // verify no new enrollment alert created
+        verifyZeroInteractions(alertService);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class, 
@@ -378,6 +405,9 @@ public class EnrollmentServiceTest extends Mockito {
         assertNull(retValue.getWithdrawnBy());
         assertNull(retValue.getWithdrawalNote());
         assertFalse(retValue.isConsentRequired());
+
+        // verify new enrollment alert created
+        verifyZeroInteractions(alertService);
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
@@ -890,5 +920,13 @@ public class EnrollmentServiceTest extends Mockito {
                 capturedEnrollments, Enrollment::getStudyId, TEST_STUDY_ID).orElse(null);
         assertNotNull(captured);
         assertEquals(captured.getNote(), TEST_NOTE);
+    }
+
+    private void assertNewEnrollmentAlert(Alert alert) {
+        assertNotNull(alert);
+        assertEquals(alert.getAppId(), TEST_APP_ID);
+        assertEquals(alert.getStudyId(), TEST_STUDY_ID);
+        assertEquals(alert.getUserId(), TEST_USER_ID);
+        assertEquals(alert.getCategory(), AlertCategory.NEW_ENROLLMENT);
     }
 }

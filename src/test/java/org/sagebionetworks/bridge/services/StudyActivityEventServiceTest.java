@@ -68,9 +68,11 @@ import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEventIdsMap;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.schedules2.StudyBurst;
+import org.sagebionetworks.bridge.models.studies.Alert;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyCustomEvent;
+import org.sagebionetworks.bridge.models.studies.Alert.AlertCategory;
 
 public class StudyActivityEventServiceTest extends Mockito {
     private static final CacheKey ETAG_KEY = CacheKey.etag(StudyActivityEvent.class, TEST_USER_ID);
@@ -98,6 +100,9 @@ public class StudyActivityEventServiceTest extends Mockito {
     
     @Mock
     CacheProvider mockCacheProvider;
+
+    @Mock
+    AlertService alertService;
     
     @InjectMocks
     @Spy
@@ -105,6 +110,9 @@ public class StudyActivityEventServiceTest extends Mockito {
     
     @Captor
     ArgumentCaptor<StudyActivityEvent> eventCaptor;
+
+    @Captor
+    ArgumentCaptor<Alert> alertCaptor;
     
     Study study;
     
@@ -281,6 +289,13 @@ public class StudyActivityEventServiceTest extends Mockito {
         
         verify(mockDao).publishEvent(any());
         verify(mockCacheProvider).setObject(ETAG_KEY, CREATED_ON);
+
+        // verify alert for timeline retrieved
+        verify(alertService).createAlert(alertCaptor.capture());
+        assertEquals(alertCaptor.getValue().getAppId(), TEST_APP_ID);
+        assertEquals(alertCaptor.getValue().getStudyId(), TEST_STUDY_ID);
+        assertEquals(alertCaptor.getValue().getUserId(), TEST_USER_ID);
+        assertEquals(alertCaptor.getValue().getCategory(), AlertCategory.TIMELINE_ACCESSED);
     }
     
     @Test
@@ -357,6 +372,9 @@ public class StudyActivityEventServiceTest extends Mockito {
         } catch(BadRequestException e) {
             assertTrue(e.getMessage().contains("Study event(s) failed to publish: study_burst:foo:01, study_burst:foo:02"));
         }
+
+        // verify no study burst alerts created
+        verifyZeroInteractions(alertService);
     }
     
     @Test
@@ -388,6 +406,10 @@ public class StudyActivityEventServiceTest extends Mockito {
         } catch(BadRequestException e) {
             assertEquals(e.getMessage(), "Study event(s) failed to publish: study_burst:foo:01.");
         }
+
+        // verify study burst alert created
+        verify(alertService).createAlert(alertCaptor.capture());
+        assertStudyBurstAlert(alertCaptor.getValue());
     }
     
     @Test
@@ -442,6 +464,10 @@ public class StudyActivityEventServiceTest extends Mockito {
         assertEquals(sb3.getPeriodFromOrigin(), Period.parse("P3W"));
         
         verify(mockCacheProvider).setObject(ETAG_KEY, CREATED_ON);
+
+        // verify study burst alert created
+        verify(alertService).createAlert(alertCaptor.capture());
+        assertStudyBurstAlert(alertCaptor.getValue());
     }
     
     @Test
@@ -486,6 +512,10 @@ public class StudyActivityEventServiceTest extends Mockito {
         assertEquals(sb3.getEventId(), "study_burst:foo:03");
         assertEquals(sb3.getTimestamp(), ENROLLMENT_TS.plusWeeks(2));
         assertEquals(sb3.getPeriodFromOrigin(), Period.parse("P2W"));
+
+        // verify study burst alert created
+        verify(alertService).createAlert(alertCaptor.capture());
+        assertStudyBurstAlert(alertCaptor.getValue());
     }
     
     @Test
@@ -541,6 +571,10 @@ public class StudyActivityEventServiceTest extends Mockito {
         service.publishEvent(event, false, false);
         
         verify(mockDao, times(4)).publishEvent(eventCaptor.capture());
+
+        // verify study burst alert created
+        verify(alertService).createAlert(alertCaptor.capture());
+        assertStudyBurstAlert(alertCaptor.getValue());
     }
     
     @Test
@@ -1022,5 +1056,12 @@ public class StudyActivityEventServiceTest extends Mockito {
         ResourceList<StudyActivityEvent> list = service.getRecentStudyActivityEvents(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         assertEquals(list.getItems().size(), 1);
         assertEquals(list.getItems().get(0).getTimestamp(), CREATED_ON);
+    }
+
+    private void assertStudyBurstAlert(Alert alert) {
+        assertEquals(alert.getAppId(), TEST_APP_ID);
+        assertEquals(alert.getStudyId(), TEST_STUDY_ID);
+        assertEquals(alert.getUserId(), TEST_USER_ID);
+        assertEquals(alert.getCategory(), AlertCategory.STUDY_BURST_CHANGE);
     }
 }

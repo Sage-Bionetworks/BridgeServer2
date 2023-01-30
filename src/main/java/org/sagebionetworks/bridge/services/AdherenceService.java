@@ -494,7 +494,7 @@ public class AdherenceService {
                 .withRequestParam(PagedResourceList.PAGE_SIZE, search.getPageSize());
     }
     
-    private <T> T generateReport(String appId, String studyId, String userId,
+    protected <T> T generateReport(String appId, String studyId, String userId,
             DateTime createdOn, String clientTimeZone, BiFunction<AdherenceState, Schedule2, T> func) {
         AdherenceState.Builder builder = new AdherenceState.Builder();
         builder.withNow(createdOn);

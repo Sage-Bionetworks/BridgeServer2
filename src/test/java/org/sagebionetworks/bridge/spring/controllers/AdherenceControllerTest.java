@@ -662,13 +662,13 @@ public class AdherenceControllerTest extends Mockito {
             .thenReturn(Optional.of(account));
 
         WeeklyAdherenceReport report = new WeeklyAdherenceReport();
-        when(mockService.getWeeklyAdherenceReport(TEST_APP_ID, TEST_STUDY_ID, account))
+        when(mockService.getWeeklyAdherenceReportForWorker(TEST_APP_ID, TEST_STUDY_ID, account))
             .thenReturn(report);
 
         WeeklyAdherenceReport retValue = controller.getWeeklyAdherenceReportForWorker(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         assertSame(retValue, report);
         
-        verify(mockService).getWeeklyAdherenceReport(TEST_APP_ID, TEST_STUDY_ID, account);
+        verify(mockService).getWeeklyAdherenceReportForWorker(TEST_APP_ID, TEST_STUDY_ID, account);
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)

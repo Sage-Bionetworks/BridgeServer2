@@ -12,6 +12,13 @@ import org.sagebionetworks.bridge.models.BridgeEntity;
 public class AlertIdCollection implements BridgeEntity {
     private List<String> alertIds;
 
+    public AlertIdCollection() {
+    }
+
+    public AlertIdCollection(List<String> alertIds) {
+        this.alertIds = alertIds;
+    }
+
     public List<String> getAlertIds() {
         return alertIds;
     }
