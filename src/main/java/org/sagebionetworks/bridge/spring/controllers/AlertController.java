@@ -2,6 +2,8 @@ package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 
+import org.sagebionetworks.bridge.AuthEvaluatorField;
+import org.sagebionetworks.bridge.AuthUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -51,6 +53,8 @@ public class AlertController extends BaseController {
             @RequestParam(required = false) String offsetBy, @RequestParam(required = false) String pageSize)
             throws NotAuthenticatedException, UnauthorizedException, BadRequestException {
         UserSession session = getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
+        AuthUtils.CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(AuthEvaluatorField.STUDY_ID, studyId);
+
         int offsetInt = BridgeUtils.getIntOrDefault(offsetBy, 0);
         int pageSizeInt = BridgeUtils.getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
         return alertService.getAlerts(session.getAppId(), studyId, offsetInt, pageSizeInt);
@@ -73,6 +77,8 @@ public class AlertController extends BaseController {
     public StatusMessage deleteAlerts(@PathVariable String studyId)
             throws NotAuthenticatedException, UnauthorizedException, EntityNotFoundException {
         UserSession session = getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
+        AuthUtils.CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(AuthEvaluatorField.STUDY_ID, studyId);
+
         AlertIdCollection alertsToDelete = parseJson(AlertIdCollection.class);
         alertService.deleteAlerts(session.getAppId(), studyId, alertsToDelete);
         return DELETE_ALERTS_MESSAGE;
