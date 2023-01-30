@@ -85,7 +85,6 @@ import org.slf4j.LoggerFactory;
 public class AdherenceService {
     private static final Logger LOG = LoggerFactory.getLogger(AdherenceService.class);
     
-    private static final int WEEKLY_ADHERENCE_PERCENT_ALERT_THRESHOLD = 60;
     static final StudyReportWeek EMPTY_WEEK = new StudyReportWeek();
     static final String THRESHOLD_OUT_OF_RANGE_ERROR = "Adherence threshold must be from 1-100.";
     static final String NO_THRESHOLD_VALUE_ERROR = "An adherence threshold value must be supplied in the request or set as a study default.";
@@ -420,15 +419,23 @@ public class AdherenceService {
         
         WeeklyAdherenceReport weeklyReport = deriveWeeklyAdherenceFromStudyReportWeek(studyId, account, report);
 
-        // trigger alert for low weekly adherence
-        if (weeklyReport.getWeeklyAdherencePercent() != null
-                && weeklyReport.getWeeklyAdherencePercent() <= WEEKLY_ADHERENCE_PERCENT_ALERT_THRESHOLD) {
-            alertService.createAlert(
-                    Alert.lowAdherence(studyId, appId, account.getId(), WEEKLY_ADHERENCE_PERCENT_ALERT_THRESHOLD));
-        }
-
         watch.stop();
         LOG.info("Weekly adherence report took " + watch.elapsed(TimeUnit.MILLISECONDS) + "ms");
+        return weeklyReport;
+    }
+
+    public WeeklyAdherenceReport getWeeklyAdherenceReportForWorker(String appId, String studyId, Account account) {
+        WeeklyAdherenceReport weeklyReport = getWeeklyAdherenceReport(appId, studyId, account);
+
+        // trigger alert for low weekly adherence
+        Study study = studyService.getStudy(appId, studyId, true);
+        if (weeklyReport.getWeeklyAdherencePercent() != null
+                && study.getAdherenceThresholdPercentage() != null
+                && weeklyReport.getWeeklyAdherencePercent() <= study.getAdherenceThresholdPercentage()) {
+            alertService.createAlert(
+                    Alert.lowAdherence(studyId, appId, account.getId(), study.getAdherenceThresholdPercentage()));
+        }
+
         return weeklyReport;
     }
 

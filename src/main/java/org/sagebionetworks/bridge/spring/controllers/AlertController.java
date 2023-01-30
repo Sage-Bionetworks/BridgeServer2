@@ -2,8 +2,6 @@ package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 
-import java.util.List;
-
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -14,6 +12,7 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Alert;
+import org.sagebionetworks.bridge.models.studies.AlertIdCollection;
 import org.sagebionetworks.bridge.services.AlertService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -22,8 +21,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import com.fasterxml.jackson.core.type.TypeReference;
 
 @CrossOrigin
 @RestController
@@ -72,13 +69,12 @@ public class AlertController extends BaseController {
      * @throws EntityNotFoundException   if the alerts to delete do not exist or are
      *                                   not from this study.
      */
-    @PostMapping("/v5/studies/{studyId}/deleteAlerts")
+    @PostMapping("/v5/studies/{studyId}/alerts/delete")
     public StatusMessage deleteAlerts(@PathVariable String studyId)
             throws NotAuthenticatedException, UnauthorizedException, EntityNotFoundException {
         UserSession session = getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
-        List<String> alertIds = parseJson(new TypeReference<List<String>>() {
-        });
-        alertService.deleteAlerts(session.getAppId(), studyId, alertIds);
+        AlertIdCollection alertsToDelete = parseJson(AlertIdCollection.class);
+        alertService.deleteAlerts(session.getAppId(), studyId, alertsToDelete);
         return DELETE_ALERTS_MESSAGE;
     }
 }

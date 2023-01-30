@@ -2,8 +2,6 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import java.util.List;
-
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.AlertDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -12,7 +10,10 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountRef;
 import org.sagebionetworks.bridge.models.studies.Alert;
+import org.sagebionetworks.bridge.models.studies.AlertIdCollection;
 import org.sagebionetworks.bridge.time.DateUtils;
+import org.sagebionetworks.bridge.validators.AlertIdCollectionValidator;
+import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -65,18 +66,21 @@ public class AlertService {
         return alerts;
     }
 
-    public void deleteAlerts(String appId, String studyId, List<String> alertIds) throws EntityNotFoundException {
+    public void deleteAlerts(String appId, String studyId, AlertIdCollection alertsToDelete)
+            throws EntityNotFoundException {
         checkNotNull(appId);
         checkNotNull(studyId);
 
-        for (String alertId : alertIds) {
+        Validate.entityThrowingException(AlertIdCollectionValidator.INSTANCE, alertsToDelete);
+
+        for (String alertId : alertsToDelete.getAlertIds()) {
             Alert alert = alertDao.getAlertById(alertId).orElseThrow(() -> new EntityNotFoundException(Alert.class));
             if (!appId.equals(alert.getAppId()) || !studyId.equals(alert.getStudyId())) {
                 // trying to delete alert outside this study
                 throw new EntityNotFoundException(Alert.class);
             }
         }
-        alertDao.deleteAlerts(alertIds);
+        alertDao.deleteAlerts(alertsToDelete.getAlertIds());
     }
 
     public void deleteAlertsForStudy(String appId, String studyId) {

@@ -80,7 +80,7 @@ public enum ActivityEventObjectType {
      */
     TIMELINE_RETRIEVED(IMMUTABLE) {
         public String getEventId(String objectId, ActivityEventType eventType, String answerValue) {
-            return this.name().toLowerCase();
+            return TIMELINE_RETRIEVED_ID;
         }
     },
     /**
@@ -157,7 +157,7 @@ public enum ActivityEventObjectType {
      */
     INSTALL_LINK_SENT(FUTURE_ONLY) {
         public String getEventId(String objectId, ActivityEventType eventType, String answerValue) {
-            return TIMELINE_RETRIEVED_ID;
+            return this.name().toLowerCase();
         }
     },
     
