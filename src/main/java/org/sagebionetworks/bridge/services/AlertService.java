@@ -55,17 +55,25 @@ public class AlertService {
         alertDao.createAlert(alert);
     }
 
+    /**
+     * Fetches alerts for a study.
+     */
     public PagedResourceList<Alert> getAlerts(String appId, String studyId, int offsetBy, int pageSize) {
         checkNotNull(appId);
         checkNotNull(studyId);
 
         PagedResourceList<Alert> alerts = alertDao.getAlerts(appId, studyId, offsetBy, pageSize);
+        // alerts are only stored with the userId; we need to insert the AccountRef so
+        // alerts can be displayed with external id or other data
         for (Alert alert : alerts.getItems()) {
             injectAccountRef(alert);
         }
         return alerts;
     }
 
+    /**
+     * Batch deletes alerts given a list of IDs of alerts to delete.
+     */
     public void deleteAlerts(String appId, String studyId, AlertIdCollection alertsToDelete)
             throws EntityNotFoundException {
         checkNotNull(appId);
@@ -83,6 +91,9 @@ public class AlertService {
         alertDao.deleteAlerts(alertsToDelete.getAlertIds());
     }
 
+    /**
+     * Deletes all alerts for all users in a study.
+     */
     public void deleteAlertsForStudy(String appId, String studyId) {
         checkNotNull(appId);
         checkNotNull(studyId);
@@ -90,6 +101,9 @@ public class AlertService {
         alertDao.deleteAlertsForStudy(appId, studyId);
     }
 
+    /**
+     * Deletes all alerts for a specific user in an app.
+     */
     public void deleteAlertsForUserInApp(String appId, String userId) {
         checkNotNull(appId);
         checkNotNull(userId);
@@ -97,6 +111,9 @@ public class AlertService {
         alertDao.deleteAlertsForUserInApp(appId, userId);
     }
 
+    /**
+     * Deletes all alerts for a specific user in a study.
+     */
     public void deleteAlertsForUserInStudy(String appId, String studyId, String userId) {
         checkNotNull(appId);
         checkNotNull(studyId);
@@ -105,6 +122,9 @@ public class AlertService {
         alertDao.deleteAlertsForUserInStudy(appId, studyId, userId);
     }
 
+    /**
+     * Inserts an AccountRef into an alert using the alert's userId.
+     */
     private void injectAccountRef(Alert alert) {
         AccountId accountId = BridgeUtils.parseAccountId(alert.getAppId(), alert.getUserId());
         Account account = accountService.getAccount(accountId)
