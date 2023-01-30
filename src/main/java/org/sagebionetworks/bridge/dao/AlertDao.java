@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.dao;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.studies.Alert;
@@ -14,7 +15,7 @@ public interface AlertDao {
     void createAlert(Alert alert);
 
     /**
-     * Fetches a single alert.
+     * Fetches a single alert with filters.
      */
     Optional<Alert> getAlert(String studyId, String appId, String userId, AlertCategory category);
 
@@ -26,7 +27,7 @@ public interface AlertDao {
     /**
      * Fetches alerts for a study.
      */
-    PagedResourceList<Alert> getAlerts(String appId, String studyId, int offsetBy, int pageSize);
+    PagedResourceList<Alert> getAlerts(String appId, String studyId, int offsetBy, int pageSize, Set<AlertCategory> alertCategories);
 
     /**
      * Batch deletes alerts given a list of IDs of alerts to delete.

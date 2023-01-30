@@ -12,6 +12,7 @@ import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
 import java.util.Optional;
+import java.util.Set;
 
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -25,6 +26,7 @@ import org.testng.annotations.Test;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 
 public class HibernateAlertDaoTest {
     private static final String ALERT_ID = "test-alert-id";
@@ -114,8 +116,9 @@ public class HibernateAlertDaoTest {
     public void getAlerts() {
         when(hibernateHelper.queryCount(any(), any())).thenReturn(1);
         when(hibernateHelper.queryGet(any(), any(), any(), any(), any())).thenReturn(ImmutableList.of(alert));
+        Set<AlertCategory> alertCategories = ImmutableSet.of(AlertCategory.LOW_ADHERENCE, AlertCategory.NEW_ENROLLMENT);
 
-        PagedResourceList<Alert> returnedAlerts = hibernateAlertDao.getAlerts(TEST_APP_ID, TEST_STUDY_ID, 2, 100);
+        PagedResourceList<Alert> returnedAlerts = hibernateAlertDao.getAlerts(TEST_APP_ID, TEST_STUDY_ID, 2, 100, alertCategories);
 
         assertEquals(returnedAlerts.getTotal().intValue(), 1);
         assertEquals(returnedAlerts.getRequestParams().get("offsetBy"), 2);
@@ -124,14 +127,17 @@ public class HibernateAlertDaoTest {
         assertSame(returnedAlerts.getItems().get(0), alert);
         String QUERY = "FROM Alert a WHERE " +
             "a.appId = :appId AND " +
-            "a.studyId = :studyId " +
+            "a.studyId = :studyId AND " +
+            "a.category in (:alertCategories) " +
             "ORDER BY createdOn DESC";
         verify(hibernateHelper).queryCount("SELECT COUNT(*) " + QUERY,
             ImmutableMap.of("studyId", TEST_STUDY_ID, 
-            "appId", TEST_APP_ID));
+            "appId", TEST_APP_ID,
+            "alertCategories", alertCategories));
         verify(hibernateHelper).queryGet(QUERY,
             ImmutableMap.of("studyId", TEST_STUDY_ID, 
-            "appId", TEST_APP_ID), 2, 100, Alert.class);
+            "appId", TEST_APP_ID,
+            "alertCategories", alertCategories), 2, 100, Alert.class);
     }
 
     @Test

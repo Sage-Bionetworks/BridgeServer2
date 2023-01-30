@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.hibernate;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import javax.annotation.Resource;
 
@@ -45,12 +46,14 @@ public class HibernateAlertDao implements AlertDao {
     }
 
     @Override
-    public PagedResourceList<Alert> getAlerts(String appId, String studyId, int offsetBy, int pageSize) {
+    public PagedResourceList<Alert> getAlerts(String appId, String studyId, int offsetBy, int pageSize,
+            Set<AlertCategory> alertCategories) {
         QueryBuilder builder = new QueryBuilder();
         builder.append("FROM Alert a");
         WhereClauseBuilder where = builder.startWhere(SearchTermPredicate.AND);
         where.append("a.appId = :appId", "appId", appId);
         where.append("a.studyId = :studyId", "studyId", studyId);
+        where.append("a.category in (:alertCategories)", "alertCategories", alertCategories);
         builder.append("ORDER BY createdOn DESC");
         int count = hibernateHelper.queryCount("SELECT COUNT(*) " + builder.getQuery(), builder.getParameters());
         List<Alert> alerts = hibernateHelper.queryGet(builder.getQuery(), builder.getParameters(), offsetBy, pageSize,

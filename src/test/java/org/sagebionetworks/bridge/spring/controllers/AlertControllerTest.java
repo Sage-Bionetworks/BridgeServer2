@@ -13,7 +13,6 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
-import static org.sagebionetworks.bridge.TestUtils.assertGet;
 import static org.sagebionetworks.bridge.TestUtils.assertPost;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
@@ -31,6 +30,7 @@ import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Alert;
+import org.sagebionetworks.bridge.models.studies.AlertFilter;
 import org.sagebionetworks.bridge.models.studies.AlertIdCollection;
 import org.sagebionetworks.bridge.services.AlertService;
 import org.testng.annotations.AfterMethod;
@@ -71,7 +71,7 @@ public class AlertControllerTest {
     @Test
     public void verifyAnnotations() throws Exception {
         assertCrossOrigin(AlertController.class);
-        assertGet(AlertController.class, "getAlerts");
+        assertPost(AlertController.class, "getAlerts");
         assertPost(AlertController.class, "deleteAlerts");
     }
 
@@ -81,12 +81,15 @@ public class AlertControllerTest {
                 .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
                 .withCallerRoles(ImmutableSet.of(Roles.RESEARCHER)).build());
         PagedResourceList<Alert> alerts = new PagedResourceList<>(ImmutableList.of(new Alert()), 1);
-        when(alertService.getAlerts(any(), any(), anyInt(), anyInt())).thenReturn(alerts);
+        when(alertService.getAlerts(any(), any(), anyInt(), anyInt(), any())).thenReturn(alerts);
+        AlertFilter alertFilter = new AlertFilter(ImmutableSet.of());
+        doReturn(alertFilter).when(alertController).parseJson(AlertFilter.class);
 
         PagedResourceList<Alert> returnedAlerts = alertController.getAlerts(TEST_STUDY_ID, "1", "23");
 
         verify(alertController).getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
-        verify(alertService).getAlerts(TEST_APP_ID, TEST_STUDY_ID, 1, 23);
+        verify(alertController).parseJson(AlertFilter.class);
+        verify(alertService).getAlerts(TEST_APP_ID, TEST_STUDY_ID, 1, 23, alertFilter);
         assertSame(returnedAlerts, alerts);
     }
 
@@ -96,12 +99,15 @@ public class AlertControllerTest {
                 .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
                 .withCallerRoles(ImmutableSet.of(Roles.STUDY_COORDINATOR)).build());
         PagedResourceList<Alert> alerts = new PagedResourceList<>(ImmutableList.of(new Alert()), 1);
-        when(alertService.getAlerts(any(), any(), anyInt(), anyInt())).thenReturn(alerts);
+        when(alertService.getAlerts(any(), any(), anyInt(), anyInt(), any())).thenReturn(alerts);
+        AlertFilter alertFilter = new AlertFilter(ImmutableSet.of());
+        doReturn(alertFilter).when(alertController).parseJson(AlertFilter.class);
 
         PagedResourceList<Alert> returnedAlerts = alertController.getAlerts(TEST_STUDY_ID, null, null);
 
         verify(alertController).getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
-        verify(alertService).getAlerts(TEST_APP_ID, TEST_STUDY_ID, 0, API_DEFAULT_PAGE_SIZE);
+        verify(alertController).parseJson(AlertFilter.class);
+        verify(alertService).getAlerts(TEST_APP_ID, TEST_STUDY_ID, 0, API_DEFAULT_PAGE_SIZE, alertFilter);
         assertSame(returnedAlerts, alerts);
     }
 
@@ -118,6 +124,19 @@ public class AlertControllerTest {
         RequestContext.set(new RequestContext.Builder()
                 .withOrgSponsoredStudies(ImmutableSet.of("wrong study id"))
                 .withCallerRoles(ImmutableSet.of(Roles.STUDY_COORDINATOR)).build());
+
+        alertController.getAlerts(TEST_STUDY_ID, null, null);
+    }
+
+    @Test(expectedExceptions = MismatchedInputException.class)
+    public void getAlerts_wrongSchema() {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .withCallerRoles(ImmutableSet.of(Roles.STUDY_COORDINATOR)).build());
+        doAnswer((invocation) -> {
+            throw MismatchedInputException.from(new JsonFactory().createParser("[]"), AlertFilter.class,
+                    "bad json");
+        }).when(alertController).parseJson(AlertFilter.class);
 
         alertController.getAlerts(TEST_STUDY_ID, null, null);
     }

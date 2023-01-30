@@ -2,6 +2,9 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import java.util.Arrays;
+import java.util.stream.Collectors;
+
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.AlertDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -10,8 +13,11 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountRef;
 import org.sagebionetworks.bridge.models.studies.Alert;
+import org.sagebionetworks.bridge.models.studies.Alert.AlertCategory;
+import org.sagebionetworks.bridge.models.studies.AlertFilter;
 import org.sagebionetworks.bridge.models.studies.AlertIdCollection;
 import org.sagebionetworks.bridge.time.DateUtils;
+import org.sagebionetworks.bridge.validators.AlertFilterValidator;
 import org.sagebionetworks.bridge.validators.AlertIdCollectionValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,11 +64,21 @@ public class AlertService {
     /**
      * Fetches alerts for a study.
      */
-    public PagedResourceList<Alert> getAlerts(String appId, String studyId, int offsetBy, int pageSize) {
+    public PagedResourceList<Alert> getAlerts(String appId, String studyId, int offsetBy, int pageSize,
+            AlertFilter alertFilter) {
         checkNotNull(appId);
         checkNotNull(studyId);
+        checkNotNull(alertFilter);
 
-        PagedResourceList<Alert> alerts = alertDao.getAlerts(appId, studyId, offsetBy, pageSize);
+        Validate.entityThrowingException(AlertFilterValidator.INSTANCE, alertFilter);
+
+        // if no filters applied, get all alerts
+        if (alertFilter.getAlertCategories().isEmpty()) {
+            alertFilter.setAlertCategories(
+                    Arrays.stream(AlertCategory.values()).collect(Collectors.toSet()));
+        }
+
+        PagedResourceList<Alert> alerts = alertDao.getAlerts(appId, studyId, offsetBy, pageSize, alertFilter.getAlertCategories());
         // alerts are only stored with the userId; we need to insert the AccountRef so
         // alerts can be displayed with external id or other data
         for (Alert alert : alerts.getItems()) {

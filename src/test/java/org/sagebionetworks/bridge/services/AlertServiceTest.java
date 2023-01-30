@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -12,7 +13,10 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertSame;
 
+import java.util.Arrays;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -22,11 +26,13 @@ import org.mockito.MockitoAnnotations;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.AlertDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.studies.Alert;
 import org.sagebionetworks.bridge.models.studies.Alert.AlertCategory;
+import org.sagebionetworks.bridge.models.studies.AlertFilter;
 import org.sagebionetworks.bridge.models.studies.AlertIdCollection;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.testng.annotations.BeforeMethod;
@@ -119,11 +125,46 @@ public class AlertServiceTest {
         account.setEnrollments(ImmutableSet.of(enrollment));
         when(accountService.getAccount(any())).thenReturn(Optional.of(account));
         PagedResourceList<Alert> alertsPage = new PagedResourceList<>(ImmutableList.of(alert), 1);
-        when(alertDao.getAlerts(TEST_APP_ID, TEST_STUDY_ID, 0, 100)).thenReturn(alertsPage);
+        when(alertDao.getAlerts(eq(TEST_APP_ID), eq(TEST_STUDY_ID), eq(0), eq(100), any())).thenReturn(alertsPage);
+        Set<AlertCategory> alertCategories = ImmutableSet.of(AlertCategory.NEW_ENROLLMENT,
+                AlertCategory.TIMELINE_ACCESSED);
+        AlertFilter alertFilter = new AlertFilter(alertCategories);
 
-        PagedResourceList<Alert> returnedAlerts = alertService.getAlerts(TEST_APP_ID, TEST_STUDY_ID, 0, 100);
+        PagedResourceList<Alert> returnedAlerts = alertService.getAlerts(TEST_APP_ID, TEST_STUDY_ID, 0, 100,
+                alertFilter);
 
-        verify(alertDao).getAlerts(TEST_APP_ID, TEST_STUDY_ID, 0, 100);
+        verify(alertDao).getAlerts(TEST_APP_ID, TEST_STUDY_ID, 0, 100, alertCategories);
+        verify(accountService).getAccount(BridgeUtils.parseAccountId(TEST_APP_ID, TEST_USER_ID));
+        assertSame(returnedAlerts, alertsPage);
+        assertNotNull(alert.getParticipant());
+        assertEquals(alert.getParticipant().getIdentifier(), TEST_USER_ID);
+        assertEquals(alert.getParticipant().getExternalId(), TEST_EXTERNAL_ID);
+    }
+
+    @Test(expectedExceptions = InvalidEntityException.class)
+    public void getAlerts_invalidAlertFilter() {
+        AlertFilter alertFilter = new AlertFilter(null);
+
+        alertService.getAlerts(TEST_APP_ID, TEST_STUDY_ID, 0, 100, alertFilter);
+    }
+
+    @Test
+    public void getAlerts_emptyAlertFilter() {
+        Account account = Account.create();
+        account.setId(TEST_USER_ID);
+        Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+        enrollment.setExternalId(TEST_EXTERNAL_ID);
+        account.setEnrollments(ImmutableSet.of(enrollment));
+        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
+        PagedResourceList<Alert> alertsPage = new PagedResourceList<>(ImmutableList.of(alert), 1);
+        when(alertDao.getAlerts(eq(TEST_APP_ID), eq(TEST_STUDY_ID), eq(0), eq(100), any())).thenReturn(alertsPage);
+        AlertFilter alertFilter = new AlertFilter(ImmutableSet.of());
+
+        PagedResourceList<Alert> returnedAlerts = alertService.getAlerts(TEST_APP_ID, TEST_STUDY_ID, 0, 100,
+                alertFilter);
+
+        verify(alertDao).getAlerts(TEST_APP_ID, TEST_STUDY_ID, 0, 100,
+                Arrays.stream(AlertCategory.values()).collect(Collectors.toSet()));
         verify(accountService).getAccount(BridgeUtils.parseAccountId(TEST_APP_ID, TEST_USER_ID));
         assertSame(returnedAlerts, alertsPage);
         assertNotNull(alert.getParticipant());
@@ -135,19 +176,19 @@ public class AlertServiceTest {
     public void getAlerts_noAccount() {
         when(accountService.getAccount(any())).thenReturn(Optional.empty());
         PagedResourceList<Alert> alertsPage = new PagedResourceList<>(ImmutableList.of(alert), 1);
-        when(alertDao.getAlerts(TEST_APP_ID, TEST_STUDY_ID, 0, 100)).thenReturn(alertsPage);
+        when(alertDao.getAlerts(eq(TEST_APP_ID), eq(TEST_STUDY_ID), eq(0), eq(100), any())).thenReturn(alertsPage);
 
-        alertService.getAlerts(TEST_APP_ID, TEST_STUDY_ID, 0, 100);
+        alertService.getAlerts(TEST_APP_ID, TEST_STUDY_ID, 0, 100, new AlertFilter(ImmutableSet.of()));
     }
 
     @Test(expectedExceptions = NullPointerException.class)
     public void getAlerts_nullAppId() {
-        alertService.getAlerts(null, TEST_STUDY_ID, 0, 0);
+        alertService.getAlerts(null, TEST_STUDY_ID, 0, 0, new AlertFilter(ImmutableSet.of()));
     }
 
     @Test(expectedExceptions = NullPointerException.class)
     public void getAlerts_nullStudyId() {
-        alertService.getAlerts(TEST_APP_ID, null, 0, 0);
+        alertService.getAlerts(TEST_APP_ID, null, 0, 0, new AlertFilter(ImmutableSet.of()));
     }
 
     @Test
@@ -160,6 +201,13 @@ public class AlertServiceTest {
 
         verify(alertDao).getAlertById(ALERT_ID);
         verify(alertDao).deleteAlerts(ImmutableList.of(ALERT_ID));
+    }
+
+    @Test(expectedExceptions = InvalidEntityException.class)
+    public void deleteAlerts_invalidAlertIdCollection() {
+        AlertIdCollection alertIds = new AlertIdCollection(null);
+
+        alertService.deleteAlerts(TEST_APP_ID, TEST_STUDY_ID, alertIds);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)

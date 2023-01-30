@@ -14,11 +14,11 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Alert;
+import org.sagebionetworks.bridge.models.studies.AlertFilter;
 import org.sagebionetworks.bridge.models.studies.AlertIdCollection;
 import org.sagebionetworks.bridge.services.AlertService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -48,16 +48,17 @@ public class AlertController extends BaseController {
      *                                   coordinator.
      * @throws BadRequestException       if offsetBy or pageSize is invalid.
      */
-    @GetMapping("/v5/studies/{studyId}/alerts")
+    @PostMapping("/v5/studies/{studyId}/alerts")
     public PagedResourceList<Alert> getAlerts(@PathVariable String studyId,
             @RequestParam(required = false) String offsetBy, @RequestParam(required = false) String pageSize)
             throws NotAuthenticatedException, UnauthorizedException, BadRequestException {
         UserSession session = getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
         AuthUtils.CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(AuthEvaluatorField.STUDY_ID, studyId);
 
+        AlertFilter alertFilter = parseJson(AlertFilter.class);
         int offsetInt = BridgeUtils.getIntOrDefault(offsetBy, 0);
         int pageSizeInt = BridgeUtils.getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
-        return alertService.getAlerts(session.getAppId(), studyId, offsetInt, pageSizeInt);
+        return alertService.getAlerts(session.getAppId(), studyId, offsetInt, pageSizeInt, alertFilter);
     }
 
     /**
