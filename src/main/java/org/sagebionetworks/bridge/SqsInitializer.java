@@ -52,6 +52,7 @@ public class SqsInitializer {
     // queue.
     private static final Map<String, Boolean> QUEUE_PROPERTIES = ImmutableMap.<String, Boolean>builder()
             .put("exporter.request.sqs.queue", false)
+            .put("virus.scan.result.sqs.queue", true)
             .put("workerPlatform.request.sqs.queue", false)
             .put("integ.test.sqs.queue", true)
             .build();
