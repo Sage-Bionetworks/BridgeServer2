@@ -6,7 +6,8 @@ import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
 /**
- * Used to delete alerts; contains a list of alert IDs for batch deletion.
+ * Used for batch operations on alerts; contains a list of alert IDs for batch
+ * operations.
  */
 @BridgeTypeName("AlertIdCollection")
 public class AlertIdCollection implements BridgeEntity {
