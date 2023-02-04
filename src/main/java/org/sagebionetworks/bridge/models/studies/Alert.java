@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.models.studies;
 
+import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
@@ -39,6 +40,10 @@ public class Alert implements BridgeEntity {
     private AlertCategory category;
     @Convert(converter = JsonNodeAttributeConverter.class)
     private JsonNode data;
+    // whether the alert has been marked as read (viewed)
+    // "read" is reserved in SQL
+    @Column(name = "isRead")
+    private boolean read;
 
     public enum AlertCategory {
         NEW_ENROLLMENT,
@@ -51,35 +56,37 @@ public class Alert implements BridgeEntity {
     public Alert() {
     }
 
-    public Alert(String id, DateTime createdOn, String studyId, String appId, String userId, AlertCategory category,
-            JsonNode data) {
+    public Alert(String id, DateTime createdOn, String studyId, String appId, String userId, AccountRef participant,
+            AlertCategory category, JsonNode data, boolean read) {
         this.id = id;
         this.createdOn = createdOn;
         this.studyId = studyId;
         this.appId = appId;
         this.userId = userId;
+        this.participant = participant;
         this.category = category;
         this.data = data;
+        this.read = read;
     }
 
     public static Alert newEnrollment(String studyId, String appId, String userId) {
-        return new Alert(null, null, studyId, appId, userId, AlertCategory.NEW_ENROLLMENT,
-                BridgeObjectMapper.get().nullNode());
+        return new Alert(null, null, studyId, appId, userId, null, AlertCategory.NEW_ENROLLMENT,
+                BridgeObjectMapper.get().nullNode(), false);
     }
 
     public static Alert timelineAccessed(String studyId, String appId, String userId) {
-        return new Alert(null, null, studyId, appId, userId, AlertCategory.TIMELINE_ACCESSED,
-                BridgeObjectMapper.get().nullNode());
+        return new Alert(null, null, studyId, appId, userId, null, AlertCategory.TIMELINE_ACCESSED,
+                BridgeObjectMapper.get().nullNode(), false);
     }
 
     public static Alert lowAdherence(String studyId, String appId, String userId, double adherenceThreshold) {
-        return new Alert(null, null, studyId, appId, userId, AlertCategory.LOW_ADHERENCE,
-                BridgeObjectMapper.get().valueToTree(new LowAdherenceAlertData(adherenceThreshold)));
+        return new Alert(null, null, studyId, appId, userId, null, AlertCategory.LOW_ADHERENCE,
+                BridgeObjectMapper.get().valueToTree(new LowAdherenceAlertData(adherenceThreshold)), false);
     }
 
     public static Alert studyBurstChange(String studyId, String appId, String userId) {
-        return new Alert(null, null, studyId, appId, userId, AlertCategory.STUDY_BURST_CHANGE,
-                BridgeObjectMapper.get().nullNode());
+        return new Alert(null, null, studyId, appId, userId, null, AlertCategory.STUDY_BURST_CHANGE,
+                BridgeObjectMapper.get().nullNode(), false);
     }
 
     public static class LowAdherenceAlertData {
@@ -160,6 +167,14 @@ public class Alert implements BridgeEntity {
 
     public void setData(JsonNode data) {
         this.data = data;
+    }
+
+    public boolean isRead() {
+        return read;
+    }
+
+    public void setRead(boolean read) {
+        this.read = read;
     }
 
     @Override

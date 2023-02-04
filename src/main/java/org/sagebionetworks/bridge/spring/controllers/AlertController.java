@@ -14,11 +14,13 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Alert;
+import org.sagebionetworks.bridge.models.studies.AlertCategoriesAndCounts;
 import org.sagebionetworks.bridge.models.studies.AlertFilter;
 import org.sagebionetworks.bridge.models.studies.AlertIdCollection;
 import org.sagebionetworks.bridge.services.AlertService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -28,6 +30,10 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class AlertController extends BaseController {
     private static final StatusMessage DELETE_ALERTS_MESSAGE = new StatusMessage("Alerts successfully deleted");
+    private static final StatusMessage MARK_ALERTS_READ_MESSAGE = new StatusMessage(
+            "Alerts successfully marked as read");
+    private static final StatusMessage MARK_ALERTS_UNREAD_MESSAGE = new StatusMessage(
+            "Alerts successfully marked as unread");
 
     private AlertService alertService;
 
@@ -83,5 +89,68 @@ public class AlertController extends BaseController {
         AlertIdCollection alertsToDelete = parseJson(AlertIdCollection.class);
         alertService.deleteAlerts(session.getAppId(), studyId, alertsToDelete);
         return DELETE_ALERTS_MESSAGE;
+    }
+
+    /**
+     * Marks alerts read given a list of their ids.
+     * 
+     * @param studyId The studyId in which to mark alerts read.
+     * @return A status message indicating the alerts were marked read.
+     * @throws NotAuthenticatedException if the caller is not authenticated.
+     * @throws UnauthorizedException     if the caller is not a researcher or study
+     *                                   coordinator.
+     * @throws EntityNotFoundException   if the alerts to mark read do not exist or
+     *                                   are not from this study.
+     */
+    @PostMapping("/v5/studies/{studyId}/alerts/read")
+    public StatusMessage markAlertsRead(@PathVariable String studyId)
+            throws NotAuthenticatedException, UnauthorizedException, EntityNotFoundException {
+        UserSession session = getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
+        AuthUtils.CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(AuthEvaluatorField.STUDY_ID, studyId);
+
+        AlertIdCollection alertsToMarkRead = parseJson(AlertIdCollection.class);
+        alertService.markAlertsRead(session.getAppId(), studyId, alertsToMarkRead);
+        return MARK_ALERTS_READ_MESSAGE;
+    }
+
+    /**
+     * Marks alerts unread given a list of their ids.
+     * 
+     * @param studyId The studyId in which to mark alerts unread.
+     * @return A status message indicating the alerts were marked unread.
+     * @throws NotAuthenticatedException if the caller is not authenticated.
+     * @throws UnauthorizedException     if the caller is not a researcher or study
+     *                                   coordinator.
+     * @throws EntityNotFoundException   if the alerts to mark unread do not exist
+     *                                   or are not from this study.
+     */
+    @PostMapping("/v5/studies/{studyId}/alerts/unread")
+    public StatusMessage markAlertsUnread(@PathVariable String studyId)
+            throws NotAuthenticatedException, UnauthorizedException, EntityNotFoundException {
+        UserSession session = getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
+        AuthUtils.CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(AuthEvaluatorField.STUDY_ID, studyId);
+
+        AlertIdCollection alertsToMarkUnread = parseJson(AlertIdCollection.class);
+        alertService.markAlertsUnread(session.getAppId(), studyId, alertsToMarkUnread);
+        return MARK_ALERTS_UNREAD_MESSAGE;
+    }
+
+    /**
+     * Fetches a list of alert categories and the number of alerts in each category
+     * for a particular study.
+     * 
+     * @param studyId The studyId to fetch the categories and counts from.
+     * @return The fetched list of categories and counts.
+     * @throws NotAuthenticatedException if the caller is not authenticated.
+     * @throws UnauthorizedException     if the caller is not a researcher or study
+     *                                   coordinator.
+     */
+    @GetMapping("/v5/studies/{studyId}/alerts/categories/counts")
+    public AlertCategoriesAndCounts getAlertCategoriesAndCounts(@PathVariable String studyId)
+            throws NotAuthenticatedException, UnauthorizedException {
+        UserSession session = getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
+        AuthUtils.CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(AuthEvaluatorField.STUDY_ID, studyId);
+
+        return alertService.getAlertCategoriesAndCounts(session.getAppId(), studyId);
     }
 }

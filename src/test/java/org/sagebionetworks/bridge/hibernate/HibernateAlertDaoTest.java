@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.hibernate;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
@@ -11,6 +12,7 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -20,6 +22,8 @@ import org.mockito.MockitoAnnotations;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.studies.Alert;
+import org.sagebionetworks.bridge.models.studies.AlertCategoriesAndCounts;
+import org.sagebionetworks.bridge.models.studies.AlertCategoryAndCount;
 import org.sagebionetworks.bridge.models.studies.Alert.AlertCategory;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -43,8 +47,8 @@ public class HibernateAlertDaoTest {
     public void beforeMethod() {
         MockitoAnnotations.initMocks(this);
 
-        alert = new Alert(ALERT_ID, null, TEST_STUDY_ID, TEST_APP_ID, TEST_USER_ID, AlertCategory.NEW_ENROLLMENT,
-                BridgeObjectMapper.get().nullNode());
+        alert = new Alert(ALERT_ID, null, TEST_STUDY_ID, TEST_APP_ID, TEST_USER_ID, null, AlertCategory.NEW_ENROLLMENT,
+                BridgeObjectMapper.get().nullNode(), false);
     }
 
     @Test
@@ -52,6 +56,13 @@ public class HibernateAlertDaoTest {
         hibernateAlertDao.createAlert(alert);
 
         verify(hibernateHelper).create(alert);
+    }
+
+    @Test
+    public void deleteAlert() {
+        hibernateAlertDao.deleteAlert(alert);
+
+        verify(hibernateHelper).deleteById(Alert.class, ALERT_ID);
     }
 
     @Test
@@ -182,5 +193,39 @@ public class HibernateAlertDaoTest {
                 ImmutableMap.of("appId", TEST_APP_ID,
                         "studyId", TEST_STUDY_ID,
                         "userId", TEST_USER_ID));
+    }
+
+    @Test
+    public void getAlertCategoriesAndCounts() {
+        List<AlertCategoryAndCount> categoriesAndCounts = ImmutableList.of(new AlertCategoryAndCount());
+        when(hibernateHelper.queryGet(any(), any(), any(), any(), eq(AlertCategoryAndCount.class)))
+                .thenReturn(categoriesAndCounts);
+
+        AlertCategoriesAndCounts returnedAlertCategoriesAndCounts = hibernateAlertDao
+                .getAlertCategoriesAndCounts(TEST_APP_ID, TEST_STUDY_ID);
+
+        assertSame(returnedAlertCategoriesAndCounts.getAlertCategoriesAndCounts(), categoriesAndCounts);
+        verify(hibernateHelper).queryGet(
+                "SELECT NEW org.sagebionetworks.bridge.models.studies.AlertCategoryAndCount(category, COUNT(*) as count) "
+                        +
+                        "FROM Alert a WHERE " +
+                        "a.appId = :appId AND " +
+                        "a.studyId = :studyId " +
+                        "GROUP BY category " +
+                        "ORDER BY category",
+                ImmutableMap.of("appId", TEST_APP_ID,
+                        "studyId", TEST_STUDY_ID),
+                null, null, AlertCategoryAndCount.class);
+    }
+
+    @Test
+    public void setAlertReadState() {
+        hibernateAlertDao.setAlertsReadState(ImmutableList.of(ALERT_ID), true);
+
+        verify(hibernateHelper).query("UPDATE Alert a " +
+                "SET a.read = :read WHERE " +
+                "a.id in (:alertIds)",
+                ImmutableMap.of("read", true,
+                        "alertIds", ImmutableList.of(ALERT_ID)));
     }
 }

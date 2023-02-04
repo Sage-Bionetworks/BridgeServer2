@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.services;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_EXTERNAL_ID;
@@ -32,6 +31,7 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.studies.Alert;
 import org.sagebionetworks.bridge.models.studies.Alert.AlertCategory;
+import org.sagebionetworks.bridge.models.studies.AlertCategoriesAndCounts;
 import org.sagebionetworks.bridge.models.studies.AlertFilter;
 import org.sagebionetworks.bridge.models.studies.AlertIdCollection;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
@@ -62,8 +62,8 @@ public class AlertServiceTest {
     public void beforeMethod() {
         MockitoAnnotations.initMocks(this);
 
-        alert = new Alert(null, null, TEST_STUDY_ID, TEST_APP_ID, TEST_USER_ID, AlertCategory.NEW_ENROLLMENT,
-                BridgeObjectMapper.get().nullNode());
+        alert = new Alert(null, null, TEST_STUDY_ID, TEST_APP_ID, TEST_USER_ID, null, AlertCategory.NEW_ENROLLMENT,
+                BridgeObjectMapper.get().nullNode(), false);
     }
 
     @Test
@@ -81,11 +81,18 @@ public class AlertServiceTest {
 
     @Test
     public void createAlert_alreadyExists() {
-        when(alertDao.getAlert(TEST_STUDY_ID, TEST_APP_ID, TEST_USER_ID, AlertCategory.NEW_ENROLLMENT)).thenReturn(Optional.of(new Alert()));
+        Alert existingAlert = new Alert();
+        when(alertDao.getAlert(TEST_STUDY_ID, TEST_APP_ID, TEST_USER_ID, AlertCategory.NEW_ENROLLMENT))
+                .thenReturn(Optional.of(existingAlert));
 
         alertService.createAlert(alert);
+
         verify(alertDao).getAlert(TEST_STUDY_ID, TEST_APP_ID, TEST_USER_ID, AlertCategory.NEW_ENROLLMENT);
-        verifyNoMoreInteractions(alertDao);
+        verify(alertDao).deleteAlert(existingAlert);
+        verify(alertDao).createAlert(alertCaptor.capture());
+        assertSame(alertCaptor.getValue(), alert);
+        assertNotNull(alert.getId());
+        assertNotNull(alert.getCreatedOn());
     }
 
     @Test(expectedExceptions = NullPointerException.class)
@@ -247,6 +254,11 @@ public class AlertServiceTest {
         alertService.deleteAlerts(TEST_APP_ID, null, new AlertIdCollection(ImmutableList.of(ALERT_ID)));
     }
 
+    @Test(expectedExceptions = NullPointerException.class)
+    public void deleteAlerts_nullAlertIds() {
+        alertService.deleteAlerts(TEST_APP_ID, TEST_STUDY_ID, null);
+    }
+
     @Test
     public void deleteAlertsForStudy() {
         alertService.deleteAlertsForStudy(TEST_APP_ID, TEST_STUDY_ID);
@@ -301,5 +313,149 @@ public class AlertServiceTest {
     @Test(expectedExceptions = NullPointerException.class)
     public void deleteAlertsForUserInStudy_nullUserId() {
         alertService.deleteAlertsForUserInStudy(TEST_APP_ID, TEST_STUDY_ID, null);
+    }
+
+    @Test
+    public void markAlertsRead() {
+        alert.setId(ALERT_ID);
+        AlertIdCollection alertIds = new AlertIdCollection(ImmutableList.of(ALERT_ID));
+        when(alertDao.getAlertById(ALERT_ID)).thenReturn(Optional.of(alert));
+
+        alertService.markAlertsRead(TEST_APP_ID, TEST_STUDY_ID, alertIds);
+
+        verify(alertDao).getAlertById(ALERT_ID);
+        verify(alertDao).setAlertsReadState(ImmutableList.of(ALERT_ID), true);
+    }
+
+    @Test(expectedExceptions = InvalidEntityException.class)
+    public void markAlertsRead_invalidAlertIdCollection() {
+        AlertIdCollection alertIds = new AlertIdCollection(null);
+
+        alertService.markAlertsRead(TEST_APP_ID, TEST_STUDY_ID, alertIds);
+    }
+
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void markAlertsRead_alertDoesNotExist() {
+        alert.setId(ALERT_ID);
+        AlertIdCollection alertIds = new AlertIdCollection(ImmutableList.of(ALERT_ID));
+        when(alertDao.getAlertById(ALERT_ID)).thenReturn(Optional.empty());
+
+        alertService.markAlertsRead(TEST_APP_ID, TEST_STUDY_ID, alertIds);
+    }
+
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void markAlertsRead_wrongApp() {
+        alert.setId(ALERT_ID);
+        AlertIdCollection alertIds = new AlertIdCollection(ImmutableList.of(ALERT_ID));
+        when(alertDao.getAlertById(ALERT_ID)).thenReturn(Optional.of(alert));
+
+        alertService.markAlertsRead("wrong app id", TEST_STUDY_ID, alertIds);
+    }
+
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void markAlertsRead_wrongStudy() {
+        alert.setId(ALERT_ID);
+        AlertIdCollection alertIds = new AlertIdCollection(ImmutableList.of(ALERT_ID));
+        when(alertDao.getAlertById(ALERT_ID)).thenReturn(Optional.of(alert));
+
+        alertService.markAlertsRead(TEST_APP_ID, "wrong study id", alertIds);
+    }
+
+    @Test(expectedExceptions = NullPointerException.class)
+    public void markAlertsRead_nullAppId() {
+        alertService.deleteAlerts(null, TEST_STUDY_ID, new AlertIdCollection(ImmutableList.of(ALERT_ID)));
+    }
+
+    @Test(expectedExceptions = NullPointerException.class)
+    public void markAlertsRead_nullStudyId() {
+        alertService.deleteAlerts(TEST_APP_ID, null, new AlertIdCollection(ImmutableList.of(ALERT_ID)));
+    }
+
+    @Test(expectedExceptions = NullPointerException.class)
+    public void markAlertsRead_nullAlertIds() {
+        alertService.deleteAlerts(TEST_APP_ID, TEST_STUDY_ID, null);
+    }
+
+    @Test
+    public void markAlertsUnread() {
+        alert.setId(ALERT_ID);
+        AlertIdCollection alertIds = new AlertIdCollection(ImmutableList.of(ALERT_ID));
+        when(alertDao.getAlertById(ALERT_ID)).thenReturn(Optional.of(alert));
+
+        alertService.markAlertsUnread(TEST_APP_ID, TEST_STUDY_ID, alertIds);
+
+        verify(alertDao).getAlertById(ALERT_ID);
+        verify(alertDao).setAlertsReadState(ImmutableList.of(ALERT_ID), false);
+    }
+
+    @Test(expectedExceptions = InvalidEntityException.class)
+    public void markAlertsUnread_invalidAlertIdCollection() {
+        AlertIdCollection alertIds = new AlertIdCollection(null);
+
+        alertService.markAlertsUnread(TEST_APP_ID, TEST_STUDY_ID, alertIds);
+    }
+
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void markAlertsUnread_alertDoesNotExist() {
+        alert.setId(ALERT_ID);
+        AlertIdCollection alertIds = new AlertIdCollection(ImmutableList.of(ALERT_ID));
+        when(alertDao.getAlertById(ALERT_ID)).thenReturn(Optional.empty());
+
+        alertService.markAlertsUnread(TEST_APP_ID, TEST_STUDY_ID, alertIds);
+    }
+
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void markAlertsUnread_wrongApp() {
+        alert.setId(ALERT_ID);
+        AlertIdCollection alertIds = new AlertIdCollection(ImmutableList.of(ALERT_ID));
+        when(alertDao.getAlertById(ALERT_ID)).thenReturn(Optional.of(alert));
+
+        alertService.markAlertsUnread("wrong app id", TEST_STUDY_ID, alertIds);
+    }
+
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void markAlertsUnread_wrongStudy() {
+        alert.setId(ALERT_ID);
+        AlertIdCollection alertIds = new AlertIdCollection(ImmutableList.of(ALERT_ID));
+        when(alertDao.getAlertById(ALERT_ID)).thenReturn(Optional.of(alert));
+
+        alertService.markAlertsUnread(TEST_APP_ID, "wrong study id", alertIds);
+    }
+
+    @Test(expectedExceptions = NullPointerException.class)
+    public void markAlertsUnread_nullAppId() {
+        alertService.deleteAlerts(null, TEST_STUDY_ID, new AlertIdCollection(ImmutableList.of(ALERT_ID)));
+    }
+
+    @Test(expectedExceptions = NullPointerException.class)
+    public void markAlertsUnread_nullStudyId() {
+        alertService.deleteAlerts(TEST_APP_ID, null, new AlertIdCollection(ImmutableList.of(ALERT_ID)));
+    }
+
+    @Test(expectedExceptions = NullPointerException.class)
+    public void markAlertsUnread_nullAlertIds() {
+        alertService.deleteAlerts(TEST_APP_ID, TEST_STUDY_ID, null);
+    }
+
+    @Test
+    public void getAlertCategoriesAndCounts() {
+        AlertCategoriesAndCounts alertCategoriesAndCounts = new AlertCategoriesAndCounts();
+        when(alertDao.getAlertCategoriesAndCounts(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(alertCategoriesAndCounts);
+
+        AlertCategoriesAndCounts returnedAlertCategoriesAndCounts = alertService
+                .getAlertCategoriesAndCounts(TEST_APP_ID, TEST_STUDY_ID);
+
+        assertSame(returnedAlertCategoriesAndCounts, alertCategoriesAndCounts);
+        verify(alertDao).getAlertCategoriesAndCounts(TEST_APP_ID, TEST_STUDY_ID);
+    }
+
+    @Test(expectedExceptions = NullPointerException.class)
+    public void getAlertCategoriesAndCounts_nullAppId() {
+        alertService.getAlertCategoriesAndCounts(null, TEST_STUDY_ID);
+    }
+
+    @Test(expectedExceptions = NullPointerException.class)
+    public void getAlertCategoriesAndCounts_nullStudyId() {
+        alertService.getAlertCategoriesAndCounts(TEST_APP_ID, null);
     }
 }

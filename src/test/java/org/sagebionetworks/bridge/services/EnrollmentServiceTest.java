@@ -480,6 +480,9 @@ public class EnrollmentServiceTest extends Mockito {
         assertEquals(captured.getWithdrawnOn(), MODIFIED_ON.minusHours(1));
         assertNull(captured.getWithdrawnBy());
         assertEquals(captured.getWithdrawalNote(), "Withdrawal reason");
+
+        // verify alerts for this user are deleted
+        verify(alertService).deleteAlertsForUserInStudy(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
     }
     
     @Test
@@ -532,6 +535,9 @@ public class EnrollmentServiceTest extends Mockito {
         assertEquals(captured.getWithdrawnOn(), MODIFIED_ON);
         assertEquals(captured.getWithdrawnBy(), "adminUser");
         assertEquals(captured.getWithdrawalNote(), "Withdrawal reason");
+
+        // verify alerts for this user are deleted
+        verify(alertService).deleteAlertsForUserInStudy(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
     }
     
     @Test
@@ -564,6 +570,9 @@ public class EnrollmentServiceTest extends Mockito {
         assertEquals(captured.getWithdrawnOn(), MODIFIED_ON);
         assertEquals(captured.getWithdrawnBy(), "adminUser");
         assertEquals(captured.getWithdrawalNote(), "Withdrawal reason");
+
+        // verify alerts for this user are deleted
+        verify(alertService).deleteAlertsForUserInStudy(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)

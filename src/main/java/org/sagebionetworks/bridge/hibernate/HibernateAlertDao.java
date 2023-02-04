@@ -12,6 +12,8 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.SearchTermPredicate;
 import org.sagebionetworks.bridge.models.studies.Alert;
 import org.sagebionetworks.bridge.models.studies.Alert.AlertCategory;
+import org.sagebionetworks.bridge.models.studies.AlertCategoriesAndCounts;
+import org.sagebionetworks.bridge.models.studies.AlertCategoryAndCount;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -26,6 +28,11 @@ public class HibernateAlertDao implements AlertDao {
     @Override
     public void createAlert(Alert alert) {
         hibernateHelper.create(alert);
+    }
+
+    @Override
+    public void deleteAlert(Alert alert) {
+        hibernateHelper.deleteById(Alert.class, alert.getId());
     }
 
     @Override
@@ -100,6 +107,31 @@ public class HibernateAlertDao implements AlertDao {
         where.append("a.appId = :appId", "appId", appId);
         where.append("a.studyId = :studyId", "studyId", studyId);
         where.append("a.userId = :userId", "userId", userId);
+        hibernateHelper.query(builder.getQuery(), builder.getParameters());
+    }
+
+    @Override
+    public AlertCategoriesAndCounts getAlertCategoriesAndCounts(String appId, String studyId) {
+        QueryBuilder builder = new QueryBuilder();
+        builder.append("SELECT NEW " + AlertCategoryAndCount.class.getName() + "(category, COUNT(*) as count)");
+        builder.append("FROM Alert a");
+        WhereClauseBuilder where = builder.startWhere(SearchTermPredicate.AND);
+        where.append("a.appId = :appId", "appId", appId);
+        where.append("a.studyId = :studyId", "studyId", studyId);
+        builder.append("GROUP BY category");
+        builder.append("ORDER BY category");
+        List<AlertCategoryAndCount> alertCategoriesAndCounts = hibernateHelper.queryGet(builder.getQuery(),
+                builder.getParameters(), null, null, AlertCategoryAndCount.class);
+        return new AlertCategoriesAndCounts(alertCategoriesAndCounts);
+    }
+
+    @Override
+    public void setAlertsReadState(List<String> alertIds, boolean read) {
+        QueryBuilder builder = new QueryBuilder();
+        builder.append("UPDATE Alert a");
+        builder.append("SET a.read = :read", "read", read);
+        WhereClauseBuilder where = builder.startWhere(SearchTermPredicate.AND);
+        where.append("a.id in (:alertIds)", "alertIds", alertIds);
         hibernateHelper.query(builder.getQuery(), builder.getParameters());
     }
 }

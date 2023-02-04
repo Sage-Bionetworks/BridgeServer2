@@ -30,6 +30,7 @@ import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Alert;
+import org.sagebionetworks.bridge.models.studies.AlertCategoriesAndCounts;
 import org.sagebionetworks.bridge.models.studies.AlertFilter;
 import org.sagebionetworks.bridge.models.studies.AlertIdCollection;
 import org.sagebionetworks.bridge.services.AlertService;
@@ -185,5 +186,130 @@ public class AlertControllerTest {
         }).when(alertController).parseJson(AlertIdCollection.class);
 
         alertController.deleteAlerts(TEST_STUDY_ID);
+    }
+
+    @Test
+    public void markAlertsRead() {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .withCallerRoles(ImmutableSet.of(Roles.STUDY_COORDINATOR)).build());
+        AlertIdCollection alertIdCollection = new AlertIdCollection(ImmutableList.of("foo"));
+        doReturn(alertIdCollection).when(alertController).parseJson(AlertIdCollection.class);
+
+        StatusMessage message = alertController.markAlertsRead(TEST_STUDY_ID);
+
+        verify(alertController).getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
+        verify(alertController).parseJson(AlertIdCollection.class);
+        verify(alertService).markAlertsRead(eq(TEST_APP_ID), eq(TEST_STUDY_ID), same(alertIdCollection));
+        assertEquals(message.getMessage(), "Alerts successfully marked as read");
+    }
+
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void markAlertsRead_cannotEditStudyParticipants_noRoles() {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID)).build());
+
+        alertController.markAlertsRead(TEST_STUDY_ID);
+    }
+
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void markAlertsRead_cannotEditStudyParticipants_wrongStudy() {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of("wrong study id"))
+                .withCallerRoles(ImmutableSet.of(Roles.STUDY_COORDINATOR)).build());
+
+        alertController.markAlertsRead(TEST_STUDY_ID);
+    }
+
+    @Test(expectedExceptions = MismatchedInputException.class)
+    public void markAlertsRead_wrongSchema() {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .withCallerRoles(ImmutableSet.of(Roles.STUDY_COORDINATOR)).build());
+        doAnswer((invocation) -> {
+            throw MismatchedInputException.from(new JsonFactory().createParser("[]"), AlertIdCollection.class,
+                    "bad json");
+        }).when(alertController).parseJson(AlertIdCollection.class);
+
+        alertController.markAlertsRead(TEST_STUDY_ID);
+    }
+
+    @Test
+    public void markAlertsUnread() {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .withCallerRoles(ImmutableSet.of(Roles.STUDY_COORDINATOR)).build());
+        AlertIdCollection alertIdCollection = new AlertIdCollection(ImmutableList.of("foo"));
+        doReturn(alertIdCollection).when(alertController).parseJson(AlertIdCollection.class);
+
+        StatusMessage message = alertController.markAlertsUnread(TEST_STUDY_ID);
+
+        verify(alertController).getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
+        verify(alertController).parseJson(AlertIdCollection.class);
+        verify(alertService).markAlertsUnread(eq(TEST_APP_ID), eq(TEST_STUDY_ID), same(alertIdCollection));
+        assertEquals(message.getMessage(), "Alerts successfully marked as unread");
+    }
+
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void markAlertsUnread_cannotEditStudyParticipants_noRoles() {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID)).build());
+
+        alertController.markAlertsUnread(TEST_STUDY_ID);
+    }
+
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void markAlertsUnread_cannotEditStudyParticipants_wrongStudy() {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of("wrong study id"))
+                .withCallerRoles(ImmutableSet.of(Roles.STUDY_COORDINATOR)).build());
+
+        alertController.markAlertsUnread(TEST_STUDY_ID);
+    }
+
+    @Test(expectedExceptions = MismatchedInputException.class)
+    public void markAlertsUnread_wrongSchema() {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .withCallerRoles(ImmutableSet.of(Roles.STUDY_COORDINATOR)).build());
+        doAnswer((invocation) -> {
+            throw MismatchedInputException.from(new JsonFactory().createParser("[]"), AlertIdCollection.class,
+                    "bad json");
+        }).when(alertController).parseJson(AlertIdCollection.class);
+
+        alertController.markAlertsUnread(TEST_STUDY_ID);
+    }
+
+    @Test
+    public void getAlertCategoriesAndCounts() {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .withCallerRoles(ImmutableSet.of(Roles.STUDY_COORDINATOR)).build());
+        AlertCategoriesAndCounts alertCategoriesAndCounts = new AlertCategoriesAndCounts();
+        when(alertService.getAlertCategoriesAndCounts(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(alertCategoriesAndCounts);
+
+        AlertCategoriesAndCounts returnedAlertCategoriesAndCounts = alertController
+                .getAlertCategoriesAndCounts(TEST_STUDY_ID);
+
+        assertSame(returnedAlertCategoriesAndCounts, alertCategoriesAndCounts);
+        verify(alertController).getAuthenticatedSession(Roles.RESEARCHER, Roles.STUDY_COORDINATOR);
+        verify(alertService).getAlertCategoriesAndCounts(eq(TEST_APP_ID), eq(TEST_STUDY_ID));
+    }
+
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void getAlertCategoriesAndCounts_cannotEditStudyParticipants_noRoles() {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID)).build());
+
+        alertController.getAlertCategoriesAndCounts(TEST_STUDY_ID);
+    }
+
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void getAlertCategoriesAndCounts_cannotEditStudyParticipants_wrongStudy() {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of("wrong study id"))
+                .withCallerRoles(ImmutableSet.of(Roles.STUDY_COORDINATOR)).build());
+
+        alertController.getAlertCategoriesAndCounts(TEST_STUDY_ID);
     }
 }

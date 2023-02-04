@@ -7,12 +7,18 @@ import java.util.Set;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.studies.Alert;
 import org.sagebionetworks.bridge.models.studies.Alert.AlertCategory;
+import org.sagebionetworks.bridge.models.studies.AlertCategoriesAndCounts;
 
 public interface AlertDao {
     /**
      * Creates an alert.
      */
     void createAlert(Alert alert);
+
+    /**
+     * Deletes a specific alert.
+     */
+    void deleteAlert(Alert alert);
 
     /**
      * Fetches a single alert with filters.
@@ -27,7 +33,8 @@ public interface AlertDao {
     /**
      * Fetches alerts for a study.
      */
-    PagedResourceList<Alert> getAlerts(String appId, String studyId, int offsetBy, int pageSize, Set<AlertCategory> alertCategories);
+    PagedResourceList<Alert> getAlerts(String appId, String studyId, int offsetBy, int pageSize,
+            Set<AlertCategory> alertCategories);
 
     /**
      * Batch deletes alerts given a list of IDs of alerts to delete.
@@ -48,4 +55,15 @@ public interface AlertDao {
      * Deletes all alerts for a specific user in a study.
      */
     void deleteAlertsForUserInStudy(String appId, String studyId, String userId);
+
+    /**
+     * Fetches a list of alert categories and the number of alerts within that
+     * category for a study.
+     */
+    AlertCategoriesAndCounts getAlertCategoriesAndCounts(String appId, String studyId);
+
+    /**
+     * Marks all specified alerts as read or unread, as specified.
+     */
+    void setAlertsReadState(List<String> alertIds, boolean read);
 }

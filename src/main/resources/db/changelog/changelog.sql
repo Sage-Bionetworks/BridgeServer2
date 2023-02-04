@@ -1051,6 +1051,7 @@ CREATE TABLE IF NOT EXISTS `Alerts` (
     `userId` varchar(255) NOT NULL,
     `category` varchar(255) NOT NULL,
     `data` varchar(2048) NOT NULL,
+    `isRead` boolean NOT NULL,
     PRIMARY KEY (`id`),
     UNIQUE KEY (`appId`, `studyId`, `userId`, `category`),
     INDEX (`appId`, `studyId`),
