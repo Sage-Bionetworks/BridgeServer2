@@ -31,10 +31,16 @@ public class ExternalIdService {
     static final String PAGE_SIZE_ERROR = "pageSize must be from 1-"+API_MAXIMUM_PAGE_SIZE+" records";
     
     private AccountService accountService;
+    private AlertService alertService;
 
     @Autowired
     public final void setAccountService(AccountService accountService) {
         this.accountService = accountService;
+    }
+
+    @Autowired
+    public final void setAlertService(AlertService alertService) {
+        this.alertService = alertService;
     }
     
     public PagedResourceList<ExternalIdentifierInfo> getPagedExternalIds(String appId, String studyId, String idFilter,
@@ -64,5 +70,8 @@ public class ExternalIdService {
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
         enrollment.setExternalId(null);
         accountService.updateAccount(account);
+
+        // delete alerts for this account
+        alertService.deleteAlertsForUserInStudy(app.getIdentifier(), enrollment.getStudyId(), account.getId());
     }
 }

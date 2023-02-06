@@ -102,9 +102,11 @@ import org.sagebionetworks.bridge.models.schedules2.timelines.MetadataContainer;
 import org.sagebionetworks.bridge.models.schedules2.timelines.Scheduler;
 import org.sagebionetworks.bridge.models.schedules2.timelines.Timeline;
 import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
+import org.sagebionetworks.bridge.models.studies.Alert;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyCustomEvent;
+import org.sagebionetworks.bridge.models.studies.Alert.AlertCategory;
 
 public class AdherenceServiceTest extends Mockito {
     
@@ -129,6 +131,9 @@ public class AdherenceServiceTest extends Mockito {
     
     @Mock
     RequestInfoService mockRequestInfoService;
+
+    @Mock
+    AlertService alertService;
     
     @Captor
     ArgumentCaptor<AdherenceRecordsSearch> searchCaptor;
@@ -141,6 +146,9 @@ public class AdherenceServiceTest extends Mockito {
     
     @Captor
     ArgumentCaptor<WeeklyAdherenceReport> weeklyReportCaptor;
+
+    @Captor
+    ArgumentCaptor<Alert> alertCaptor;
 
     @InjectMocks
     @Spy
@@ -1095,7 +1103,112 @@ public class AdherenceServiceTest extends Mockito {
         
         service.getWeeklyAdherenceReport(TEST_APP_ID, TEST_STUDY_ID, account);
     }
-    
+
+    @Test
+    public void getWeeklyAdherenceReportForWorker_lowAdherence() {
+        Account account = Account.create();
+        account.setId(TEST_USER_ID);
+
+        Study study = Study.create();
+        study.setAdherenceThresholdPercentage(60);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+
+        StudyAdherenceReport report = new StudyAdherenceReport();
+        doReturn(report).when(service).generateReport(any(), any(), any(), any(), any(), any());
+        WeeklyAdherenceReport weeklyReport = new WeeklyAdherenceReport();
+        weeklyReport.setWeeklyAdherencePercent(60);
+        doReturn(weeklyReport).when(service).deriveWeeklyAdherenceFromStudyReportWeek(any(), any(), any());
+
+        service.getWeeklyAdherenceReportForWorker(TEST_APP_ID, TEST_STUDY_ID, account);
+
+        verify(alertService).createAlert(alertCaptor.capture());
+        Alert alert = alertCaptor.getValue();
+        assertEquals(alert.getAppId(), TEST_APP_ID);
+        assertEquals(alert.getStudyId(), TEST_STUDY_ID);
+        assertEquals(alert.getUserId(), TEST_USER_ID);
+        assertEquals(alert.getCategory(), AlertCategory.LOW_ADHERENCE);
+        assertEquals(alert.getData().toString(), "{\"adherenceThreshold\":60.0,\"type\":\"LowAdherenceAlertData\"}");
+    }
+
+    @Test
+    public void getWeeklyAdherenceReportForWorker_sufficientAdherence() {
+        Account account = Account.create();
+        account.setId(TEST_USER_ID);
+
+        Study study = Study.create();
+        study.setAdherenceThresholdPercentage(60);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+
+        StudyAdherenceReport report = new StudyAdherenceReport();
+        doReturn(report).when(service).generateReport(any(), any(), any(), any(), any(), any());
+        WeeklyAdherenceReport weeklyReport = new WeeklyAdherenceReport();
+        weeklyReport.setWeeklyAdherencePercent(61);
+        doReturn(weeklyReport).when(service).deriveWeeklyAdherenceFromStudyReportWeek(any(), any(), any());
+
+        service.getWeeklyAdherenceReportForWorker(TEST_APP_ID, TEST_STUDY_ID, account);
+
+        verifyZeroInteractions(alertService);
+    }
+
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void getWeeklyAdherenceReportForWorker_studyDoesNotExist() {
+        Account account = Account.create();
+        account.setId(TEST_USER_ID);
+
+        Study study = Study.create();
+        study.setAdherenceThresholdPercentage(60);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true))
+                .thenThrow(new EntityNotFoundException(Study.class));
+
+        StudyAdherenceReport report = new StudyAdherenceReport();
+        doReturn(report).when(service).generateReport(any(), any(), any(), any(), any(), any());
+        WeeklyAdherenceReport weeklyReport = new WeeklyAdherenceReport();
+        weeklyReport.setWeeklyAdherencePercent(60);
+        doReturn(weeklyReport).when(service).deriveWeeklyAdherenceFromStudyReportWeek(any(), any(), any());
+
+        service.getWeeklyAdherenceReportForWorker(TEST_APP_ID, TEST_STUDY_ID, account);
+    }
+
+    @Test
+    public void getWeeklyAdherenceReportForWorker_noWeeklyAdherencePercent() {
+        Account account = Account.create();
+        account.setId(TEST_USER_ID);
+
+        Study study = Study.create();
+        study.setAdherenceThresholdPercentage(60);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+
+        StudyAdherenceReport report = new StudyAdherenceReport();
+        doReturn(report).when(service).generateReport(any(), any(), any(), any(), any(), any());
+        WeeklyAdherenceReport weeklyReport = new WeeklyAdherenceReport();
+        weeklyReport.setWeeklyAdherencePercent(null);
+        doReturn(weeklyReport).when(service).deriveWeeklyAdherenceFromStudyReportWeek(any(), any(), any());
+
+        service.getWeeklyAdherenceReportForWorker(TEST_APP_ID, TEST_STUDY_ID, account);
+
+        verifyZeroInteractions(alertService);
+    }
+
+    @Test
+    public void getWeeklyAdherenceReportForWorker_noAdherenceThresholdPercentage() {
+        Account account = Account.create();
+        account.setId(TEST_USER_ID);
+
+        Study study = Study.create();
+        study.setAdherenceThresholdPercentage(null);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+
+        StudyAdherenceReport report = new StudyAdherenceReport();
+        doReturn(report).when(service).generateReport(any(), any(), any(), any(), any(), any());
+        WeeklyAdherenceReport weeklyReport = new WeeklyAdherenceReport();
+        weeklyReport.setWeeklyAdherencePercent(60);
+        doReturn(weeklyReport).when(service).deriveWeeklyAdherenceFromStudyReportWeek(any(), any(), any());
+
+        service.getWeeklyAdherenceReportForWorker(TEST_APP_ID, TEST_STUDY_ID, account);
+
+        verifyZeroInteractions(alertService);
+    }
+
     @Test
     public void getWeeklyAdherenceReports() {
         AdherenceReportSearch search = new AdherenceReportSearch();

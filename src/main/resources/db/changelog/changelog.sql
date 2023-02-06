@@ -1040,3 +1040,24 @@ ADD INDEX `TimelineMetadata-SessionInstanceGuid` (sessionInstanceGuid);
 
 ALTER TABLE `DemographicsValues`
 ADD COLUMN `invalidity` varchar(512) DEFAULT NULL;
+
+-- changeset bridge:76
+
+CREATE TABLE IF NOT EXISTS `Alerts` (
+    `id` varchar(60) NOT NULL,
+    `createdOn` bigint(20) NOT NULL,
+    `studyId` varchar(60) NOT NULL,
+    `appId` varchar(60) NOT NULL,
+    `userId` varchar(255) NOT NULL,
+    `category` varchar(255) NOT NULL,
+    `data` varchar(2048) NOT NULL,
+    `isRead` boolean NOT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY (`appId`, `studyId`, `userId`, `category`),
+    INDEX (`appId`, `studyId`),
+    INDEX (`appId`, `studyId`, `userId`),
+    INDEX (`appId`, `studyId`, `category`),
+    INDEX (`appId`, `userId`),
+    CONSTRAINT `Alert-Account-Constraint` FOREIGN KEY (`userId`) REFERENCES `Accounts` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `Alert-Study-Constraint` FOREIGN KEY (`studyId`, `appId`) REFERENCES `Substudies` (`id`, `studyId`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;

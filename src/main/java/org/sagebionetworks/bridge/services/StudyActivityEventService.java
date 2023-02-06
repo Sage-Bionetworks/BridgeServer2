@@ -37,10 +37,12 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEventIdsMap;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.schedules2.StudyBurst;
+import org.sagebionetworks.bridge.models.studies.Alert;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.slf4j.Logger;
@@ -79,6 +81,7 @@ public class StudyActivityEventService {
     private ActivityEventService activityEventService;
     private Schedule2Service scheduleService;
     private CacheProvider cacheProvider;
+    private AlertService alertService;
     
     @Autowired
     final void setStudyActivityEventDao(StudyActivityEventDao dao) {
@@ -103,6 +106,10 @@ public class StudyActivityEventService {
     @Autowired
     final void setCacheProvider(CacheProvider cacheProvider) {
         this.cacheProvider = cacheProvider;
+    }
+    @Autowired
+    final void setAlertService(AlertService alertService) {
+        this.alertService = alertService;
     }
     
     DateTime getCreatedOn() { 
@@ -191,7 +198,13 @@ public class StudyActivityEventService {
         List<String> failedEventIds = new ArrayList<>();
         if (event.getUpdateType().canUpdate(mostRecent, event)) {
             dao.publishEvent(event);
-            
+
+            if (event.getEventId().equals(ActivityEventObjectType.TIMELINE_RETRIEVED_ID)) {
+                // trigger alert for timeline retrieval
+                alertService
+                        .createAlert(Alert.timelineAccessed(event.getStudyId(), event.getAppId(), event.getUserId()));
+            }
+
             CacheKey cacheKey = CacheKey.etag(StudyActivityEvent.class, event.getUserId());
             cacheProvider.setObject(cacheKey, event.getCreatedOn());
         } else {
@@ -330,7 +343,7 @@ public class StudyActivityEventService {
     
     /**
      * If the triggering event is mutable, study burst events can be created as well. Any errors
-     * that occur are collected in the list of failedEventIds. 
+     * that occur are collected in the list of failedEventIds.
      */
     private void createStudyBurstEvents(Schedule2 schedule, StudyActivityEvent event, List<String> failedEventIds) {
         String eventId = event.getEventId();
@@ -343,6 +356,7 @@ public class StudyActivityEventService {
             .withCreatedOn(event.getCreatedOn())
             .withObjectType(STUDY_BURST);
         
+        boolean createdBurstEvents = false;
         for(StudyBurst burst : schedule.getStudyBursts()) {
             if (burst.getOriginEventId().equals(eventId)) {
                 builder.withUpdateType(burst.getUpdateType());
@@ -374,11 +388,16 @@ public class StudyActivityEventService {
                     // Study bursts also have an update type that must be respected.
                     if (burst.getUpdateType().canUpdate(mostRecent, burstEvent)) {
                         dao.publishEvent(burstEvent);
+                        createdBurstEvents = true;
                     }  else {
                         failedEventIds.add(burstEvent.getEventId());
                     } 
                 }
             }
+        }
+        if (createdBurstEvents) {
+            // trigger alert for study burst change if study burst events were created
+            alertService.createAlert(Alert.studyBurstChange(event.getStudyId(), event.getAppId(), event.getUserId()));
         }
     }
     

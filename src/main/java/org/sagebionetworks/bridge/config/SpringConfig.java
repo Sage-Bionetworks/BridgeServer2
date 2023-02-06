@@ -136,6 +136,7 @@ import org.sagebionetworks.bridge.models.schedules2.Session;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.weekly.WeeklyAdherenceReport;
 import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
+import org.sagebionetworks.bridge.models.studies.Alert;
 import org.sagebionetworks.bridge.models.studies.Demographic;
 import org.sagebionetworks.bridge.models.studies.DemographicUser;
 import org.sagebionetworks.bridge.models.studies.DemographicValue;
@@ -668,6 +669,7 @@ public class SpringConfig {
         metadataSources.addAnnotatedClass(Demographic.class);
         metadataSources.addAnnotatedClass(DemographicUser.class);
         metadataSources.addAnnotatedClass(DemographicValue.class);
+        metadataSources.addAnnotatedClass(Alert.class);
         
         SessionFactory factory = metadataSources.buildMetadata().buildSessionFactory();
         
