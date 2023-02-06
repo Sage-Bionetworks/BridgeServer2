@@ -26,13 +26,17 @@ import javax.persistence.Version;
 import org.joda.time.DateTime;
 
 import org.sagebionetworks.bridge.hibernate.DateTimeToLongAttributeConverter;
+import org.sagebionetworks.bridge.hibernate.JsonNodeAttributeConverter;
 import org.sagebionetworks.bridge.hibernate.LabelListConverter;
+import org.sagebionetworks.bridge.hibernate.StringListConverter;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.hibernate.ColorSchemeConverter;
 import org.sagebionetworks.bridge.hibernate.CustomizationFieldsConverter;
 import org.sagebionetworks.bridge.models.Label;
 import org.sagebionetworks.bridge.models.Tag;
 import org.sagebionetworks.bridge.models.assessments.config.PropertyInfo;
+
+import com.fasterxml.jackson.databind.JsonNode;
 
 /**
  * Persistence object for a record about an assessment (task, survey, measure) in 
@@ -69,6 +73,21 @@ public class HibernateAssessment {
         assessment.setDeleted(dto.isDeleted());
         assessment.setVersion(dto.getVersion());
         assessment.setImageResource(dto.getImageResource());
+        assessment.setAge(dto.getAge());
+        assessment.setLongDescription(dto.getLongDescription());
+        assessment.setScores(dto.getScores());
+        assessment.setReliability(dto.getReliability());
+        assessment.setLanguage(dto.getLanguage());
+        assessment.setCategory(dto.getCategory());
+        assessment.setTechnicalManualUrl(dto.getTechnicalManualUrl());
+        assessment.setPublicationUrls(dto.getPublicationUrls());
+        assessment.setCaption(dto.getCaption());
+        assessment.setVideoUrl(dto.getVideoUrl());
+        assessment.setPhoneOrientation(dto.getPhoneOrientation());
+        assessment.setSoundRequired(dto.getSoundRequired());
+        assessment.setMultiPart(dto.getMultiPart());
+        assessment.setSurveyDistinction(dto.getSurveyDistinction());
+        assessment.setMetadataJsonSchema(dto.getMetadataJsonSchema());
         return assessment;
     }
 
@@ -130,6 +149,24 @@ public class HibernateAssessment {
             @AttributeOverride(name = "labels", column = @Column(name = "imageResourceLabels"))
     })
     private ImageResource imageResource;
+
+    private String age;
+    private String longDescription;
+    private String scores;
+    private String reliability;
+    private String language;
+    private String category;
+    private String technicalManualUrl;
+    @Convert(converter = StringListConverter.class)
+    private List<String> publicationUrls;
+    private String caption;
+    private String videoUrl;
+    private String phoneOrientation;
+    private Boolean soundRequired;
+    private Boolean multiPart;
+    private String surveyDistinction;
+    @Convert(converter = JsonNodeAttributeConverter.class)
+    private JsonNode metadataJsonSchema;
 
     public String getGuid() {
         return guid;
@@ -259,6 +296,96 @@ public class HibernateAssessment {
     }
     public void setImageResource(ImageResource imageResource) {
         this.imageResource = imageResource;
+    }
+    public String getAge() {
+        return age;
+    }
+    public void setAge(String age) {
+        this.age = age;
+    }
+    public String getLongDescription() {
+        return longDescription;
+    }
+    public void setLongDescription(String longDescription) {
+        this.longDescription = longDescription;
+    }
+    public String getScores() {
+        return scores;
+    }
+    public void setScores(String scores) {
+        this.scores = scores;
+    }
+    public String getReliability() {
+        return reliability;
+    }
+    public void setReliability(String reliability) {
+        this.reliability = reliability;
+    }
+    public String getLanguage() {
+        return language;
+    }
+    public void setLanguage(String language) {
+        this.language = language;
+    }
+    public String getCategory() {
+        return category;
+    }
+    public void setCategory(String category) {
+        this.category = category;
+    }
+    public String getTechnicalManualUrl() {
+        return technicalManualUrl;
+    }
+    public void setTechnicalManualUrl(String technicalManualUrl) {
+        this.technicalManualUrl = technicalManualUrl;
+    }
+    public List<String> getPublicationUrls() {
+        return publicationUrls;
+    }
+    public void setPublicationUrls(List<String> publicationUrls) {
+        this.publicationUrls = publicationUrls;
+    }
+    public String getCaption() {
+        return caption;
+    }
+    public void setCaption(String caption) {
+        this.caption = caption;
+    }
+    public String getVideoUrl() {
+        return videoUrl;
+    }
+    public void setVideoUrl(String videoUrl) {
+        this.videoUrl = videoUrl;
+    }
+    public String getPhoneOrientation() {
+        return phoneOrientation;
+    }
+    public void setPhoneOrientation(String phoneOrientation) {
+        this.phoneOrientation = phoneOrientation;
+    }
+    public Boolean getSoundRequired() {
+        return soundRequired;
+    }
+    public void setSoundRequired(Boolean soundRequired) {
+        this.soundRequired = soundRequired;
+    }
+    public Boolean getMultiPart() {
+        return multiPart;
+    }
+    public void setMultiPart(Boolean multiPart) {
+        this.multiPart = multiPart;
+    }
+    public String getSurveyDistinction() {
+        return surveyDistinction;
+    }
+    public void setSurveyDistinction(String surveyDistinction) {
+        this.surveyDistinction = surveyDistinction;
+    }
+    public JsonNode getMetadataJsonSchema() {
+        return metadataJsonSchema;
+    }
+    public void setMetadataJsonSchema(JsonNode metadataJsonSchema) {
+        this.metadataJsonSchema = metadataJsonSchema;
     }
 }
 

@@ -14,6 +14,8 @@ import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.Label;
 import org.sagebionetworks.bridge.models.assessments.config.PropertyInfo;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
 public class Assessment implements BridgeEntity {
     
     public static Assessment create(HibernateAssessment assessment) {
@@ -39,6 +41,21 @@ public class Assessment implements BridgeEntity {
         dto.setDeleted(assessment.isDeleted());
         dto.setVersion(assessment.getVersion());
         dto.setImageResource(assessment.getImageResource());
+        dto.setAge(assessment.getAge());
+        dto.setLongDescription(assessment.getLongDescription());
+        dto.setScores(assessment.getScores());
+        dto.setReliability(assessment.getReliability());
+        dto.setLanguage(assessment.getLanguage());
+        dto.setCategory(assessment.getCategory());
+        dto.setTechnicalManualUrl(assessment.getTechnicalManualUrl());
+        dto.setPublicationUrls(assessment.getPublicationUrls());
+        dto.setCaption(assessment.getCaption());
+        dto.setVideoUrl(assessment.getVideoUrl());
+        dto.setPhoneOrientation(assessment.getPhoneOrientation());
+        dto.setSoundRequired(assessment.getSoundRequired());
+        dto.setMultiPart(assessment.getMultiPart());
+        dto.setSurveyDistinction(assessment.getSurveyDistinction());
+        dto.setMetadataJsonSchema(assessment.getMetadataJsonSchema());
         return dto;
     }
     
@@ -67,6 +84,21 @@ public class Assessment implements BridgeEntity {
     private boolean deleted;
     private long version;
     private ImageResource imageResource;
+    private String age;
+    private String longDescription;
+    private String scores;
+    private String reliability;
+    private String language;
+    private String category;
+    private String technicalManualUrl;
+    private List<String> publicationUrls;
+    private String caption;
+    private String videoUrl;
+    private String phoneOrientation;
+    private Boolean soundRequired;
+    private Boolean multiPart;
+    private String surveyDistinction;
+    private JsonNode metadataJsonSchema;
 
     public String getAppId() {
         return appId;
@@ -199,5 +231,125 @@ public class Assessment implements BridgeEntity {
     }
     public void setImageResource(ImageResource imageResource) {
         this.imageResource = imageResource;
+    }
+
+    public String getAge() {
+        return age;
+    }
+
+    public void setAge(String age) {
+        this.age = age;
+    }
+
+    public String getLongDescription() {
+        return longDescription;
+    }
+
+    public void setLongDescription(String longDescription) {
+        this.longDescription = longDescription;
+    }
+
+    public String getScores() {
+        return scores;
+    }
+
+    public void setScores(String scores) {
+        this.scores = scores;
+    }
+
+    public String getReliability() {
+        return reliability;
+    }
+
+    public void setReliability(String reliability) {
+        this.reliability = reliability;
+    }
+
+    public String getLanguage() {
+        return language;
+    }
+
+    public void setLanguage(String language) {
+        this.language = language;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
+    }
+
+    public String getTechnicalManualUrl() {
+        return technicalManualUrl;
+    }
+
+    public void setTechnicalManualUrl(String technicalManualUrl) {
+        this.technicalManualUrl = technicalManualUrl;
+    }
+
+    public List<String> getPublicationUrls() {
+        return publicationUrls;
+    }
+
+    public void setPublicationUrls(List<String> publicationUrls) {
+        this.publicationUrls = publicationUrls;
+    }
+
+    public String getCaption() {
+        return caption;
+    }
+
+    public void setCaption(String caption) {
+        this.caption = caption;
+    }
+
+    public String getVideoUrl() {
+        return videoUrl;
+    }
+
+    public void setVideoUrl(String videoUrl) {
+        this.videoUrl = videoUrl;
+    }
+
+    public String getPhoneOrientation() {
+        return phoneOrientation;
+    }
+
+    public void setPhoneOrientation(String phoneOrientation) {
+        this.phoneOrientation = phoneOrientation;
+    }
+
+    public Boolean getSoundRequired() {
+        return soundRequired;
+    }
+
+    public void setSoundRequired(Boolean soundRequired) {
+        this.soundRequired = soundRequired;
+    }
+
+    public Boolean getMultiPart() {
+        return multiPart;
+    }
+
+    public void setMultiPart(Boolean multiPart) {
+        this.multiPart = multiPart;
+    }
+
+    public String getSurveyDistinction() {
+        return surveyDistinction;
+    }
+
+    public void setSurveyDistinction(String surveyDistinction) {
+        this.surveyDistinction = surveyDistinction;
+    }
+
+    public JsonNode getMetadataJsonSchema() {
+        return metadataJsonSchema;
+    }
+
+    public void setMetadataJsonSchema(JsonNode metadataJsonSchema) {
+        this.metadataJsonSchema = metadataJsonSchema;
     }
 }
