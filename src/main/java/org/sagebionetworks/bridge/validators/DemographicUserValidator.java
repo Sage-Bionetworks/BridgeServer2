@@ -7,8 +7,8 @@ import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateStrin
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
-import org.sagebionetworks.bridge.models.studies.Demographic;
-import org.sagebionetworks.bridge.models.studies.DemographicUser;
+import org.sagebionetworks.bridge.models.demographics.Demographic;
+import org.sagebionetworks.bridge.models.demographics.DemographicUser;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 

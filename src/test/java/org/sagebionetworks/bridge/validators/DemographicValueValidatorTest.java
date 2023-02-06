@@ -6,7 +6,7 @@ import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.generateS
 import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.getInvalidStringLengthMessage;
 import static org.testng.Assert.assertTrue;
 
-import org.sagebionetworks.bridge.models.studies.DemographicValue;
+import org.sagebionetworks.bridge.models.demographics.DemographicValue;
 import org.testng.annotations.Test;
 
 public class DemographicValueValidatorTest {

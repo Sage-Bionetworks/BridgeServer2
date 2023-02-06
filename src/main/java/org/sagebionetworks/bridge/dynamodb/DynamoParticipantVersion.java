@@ -19,7 +19,7 @@ import org.sagebionetworks.bridge.json.DateTimeToLongDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
 import org.sagebionetworks.bridge.models.accounts.ParticipantVersion;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
-import org.sagebionetworks.bridge.models.studies.Demographic;
+import org.sagebionetworks.bridge.models.demographics.Demographic;
 
 @DynamoDBTable(tableName = "ParticipantVersion")
 public class DynamoParticipantVersion implements ParticipantVersion {
