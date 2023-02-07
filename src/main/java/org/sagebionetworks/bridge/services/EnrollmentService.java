@@ -42,7 +42,6 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
-import org.sagebionetworks.bridge.models.studies.Alert;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.studies.EnrollmentDetail;
 import org.sagebionetworks.bridge.models.studies.EnrollmentFilter;
@@ -195,10 +194,6 @@ public class EnrollmentService {
         }
         editEnrollment(account, newEnrollment, newEnrollment);
         account.getEnrollments().add(newEnrollment);
-
-        // trigger alert for new enrollment
-        alertService.createAlert(
-                Alert.newEnrollment(newEnrollment.getStudyId(), newEnrollment.getAppId(), account.getId()));
 
         return newEnrollment;
     }
