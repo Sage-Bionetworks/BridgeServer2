@@ -78,7 +78,9 @@ import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.reports.ReportIndex;
 import org.sagebionetworks.bridge.models.reports.ReportType;
+import org.sagebionetworks.bridge.models.studies.Alert;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
+import org.sagebionetworks.bridge.models.studies.Alert.AlertCategory;
 
 public class AccountServiceTest extends Mockito {
     private static final AccountId ACCOUNT_ID_WITH_EMAIL = AccountId.forEmail(TEST_APP_ID, EMAIL);
@@ -155,6 +157,9 @@ public class AccountServiceTest extends Mockito {
     @Mock
     AccountService mockAccountService;
 
+    @Mock
+    AlertService mockAlertService;
+
     @InjectMocks
     @Spy
     AccountService service;
@@ -167,6 +172,9 @@ public class AccountServiceTest extends Mockito {
     
     @Captor
     ArgumentCaptor<AccountSummarySearch> searchCaptor;
+
+    @Captor
+    ArgumentCaptor<Alert> alertCaptor;
 
     @BeforeClass
     public static void mockNow() {
@@ -598,6 +606,20 @@ public class AccountServiceTest extends Mockito {
         assertEquals(event2.getUserId(), TEST_USER_ID);
         assertEquals(event2.getEventId(), "enrollment");
         assertEquals(event2.getTimestamp(), account.getCreatedOn());
+
+        verify(mockAlertService, times(2)).createAlert(alertCaptor.capture());
+        Alert alert1 = getElement(alertCaptor.getAllValues(), Alert::getStudyId, STUDY_A)
+                .orElseThrow(() -> new NullPointerException("STUDY_A new enrollment alert not found"));
+        assertEquals(alert1.getAppId(), TEST_APP_ID);
+        assertEquals(alert1.getStudyId(), STUDY_A);
+        assertEquals(alert1.getUserId(), TEST_USER_ID);
+        assertEquals(alert1.getCategory(), AlertCategory.NEW_ENROLLMENT);
+        Alert alert2 = getElement(alertCaptor.getAllValues(), Alert::getStudyId, STUDY_B)
+                .orElseThrow(() -> new NullPointerException("STUDY_B new enrollment alert not found"));
+        assertEquals(alert2.getAppId(), TEST_APP_ID);
+        assertEquals(alert2.getStudyId(), STUDY_B);
+        assertEquals(alert2.getUserId(), TEST_USER_ID);
+        assertEquals(alert2.getCategory(), AlertCategory.NEW_ENROLLMENT);
     }
 
     @Test
@@ -701,6 +723,13 @@ public class AccountServiceTest extends Mockito {
         assertEquals(event.getUserId(), TEST_USER_ID);
         assertEquals(event.getTimestamp(), MOCK_DATETIME);
         assertEquals(event.getEventId(), "enrollment");
+
+        verify(mockAlertService).createAlert(alertCaptor.capture());
+        Alert alert = alertCaptor.getValue();
+        assertEquals(alert.getAppId(), TEST_APP_ID);
+        assertEquals(alert.getStudyId(), STUDY_B);
+        assertEquals(alert.getUserId(), TEST_USER_ID);
+        assertEquals(alert.getCategory(), AlertCategory.NEW_ENROLLMENT);
     }
     
     @Test
