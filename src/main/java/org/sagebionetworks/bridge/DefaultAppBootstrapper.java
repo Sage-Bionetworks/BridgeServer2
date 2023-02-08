@@ -89,9 +89,11 @@ public class DefaultAppBootstrapper implements ApplicationListener<ContextRefres
     public void onApplicationEvent(ContextRefreshedEvent event) {
         List<TableDescription> tables = annotationBasedTableCreator.getTables("org.sagebionetworks.bridge.dynamodb");
         dynamoInitializer.init(tables);
-        s3Initializer.initBuckets();
+
+        // Order matters. S3 depends on SNS which depends on SQS.
         sqsInitializer.initQueues();
         snsInitializer.initTopics();
+        s3Initializer.initBuckets();
 
         RequestContext.set(new RequestContext.Builder().withCallerAppId(API_APP_ID)
                 .withCallerRoles(ImmutableSet.of(SUPERADMIN))
