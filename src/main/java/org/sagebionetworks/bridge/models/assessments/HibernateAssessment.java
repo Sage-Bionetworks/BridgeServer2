@@ -26,7 +26,6 @@ import javax.persistence.Version;
 import org.joda.time.DateTime;
 
 import org.sagebionetworks.bridge.hibernate.DateTimeToLongAttributeConverter;
-import org.sagebionetworks.bridge.hibernate.JsonNodeAttributeConverter;
 import org.sagebionetworks.bridge.hibernate.LabelListConverter;
 import org.sagebionetworks.bridge.hibernate.StringListConverter;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
@@ -35,8 +34,6 @@ import org.sagebionetworks.bridge.hibernate.CustomizationFieldsConverter;
 import org.sagebionetworks.bridge.models.Label;
 import org.sagebionetworks.bridge.models.Tag;
 import org.sagebionetworks.bridge.models.assessments.config.PropertyInfo;
-
-import com.fasterxml.jackson.databind.JsonNode;
 
 /**
  * Persistence object for a record about an assessment (task, survey, measure) in 
@@ -86,8 +83,8 @@ public class HibernateAssessment {
         assessment.setPhoneOrientation(dto.getPhoneOrientation());
         assessment.setSoundRequired(dto.getSoundRequired());
         assessment.setMultiPart(dto.getMultiPart());
-        assessment.setSurveyDistinction(dto.getSurveyDistinction());
-        assessment.setMetadataJsonSchema(dto.getMetadataJsonSchema());
+        assessment.setAssessmentType(dto.getAssessmentType());
+        assessment.setMetadataJsonSchemaUrl(dto.getMetadataJsonSchemaUrl());
         return assessment;
     }
 
@@ -164,9 +161,8 @@ public class HibernateAssessment {
     private String phoneOrientation;
     private Boolean soundRequired;
     private Boolean multiPart;
-    private String surveyDistinction;
-    @Convert(converter = JsonNodeAttributeConverter.class)
-    private JsonNode metadataJsonSchema;
+    private String assessmentType;
+    private String metadataJsonSchemaUrl;
 
     public String getGuid() {
         return guid;
@@ -375,17 +371,17 @@ public class HibernateAssessment {
     public void setMultiPart(Boolean multiPart) {
         this.multiPart = multiPart;
     }
-    public String getSurveyDistinction() {
-        return surveyDistinction;
+    public String getAssessmentType() {
+        return assessmentType;
     }
-    public void setSurveyDistinction(String surveyDistinction) {
-        this.surveyDistinction = surveyDistinction;
+    public void setAssessmentType(String assessmentType) {
+        this.assessmentType = assessmentType;
     }
-    public JsonNode getMetadataJsonSchema() {
-        return metadataJsonSchema;
+    public String getMetadataJsonSchemaUrl() {
+        return metadataJsonSchemaUrl;
     }
-    public void setMetadataJsonSchema(JsonNode metadataJsonSchema) {
-        this.metadataJsonSchema = metadataJsonSchema;
+    public void setMetadataJsonSchemaUrl(String metadataJsonSchemaUrl) {
+        this.metadataJsonSchemaUrl = metadataJsonSchemaUrl;
     }
 }
 

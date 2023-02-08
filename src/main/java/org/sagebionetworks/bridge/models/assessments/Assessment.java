@@ -14,8 +14,6 @@ import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.Label;
 import org.sagebionetworks.bridge.models.assessments.config.PropertyInfo;
 
-import com.fasterxml.jackson.databind.JsonNode;
-
 public class Assessment implements BridgeEntity {
     
     public static Assessment create(HibernateAssessment assessment) {
@@ -54,8 +52,8 @@ public class Assessment implements BridgeEntity {
         dto.setPhoneOrientation(assessment.getPhoneOrientation());
         dto.setSoundRequired(assessment.getSoundRequired());
         dto.setMultiPart(assessment.getMultiPart());
-        dto.setSurveyDistinction(assessment.getSurveyDistinction());
-        dto.setMetadataJsonSchema(assessment.getMetadataJsonSchema());
+        dto.setAssessmentType(assessment.getAssessmentType());
+        dto.setMetadataJsonSchemaUrl(assessment.getMetadataJsonSchemaUrl());
         return dto;
     }
     
@@ -97,8 +95,8 @@ public class Assessment implements BridgeEntity {
     private String phoneOrientation;
     private Boolean soundRequired;
     private Boolean multiPart;
-    private String surveyDistinction;
-    private JsonNode metadataJsonSchema;
+    private String assessmentType;
+    private String metadataJsonSchemaUrl;
 
     public String getAppId() {
         return appId;
@@ -337,19 +335,19 @@ public class Assessment implements BridgeEntity {
         this.multiPart = multiPart;
     }
 
-    public String getSurveyDistinction() {
-        return surveyDistinction;
+    public String getAssessmentType() {
+        return assessmentType;
     }
 
-    public void setSurveyDistinction(String surveyDistinction) {
-        this.surveyDistinction = surveyDistinction;
+    public void setAssessmentType(String assessmentType) {
+        this.assessmentType = assessmentType;
     }
 
-    public JsonNode getMetadataJsonSchema() {
-        return metadataJsonSchema;
+    public String getMetadataJsonSchemaUrl() {
+        return metadataJsonSchemaUrl;
     }
 
-    public void setMetadataJsonSchema(JsonNode metadataJsonSchema) {
-        this.metadataJsonSchema = metadataJsonSchema;
+    public void setMetadataJsonSchemaUrl(String metadataJsonSchemaUrl) {
+        this.metadataJsonSchemaUrl = metadataJsonSchemaUrl;
     }
 }
