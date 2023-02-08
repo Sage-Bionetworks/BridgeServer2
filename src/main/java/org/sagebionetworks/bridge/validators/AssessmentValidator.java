@@ -124,5 +124,21 @@ public class AssessmentValidator implements Validator {
             Validate.entity(ImageResourceValidator.INSTANCE, errors, assessment.getImageResource());
             errors.popNestedPath();
         }
+        validateStringLength(errors, 255, assessment.getAge(), "age");
+        validateStringLength(errors, 1000, assessment.getLongDescription(), "longDescription");
+        validateStringLength(errors, 150, assessment.getScores(), "scores");
+        validateStringLength(errors, 150, assessment.getReliability(), "reliability");
+        validateStringLength(errors, 255, assessment.getCategory(), "category");
+        validateStringLength(errors, 500, assessment.getTechnicalManualUrl(), "technicalManualUrl");
+        if (assessment.getPublicationUrls() != null) {
+            for (int i = 0; i < assessment.getPublicationUrls().size(); i++) {
+                validateStringLength(errors, 500, assessment.getPublicationUrls().get(i), "publicationUrls[" + i + "]");
+            }
+        }
+        validateStringLength(errors, 150, assessment.getCaption(), "caption");
+        validateStringLength(errors, 500, assessment.getVideoUrl(), "videoUrl");
+        validateStringLength(errors, 50, assessment.getPhoneOrientation(), "phoneOrientation");
+        validateStringLength(errors, 255, assessment.getAssessmentType(), "assessmentType");
+        validateStringLength(errors, 500, assessment.getMetadataJsonSchemaUrl(), "metadataJsonSchemaUrl");
     }
 }

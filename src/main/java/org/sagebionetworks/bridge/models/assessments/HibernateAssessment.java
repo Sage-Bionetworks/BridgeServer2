@@ -74,7 +74,6 @@ public class HibernateAssessment {
         assessment.setLongDescription(dto.getLongDescription());
         assessment.setScores(dto.getScores());
         assessment.setReliability(dto.getReliability());
-        assessment.setLanguage(dto.getLanguage());
         assessment.setCategory(dto.getCategory());
         assessment.setTechnicalManualUrl(dto.getTechnicalManualUrl());
         assessment.setPublicationUrls(dto.getPublicationUrls());
@@ -151,7 +150,6 @@ public class HibernateAssessment {
     private String longDescription;
     private String scores;
     private String reliability;
-    private String language;
     private String category;
     private String technicalManualUrl;
     @Convert(converter = StringListConverter.class)
@@ -316,12 +314,6 @@ public class HibernateAssessment {
     }
     public void setReliability(String reliability) {
         this.reliability = reliability;
-    }
-    public String getLanguage() {
-        return language;
-    }
-    public void setLanguage(String language) {
-        this.language = language;
     }
     public String getCategory() {
         return category;

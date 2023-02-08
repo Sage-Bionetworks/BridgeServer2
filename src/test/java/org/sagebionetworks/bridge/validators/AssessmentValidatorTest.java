@@ -292,4 +292,85 @@ public class AssessmentValidatorTest extends Mockito {
         // check there's an error with the correct field name
         assertValidatorMessage(validator, assessment, "imageResource.name", CANNOT_BE_BLANK);
     }
+
+    @Test
+    public void stringLengthValidation_age() {
+        assessment.setAge(generateStringOfLength(256));
+        assertValidatorMessage(validator, assessment, "age", getInvalidStringLengthMessage(255));
+    }
+
+    @Test
+    public void stringLengthValidation_longDescription() {
+        assessment.setLongDescription(generateStringOfLength(1001));
+        assertValidatorMessage(validator, assessment, "longDescription", getInvalidStringLengthMessage(1000));
+    }
+
+    @Test
+    public void stringLengthValidation_scores() {
+        assessment.setScores(generateStringOfLength(151));
+        assertValidatorMessage(validator, assessment, "scores", getInvalidStringLengthMessage(150));
+    }
+
+    @Test
+    public void stringLengthValidation_reliability() {
+        assessment.setReliability(generateStringOfLength(151));
+        assertValidatorMessage(validator, assessment, "reliability", getInvalidStringLengthMessage(150));
+    }
+
+    @Test
+    public void stringLengthValidation_category() {
+        assessment.setCategory(generateStringOfLength(256));
+        assertValidatorMessage(validator, assessment, "category", getInvalidStringLengthMessage(255));
+    }
+
+    @Test
+    public void stringLengthValidation_technicalManualUrl() {
+        assessment.setTechnicalManualUrl(generateStringOfLength(501));
+        assertValidatorMessage(validator, assessment, "technicalManualUrl", getInvalidStringLengthMessage(500));
+    }
+
+    @Test
+    public void publicationUrls_emptyIsValid() {
+        when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, assessment.getOwnerId()))
+            .thenReturn(Optional.of(Organization.create()));
+
+        assessment.setPublicationUrls(ImmutableList.of());
+        Validate.entityThrowingException(validator, assessment);
+    }
+
+    @Test
+    public void stringLengthValidation_publicationUrls() {
+        assessment.setPublicationUrls(ImmutableList.of(generateStringOfLength(501)));
+        assertValidatorMessage(validator, assessment, "publicationUrls[0]", getInvalidStringLengthMessage(500));
+    }
+
+    @Test
+    public void stringLengthValidation_caption() {
+        assessment.setCaption(generateStringOfLength(151));
+        assertValidatorMessage(validator, assessment, "caption", getInvalidStringLengthMessage(150));
+    }
+
+    @Test
+    public void stringLengthValidation_videoUrl() {
+        assessment.setVideoUrl(generateStringOfLength(501));
+        assertValidatorMessage(validator, assessment, "videoUrl", getInvalidStringLengthMessage(500));
+    }
+
+    @Test
+    public void stringLengthValidation_phoneOrientation() {
+        assessment.setPhoneOrientation(generateStringOfLength(51));
+        assertValidatorMessage(validator, assessment, "phoneOrientation", getInvalidStringLengthMessage(50));
+    }
+
+    @Test
+    public void stringLengthValidation_assessmentType() {
+        assessment.setAssessmentType(generateStringOfLength(256));
+        assertValidatorMessage(validator, assessment, "assessmentType", getInvalidStringLengthMessage(255));
+    }
+
+    @Test
+    public void stringLengthValidation_metadataJsonSchemaUrl() {
+        assessment.setMetadataJsonSchemaUrl(generateStringOfLength(501));
+        assertValidatorMessage(validator, assessment, "metadataJsonSchemaUrl", getInvalidStringLengthMessage(500));
+    }
 }

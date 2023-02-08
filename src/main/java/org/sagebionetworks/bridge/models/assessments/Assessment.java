@@ -43,7 +43,6 @@ public class Assessment implements BridgeEntity {
         dto.setLongDescription(assessment.getLongDescription());
         dto.setScores(assessment.getScores());
         dto.setReliability(assessment.getReliability());
-        dto.setLanguage(assessment.getLanguage());
         dto.setCategory(assessment.getCategory());
         dto.setTechnicalManualUrl(assessment.getTechnicalManualUrl());
         dto.setPublicationUrls(assessment.getPublicationUrls());
@@ -86,7 +85,6 @@ public class Assessment implements BridgeEntity {
     private String longDescription;
     private String scores;
     private String reliability;
-    private String language;
     private String category;
     private String technicalManualUrl;
     private List<String> publicationUrls;
@@ -261,14 +259,6 @@ public class Assessment implements BridgeEntity {
 
     public void setReliability(String reliability) {
         this.reliability = reliability;
-    }
-
-    public String getLanguage() {
-        return language;
-    }
-
-    public void setLanguage(String language) {
-        this.language = language;
     }
 
     public String getCategory() {

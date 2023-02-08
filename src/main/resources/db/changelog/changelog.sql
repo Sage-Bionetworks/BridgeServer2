@@ -1040,3 +1040,21 @@ ADD INDEX `TimelineMetadata-SessionInstanceGuid` (sessionInstanceGuid);
 
 ALTER TABLE `DemographicsValues`
 ADD COLUMN `invalidity` varchar(512) DEFAULT NULL;
+
+-- changeset bridge:77
+
+ALTER TABLE `Assessments`
+ADD `age` varchar(255) DEFAULT NULL,
+ADD `longDescription` varchar(1000) DEFAULT NULL,
+ADD `scores` varchar(150) DEFAULT NULL,
+ADD `reliability` varchar(150) DEFAULT NULL,
+ADD `category` varchar(255) DEFAULT NULL,
+ADD `technicalManualUrl` varchar(500) DEFAULT NULL,
+ADD `publicationUrls` text DEFAULT NULL,
+ADD `caption` varchar(150) DEFAULT NULL,
+ADD `videoUrl` varchar(500) DEFAULT NULL,
+ADD `phoneOrientation` varchar(50) DEFAULT NULL,
+ADD `soundRequired` boolean DEFAULT NULL,
+ADD `multiPart` boolean DEFAULT NULL,
+ADD `assessmentType` varchar(255) DEFAULT NULL,
+ADD `metadataJsonSchemaUrl` varchar(500) DEFAULT NULL;

@@ -15,11 +15,17 @@ import static org.sagebionetworks.bridge.models.OperatingSystem.ANDROID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNotSame;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
+
+import java.util.List;
+
+import org.apache.commons.lang3.StringUtils;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 import org.testng.annotations.Test;
@@ -27,6 +33,19 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
 public class AssessmentTest {
+    private static final String AGE = "Adult 18+";
+    private static final String LONG_DESCRIPTION = "this is a " + StringUtils.repeat("very ", 20) + "long description";
+    private static final String SCORES = "0";
+    private static final String RELIABILITY = "reliable";
+    private static final String CATEGORY = "cognition";
+    private static final String TECHNICAL_MANUAL_URL = "technical manual url";
+    private static final List<String> PUBLICATION_URLS = ImmutableList.of("publication url 1", "publication url 2");
+    private static final String CAPTION = "caption";
+    private static final String VIDEO_URL = "video url";
+    private static final String PHONE_ORIENTATION = "landscape";
+    private static final String ASSESSMENT_TYPE = "shared_assessment";
+    private static final String METADATA_JSON_SCHEMA_URL = "metadata json schema url";
+
     @Test
     public void revisionDefaultsToOne() {
         Assessment dto = new Assessment();
@@ -66,6 +85,20 @@ public class AssessmentTest {
         imageResource.setModule("sage_survey");
         imageResource.setLabels(LABELS);
         assessment.setImageResource(imageResource);
+        assessment.setAge(AGE);
+        assessment.setLongDescription(LONG_DESCRIPTION);
+        assessment.setScores(SCORES);
+        assessment.setReliability(RELIABILITY);
+        assessment.setCategory(CATEGORY);
+        assessment.setTechnicalManualUrl(TECHNICAL_MANUAL_URL);
+        assessment.setPublicationUrls(PUBLICATION_URLS);
+        assessment.setCaption(CAPTION);
+        assessment.setVideoUrl(VIDEO_URL);
+        assessment.setPhoneOrientation(PHONE_ORIENTATION);
+        assessment.setSoundRequired(null);
+        assessment.setMultiPart(true);
+        assessment.setAssessmentType(ASSESSMENT_TYPE);
+        assessment.setMetadataJsonSchemaUrl(METADATA_JSON_SCHEMA_URL);
 
         Assessment dto = Assessment.create(assessment);
         assertAssessment(dto);
@@ -87,7 +120,7 @@ public class AssessmentTest {
         Assessment dto = createAssessment();
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(dto);
-        assertEquals(node.size(), 21);
+        assertEquals(node.size(), 34);
         assertEquals(node.get("guid").textValue(), GUID);
         assertEquals(node.get("identifier").textValue(), IDENTIFIER);
         assertEquals(node.get("revision").intValue(), 5);
@@ -111,6 +144,21 @@ public class AssessmentTest {
         assertEquals(node.get("imageResource").get("labels").get(1).get("lang").textValue(), LABELS.get(1).getLang());
         assertEquals(node.get("imageResource").get("labels").get(1).get("value").textValue(), LABELS.get(1).getValue());
         assertEquals(node.get("imageResource").get("type").textValue(), "ImageResource");
+        assertEquals(node.get("age").textValue(), AGE);
+        assertEquals(node.get("longDescription").textValue(), LONG_DESCRIPTION);
+        assertEquals(node.get("scores").textValue(), SCORES);
+        assertEquals(node.get("reliability").textValue(), RELIABILITY);
+        assertEquals(node.get("category").textValue(), CATEGORY);
+        assertEquals(node.get("technicalManualUrl").textValue(), TECHNICAL_MANUAL_URL);
+        assertEquals(node.get("publicationUrls").get(0).textValue(), PUBLICATION_URLS.get(0));
+        assertEquals(node.get("publicationUrls").get(1).textValue(), PUBLICATION_URLS.get(1));
+        assertEquals(node.get("caption").textValue(), CAPTION);
+        assertEquals(node.get("videoUrl").textValue(), VIDEO_URL);
+        assertEquals(node.get("phoneOrientation").textValue(), PHONE_ORIENTATION);
+        assertNull(node.get("soundRequired"));
+        assertTrue(node.get("multiPart").booleanValue());
+        assertEquals(node.get("assessmentType").textValue(), ASSESSMENT_TYPE);
+        assertEquals(node.get("metadataJsonSchemaUrl").textValue(), METADATA_JSON_SCHEMA_URL);
         assertEquals(node.get("type").textValue(), "Assessment");
         
         ArrayNode tags = (ArrayNode)node.get("tags");
@@ -165,6 +213,20 @@ public class AssessmentTest {
         imageResource.setModule("sage_survey");
         imageResource.setLabels(LABELS);
         dto.setImageResource(imageResource);
+        dto.setAge(AGE);
+        dto.setLongDescription(LONG_DESCRIPTION);
+        dto.setScores(SCORES);
+        dto.setReliability(RELIABILITY);
+        dto.setCategory(CATEGORY);
+        dto.setTechnicalManualUrl(TECHNICAL_MANUAL_URL);
+        dto.setPublicationUrls(PUBLICATION_URLS);
+        dto.setCaption(CAPTION);
+        dto.setVideoUrl(VIDEO_URL);
+        dto.setPhoneOrientation(PHONE_ORIENTATION);
+        dto.setSoundRequired(null);
+        dto.setMultiPart(true);
+        dto.setAssessmentType(ASSESSMENT_TYPE);
+        dto.setMetadataJsonSchemaUrl(METADATA_JSON_SCHEMA_URL);
         return dto;
     }
     
@@ -199,5 +261,19 @@ public class AssessmentTest {
         assertEquals(assessment.getImageResource().getLabels().get(0).getValue(), LABELS.get(0).getValue());
         assertEquals(assessment.getImageResource().getLabels().get(1).getLang(), LABELS.get(1).getLang());
         assertEquals(assessment.getImageResource().getLabels().get(1).getValue(), LABELS.get(1).getValue());
+        assertEquals(assessment.getAge(), AGE);
+        assertEquals(assessment.getLongDescription(), LONG_DESCRIPTION);
+        assertEquals(assessment.getScores(), SCORES);
+        assertEquals(assessment.getReliability(), RELIABILITY);
+        assertEquals(assessment.getCategory(), CATEGORY);
+        assertEquals(assessment.getTechnicalManualUrl(), TECHNICAL_MANUAL_URL);
+        assertEquals(assessment.getPublicationUrls(), PUBLICATION_URLS);
+        assertEquals(assessment.getCaption(), CAPTION);
+        assertEquals(assessment.getVideoUrl(), VIDEO_URL);
+        assertEquals(assessment.getPhoneOrientation(), PHONE_ORIENTATION);
+        assertNull(assessment.getSoundRequired());
+        assertEquals(assessment.getMultiPart().booleanValue(), true);
+        assertEquals(assessment.getAssessmentType(), ASSESSMENT_TYPE);
+        assertEquals(assessment.getMetadataJsonSchemaUrl(), METADATA_JSON_SCHEMA_URL);
     }
 }
