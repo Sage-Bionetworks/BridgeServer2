@@ -2,29 +2,27 @@ package org.sagebionetworks.bridge.json;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.sagebionetworks.bridge.models.studies.Demographic;
-import org.sagebionetworks.bridge.models.studies.DemographicUser;
-import org.sagebionetworks.bridge.models.studies.DemographicUserAssessment;
-import org.sagebionetworks.bridge.models.studies.DemographicValue;
+import org.sagebionetworks.bridge.models.demographics.Demographic;
+import org.sagebionetworks.bridge.models.demographics.DemographicUser;
+import org.sagebionetworks.bridge.models.demographics.DemographicUserAssessment;
+import org.sagebionetworks.bridge.models.demographics.DemographicValue;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /**
  * Class used to deserialize from the mobile client v2 assessment JSON schema
  * draft 7
  * (https://github.com/Sage-Bionetworks/mobile-client-json/blob/00320defcb5c67873c501b5d99201fed6fdcd0e6/schemas/v2/AssessmentResultObject.json)
- * and convert to the "normal" format. Throws JsonMappingException when the
- * types are incorrect, but generally allows empty values.
+ * and convert to the "normal" format.
  */
 public class DemographicUserAssessmentDeserializer extends JsonDeserializer<DemographicUserAssessment> {
     @Override
@@ -33,95 +31,121 @@ public class DemographicUserAssessmentDeserializer extends JsonDeserializer<Demo
         Map<String, Demographic> demographics = new ConcurrentHashMap<>();
         DemographicUser demographicUser = new DemographicUser(null, null, null, null, demographics);
         DemographicUserAssessment demographicUserAssessment = new DemographicUserAssessment(demographicUser);
-        JsonNode tree = p.readValueAsTree();
-        if (!tree.isObject()) {
-            throw new JsonMappingException(p, "assessment should be an object");
-        }
-        if (!tree.hasNonNull("stepHistory")) {
-            return demographicUserAssessment;
-        }
-        JsonNode stepHistory = tree.get("stepHistory");
-        if (!stepHistory.isArray()) {
-            throw new JsonMappingException(p, "stepHistory field value should be an array");
-        }
-        JsonNode resultCollection = null;
-        for (JsonNode element : stepHistory) {
-            if (element.hasNonNull("children")) {
-                resultCollection = element.get("children");
-            }
-        }
-        if (resultCollection == null) {
-            return demographicUserAssessment;
-        }
-        if (!resultCollection.isArray()) {
-            throw new JsonMappingException(p, "children field value should be an array");
-        }
-        for (JsonNode answer : resultCollection) {
-            List<DemographicValue> demographicValues = new ArrayList<>();
-            Demographic demographic = new Demographic(null, demographicUser, null, true, demographicValues, null);
-            if (!answer.isObject()) {
-                throw new JsonMappingException(p, "each element in array children should be an object");
-            }
 
-            // get units from answerType
-            JsonNode answerType = answer.get("answerType");
-            if (answerType != null && answerType.hasNonNull("unit") && answerType.get("unit").isTextual()) {
-                demographic.setUnits(answerType.get("unit").textValue());
-            }
+        AssessmentResultObject assessmentResultObject = p.readValueAs(AssessmentResultObject.class);
+        if (assessmentResultObject.getStepHistory() != null) {
+            for (CollectionResultObject step : assessmentResultObject.getStepHistory()) {
+                if (step != null && step.getChildren() != null) {
+                    for (AnswerResultObject answer : step.getChildren()) {
+                        if (answer != null && answer.getIdentifier() != null && answer.getValue() != null) {
+                            JsonNode value = answer.getValue();
+                            List<DemographicValue> demographicValues = new ArrayList<>();
+                            String categoryName = answer.getIdentifier();
+                            Demographic demographic = new Demographic(null, demographicUser, categoryName, true,
+                                    demographicValues, null);
+                            demographics.put(categoryName, demographic);
 
-            // get identifier (categoryName)
-            if (!answer.hasNonNull("identifier")) {
-                throw new JsonMappingException(p,
-                        "each object in array children should have non-null field named identifier");
-            }
-            JsonNode identifier = answer.get("identifier");
-            if (!identifier.isTextual()) {
-                throw new JsonMappingException(p, "field identifier should have value of type string");
-            }
-            String categoryName = identifier.textValue();
-            demographic.setCategoryName(categoryName);
-
-            // get value
-            if (!answer.hasNonNull("value")) {
-                throw new JsonMappingException(p,
-                        "each object in array children should have non-null field named value");
-            }
-            JsonNode value = answer.get("value");
-            if (value.isObject()) {
-                for (Iterator<Map.Entry<String, JsonNode>> iter = value.fields(); iter.hasNext();) {
-                    Map.Entry<String, JsonNode> entry = iter.next();
-                    if (!entry.getValue().isValueNode()) {
-                        throw new JsonMappingException(p,
-                                "when value is type object, none of its values should be container types");
+                            if (value.isObject()) {
+                                Map<String, String> valueMap = BridgeObjectMapper.get()
+                                        .readerFor(new TypeReference<Map<String, String>>() {
+                                        }).readValue(value);
+                                for (Map.Entry<String, String> entry : valueMap.entrySet()) {
+                                    demographicValues.add(new DemographicValue(entry.getKey(), entry.getValue()));
+                                }
+                                demographic.setMultipleSelect(true);
+                            } else if (value.isArray()) {
+                                List<String> valueArray = BridgeObjectMapper.get()
+                                        .readerFor(new TypeReference<List<String>>() {
+                                        }).readValue(value);
+                                for (String valueString : valueArray) {
+                                    demographicValues.add(new DemographicValue(valueString));
+                                }
+                                demographic.setMultipleSelect(true);
+                            } else {
+                                DemographicValue singleValue = BridgeObjectMapper.get().treeToValue(value,
+                                        DemographicValue.class);
+                                if (singleValue == null) {
+                                    // if it's null store the string null
+                                    singleValue = new DemographicValue((String) null);
+                                }
+                                demographicValues.add(singleValue);
+                                demographic.setMultipleSelect(false);
+                            }
+                            if (answer.getAnswerType() != null && answer.getAnswerType().getUnit() != null) {
+                                demographic.setUnits(answer.getAnswerType().getUnit());
+                            }
+                        }
                     }
-                    demographicValues.add(new DemographicValue(entry.getKey(), valueNodeToString(entry.getValue())));
                 }
-                demographic.setMultipleSelect(true);
-            } else if (value.isArray()) {
-                for (JsonNode element : value) {
-                    if (!element.isValueNode()) {
-                        throw new JsonMappingException(p,
-                                "when value is type array, none of its elements should be container types");
-                    }
-                    demographicValues.add(new DemographicValue(valueNodeToString(element)));
-                }
-                demographic.setMultipleSelect(true);
-            } else {
-                demographicValues.add(new DemographicValue(valueNodeToString(value)));
-                demographic.setMultipleSelect(false);
             }
-
-            demographics.put(categoryName, demographic);
         }
+
         return demographicUserAssessment;
     }
 
-    private String valueNodeToString(JsonNode value) throws JsonProcessingException {
-        if (value.isTextual()) {
-            // no quotations around the string
-            return value.textValue();
-        } else {
-            return BridgeObjectMapper.get().writeValueAsString(value);
+    public static class AssessmentResultObject {
+        private List<CollectionResultObject> stepHistory;
+
+        public List<CollectionResultObject> getStepHistory() {
+            return stepHistory;
+        }
+
+        public void setStepHistory(List<CollectionResultObject> stepHistory) {
+            this.stepHistory = stepHistory;
+        }
+    }
+
+    public static class CollectionResultObject {
+        private List<AnswerResultObject> children;
+
+        public List<AnswerResultObject> getChildren() {
+            return children;
+        }
+
+        public void setChildren(List<AnswerResultObject> children) {
+            this.children = children;
+        }
+    }
+
+    public static class AnswerResultObject {
+        private AnswerTypeMeasurement answerType;
+        private String identifier;
+        private JsonNode value;
+
+        public AnswerTypeMeasurement getAnswerType() {
+            return answerType;
+        }
+
+        public void setAnswerType(AnswerTypeMeasurement answerType) {
+            this.answerType = answerType;
+        }
+
+        public String getIdentifier() {
+            return identifier;
+        }
+
+        public void setIdentifier(String identifier) {
+            this.identifier = identifier;
+        }
+
+        public JsonNode getValue() {
+            return value;
+        }
+
+        public void setValue(JsonNode value) {
+            this.value = value;
+        }
+    }
+
+    public static class AnswerTypeMeasurement {
+        private String unit;
+
+        public String getUnit() {
+            return unit;
+        }
+
+        public void setUnit(String unit) {
+            this.unit = unit;
         }
     }
 }

@@ -8,7 +8,7 @@ import javax.annotation.Resource;
 
 import org.sagebionetworks.bridge.dao.DemographicValidationDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.models.studies.DemographicValuesValidationConfig;
+import org.sagebionetworks.bridge.models.demographics.DemographicValuesValidationConfig;
 import org.springframework.stereotype.Component;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;

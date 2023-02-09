@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import org.sagebionetworks.bridge.json.BridgeTypeName;
-import org.sagebionetworks.bridge.models.studies.DemographicValuesValidationConfig;
+import org.sagebionetworks.bridge.models.demographics.DemographicValuesValidationConfig;
 import org.sagebionetworks.bridge.validators.DemographicValuesValidationType;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;

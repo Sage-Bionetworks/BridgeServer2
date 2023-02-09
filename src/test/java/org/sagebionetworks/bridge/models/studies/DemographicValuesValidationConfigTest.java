@@ -5,6 +5,7 @@ import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.demographics.DemographicValuesValidationConfig;
 import org.sagebionetworks.bridge.validators.DemographicValuesValidationType;
 import org.testng.annotations.Test;
 

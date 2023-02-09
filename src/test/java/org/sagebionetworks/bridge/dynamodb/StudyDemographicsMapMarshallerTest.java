@@ -5,9 +5,9 @@ import static org.testng.Assert.assertEquals;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.sagebionetworks.bridge.models.studies.Demographic;
-import org.sagebionetworks.bridge.models.studies.DemographicUser;
-import org.sagebionetworks.bridge.models.studies.DemographicValue;
+import org.sagebionetworks.bridge.models.demographics.Demographic;
+import org.sagebionetworks.bridge.models.demographics.DemographicUser;
+import org.sagebionetworks.bridge.models.demographics.DemographicValue;
 import org.testng.annotations.Test;
 
 import com.google.common.collect.ImmutableList;

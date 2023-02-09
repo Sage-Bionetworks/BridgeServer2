@@ -9,8 +9,8 @@ import java.util.Set;
 import org.apache.commons.lang3.LocaleUtils;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.studies.Demographic;
-import org.sagebionetworks.bridge.models.studies.DemographicValue;
+import org.sagebionetworks.bridge.models.demographics.Demographic;
+import org.sagebionetworks.bridge.models.demographics.DemographicValue;
 import org.springframework.validation.Errors;
 
 import com.fasterxml.jackson.core.JsonParser;
