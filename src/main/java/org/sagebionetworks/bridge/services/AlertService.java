@@ -53,12 +53,22 @@ public class AlertService {
         checkNotNull(alert.getUserId());
         checkNotNull(alert.getCategory());
 
+        // if account does not exist we cannot create an alert which references that
+        // account
+        //
+        // this can happen, for example, with the new enrollment alert, where
+        // enrollments can be added to the account before the account is created
+        if (!getAccount(alert.getAppId(), alert.getUserId()).isPresent()) {
+            return;
+        }
+
+        // alert already exists: overwrite
         Optional<Alert> existingAlert = alertDao.getAlert(alert.getStudyId(), alert.getAppId(), alert.getUserId(),
                 alert.getCategory());
         if (existingAlert.isPresent()) {
-            // alert already exists: overwrite
             alertDao.deleteAlert(existingAlert.get());
         }
+
         alert.setId(generateGuid());
         alert.setCreatedOn(DateUtils.getCurrentDateTime());
         alertDao.createAlert(alert);
@@ -205,10 +215,17 @@ public class AlertService {
      * alert's userId.
      */
     private void injectAccountRef(Alert alert) {
-        AccountId accountId = BridgeUtils.parseAccountId(alert.getAppId(), alert.getUserId());
-        Account account = accountService.getAccount(accountId)
+        Account account = getAccount(alert.getAppId(), alert.getUserId())
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
         alert.setParticipant(new AccountRef(account, alert.getStudyId()));
+    }
+
+    /**
+     * Attempts to fetch an account
+     */
+    private Optional<Account> getAccount(String appId, String userId) {
+        AccountId accountId = BridgeUtils.parseAccountId(appId, userId);
+        return accountService.getAccount(accountId);
     }
 
     /**
