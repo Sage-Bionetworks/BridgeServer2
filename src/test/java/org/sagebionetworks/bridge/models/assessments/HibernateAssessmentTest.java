@@ -10,29 +10,21 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_OWNER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TAGS;
 import static org.sagebionetworks.bridge.models.OperatingSystem.ANDROID;
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
-import java.util.List;
-
-import org.apache.commons.lang3.StringUtils;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.testng.annotations.Test;
 
-import com.google.common.collect.ImmutableList;
+import com.fasterxml.jackson.databind.JsonNode;
 
 public class HibernateAssessmentTest {
-    private static final String AGE = "Adult 18+";
-    private static final String LONG_DESCRIPTION = "this is a " + StringUtils.repeat("very ", 20) + "long description";
-    private static final String SCORES = "0";
-    private static final String RELIABILITY = "reliable";
+    private static final String FRAMEWORK_IDENTIFIER = "framework-identifier";
+    private static final String JSON_SCHEMA_URL = "json schema url";
     private static final String CATEGORY = "cognition";
-    private static final String TECHNICAL_MANUAL_URL = "technical manual url";
-    private static final List<String> PUBLICATION_URLS = ImmutableList.of("publication url 1", "publication url 2");
-    private static final String CAPTION = "caption";
-    private static final String VIDEO_URL = "video url";
-    private static final String PHONE_ORIENTATION = "landscape";
-    private static final String ASSESSMENT_TYPE = "shared_assessment";
-    private static final String METADATA_JSON_SCHEMA_URL = "metadata json schema url";
+    private static final Integer MINAGE = 10;
+    private static final Integer MAXAGE = 17;
+    private static final JsonNode ADDITIONAL_METADATA = BridgeObjectMapper.get().createObjectNode()
+            .put("key1", "value1").put("key2", "value2");
 
     @Test
     public void revisionDefaultsToOne() {
@@ -78,20 +70,12 @@ public class HibernateAssessmentTest {
         imageResource.setModule("sage_survey");
         imageResource.setLabels(LABELS);
         assessment.setImageResource(imageResource);
-        assessment.setAge(AGE);
-        assessment.setLongDescription(LONG_DESCRIPTION);
-        assessment.setScores(SCORES);
-        assessment.setReliability(RELIABILITY);
+        assessment.setFrameworkIdentifier(FRAMEWORK_IDENTIFIER);
+        assessment.setJsonSchemaUrl(JSON_SCHEMA_URL);
         assessment.setCategory(CATEGORY);
-        assessment.setTechnicalManualUrl(TECHNICAL_MANUAL_URL);
-        assessment.setPublicationUrls(PUBLICATION_URLS);
-        assessment.setCaption(CAPTION);
-        assessment.setVideoUrl(VIDEO_URL);
-        assessment.setPhoneOrientation(PHONE_ORIENTATION);
-        assessment.setSoundRequired(null);
-        assessment.setMultiPart(true);
-        assessment.setAssessmentType(ASSESSMENT_TYPE);
-        assessment.setMetadataJsonSchemaUrl(METADATA_JSON_SCHEMA_URL);
+        assessment.setMinAge(MINAGE);
+        assessment.setMaxAge(MAXAGE);
+        assessment.setAdditionalMetadata(ADDITIONAL_METADATA);
         return assessment;
     }
     
@@ -120,19 +104,11 @@ public class HibernateAssessmentTest {
         assertEquals(assessment.getImageResource().getLabels().get(0).getValue(), LABELS.get(0).getValue());
         assertEquals(assessment.getImageResource().getLabels().get(1).getLang(), LABELS.get(1).getLang());
         assertEquals(assessment.getImageResource().getLabels().get(1).getValue(), LABELS.get(1).getValue());
-        assertEquals(assessment.getAge(), AGE);
-        assertEquals(assessment.getLongDescription(), LONG_DESCRIPTION);
-        assertEquals(assessment.getScores(), SCORES);
-        assertEquals(assessment.getReliability(), RELIABILITY);
+        assertEquals(assessment.getFrameworkIdentifier(), FRAMEWORK_IDENTIFIER);
+        assertEquals(assessment.getJsonSchemaUrl(), JSON_SCHEMA_URL);
         assertEquals(assessment.getCategory(), CATEGORY);
-        assertEquals(assessment.getTechnicalManualUrl(), TECHNICAL_MANUAL_URL);
-        assertEquals(assessment.getPublicationUrls(), PUBLICATION_URLS);
-        assertEquals(assessment.getCaption(), CAPTION);
-        assertEquals(assessment.getVideoUrl(), VIDEO_URL);
-        assertEquals(assessment.getPhoneOrientation(), PHONE_ORIENTATION);
-        assertNull(assessment.getSoundRequired());
-        assertEquals(assessment.getMultiPart().booleanValue(), true);
-        assertEquals(assessment.getAssessmentType(), ASSESSMENT_TYPE);
-        assertEquals(assessment.getMetadataJsonSchemaUrl(), METADATA_JSON_SCHEMA_URL);
+        assertEquals(assessment.getMinAge(), MINAGE);
+        assertEquals(assessment.getMaxAge(), MAXAGE);
+        assertEquals(assessment.getAdditionalMetadata(), ADDITIONAL_METADATA);
     }
 }

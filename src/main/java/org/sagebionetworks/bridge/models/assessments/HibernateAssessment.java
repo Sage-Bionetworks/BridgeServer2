@@ -26,14 +26,16 @@ import javax.persistence.Version;
 import org.joda.time.DateTime;
 
 import org.sagebionetworks.bridge.hibernate.DateTimeToLongAttributeConverter;
+import org.sagebionetworks.bridge.hibernate.JsonNodeAttributeConverter;
 import org.sagebionetworks.bridge.hibernate.LabelListConverter;
-import org.sagebionetworks.bridge.hibernate.StringListConverter;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.hibernate.ColorSchemeConverter;
 import org.sagebionetworks.bridge.hibernate.CustomizationFieldsConverter;
 import org.sagebionetworks.bridge.models.Label;
 import org.sagebionetworks.bridge.models.Tag;
 import org.sagebionetworks.bridge.models.assessments.config.PropertyInfo;
+
+import com.fasterxml.jackson.databind.JsonNode;
 
 /**
  * Persistence object for a record about an assessment (task, survey, measure) in 
@@ -70,20 +72,12 @@ public class HibernateAssessment {
         assessment.setDeleted(dto.isDeleted());
         assessment.setVersion(dto.getVersion());
         assessment.setImageResource(dto.getImageResource());
-        assessment.setAge(dto.getAge());
-        assessment.setLongDescription(dto.getLongDescription());
-        assessment.setScores(dto.getScores());
-        assessment.setReliability(dto.getReliability());
+        assessment.setFrameworkIdentifier(dto.getFrameworkIdentifier());
+        assessment.setJsonSchemaUrl(dto.getJsonSchemaUrl());
         assessment.setCategory(dto.getCategory());
-        assessment.setTechnicalManualUrl(dto.getTechnicalManualUrl());
-        assessment.setPublicationUrls(dto.getPublicationUrls());
-        assessment.setCaption(dto.getCaption());
-        assessment.setVideoUrl(dto.getVideoUrl());
-        assessment.setPhoneOrientation(dto.getPhoneOrientation());
-        assessment.setSoundRequired(dto.getSoundRequired());
-        assessment.setMultiPart(dto.getMultiPart());
-        assessment.setAssessmentType(dto.getAssessmentType());
-        assessment.setMetadataJsonSchemaUrl(dto.getMetadataJsonSchemaUrl());
+        assessment.setMinAge(dto.getMinAge());
+        assessment.setMaxAge(dto.getMaxAge());
+        assessment.setAdditionalMetadata(dto.getAdditionalMetadata());
         return assessment;
     }
 
@@ -146,21 +140,13 @@ public class HibernateAssessment {
     })
     private ImageResource imageResource;
 
-    private String age;
-    private String longDescription;
-    private String scores;
-    private String reliability;
+    private String frameworkIdentifier;
+    private String jsonSchemaUrl;
     private String category;
-    private String technicalManualUrl;
-    @Convert(converter = StringListConverter.class)
-    private List<String> publicationUrls;
-    private String caption;
-    private String videoUrl;
-    private String phoneOrientation;
-    private Boolean soundRequired;
-    private Boolean multiPart;
-    private String assessmentType;
-    private String metadataJsonSchemaUrl;
+    private Integer minAge;
+    private Integer maxAge;
+    @Convert(converter = JsonNodeAttributeConverter.class)
+    private JsonNode additionalMetadata;
 
     public String getGuid() {
         return guid;
@@ -291,29 +277,17 @@ public class HibernateAssessment {
     public void setImageResource(ImageResource imageResource) {
         this.imageResource = imageResource;
     }
-    public String getAge() {
-        return age;
+    public String getFrameworkIdentifier() {
+        return frameworkIdentifier;
     }
-    public void setAge(String age) {
-        this.age = age;
+    public void setFrameworkIdentifier(String frameworkIdentifier) {
+        this.frameworkIdentifier = frameworkIdentifier;
     }
-    public String getLongDescription() {
-        return longDescription;
+    public String getJsonSchemaUrl() {
+        return jsonSchemaUrl;
     }
-    public void setLongDescription(String longDescription) {
-        this.longDescription = longDescription;
-    }
-    public String getScores() {
-        return scores;
-    }
-    public void setScores(String scores) {
-        this.scores = scores;
-    }
-    public String getReliability() {
-        return reliability;
-    }
-    public void setReliability(String reliability) {
-        this.reliability = reliability;
+    public void setJsonSchemaUrl(String jsonSchemaUrl) {
+        this.jsonSchemaUrl = jsonSchemaUrl;
     }
     public String getCategory() {
         return category;
@@ -321,59 +295,23 @@ public class HibernateAssessment {
     public void setCategory(String category) {
         this.category = category;
     }
-    public String getTechnicalManualUrl() {
-        return technicalManualUrl;
+    public Integer getMinAge() {
+        return minAge;
     }
-    public void setTechnicalManualUrl(String technicalManualUrl) {
-        this.technicalManualUrl = technicalManualUrl;
+    public void setMinAge(Integer minAge) {
+        this.minAge = minAge;
     }
-    public List<String> getPublicationUrls() {
-        return publicationUrls;
+    public Integer getMaxAge() {
+        return maxAge;
     }
-    public void setPublicationUrls(List<String> publicationUrls) {
-        this.publicationUrls = publicationUrls;
+    public void setMaxAge(Integer maxAge) {
+        this.maxAge = maxAge;
     }
-    public String getCaption() {
-        return caption;
+    public JsonNode getAdditionalMetadata() {
+        return additionalMetadata;
     }
-    public void setCaption(String caption) {
-        this.caption = caption;
-    }
-    public String getVideoUrl() {
-        return videoUrl;
-    }
-    public void setVideoUrl(String videoUrl) {
-        this.videoUrl = videoUrl;
-    }
-    public String getPhoneOrientation() {
-        return phoneOrientation;
-    }
-    public void setPhoneOrientation(String phoneOrientation) {
-        this.phoneOrientation = phoneOrientation;
-    }
-    public Boolean getSoundRequired() {
-        return soundRequired;
-    }
-    public void setSoundRequired(Boolean soundRequired) {
-        this.soundRequired = soundRequired;
-    }
-    public Boolean getMultiPart() {
-        return multiPart;
-    }
-    public void setMultiPart(Boolean multiPart) {
-        this.multiPart = multiPart;
-    }
-    public String getAssessmentType() {
-        return assessmentType;
-    }
-    public void setAssessmentType(String assessmentType) {
-        this.assessmentType = assessmentType;
-    }
-    public String getMetadataJsonSchemaUrl() {
-        return metadataJsonSchemaUrl;
-    }
-    public void setMetadataJsonSchemaUrl(String metadataJsonSchemaUrl) {
-        this.metadataJsonSchemaUrl = metadataJsonSchemaUrl;
+    public void setAdditionalMetadata(JsonNode additionalMetadata) {
+        this.additionalMetadata = additionalMetadata;
     }
 }
 

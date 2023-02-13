@@ -6,6 +6,7 @@ import static org.sagebionetworks.bridge.validators.Validate.BRIDGE_EVENT_ID_ERR
 import static org.sagebionetworks.bridge.validators.Validate.BRIDGE_EVENT_ID_PATTERN;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NEGATIVE;
+import static org.sagebionetworks.bridge.validators.Validate.INVALID_TYPE;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateColorScheme;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateJsonLength;
@@ -124,21 +125,22 @@ public class AssessmentValidator implements Validator {
             Validate.entity(ImageResourceValidator.INSTANCE, errors, assessment.getImageResource());
             errors.popNestedPath();
         }
-        validateStringLength(errors, 255, assessment.getAge(), "age");
-        validateStringLength(errors, 1000, assessment.getLongDescription(), "longDescription");
-        validateStringLength(errors, 150, assessment.getScores(), "scores");
-        validateStringLength(errors, 150, assessment.getReliability(), "reliability");
+        validateStringLength(errors, 255, assessment.getFrameworkIdentifier(), "frameworkIdentifier");
+        validateStringLength(errors, 500, assessment.getJsonSchemaUrl(), "jsonSchemaUrl");
         validateStringLength(errors, 255, assessment.getCategory(), "category");
-        validateStringLength(errors, 500, assessment.getTechnicalManualUrl(), "technicalManualUrl");
-        if (assessment.getPublicationUrls() != null) {
-            for (int i = 0; i < assessment.getPublicationUrls().size(); i++) {
-                validateStringLength(errors, 500, assessment.getPublicationUrls().get(i), "publicationUrls[" + i + "]");
-            }
+        if (assessment.getMinAge() != null && assessment.getMinAge() < 0) {
+            errors.rejectValue("minAge", "cannot be less than 0");
         }
-        validateStringLength(errors, 150, assessment.getCaption(), "caption");
-        validateStringLength(errors, 500, assessment.getVideoUrl(), "videoUrl");
-        validateStringLength(errors, 50, assessment.getPhoneOrientation(), "phoneOrientation");
-        validateStringLength(errors, 255, assessment.getAssessmentType(), "assessmentType");
-        validateStringLength(errors, 500, assessment.getMetadataJsonSchemaUrl(), "metadataJsonSchemaUrl");
+        if (assessment.getMaxAge() != null && assessment.getMaxAge() < 0) {
+            errors.rejectValue("maxAge", "cannot be less than 0");
+        }
+        if (assessment.getMinAge() != null && assessment.getMaxAge() != null
+                && assessment.getMinAge() > assessment.getMaxAge()) {
+            errors.rejectValue("minAge and maxAge", "minAge cannot be larger than maxAge");
+        }
+        if (assessment.getAdditionalMetadata() != null && !assessment.getAdditionalMetadata().isObject()) {
+            errors.rejectValue("additionalMetadata", INVALID_TYPE);
+        }
+        validateJsonLength(errors, TEXT_SIZE, assessment.getAdditionalMetadata(), "additionalMetadata");
     }
 }

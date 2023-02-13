@@ -14,6 +14,8 @@ import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.Label;
 import org.sagebionetworks.bridge.models.assessments.config.PropertyInfo;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
 public class Assessment implements BridgeEntity {
     
     public static Assessment create(HibernateAssessment assessment) {
@@ -39,20 +41,12 @@ public class Assessment implements BridgeEntity {
         dto.setDeleted(assessment.isDeleted());
         dto.setVersion(assessment.getVersion());
         dto.setImageResource(assessment.getImageResource());
-        dto.setAge(assessment.getAge());
-        dto.setLongDescription(assessment.getLongDescription());
-        dto.setScores(assessment.getScores());
-        dto.setReliability(assessment.getReliability());
+        dto.setFrameworkIdentifier(assessment.getFrameworkIdentifier());
+        dto.setJsonSchemaUrl(assessment.getJsonSchemaUrl());
         dto.setCategory(assessment.getCategory());
-        dto.setTechnicalManualUrl(assessment.getTechnicalManualUrl());
-        dto.setPublicationUrls(assessment.getPublicationUrls());
-        dto.setCaption(assessment.getCaption());
-        dto.setVideoUrl(assessment.getVideoUrl());
-        dto.setPhoneOrientation(assessment.getPhoneOrientation());
-        dto.setSoundRequired(assessment.getSoundRequired());
-        dto.setMultiPart(assessment.getMultiPart());
-        dto.setAssessmentType(assessment.getAssessmentType());
-        dto.setMetadataJsonSchemaUrl(assessment.getMetadataJsonSchemaUrl());
+        dto.setMinAge(assessment.getMinAge());
+        dto.setMaxAge(assessment.getMaxAge());
+        dto.setAdditionalMetadata(assessment.getAdditionalMetadata());
         return dto;
     }
     
@@ -81,20 +75,12 @@ public class Assessment implements BridgeEntity {
     private boolean deleted;
     private long version;
     private ImageResource imageResource;
-    private String age;
-    private String longDescription;
-    private String scores;
-    private String reliability;
+    private String frameworkIdentifier;
+    private String jsonSchemaUrl;
     private String category;
-    private String technicalManualUrl;
-    private List<String> publicationUrls;
-    private String caption;
-    private String videoUrl;
-    private String phoneOrientation;
-    private Boolean soundRequired;
-    private Boolean multiPart;
-    private String assessmentType;
-    private String metadataJsonSchemaUrl;
+    private Integer minAge;
+    private Integer maxAge;
+    private JsonNode additionalMetadata;
 
     public String getAppId() {
         return appId;
@@ -229,36 +215,20 @@ public class Assessment implements BridgeEntity {
         this.imageResource = imageResource;
     }
 
-    public String getAge() {
-        return age;
+    public String getFrameworkIdentifier() {
+        return frameworkIdentifier;
     }
 
-    public void setAge(String age) {
-        this.age = age;
+    public void setFrameworkIdentifier(String frameworkIdentifier) {
+        this.frameworkIdentifier = frameworkIdentifier;
     }
 
-    public String getLongDescription() {
-        return longDescription;
+    public String getJsonSchemaUrl() {
+        return jsonSchemaUrl;
     }
 
-    public void setLongDescription(String longDescription) {
-        this.longDescription = longDescription;
-    }
-
-    public String getScores() {
-        return scores;
-    }
-
-    public void setScores(String scores) {
-        this.scores = scores;
-    }
-
-    public String getReliability() {
-        return reliability;
-    }
-
-    public void setReliability(String reliability) {
-        this.reliability = reliability;
+    public void setJsonSchemaUrl(String jsonSchemaUrl) {
+        this.jsonSchemaUrl = jsonSchemaUrl;
     }
 
     public String getCategory() {
@@ -269,75 +239,27 @@ public class Assessment implements BridgeEntity {
         this.category = category;
     }
 
-    public String getTechnicalManualUrl() {
-        return technicalManualUrl;
+    public Integer getMinAge() {
+        return minAge;
     }
 
-    public void setTechnicalManualUrl(String technicalManualUrl) {
-        this.technicalManualUrl = technicalManualUrl;
+    public void setMinAge(Integer minAge) {
+        this.minAge = minAge;
     }
 
-    public List<String> getPublicationUrls() {
-        return publicationUrls;
+    public Integer getMaxAge() {
+        return maxAge;
     }
 
-    public void setPublicationUrls(List<String> publicationUrls) {
-        this.publicationUrls = publicationUrls;
+    public void setMaxAge(Integer maxAge) {
+        this.maxAge = maxAge;
     }
 
-    public String getCaption() {
-        return caption;
+    public JsonNode getAdditionalMetadata() {
+        return additionalMetadata;
     }
 
-    public void setCaption(String caption) {
-        this.caption = caption;
-    }
-
-    public String getVideoUrl() {
-        return videoUrl;
-    }
-
-    public void setVideoUrl(String videoUrl) {
-        this.videoUrl = videoUrl;
-    }
-
-    public String getPhoneOrientation() {
-        return phoneOrientation;
-    }
-
-    public void setPhoneOrientation(String phoneOrientation) {
-        this.phoneOrientation = phoneOrientation;
-    }
-
-    public Boolean getSoundRequired() {
-        return soundRequired;
-    }
-
-    public void setSoundRequired(Boolean soundRequired) {
-        this.soundRequired = soundRequired;
-    }
-
-    public Boolean getMultiPart() {
-        return multiPart;
-    }
-
-    public void setMultiPart(Boolean multiPart) {
-        this.multiPart = multiPart;
-    }
-
-    public String getAssessmentType() {
-        return assessmentType;
-    }
-
-    public void setAssessmentType(String assessmentType) {
-        this.assessmentType = assessmentType;
-    }
-
-    public String getMetadataJsonSchemaUrl() {
-        return metadataJsonSchemaUrl;
-    }
-
-    public void setMetadataJsonSchemaUrl(String metadataJsonSchemaUrl) {
-        this.metadataJsonSchemaUrl = metadataJsonSchemaUrl;
+    public void setAdditionalMetadata(JsonNode additionalMetadata) {
+        this.additionalMetadata = additionalMetadata;
     }
 }

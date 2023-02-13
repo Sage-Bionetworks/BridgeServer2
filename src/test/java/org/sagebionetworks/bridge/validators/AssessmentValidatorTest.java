@@ -10,6 +10,7 @@ import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.getInvali
 import static org.sagebionetworks.bridge.validators.Validate.BRIDGE_EVENT_ID_ERROR;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NEGATIVE;
+import static org.sagebionetworks.bridge.validators.Validate.INVALID_TYPE;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.DUPLICATE_LANG;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.INVALID_HEX_TRIPLET;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;
@@ -29,6 +30,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.dao.AssessmentDao;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.Label;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.assessments.Assessment;
@@ -294,27 +296,15 @@ public class AssessmentValidatorTest extends Mockito {
     }
 
     @Test
-    public void stringLengthValidation_age() {
-        assessment.setAge(generateStringOfLength(256));
-        assertValidatorMessage(validator, assessment, "age", getInvalidStringLengthMessage(255));
+    public void stringLengthValidation_frameworkIdentifier() {
+        assessment.setFrameworkIdentifier(generateStringOfLength(256));
+        assertValidatorMessage(validator, assessment, "frameworkIdentifier", getInvalidStringLengthMessage(255));
     }
 
     @Test
-    public void stringLengthValidation_longDescription() {
-        assessment.setLongDescription(generateStringOfLength(1001));
-        assertValidatorMessage(validator, assessment, "longDescription", getInvalidStringLengthMessage(1000));
-    }
-
-    @Test
-    public void stringLengthValidation_scores() {
-        assessment.setScores(generateStringOfLength(151));
-        assertValidatorMessage(validator, assessment, "scores", getInvalidStringLengthMessage(150));
-    }
-
-    @Test
-    public void stringLengthValidation_reliability() {
-        assessment.setReliability(generateStringOfLength(151));
-        assertValidatorMessage(validator, assessment, "reliability", getInvalidStringLengthMessage(150));
+    public void stringLengthValidation_jsonSchemaUrl() {
+        assessment.setJsonSchemaUrl(generateStringOfLength(501));
+        assertValidatorMessage(validator, assessment, "jsonSchemaUrl", getInvalidStringLengthMessage(500));
     }
 
     @Test
@@ -324,53 +314,76 @@ public class AssessmentValidatorTest extends Mockito {
     }
 
     @Test
-    public void stringLengthValidation_technicalManualUrl() {
-        assessment.setTechnicalManualUrl(generateStringOfLength(501));
-        assertValidatorMessage(validator, assessment, "technicalManualUrl", getInvalidStringLengthMessage(500));
+    public void minAge_lessThanZero() {
+        assessment.setMinAge(-1);
+        assertValidatorMessage(validator, assessment, "minAge", "cannot be less than 0");
     }
 
     @Test
-    public void publicationUrls_emptyIsValid() {
+    public void maxAge_lessThanZero() {
+        assessment.setMaxAge(-1);
+        assertValidatorMessage(validator, assessment, "maxAge", "cannot be less than 0");
+    }
+
+    @Test
+    public void minAgeGreaterThanMaxAge() {
+        assessment.setMinAge(1);
+        assessment.setMaxAge(0);
+        assertValidatorMessage(validator, assessment, "minAge and maxAge", "minAge cannot be larger than maxAge");
+    }
+
+    @Test
+    public void onlyMinAgeNoMaxAge_valid() {
         when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, assessment.getOwnerId()))
             .thenReturn(Optional.of(Organization.create()));
 
-        assessment.setPublicationUrls(ImmutableList.of());
+        assessment.setMinAge(0);
+        assessment.setMaxAge(null);
         Validate.entityThrowingException(validator, assessment);
     }
 
     @Test
-    public void stringLengthValidation_publicationUrls() {
-        assessment.setPublicationUrls(ImmutableList.of(generateStringOfLength(501)));
-        assertValidatorMessage(validator, assessment, "publicationUrls[0]", getInvalidStringLengthMessage(500));
+    public void onlyMaxAgeNoMinAge_valid() {
+        when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, assessment.getOwnerId()))
+            .thenReturn(Optional.of(Organization.create()));
+
+        assessment.setMinAge(null);
+        assessment.setMaxAge(0);
+        Validate.entityThrowingException(validator, assessment);
     }
 
     @Test
-    public void stringLengthValidation_caption() {
-        assessment.setCaption(generateStringOfLength(151));
-        assertValidatorMessage(validator, assessment, "caption", getInvalidStringLengthMessage(150));
+    public void minAgeEqualsMaxAge_valid() {
+        when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, assessment.getOwnerId()))
+            .thenReturn(Optional.of(Organization.create()));
+
+        assessment.setMinAge(5);
+        assessment.setMaxAge(5);
+        Validate.entityThrowingException(validator, assessment);
     }
 
     @Test
-    public void stringLengthValidation_videoUrl() {
-        assessment.setVideoUrl(generateStringOfLength(501));
-        assertValidatorMessage(validator, assessment, "videoUrl", getInvalidStringLengthMessage(500));
+    public void additionalMetadata_null() {
+        assessment.setAdditionalMetadata(BridgeObjectMapper.get().nullNode());
+        assertValidatorMessage(validator, assessment, "additionalMetadata", INVALID_TYPE);
     }
 
     @Test
-    public void stringLengthValidation_phoneOrientation() {
-        assessment.setPhoneOrientation(generateStringOfLength(51));
-        assertValidatorMessage(validator, assessment, "phoneOrientation", getInvalidStringLengthMessage(50));
+    public void additionalMetadata_singleValue() {
+        assessment.setAdditionalMetadata(BridgeObjectMapper.get().getNodeFactory().numberNode(7));
+        assertValidatorMessage(validator, assessment, "additionalMetadata", INVALID_TYPE);
     }
 
     @Test
-    public void stringLengthValidation_assessmentType() {
-        assessment.setAssessmentType(generateStringOfLength(256));
-        assertValidatorMessage(validator, assessment, "assessmentType", getInvalidStringLengthMessage(255));
+    public void additionalMetadata_array() {
+        assessment.setAdditionalMetadata(BridgeObjectMapper.get().createArrayNode());
+        assertValidatorMessage(validator, assessment, "additionalMetadata", INVALID_TYPE);
     }
 
     @Test
-    public void stringLengthValidation_metadataJsonSchemaUrl() {
-        assessment.setMetadataJsonSchemaUrl(generateStringOfLength(501));
-        assertValidatorMessage(validator, assessment, "metadataJsonSchemaUrl", getInvalidStringLengthMessage(500));
+    public void stringLengthValidation_additionalMetadata() {
+        assessment.setAdditionalMetadata(
+                BridgeObjectMapper.get().createObjectNode().put("key", generateStringOfLength(TEXT_SIZE)));
+        assertValidatorMessage(validator, assessment, "additionalMetadata", getInvalidStringLengthMessage(TEXT_SIZE));
     }
 }
