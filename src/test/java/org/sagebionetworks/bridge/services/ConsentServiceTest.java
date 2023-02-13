@@ -138,6 +138,8 @@ public class ConsentServiceTest extends Mockito {
     private StudyConsentView studyConsentView;
     @Mock
     private TemplateService templateService;
+    @Mock
+    private AlertService alertService;
     @Captor
     private ArgumentCaptor<BasicEmailProvider> emailCaptor;
     @Captor
@@ -409,6 +411,9 @@ public class ConsentServiceTest extends Mockito {
         assertEquals(withdrawalEnrollment.getAppId(), app.getIdentifier());
         assertEquals(withdrawalEnrollment.getStudyId(), TEST_STUDY_ID);
         assertEquals(withdrawalEnrollment.getAccountId(), ID);
+
+        // verify alerts deleted for participant
+        verify(alertService).deleteAlertsForUserInApp(app.getIdentifier(), ID);
     }
 
     @Test
@@ -426,6 +431,9 @@ public class ConsentServiceTest extends Mockito {
 
         assertEquals(account.getDataGroups(), ImmutableSet.of("leaveBehind1", "leaveBehind2"));
         verify(subpopulation).getDataGroupsAssignedWhileConsented();
+
+        // verify alerts deleted for participant
+        verify(alertService).deleteAlertsForUserInApp(app.getIdentifier(), ID);
     }
 
     @Test
@@ -480,6 +488,9 @@ public class ConsentServiceTest extends Mockito {
                 assertNotNull(sig.getWithdrewOn());
             }
         }
+
+        // verify alerts deleted for participant
+        verify(alertService).deleteAlertsForUserInApp(app.getIdentifier(), ID);
     }
 
     @Test
@@ -502,6 +513,9 @@ public class ConsentServiceTest extends Mockito {
         }
 
         verify(notificationsService).deleteAllRegistrations(app.getIdentifier(), HEALTH_CODE);
+
+        // verify alerts deleted for participant
+        verify(alertService).deleteAlertsForUserInApp(app.getIdentifier(), ID);
     }
 
     @Test
@@ -522,6 +536,9 @@ public class ConsentServiceTest extends Mockito {
         assertEquals(account.getDataGroups(), ImmutableSet.of("remainingDataGroup1", "remainingDataGroup2"));
         verify(subpopulation).getDataGroupsAssignedWhileConsented();
         verify(subpopulation, never()).getStudyIdsAssignedOnConsent();
+
+        // verify alerts deleted for participant
+        verify(alertService).deleteAlertsForUserInApp(app.getIdentifier(), ID);
     }
 
     @Test
@@ -568,6 +585,9 @@ public class ConsentServiceTest extends Mockito {
                 Long.valueOf(SIGNED_ON + 10000L));
         assertEquals(account.getAllConsentSignatureHistories().get(SUBPOP_GUID_2).get(0).getWithdrewOn(),
                 Long.valueOf(SIGNED_ON + 10000L));
+
+        // verify alerts deleted for participant
+        verify(alertService).deleteAlertsForUserInApp(app.getIdentifier(), ID);
     }
     
     @Test

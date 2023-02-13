@@ -47,6 +47,9 @@ public class ExternalIdServiceTest {
     
     @Mock
     private StudyService mockStudyService;
+
+    @Mock
+    private AlertService alertService;
     
     @InjectMocks
     private ExternalIdService externalIdService;
@@ -122,6 +125,7 @@ public class ExternalIdServiceTest {
         AccountId accountId = AccountId.forExternalId(TEST_APP_ID, ID);
         
         Account account = Account.create();
+        account.setId(TEST_USER_ID);
         account.setEnrollments(ImmutableSet.of(
                 Enrollment.create(TEST_APP_ID, STUDY_ID, TEST_USER_ID, ID)));
         when(mockAccountService.getAccount(accountId)).thenReturn(Optional.of(account));
@@ -132,6 +136,9 @@ public class ExternalIdServiceTest {
         Enrollment en = getElement(account.getEnrollments(), Enrollment::getStudyId, STUDY_ID)
                 .orElseThrow(() -> new EntityNotFoundException(Enrollment.class));
         assertNull(en.getExternalId());
+
+        // verify alerts for this external id are deleted
+        verify(alertService).deleteAlertsForUserInStudy(TEST_APP_ID, STUDY_ID, TEST_USER_ID);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)

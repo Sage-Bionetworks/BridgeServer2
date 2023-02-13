@@ -98,6 +98,9 @@ public class StudyServiceTest extends Mockito {
     @Mock
     private DemographicService mockDemographicService;
 
+    @Mock
+    private AlertService alertService;
+
     @Captor
     private ArgumentCaptor<Study> studyCaptor;
     
@@ -632,6 +635,9 @@ public class StudyServiceTest extends Mockito {
         
         CacheKey cacheKey = CacheKey.etag(Study.class, TEST_APP_ID, TEST_STUDY_ID);
         verify(mockCacheProvider).removeObject(cacheKey);
+
+        // verify alerts for this study are deleted
+        verify(alertService).deleteAlertsForStudy(TEST_APP_ID, TEST_STUDY_ID);
     }
     
     @Test(expectedExceptions = BadRequestException.class,
@@ -657,6 +663,9 @@ public class StudyServiceTest extends Mockito {
         
         verify(mockStudyDao).updateStudy(study);
         verify(mockCacheProvider).removeObject(CACHE_KEY);
+
+        // verify alerts for this study are deleted
+        verify(alertService).deleteAlertsForStudy(TEST_APP_ID, TEST_STUDY_ID);
     }
 
     
@@ -680,7 +689,7 @@ public class StudyServiceTest extends Mockito {
         
         CacheKey cacheKey = CacheKey.etag(Study.class, TEST_APP_ID, TEST_STUDY_ID);
         verify(mockCacheProvider).removeObject(cacheKey);
-    }    
+    }
 
     @Test
     public void deleteStudyPermanently_deletesScheduleFirst() {
@@ -746,6 +755,9 @@ public class StudyServiceTest extends Mockito {
         verify(mockStudyDao).updateStudy(study);
         assertEquals(study.getPhase(), DESIGN);     
         assertEquals(study.getModifiedOn(), MODIFIED_ON);
+
+        // verify no alerts deleted
+        verifyZeroInteractions(alertService);
     }
     
     @Test
@@ -768,6 +780,9 @@ public class StudyServiceTest extends Mockito {
         assertEquals(study.getModifiedOn(), MODIFIED_ON);
         
         verify(mockScheduleService).publishSchedule(TEST_APP_ID, SCHEDULE_GUID);
+
+        // verify no alerts deleted
+        verifyZeroInteractions(alertService);
     }
     
     @Test
@@ -792,6 +807,9 @@ public class StudyServiceTest extends Mockito {
         assertEquals(study.getModifiedOn(), MODIFIED_ON);
         
         verify(mockScheduleService, never()).publishSchedule(any(), any());
+
+        // verify no alerts deleted
+        verifyZeroInteractions(alertService);
     }
     
     @Test
@@ -814,6 +832,9 @@ public class StudyServiceTest extends Mockito {
         assertNull(study.getScheduleGuid());
 
         verifyZeroInteractions(mockScheduleService);
+
+        // verify no alerts deleted
+        verifyZeroInteractions(alertService);
     }
     
     @Test
@@ -831,6 +852,9 @@ public class StudyServiceTest extends Mockito {
         verify(mockStudyDao).updateStudy(study);
         assertEquals(study.getPhase(), IN_FLIGHT);    
         assertEquals(study.getModifiedOn(), MODIFIED_ON);   
+
+        // verify no alerts deleted
+        verifyZeroInteractions(alertService);
     }
     
     @Test
@@ -848,6 +872,9 @@ public class StudyServiceTest extends Mockito {
         verify(mockStudyDao).updateStudy(study);
         assertEquals(study.getPhase(), ANALYSIS);
         assertEquals(study.getModifiedOn(), MODIFIED_ON);
+
+        // verify no alerts deleted
+        verifyZeroInteractions(alertService);
     }
     
     @Test
@@ -865,6 +892,9 @@ public class StudyServiceTest extends Mockito {
         verify(mockStudyDao).updateStudy(study);
         assertEquals(study.getPhase(), COMPLETED);
         assertEquals(study.getModifiedOn(), MODIFIED_ON);
+
+        // verify alerts deleted for this study
+        verify(alertService).deleteAlertsForStudy(TEST_APP_ID, TEST_STUDY_ID);
     }
     
     @Test

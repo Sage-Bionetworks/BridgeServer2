@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import java.util.Map;
 
-import org.sagebionetworks.bridge.models.studies.Demographic;
+import org.sagebionetworks.bridge.models.demographics.Demographic;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 

@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.validators;
 
-import org.sagebionetworks.bridge.models.studies.Demographic;
+import org.sagebionetworks.bridge.models.demographics.Demographic;
 import org.springframework.validation.Errors;
 
 /**

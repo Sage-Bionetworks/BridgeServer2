@@ -73,6 +73,7 @@ import org.sagebionetworks.bridge.models.schedules2.adherence.weekly.WeeklyAdher
 import org.sagebionetworks.bridge.models.schedules2.timelines.MetadataContainer;
 import org.sagebionetworks.bridge.models.schedules2.timelines.SessionState;
 import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
+import org.sagebionetworks.bridge.models.studies.Alert;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator;
 import org.sagebionetworks.bridge.validators.AdherenceReportSearchValidator;
@@ -91,6 +92,8 @@ public class AdherenceService {
     private AdherenceRecordDao recordDao;
     
     private AdherenceReportDao reportDao;
+
+    private AlertService alertService;
     
     private StudyService studyService;
 
@@ -109,7 +112,12 @@ public class AdherenceService {
     final void setAdherenceReportDao(AdherenceReportDao reportDao) {
         this.reportDao = reportDao;
     }
-    
+
+    @Autowired
+    final void setAlertService(AlertService alertService) {
+        this.alertService = alertService;
+    }
+
     @Autowired
     final void setStudyService(StudyService studyService) {
         this.studyService = studyService;
@@ -410,9 +418,24 @@ public class AdherenceService {
         report.setClientTimeZone(zoneId);
         
         WeeklyAdherenceReport weeklyReport = deriveWeeklyAdherenceFromStudyReportWeek(studyId, account, report);
-        
+
         watch.stop();
         LOG.info("Weekly adherence report took " + watch.elapsed(TimeUnit.MILLISECONDS) + "ms");
+        return weeklyReport;
+    }
+
+    public WeeklyAdherenceReport getWeeklyAdherenceReportForWorker(String appId, String studyId, Account account) {
+        WeeklyAdherenceReport weeklyReport = getWeeklyAdherenceReport(appId, studyId, account);
+
+        // trigger alert for low weekly adherence
+        Study study = studyService.getStudy(appId, studyId, true);
+        if (weeklyReport.getWeeklyAdherencePercent() != null
+                && study.getAdherenceThresholdPercentage() != null
+                && weeklyReport.getWeeklyAdherencePercent() <= study.getAdherenceThresholdPercentage()) {
+            alertService.createAlert(
+                    Alert.lowAdherence(studyId, appId, account.getId(), study.getAdherenceThresholdPercentage()));
+        }
+
         return weeklyReport;
     }
 
@@ -471,7 +494,7 @@ public class AdherenceService {
                 .withRequestParam(PagedResourceList.PAGE_SIZE, search.getPageSize());
     }
     
-    private <T> T generateReport(String appId, String studyId, String userId,
+    protected <T> T generateReport(String appId, String studyId, String userId,
             DateTime createdOn, String clientTimeZone, BiFunction<AdherenceState, Schedule2, T> func) {
         AdherenceState.Builder builder = new AdherenceState.Builder();
         builder.withNow(createdOn);

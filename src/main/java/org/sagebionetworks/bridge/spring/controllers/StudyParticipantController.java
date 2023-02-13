@@ -129,7 +129,7 @@ public class StudyParticipantController extends BaseController {
     private ReportService reportService;
     
     private AccountWorkflowService accountWorkflowService;
-    
+
     @Autowired
     final void setParticipantService(ParticipantService participantService) {
         this.participantService = participantService;
@@ -203,7 +203,7 @@ public class StudyParticipantController extends BaseController {
                 .withUserId(session.getId())
                 .withObjectType(TIMELINE_RETRIEVED)
                 .withTimestamp(timelineRequestedOn).build(), false, true);
-        
+
         return new ResponseEntity<>(INSTANCE.calculateTimeline(schedule), OK);
     }
     

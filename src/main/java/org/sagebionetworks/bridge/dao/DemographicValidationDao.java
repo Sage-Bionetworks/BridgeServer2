@@ -3,7 +3,7 @@ package org.sagebionetworks.bridge.dao;
 import java.util.Optional;
 
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.models.studies.DemographicValuesValidationConfig;
+import org.sagebionetworks.bridge.models.demographics.DemographicValuesValidationConfig;
 
 public interface DemographicValidationDao {
     public DemographicValuesValidationConfig saveDemographicValuesValidationConfig(

@@ -117,7 +117,7 @@ public class AdherenceController extends BaseController {
         Account account = accountService.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
 
-        return service.getWeeklyAdherenceReport(appId, studyId, account);
+        return service.getWeeklyAdherenceReportForWorker(appId, studyId, account);
     }
     
     @PostMapping("/v5/studies/{studyId}/adherence/weekly")    

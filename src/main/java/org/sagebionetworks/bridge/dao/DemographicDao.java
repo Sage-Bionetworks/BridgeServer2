@@ -3,8 +3,8 @@ package org.sagebionetworks.bridge.dao;
 import java.util.Optional;
 
 import org.sagebionetworks.bridge.models.PagedResourceList;
-import org.sagebionetworks.bridge.models.studies.Demographic;
-import org.sagebionetworks.bridge.models.studies.DemographicUser;
+import org.sagebionetworks.bridge.models.demographics.Demographic;
+import org.sagebionetworks.bridge.models.demographics.DemographicUser;
 
 /**
  * Dao for demographic-related operations.

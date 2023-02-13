@@ -126,6 +126,9 @@ import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.assessments.HibernateAssessment;
 import org.sagebionetworks.bridge.models.assessments.HibernateAssessmentResource;
 import org.sagebionetworks.bridge.models.assessments.config.HibernateAssessmentConfig;
+import org.sagebionetworks.bridge.models.demographics.Demographic;
+import org.sagebionetworks.bridge.models.demographics.DemographicUser;
+import org.sagebionetworks.bridge.models.demographics.DemographicValue;
 import org.sagebionetworks.bridge.models.files.FileMetadata;
 import org.sagebionetworks.bridge.models.files.FileRevision;
 import org.sagebionetworks.bridge.models.organizations.HibernateOrganization;
@@ -136,9 +139,7 @@ import org.sagebionetworks.bridge.models.schedules2.Session;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.weekly.WeeklyAdherenceReport;
 import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
-import org.sagebionetworks.bridge.models.studies.Demographic;
-import org.sagebionetworks.bridge.models.studies.DemographicUser;
-import org.sagebionetworks.bridge.models.studies.DemographicValue;
+import org.sagebionetworks.bridge.models.studies.Alert;
 import org.sagebionetworks.bridge.redis.JedisOps;
 import org.sagebionetworks.bridge.s3.S3Helper;
 import org.sagebionetworks.bridge.spring.filters.MetricsFilter;
@@ -668,6 +669,7 @@ public class SpringConfig {
         metadataSources.addAnnotatedClass(Demographic.class);
         metadataSources.addAnnotatedClass(DemographicUser.class);
         metadataSources.addAnnotatedClass(DemographicValue.class);
+        metadataSources.addAnnotatedClass(Alert.class);
         
         SessionFactory factory = metadataSources.buildMetadata().buildSessionFactory();
         
