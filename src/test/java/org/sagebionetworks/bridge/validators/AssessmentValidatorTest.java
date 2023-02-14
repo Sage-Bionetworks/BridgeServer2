@@ -78,6 +78,12 @@ public class AssessmentValidatorTest extends Mockito {
         assessment.setLabels(null);
         assessment.setMinutesToComplete(null);
         assessment.setCustomizationFields(null);
+        assessment.setFrameworkIdentifier(null);
+        assessment.setJsonSchemaUrl(null);
+        assessment.setCategory(null);
+        assessment.setMinAge(null);
+        assessment.setMaxAge(null);
+        assessment.setAdditionalMetadata(null);
     
         Validate.entityThrowingException(validator, assessment);
     }
