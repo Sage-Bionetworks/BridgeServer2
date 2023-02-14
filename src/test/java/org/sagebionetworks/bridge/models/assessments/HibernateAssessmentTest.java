@@ -21,8 +21,8 @@ public class HibernateAssessmentTest {
     private static final String FRAMEWORK_IDENTIFIER = "framework-identifier";
     private static final String JSON_SCHEMA_URL = "json schema url";
     private static final String CATEGORY = "cognition";
-    private static final Integer MINAGE = 10;
-    private static final Integer MAXAGE = 17;
+    private static final Integer MIN_AGE = 10;
+    private static final Integer MAX_AGE = 17;
     private static final JsonNode ADDITIONAL_METADATA = BridgeObjectMapper.get().createObjectNode()
             .put("key1", "value1").put("key2", "value2");
 
@@ -73,8 +73,8 @@ public class HibernateAssessmentTest {
         assessment.setFrameworkIdentifier(FRAMEWORK_IDENTIFIER);
         assessment.setJsonSchemaUrl(JSON_SCHEMA_URL);
         assessment.setCategory(CATEGORY);
-        assessment.setMinAge(MINAGE);
-        assessment.setMaxAge(MAXAGE);
+        assessment.setMinAge(MIN_AGE);
+        assessment.setMaxAge(MAX_AGE);
         assessment.setAdditionalMetadata(ADDITIONAL_METADATA);
         return assessment;
     }
@@ -107,8 +107,8 @@ public class HibernateAssessmentTest {
         assertEquals(assessment.getFrameworkIdentifier(), FRAMEWORK_IDENTIFIER);
         assertEquals(assessment.getJsonSchemaUrl(), JSON_SCHEMA_URL);
         assertEquals(assessment.getCategory(), CATEGORY);
-        assertEquals(assessment.getMinAge(), MINAGE);
-        assertEquals(assessment.getMaxAge(), MAXAGE);
+        assertEquals(assessment.getMinAge(), MIN_AGE);
+        assertEquals(assessment.getMaxAge(), MAX_AGE);
         assertEquals(assessment.getAdditionalMetadata(), ADDITIONAL_METADATA);
     }
 }

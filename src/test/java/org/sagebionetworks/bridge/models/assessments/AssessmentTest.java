@@ -30,8 +30,8 @@ public class AssessmentTest {
     private static final String FRAMEWORK_IDENTIFIER = "framework-identifier";
     private static final String JSON_SCHEMA_URL = "json schema url";
     private static final String CATEGORY = "cognition";
-    private static final Integer MINAGE = 10;
-    private static final Integer MAXAGE = 17;
+    private static final Integer MIN_AGE = 10;
+    private static final Integer MAX_AGE = 17;
     private static final JsonNode ADDITIONAL_METADATA = BridgeObjectMapper.get().createObjectNode()
             .put("key1", "value1").put("key2", "value2");
 
@@ -77,8 +77,8 @@ public class AssessmentTest {
         assessment.setFrameworkIdentifier(FRAMEWORK_IDENTIFIER);
         assessment.setJsonSchemaUrl(JSON_SCHEMA_URL);
         assessment.setCategory(CATEGORY);
-        assessment.setMinAge(MINAGE);
-        assessment.setMaxAge(MAXAGE);
+        assessment.setMinAge(MIN_AGE);
+        assessment.setMaxAge(MAX_AGE);
         assessment.setAdditionalMetadata(ADDITIONAL_METADATA);
 
         Assessment dto = Assessment.create(assessment);
@@ -128,8 +128,8 @@ public class AssessmentTest {
         assertEquals(node.get("frameworkIdentifier").textValue(), FRAMEWORK_IDENTIFIER);
         assertEquals(node.get("jsonSchemaUrl").textValue(), JSON_SCHEMA_URL);
         assertEquals(node.get("category").textValue(), CATEGORY);
-        assertEquals(node.get("minAge").intValue(), MINAGE.intValue());
-        assertEquals(node.get("maxAge").intValue(), MAXAGE.intValue());
+        assertEquals(node.get("minAge").intValue(), MIN_AGE.intValue());
+        assertEquals(node.get("maxAge").intValue(), MAX_AGE.intValue());
         assertEquals(node.get("additionalMetadata").get("key1").textValue(), "value1");
         assertEquals(node.get("additionalMetadata").get("key2").textValue(), "value2");
         assertEquals(node.get("type").textValue(), "Assessment");
@@ -189,8 +189,8 @@ public class AssessmentTest {
         dto.setFrameworkIdentifier(FRAMEWORK_IDENTIFIER);
         dto.setJsonSchemaUrl(JSON_SCHEMA_URL);
         dto.setCategory(CATEGORY);
-        dto.setMinAge(MINAGE);
-        dto.setMaxAge(MAXAGE);
+        dto.setMinAge(MIN_AGE);
+        dto.setMaxAge(MAX_AGE);
         dto.setAdditionalMetadata(ADDITIONAL_METADATA);
         return dto;
     }
@@ -229,8 +229,8 @@ public class AssessmentTest {
         assertEquals(assessment.getFrameworkIdentifier(), FRAMEWORK_IDENTIFIER);
         assertEquals(assessment.getJsonSchemaUrl(), JSON_SCHEMA_URL);
         assertEquals(assessment.getCategory(), CATEGORY);
-        assertEquals(assessment.getMinAge(), MINAGE);
-        assertEquals(assessment.getMaxAge(), MAXAGE);
+        assertEquals(assessment.getMinAge(), MIN_AGE);
+        assertEquals(assessment.getMaxAge(), MAX_AGE);
         assertEquals(assessment.getAdditionalMetadata(), ADDITIONAL_METADATA);
     }
 }
