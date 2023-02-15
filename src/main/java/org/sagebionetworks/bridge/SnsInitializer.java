@@ -94,7 +94,7 @@ public class SnsInitializer {
         // These aren't mapped to SQS queues, and ImmuntableMap doesn't allow null values. So make a HashMap and wrap
         // it in an unmodifiableMap().
         HashMap<String, String> snsToSqsMap = new HashMap<>();
-        snsToSqsMap.put("virus.scan.trigger.topic", null);
+        snsToSqsMap.put("virus.scan.trigger.topic", "s3.notification.sqs.queue.url");
         snsToSqsMap.put("virus.scan.result.topic", "virus.scan.result.sqs.queue.url");
         SNS_TOPIC_PROPERTIES = Collections.unmodifiableMap(snsToSqsMap);
     }
