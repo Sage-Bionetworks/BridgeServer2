@@ -27,6 +27,14 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
 public class AssessmentTest {
+    private static final String FRAMEWORK_IDENTIFIER = "framework-identifier";
+    private static final String JSON_SCHEMA_URL = "json schema url";
+    private static final String CATEGORY = "cognition";
+    private static final Integer MIN_AGE = 10;
+    private static final Integer MAX_AGE = 17;
+    private static final JsonNode ADDITIONAL_METADATA = BridgeObjectMapper.get().createObjectNode()
+            .put("key1", "value1").put("key2", "value2");
+
     @Test
     public void revisionDefaultsToOne() {
         Assessment dto = new Assessment();
@@ -66,6 +74,12 @@ public class AssessmentTest {
         imageResource.setModule("sage_survey");
         imageResource.setLabels(LABELS);
         assessment.setImageResource(imageResource);
+        assessment.setFrameworkIdentifier(FRAMEWORK_IDENTIFIER);
+        assessment.setJsonSchemaUrl(JSON_SCHEMA_URL);
+        assessment.setCategory(CATEGORY);
+        assessment.setMinAge(MIN_AGE);
+        assessment.setMaxAge(MAX_AGE);
+        assessment.setAdditionalMetadata(ADDITIONAL_METADATA);
 
         Assessment dto = Assessment.create(assessment);
         assertAssessment(dto);
@@ -87,7 +101,7 @@ public class AssessmentTest {
         Assessment dto = createAssessment();
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(dto);
-        assertEquals(node.size(), 21);
+        assertEquals(node.size(), 27);
         assertEquals(node.get("guid").textValue(), GUID);
         assertEquals(node.get("identifier").textValue(), IDENTIFIER);
         assertEquals(node.get("revision").intValue(), 5);
@@ -111,6 +125,13 @@ public class AssessmentTest {
         assertEquals(node.get("imageResource").get("labels").get(1).get("lang").textValue(), LABELS.get(1).getLang());
         assertEquals(node.get("imageResource").get("labels").get(1).get("value").textValue(), LABELS.get(1).getValue());
         assertEquals(node.get("imageResource").get("type").textValue(), "ImageResource");
+        assertEquals(node.get("frameworkIdentifier").textValue(), FRAMEWORK_IDENTIFIER);
+        assertEquals(node.get("jsonSchemaUrl").textValue(), JSON_SCHEMA_URL);
+        assertEquals(node.get("category").textValue(), CATEGORY);
+        assertEquals(node.get("minAge").intValue(), MIN_AGE.intValue());
+        assertEquals(node.get("maxAge").intValue(), MAX_AGE.intValue());
+        assertEquals(node.get("additionalMetadata").get("key1").textValue(), "value1");
+        assertEquals(node.get("additionalMetadata").get("key2").textValue(), "value2");
         assertEquals(node.get("type").textValue(), "Assessment");
         
         ArrayNode tags = (ArrayNode)node.get("tags");
@@ -165,6 +186,12 @@ public class AssessmentTest {
         imageResource.setModule("sage_survey");
         imageResource.setLabels(LABELS);
         dto.setImageResource(imageResource);
+        dto.setFrameworkIdentifier(FRAMEWORK_IDENTIFIER);
+        dto.setJsonSchemaUrl(JSON_SCHEMA_URL);
+        dto.setCategory(CATEGORY);
+        dto.setMinAge(MIN_AGE);
+        dto.setMaxAge(MAX_AGE);
+        dto.setAdditionalMetadata(ADDITIONAL_METADATA);
         return dto;
     }
     
@@ -199,5 +226,11 @@ public class AssessmentTest {
         assertEquals(assessment.getImageResource().getLabels().get(0).getValue(), LABELS.get(0).getValue());
         assertEquals(assessment.getImageResource().getLabels().get(1).getLang(), LABELS.get(1).getLang());
         assertEquals(assessment.getImageResource().getLabels().get(1).getValue(), LABELS.get(1).getValue());
+        assertEquals(assessment.getFrameworkIdentifier(), FRAMEWORK_IDENTIFIER);
+        assertEquals(assessment.getJsonSchemaUrl(), JSON_SCHEMA_URL);
+        assertEquals(assessment.getCategory(), CATEGORY);
+        assertEquals(assessment.getMinAge(), MIN_AGE);
+        assertEquals(assessment.getMaxAge(), MAX_AGE);
+        assertEquals(assessment.getAdditionalMetadata(), ADDITIONAL_METADATA);
     }
 }

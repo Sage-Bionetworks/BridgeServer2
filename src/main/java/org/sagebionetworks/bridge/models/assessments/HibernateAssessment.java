@@ -26,6 +26,7 @@ import javax.persistence.Version;
 import org.joda.time.DateTime;
 
 import org.sagebionetworks.bridge.hibernate.DateTimeToLongAttributeConverter;
+import org.sagebionetworks.bridge.hibernate.JsonNodeAttributeConverter;
 import org.sagebionetworks.bridge.hibernate.LabelListConverter;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.hibernate.ColorSchemeConverter;
@@ -33,6 +34,8 @@ import org.sagebionetworks.bridge.hibernate.CustomizationFieldsConverter;
 import org.sagebionetworks.bridge.models.Label;
 import org.sagebionetworks.bridge.models.Tag;
 import org.sagebionetworks.bridge.models.assessments.config.PropertyInfo;
+
+import com.fasterxml.jackson.databind.JsonNode;
 
 /**
  * Persistence object for a record about an assessment (task, survey, measure) in 
@@ -69,6 +72,12 @@ public class HibernateAssessment {
         assessment.setDeleted(dto.isDeleted());
         assessment.setVersion(dto.getVersion());
         assessment.setImageResource(dto.getImageResource());
+        assessment.setFrameworkIdentifier(dto.getFrameworkIdentifier());
+        assessment.setJsonSchemaUrl(dto.getJsonSchemaUrl());
+        assessment.setCategory(dto.getCategory());
+        assessment.setMinAge(dto.getMinAge());
+        assessment.setMaxAge(dto.getMaxAge());
+        assessment.setAdditionalMetadata(dto.getAdditionalMetadata());
         return assessment;
     }
 
@@ -130,6 +139,14 @@ public class HibernateAssessment {
             @AttributeOverride(name = "labels", column = @Column(name = "imageResourceLabels"))
     })
     private ImageResource imageResource;
+
+    private String frameworkIdentifier;
+    private String jsonSchemaUrl;
+    private String category;
+    private Integer minAge;
+    private Integer maxAge;
+    @Convert(converter = JsonNodeAttributeConverter.class)
+    private JsonNode additionalMetadata;
 
     public String getGuid() {
         return guid;
@@ -259,6 +276,42 @@ public class HibernateAssessment {
     }
     public void setImageResource(ImageResource imageResource) {
         this.imageResource = imageResource;
+    }
+    public String getFrameworkIdentifier() {
+        return frameworkIdentifier;
+    }
+    public void setFrameworkIdentifier(String frameworkIdentifier) {
+        this.frameworkIdentifier = frameworkIdentifier;
+    }
+    public String getJsonSchemaUrl() {
+        return jsonSchemaUrl;
+    }
+    public void setJsonSchemaUrl(String jsonSchemaUrl) {
+        this.jsonSchemaUrl = jsonSchemaUrl;
+    }
+    public String getCategory() {
+        return category;
+    }
+    public void setCategory(String category) {
+        this.category = category;
+    }
+    public Integer getMinAge() {
+        return minAge;
+    }
+    public void setMinAge(Integer minAge) {
+        this.minAge = minAge;
+    }
+    public Integer getMaxAge() {
+        return maxAge;
+    }
+    public void setMaxAge(Integer maxAge) {
+        this.maxAge = maxAge;
+    }
+    public JsonNode getAdditionalMetadata() {
+        return additionalMetadata;
+    }
+    public void setAdditionalMetadata(JsonNode additionalMetadata) {
+        this.additionalMetadata = additionalMetadata;
     }
 }
 
