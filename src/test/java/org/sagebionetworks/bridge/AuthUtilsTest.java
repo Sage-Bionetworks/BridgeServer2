@@ -15,6 +15,7 @@ import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_OTHER_ENROLLMENTS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EXPORT_PARTICIPANTS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_PARTICIPANT_REPORTS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_STUDY_ASSOCIATIONS;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_UPLOADS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_TRANSITION_STUDY;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_EXTERNAL_IDS;
@@ -1403,5 +1404,126 @@ public class AuthUtilsTest extends Mockito {
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
         assertTrue(CAN_ACCESS_ADHERENCE_DATA.check(STUDY_ID, TEST_STUDY_ID, USER_ID, TEST_USER_ID));
+    }
+
+    @Test
+    public void canReadUploads_selfSucceeds() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(TEST_USER_ID).build());
+
+        assertTrue(CAN_READ_UPLOADS.check(USER_ID, TEST_USER_ID));
+    }
+
+    @Test
+    public void canReadUploads_otherParticipantFails() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("other-id").build());
+
+        assertFalse(CAN_READ_UPLOADS.check(USER_ID, TEST_USER_ID));
+    }
+
+    @Test
+    public void canReadUploads_studyDesignerSucceeds() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("other-id")
+                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER))
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID)).build());
+
+        assertTrue(CAN_READ_UPLOADS.check(STUDY_ID, TEST_STUDY_ID, USER_ID, TEST_USER_ID));
+    }
+
+    @Test
+    public void canReadUploads_studyDesignerWrongStudy() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("other-id")
+                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER))
+                .withOrgSponsoredStudies(ImmutableSet.of("wrong-study")).build());
+
+        assertFalse(CAN_READ_UPLOADS.check(STUDY_ID, TEST_STUDY_ID, USER_ID, TEST_USER_ID));
+    }
+
+    @Test
+    public void canReadUploads_studyDesignerNoStudy() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("other-id")
+                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER))
+                .withOrgSponsoredStudies(ImmutableSet.of("wrong-study")).build());
+
+        assertFalse(CAN_READ_UPLOADS.check(USER_ID, TEST_USER_ID));
+    }
+
+    @Test
+    public void canReadUploads_studyCoordinatorSucceeds() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("other-id")
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID)).build());
+
+        assertTrue(CAN_READ_UPLOADS.check(STUDY_ID, TEST_STUDY_ID, USER_ID, TEST_USER_ID));
+    }
+
+    @Test
+    public void canReadUploads_studyCoordinatorWrongStudy() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("other-id")
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
+                .withOrgSponsoredStudies(ImmutableSet.of("wrong-study")).build());
+
+        assertFalse(CAN_READ_UPLOADS.check(STUDY_ID, TEST_STUDY_ID, USER_ID, TEST_USER_ID));
+    }
+
+    @Test
+    public void canReadUploads_studyCoordinatorNoStudy() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("other-id")
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
+                .withOrgSponsoredStudies(ImmutableSet.of("wrong-study")).build());
+
+        assertFalse(CAN_READ_UPLOADS.check(USER_ID, TEST_USER_ID));
+    }
+
+    @Test
+    public void canReadUploads_developerSucceeds() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("other-id")
+                .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
+
+        assertTrue(CAN_READ_UPLOADS.check(USER_ID, TEST_USER_ID));
+    }
+
+    @Test
+    public void canReadUploads_researcherSucceeds() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("other-id")
+                .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
+
+        assertTrue(CAN_READ_UPLOADS.check(USER_ID, TEST_USER_ID));
+    }
+
+    @Test
+    public void canReadUploads_workerSucceeds() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("other-id")
+                .withCallerRoles(ImmutableSet.of(WORKER)).build());
+
+        assertTrue(CAN_READ_UPLOADS.check(USER_ID, TEST_USER_ID));
+    }
+
+    @Test
+    public void canReadUploads_adminSucceeds() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("other-id")
+                .withCallerRoles(ImmutableSet.of(ADMIN)).build());
+
+        assertTrue(CAN_READ_UPLOADS.check(USER_ID, TEST_USER_ID));
+    }
+
+    @Test
+    public void canReadUploads_orgAdminFails() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("other-id")
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
+
+        assertFalse(CAN_READ_UPLOADS.check(USER_ID, TEST_USER_ID));
     }
 }

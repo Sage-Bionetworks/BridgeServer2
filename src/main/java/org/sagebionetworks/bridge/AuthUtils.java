@@ -266,7 +266,16 @@ public class AuthUtils {
             .isSelf().isEnrolledInStudy().or()
             .canAccessStudy().hasAnyRole(STUDY_DESIGNER, STUDY_COORDINATOR).or()
             .hasAnyRole(DEVELOPER, RESEARCHER, WORKER, ADMIN);
-    
+
+    /**
+     * Can the caller read uploads? Users can read their own uploads. Study designers and study coordinators can read
+     * any upload in their study. Developers, researchers, workers, and admins can read any upload in the app.
+     */
+    public static final AuthEvaluator CAN_READ_UPLOADS = new AuthEvaluator()
+            .isSelf().or()
+            .canAccessStudy().hasAnyRole(STUDY_DESIGNER, STUDY_COORDINATOR).or()
+            .hasAnyRole(DEVELOPER, RESEARCHER, WORKER, ADMIN);
+
     /**
      * Does the caller have the required role? Note that a few roles pass for other roles.
      */
