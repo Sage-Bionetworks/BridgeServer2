@@ -25,6 +25,8 @@ import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
 import org.joda.time.DateTime;
@@ -461,6 +463,17 @@ public class UploadService {
         // For backwards compatibility, always call Legacy Exporter 2.0. In the future, we may introduce a setting to
         // disable this for new apps.
         uploadValidationService.validateUpload(appId, upload);
+        
+        // Create an adherence record noting the time of the first successful upload.
+        System.out.println("completed on");
+        System.out.println(upload.getCompletedOn());
+        JsonNode node = upload.getMetadata();
+        System.out.println("instanceGuid:");
+        System.out.println(node.get("instanceGuid"));
+        System.out.println("eventTimestamp");
+        System.out.println(node.get("eventTimestamp").toString());
+        
+        upload.getMetadata();
     }
     
     public void deleteUploadsForHealthCode(String healthCode) {
