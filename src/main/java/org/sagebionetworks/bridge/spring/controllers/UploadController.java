@@ -203,6 +203,15 @@ public class UploadController extends BaseController {
         throw new UnauthorizedException("Caller does not have permission to access upload.");
     }
 
+    /**
+     * This method gets a view that includes both the upload and the record (if they exist) for a given upload ID.
+     * Optionally includes getting the timeline metadata and the adherence records, if they exist.
+     *
+     * App ID and upload ID are required. Study ID is only required if we are fetching adherence.
+     *
+     * Can only be called for your own uploads, for study coordinators and study designers that have access to the
+     * study (study ID is required), and for developers, researchers, and admins.
+     */
     @GetMapping({"/v3/uploads/{uploadId}/exporter3",
             "/v5/studies/{studyId}/uploads/{uploadId}/exporter3"})
     public UploadViewEx3 getUploadViewForExporter3(@PathVariable(required = false) Optional<String> studyId,
@@ -215,6 +224,7 @@ public class UploadController extends BaseController {
                 fetchTimeline, fetchAdherence);
     }
 
+    /** Worker equivalent to getUploadViewForExporter3. */
     @GetMapping({"/v1/apps/{appId}/uploads/{uploadId}/exporter3",
             "/v1/apps/{appId}/studies/{studyId}/uploads/{uploadId}/exporter3"})
     public UploadViewEx3 getUploadEx3ForWorker(@PathVariable String appId,

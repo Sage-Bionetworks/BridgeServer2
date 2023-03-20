@@ -17,6 +17,7 @@ import java.net.URL;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
@@ -41,7 +42,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import org.sagebionetworks.bridge.AuthEvaluatorField;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.UploadDao;
@@ -58,6 +58,7 @@ import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordEx3;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSearch;
 import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
+import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadataView;
 import org.sagebionetworks.bridge.models.upload.UploadViewEx3;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
@@ -518,11 +519,19 @@ public class UploadService {
         }
     }
 
-    //todo doc
-    public UploadViewEx3 getUploadViewForExporter3(String appId, String studyId, String id, boolean fetchTimeline,
-            boolean fetchAdherence) {
+    /**
+     * This method gets a view that includes both the upload and the record (if they exist) for a given upload ID.
+     * Optionally includes getting the timeline metadata and the adherence records, if they exist.
+     *
+     * App ID and upload ID are required. Study ID is only required if we are fetching adherence.
+     *
+     * Can only be called for your own uploads, for study coordinators and study designers that have access to the
+     * study (study ID is required), and for developers, researchers, workers, and admins.
+     */
+    public UploadViewEx3 getUploadViewForExporter3(String appId, String studyId, String uploadId,
+            boolean fetchTimeline, boolean fetchAdherence) {
         checkNotNull(appId);
-        checkNotNull(id);
+        checkNotNull(uploadId);
 
         if (fetchAdherence && isBlank(studyId)) {
             throw new BadRequestException("Adherence requires study ID");
@@ -530,14 +539,14 @@ public class UploadService {
 
         // Get upload, if it exists. This can be null if the record was created through the synchronous health data
         // submission API.
-        Upload upload = uploadDao.getUploadNoThrow(id);
+        Upload upload = uploadDao.getUploadNoThrow(uploadId);
         if (upload != null && !appId.equals(upload.getAppId())) {
             // Upload is from a different app.
             throw new EntityNotFoundException(UploadViewEx3.class);
         }
 
         // Get record, if it exists. This can be null if the upload complete API was never called.
-        HealthDataRecordEx3 record = healthDataEx3Service.getRecord(id, false).orElse(null);
+        HealthDataRecordEx3 record = healthDataEx3Service.getRecord(uploadId, false).orElse(null);
         if (record != null && !appId.equals(record.getAppId())) {
             // Record is from a different app.
             throw new EntityNotFoundException(UploadViewEx3.class);
@@ -566,7 +575,7 @@ public class UploadService {
         CAN_READ_UPLOADS.checkAndThrow(STUDY_ID, studyId, USER_ID, userId);
 
         UploadViewEx3 view = new UploadViewEx3();
-        view.setId(id);
+        view.setId(uploadId);
         view.setHealthCode(healthCode);
         view.setRecord(record);
         view.setUpload(upload);
@@ -598,23 +607,23 @@ public class UploadService {
             if (instanceGuid != null) {
                 if (fetchTimeline) {
                     // Fetch timeline metadata.
-                    TimelineMetadata timelineMetadata;
-                    timelineMetadata = schedule2Service.getTimelineMetadata(instanceGuid).orElse(null);
-                    if (timelineMetadata != null) {
+                    Optional<TimelineMetadata> timelineMetadataOptional = schedule2Service.getTimelineMetadata(
+                            instanceGuid);
+                    if (timelineMetadataOptional.isPresent()) {
+                        TimelineMetadata timelineMetadata = timelineMetadataOptional.get();
                         if (!appId.equals(timelineMetadata.getAppId())) {
                             // This should never happen, but if it does, log an error and move on.
                             // In this case, we log instead of throwing because there's still useful information in the
                             // upload and/or record.
                             logger.error(
                                     "Timeline metadata associated with upload is from a different app, uploadId=" +
-                                            id + ", upload appId=" + appId + ", timeline instanceGuid=" +
+                                            uploadId + ", upload appId=" + appId + ", timeline instanceGuid=" +
                                             instanceGuid + ", timeline appId=" + timelineMetadata.getAppId());
-
-                            // Null out the metadata to mitigate cross-app data leaks.
-                            timelineMetadata = null;
+                        } else {
+                            // Wrap the TimelineMetadata in a TimelineMetadataView, because this is how our API exposes
+                            // TimelineMetadata externally.
+                            view.setTimelineMetadata(new TimelineMetadataView(timelineMetadata));
                         }
-
-                        view.setTimelineMetadata(timelineMetadata);
                     }
                 }
 

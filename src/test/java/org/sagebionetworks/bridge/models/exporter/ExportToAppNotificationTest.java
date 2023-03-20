@@ -100,7 +100,7 @@ public class ExportToAppNotificationTest {
         assertEquals(appRecordInfoNode.get("fileEntityId").textValue(), APP_FILE_ENTITY_ID);
         assertEquals(appRecordInfoNode.get("s3Bucket").textValue(), APP_S3_BUCKET);
         assertEquals(appRecordInfoNode.get("s3Key").textValue(), APP_S3_KEY);
-        assertEquals(appRecordInfoNode.get("type").textValue(), "RecordInfo");
+        assertEquals(appRecordInfoNode.get("type").textValue(), "ExportedRecordInfo");
 
         JsonNode studyRecordsObjectNode = jsonNode.get("studyRecords");
         assertEquals(studyRecordsObjectNode.size(), 2);
@@ -112,7 +112,7 @@ public class ExportToAppNotificationTest {
         assertEquals(study1RecordInfoNode.get("fileEntityId").textValue(), STUDY_1_FILE_ENTITY_ID);
         assertEquals(study1RecordInfoNode.get("s3Bucket").textValue(), STUDY_1_S3_BUCKET);
         assertEquals(study1RecordInfoNode.get("s3Key").textValue(), STUDY_1_S3_KEY);
-        assertEquals(study1RecordInfoNode.get("type").textValue(), "RecordInfo");
+        assertEquals(study1RecordInfoNode.get("type").textValue(), "ExportedRecordInfo");
 
         JsonNode study2RecordInfoNode = studyRecordsObjectNode.get(STUDY_2_ID);
         assertEquals(study2RecordInfoNode.size(), 6);
@@ -121,7 +121,7 @@ public class ExportToAppNotificationTest {
         assertEquals(study2RecordInfoNode.get("fileEntityId").textValue(), STUDY_2_FILE_ENTITY_ID);
         assertEquals(study2RecordInfoNode.get("s3Bucket").textValue(), STUDY_2_S3_BUCKET);
         assertEquals(study2RecordInfoNode.get("s3Key").textValue(), STUDY_2_S3_KEY);
-        assertEquals(study2RecordInfoNode.get("type").textValue(), "RecordInfo");
+        assertEquals(study2RecordInfoNode.get("type").textValue(), "ExportedRecordInfo");
 
         // Convert back to POJO.
         notification = BridgeObjectMapper.get().treeToValue(jsonNode, ExportToAppNotification.class);
