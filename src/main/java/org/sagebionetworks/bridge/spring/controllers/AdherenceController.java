@@ -12,6 +12,7 @@ import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.models.AccountTestFilter.TEST;
 
 import org.joda.time.DateTime;
+import org.sagebionetworks.bridge.models.schedules2.adherence.detailed.DetailedAdherenceReport;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -244,4 +245,19 @@ public class AdherenceController extends BaseController {
         service.deleteAdherenceRecord(record);
         return DELETED_MSG;
     }
+    
+    @GetMapping("/v5/studies/{studyId}/participants/{userId}/adherence/detail")
+    public DetailedAdherenceReport getDetailedParticipantAdherenceReport(@PathVariable String studyId,
+                                                                         @PathVariable String userId) {
+        UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_DESIGNER, STUDY_COORDINATOR);
+        
+        CAN_READ_STUDIES.checkAndThrow(STUDY_ID, studyId);
+        
+        AccountId accountId = AccountId.forId(session.getAppId(), userId);
+        Account account = accountService.getAccount(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+        
+        return service.getDetailedAdherenceReportForParticipant(session.getAppId(), studyId, account);
+    }
+    
 }

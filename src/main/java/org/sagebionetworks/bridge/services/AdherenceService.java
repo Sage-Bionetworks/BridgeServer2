@@ -26,6 +26,7 @@ import static org.sagebionetworks.bridge.models.ResourceList.TIME_WINDOW_GUIDS;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ASSESSMENT;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.SESSION;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventType.FINISHED;
+import static org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceUtils.calculateSessionState;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantStudyProgress.UNSTARTED;
 import static org.sagebionetworks.bridge.validators.AdherenceRecordListValidator.INSTANCE;
 
@@ -43,6 +44,17 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import org.joda.time.DateTime;
+import org.sagebionetworks.bridge.models.schedules2.AssessmentReference;
+import org.sagebionetworks.bridge.models.schedules2.Session;
+import org.sagebionetworks.bridge.models.schedules2.adherence.detailed.DetailedAdherenceReport;
+import org.sagebionetworks.bridge.models.schedules2.adherence.detailed.DetailedAdherenceReportAssessmentRecord;
+import org.sagebionetworks.bridge.models.schedules2.adherence.detailed.DetailedAdherenceReportSessionRecord;
+import org.sagebionetworks.bridge.models.schedules2.timelines.AssessmentInfo;
+import org.sagebionetworks.bridge.models.schedules2.timelines.ScheduledAssessment;
+import org.sagebionetworks.bridge.models.schedules2.timelines.ScheduledSession;
+import org.sagebionetworks.bridge.models.schedules2.timelines.StudyBurstInfo;
+import org.sagebionetworks.bridge.models.schedules2.timelines.Timeline;
+import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.AuthEvaluatorField;
@@ -548,5 +560,249 @@ public class AdherenceService {
             throw new BadRequestException(THRESHOLD_OUT_OF_RANGE_ERROR);
         }
         return reportDao.getAdherenceStatistics(appId, studyId, adherenceThreshold);
+    }
+    
+    public DetailedAdherenceReport getDetailedAdherenceReportForParticipant(String appId, String studyId, Account account) {
+        checkNotNull(appId);
+        checkNotNull(studyId);
+        checkNotNull(account);
+        
+        // Collect Adherence State
+        DateTime createdOn = getDateTime();
+        String zoneId = studyService.getZoneId(appId, studyId, account.getClientTimeZone());
+//        DateTimeZone clientTimeZone = DateTimeZone.forID(zoneId);
+        
+        AdherenceState.Builder builder = new AdherenceState.Builder();
+        builder.withNow(createdOn);
+        builder.withClientTimeZone(zoneId);
+        
+        Study study = studyService.getStudy(appId, studyId, true);
+        if (study.getScheduleGuid() == null) {
+            throw new EntityNotFoundException(Schedule2.class);
+        }
+        Schedule2 schedule = scheduleService.getScheduleForStudy(appId, studyId)
+                .orElseThrow(() -> new EntityNotFoundException(Schedule2.class));
+        List<TimelineMetadata> metadata = scheduleService.getScheduleMetadata(study.getScheduleGuid());
+        
+        List<Session> sessionsInSchedule = schedule.getSessions();
+        
+        Timeline timeline = scheduleService.getTimelineForSchedule(appId, schedule.getGuid());
+        
+        List<StudyActivityEvent> events = studyActivityEventService.getRecentStudyActivityEvents(
+                appId, studyId, account.getId()).getItems();
+        
+        List<AdherenceRecord> adherenceRecords = getAdherenceRecords(appId, new AdherenceRecordsSearch.Builder()
+                .withCurrentTimestampsOnly(true)
+                // If includeRepeats=false (which is counter-intuitive) you will not get declined sessions with no 
+                // startedOn value, but it's not needed because persistent time windows are excluded from adherence.
+                .withIncludeRepeats(true)
+//                .withAdherenceRecordType(AdherenceRecordType.SESSION)
+                .withStudyId(studyId)
+                .withUserId(account.getId())
+                .build()).getItems();
+        
+        builder.withMetadata(metadata);
+        builder.withEvents(events);
+        builder.withAdherenceRecords(adherenceRecords);
+        builder.withStudyStartEventId(study.getStudyStartEventId());
+        AdherenceState state = builder.build();
+        
+        
+        // Format timeline for labeling
+        List<AssessmentInfo> assessmentInfos = timeline.getAssessments();
+        List<StudyBurstInfo> studyBurstInfos = timeline.getStudyBursts();
+        List<ScheduledSession> scheduledSessions = timeline.getSchedule();
+
+//        List<TimelineMetadata> timelineMetadataList = timeline.getMetadata();
+        
+        Map<String, AssessmentInfo> assessmentInfoMap = new HashMap<>();
+        
+        // TODO: the study burst map might not be necessary
+//        Map<String, StudyBurstInfo> studyBurstInfoMap = new HashMap<>();
+        Map<String, ScheduledSession> scheduledSessionMap = new HashMap<>();
+        Map<String, ScheduledAssessment> scheduledAssessmentMap = new HashMap<>();
+        // Map with assessment instanceGuid keys to session instanceGuid values
+        Map<String, String> assessmentParentMap = new HashMap<>();
+
+//        Map<String, Session> sessionMap = new HashMap<>();
+        Map<String, AssessmentReference> assessmentReferenceMap = new HashMap<>();
+        
+        for (AssessmentInfo assessmentInfo : assessmentInfos) {
+            assessmentInfoMap.put(assessmentInfo.getKey(), assessmentInfo);
+        }
+//        for (StudyBurstInfo studyBurstInfo : studyBurstInfos) {
+//            studyBurstInfoMap.put(studyBurstInfo.getIdentifier(), studyBurstInfo);
+//        }
+        Map<String, Integer> sortReferenceMap = new HashMap<>();
+        int sortPosition = 0;
+        for (ScheduledSession scheduledSession : scheduledSessions) {
+            System.out.println("SCHEDULED SESSION INSTANCE GUID: " + scheduledSession.getInstanceGuid());
+            if (scheduledSession.isPersistent() != null && scheduledSession.isPersistent()) {
+                continue;
+            }
+            scheduledSessionMap.put(scheduledSession.getInstanceGuid(), scheduledSession);
+            sortReferenceMap.put(scheduledSession.getInstanceGuid(), sortPosition);
+            sortPosition++;
+            
+            List<ScheduledAssessment> scheduledAssessmentList = scheduledSession.getAssessments();
+            for (ScheduledAssessment scheduledAssessment : scheduledAssessmentList) {
+                assessmentParentMap.put(scheduledAssessment.getInstanceGuid(), scheduledSession.getInstanceGuid());
+                scheduledAssessmentMap.put(scheduledAssessment.getInstanceGuid(), scheduledAssessment);
+                sortReferenceMap.put(scheduledAssessment.getInstanceGuid(), sortPosition);
+                sortPosition++;
+            }
+            
+            for (AssessmentReference assessmentReference : scheduledSession.getSession().getAssessments()) {
+//            for (AssessmentReference assessmentReference : session.getAssessments()) {
+                assessmentReferenceMap.put(assessmentReference.getGuid(), assessmentReference);
+//            }
+            }
+        }
+//        for (Session session : sessionsInSchedule) {
+//            sessionMap.put(session.getGuid(), session);
+//        }
+        
+        // Create report
+        DetailedAdherenceReport detailedAdherenceReport = new DetailedAdherenceReport();
+        
+        detailedAdherenceReport.setParticipant(new AccountRef(account, studyId));
+        detailedAdherenceReport.setTestAccount(account.getDataGroups().contains(TEST_USER_GROUP));
+        detailedAdherenceReport.setClientTimeZone(zoneId);
+        
+        Map<String, DetailedAdherenceReportSessionRecord> sessionRecords = new HashMap<>();
+        
+        for (Enrollment enrollment : account.getEnrollments()) {
+            if (enrollment.getStudyId().equals(studyId)) {
+                detailedAdherenceReport.setJoinedDate(enrollment.getEnrolledOn().withZone(state.getTimeZone()));
+            }
+        }
+        
+        for (AdherenceRecord record : adherenceRecords) {
+            // instanceGuid for a scheduled session or assessment on the timeline
+            String instanceGuid = record.getInstanceGuid();
+            
+            if (scheduledAssessmentMap.containsKey(instanceGuid)) {
+                DetailedAdherenceReportAssessmentRecord assessmentRecord = new DetailedAdherenceReportAssessmentRecord();
+                
+                String refKey = scheduledAssessmentMap.get(instanceGuid).getRefKey();
+                System.out.println("REF KEY: " + refKey);
+                System.out.println("ASSESSMENT INFO MAP: " + assessmentInfoMap);
+                AssessmentInfo assessmentInfo = assessmentInfoMap.get(refKey);
+                System.out.println("ASSESSMENT INFO: " + assessmentInfo);
+                AssessmentReference assessmentReference = assessmentReferenceMap.get(assessmentInfo.getGuid());
+                
+                assessmentRecord.setAssessmentInstanceGuid(instanceGuid);
+                assessmentRecord.setAssessmentId(assessmentInfo.getIdentifier());
+                assessmentRecord.setAssessmentGuid(assessmentInfo.getGuid());
+                assessmentRecord.setAssessmentName(assessmentReference.getTitle());
+                
+                if (record.getStartedOn() != null) {
+                    assessmentRecord.setAssessmentStart(record.getStartedOn().withZone(state.getTimeZone()));
+                }
+                if (record.getFinishedOn() != null) {
+                    assessmentRecord.setAssessmentCompleted(record.getFinishedOn().withZone(state.getTimeZone()));
+                }
+                if (record.getUploadedOn() != null) {
+                    assessmentRecord.setAssessmentUploadedOn(record.getUploadedOn());
+                }
+                
+                
+                if (record.isDeclined()) {
+                    assessmentRecord.setAssessmentStatus("Declined");
+                } else if (record.getFinishedOn() != null) {
+                    assessmentRecord.setAssessmentStatus("Completed");
+                } else if (record.getStartedOn() != null) {
+                    assessmentRecord.setAssessmentStatus("Not Completed");
+                }
+                
+                assessmentRecord.setSortPriority(sortReferenceMap.get(instanceGuid));
+                
+                
+                // add session/burst info
+                String parentInstanceGuid = assessmentParentMap.get(instanceGuid);
+                
+                ScheduledSession scheduledSession = scheduledSessionMap.get(parentInstanceGuid);
+                
+                fillSessionRecord(sessionRecords, scheduledSession, //sessionMap, 
+                        state, sortReferenceMap, null);
+                
+                Map<String, DetailedAdherenceReportAssessmentRecord> assessmentRecords = sessionRecords
+                        .get(scheduledSession.getInstanceGuid()).getAssessmentRecordMap();
+                assessmentRecords.put(assessmentRecord.getAssessmentInstanceGuid(), assessmentRecord);
+                
+            } else if (scheduledSessionMap.containsKey(instanceGuid)) {
+                ScheduledSession scheduledSession = scheduledSessionMap.get(instanceGuid);
+                
+                fillSessionRecord(sessionRecords, scheduledSession,// sessionMap,
+                        state, sortReferenceMap, record);
+            }
+        }
+        
+        detailedAdherenceReport.setSessionRecords(sessionRecords);
+        
+        
+        
+        return detailedAdherenceReport;
+    }
+    
+    private void fillSessionRecord(Map<String, DetailedAdherenceReportSessionRecord> sessionRecords,
+                                   ScheduledSession scheduledSession,
+//                                   Map<String, Session> sessionMap,
+                                   AdherenceState state,
+                                   Map<String, Integer> sortReferenceMap,
+                                   AdherenceRecord record) {
+        // If an adherence record is passed in, use it to update session adherence.
+        // Otherwise just update the identifier fields.
+        boolean updateSessionAdherence = (record != null);
+        String instanceGuid = scheduledSession.getInstanceGuid();
+        
+        DetailedAdherenceReportSessionRecord sessionRecord;
+        if (!sessionRecords.containsKey(instanceGuid)) {
+            // The session record does not exist yet, so create it and update identifying fields
+            sessionRecord = new DetailedAdherenceReportSessionRecord();
+            
+            if (scheduledSession.getStudyBurstId() != null) {
+                int startDay = scheduledSession.getStartDay();
+                int week = (startDay / 7) + 1;
+                
+                sessionRecord.setBurstName("Week " + week + "/Burst " + scheduledSession.getStudyBurstNum());
+                sessionRecord.setBurstId(scheduledSession.getStudyBurstId());
+            }
+            
+            // fill session info
+//            String refGuid = scheduledSession.getRefGuid();
+//            Session session = sessionMap.get(refGuid);
+
+//            sessionRecord.setSessionName(session.getName());
+            sessionRecord.setSessionName(scheduledSession.getSession().getName());
+//            sessionRecord.setSessionGuid(refGuid);
+            sessionRecord.setSessionGuid(scheduledSession.getSession().getGuid());
+            sessionRecord.setSessionInstanceGuid(instanceGuid);
+            
+            sessionRecord.setSortPriority(sortReferenceMap.get(instanceGuid));
+        } else {
+            // The session record already exists.
+            sessionRecord = sessionRecords.get(instanceGuid);
+        }
+        
+        if (updateSessionAdherence) {
+            // update session adherence fields
+            if (record.getStartedOn() != null) {
+                sessionRecord.setSessionStart(record.getStartedOn().withZone(state.getTimeZone()));
+            }
+            if (record.getFinishedOn() != null) {
+                sessionRecord.setSessionCompleted(record.getFinishedOn().withZone(state.getTimeZone()));
+            }
+            
+            int daysSinceEvent = state.getDaysSinceEventById(scheduledSession.getStartEventId());
+            int startDay = scheduledSession.getStartDay();
+            int endDay = scheduledSession.getEndDay();
+            sessionRecord.setSessionStatus(calculateSessionState(record, startDay, endDay, daysSinceEvent));
+            
+            DateTime timestamp = state.getEventTimestampById(scheduledSession.getStartEventId());
+            sessionRecord.setSessionExpiration(timestamp.plusDays(endDay).withZone(state.getTimeZone()));
+        }
+        
+        sessionRecords.put(sessionRecord.getSessionInstanceGuid(), sessionRecord);
     }
 }
