@@ -10,6 +10,9 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.CANNOT_BE_BLANK;
 
 import java.net.URL;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +32,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -37,6 +41,7 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
+import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordList;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSearch;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.slf4j.Logger;
@@ -511,7 +516,10 @@ public class UploadService {
                      adherenceRecord.setUserId(userId);
                      adherenceRecord.setInstanceGuid(instanceGuid);
                      adherenceRecord.setEventTimestamp(eventTimestamp);
-                     adherenceRecord.setUploadedOn(upload.getUploadDate().to);
+                     adherenceRecord.setUploadedOn(new DateTime(upload.getCompletedOn()));
+                     
+                     adherenceService.updateAdherenceRecords(appId, 
+                             new AdherenceRecordList(ImmutableList.of(adherenceRecord)));
                  }
             }
         } else {
