@@ -37,13 +37,17 @@ public class HibernateAdherenceRecordDao implements AdherenceRecordDao {
         checkNotNull(record);
         
         if (record.getStartedOn() == null && !record.isDeclined()) {
+            System.out.println("In AdherenceRecordDao update");
             AdherenceRecordId id = new AdherenceRecordId(record.getUserId(), record.getStudyId(),
                     record.getInstanceGuid(), record.getEventTimestamp(), record.getInstanceTimestamp());
             // Cannot delete if the record is already not there, so check for this.
             AdherenceRecord obj = hibernateHelper.getById(AdherenceRecord.class, id);
+            System.out.println("obj is " + obj);
             if (obj != null) {
                 hibernateHelper.deleteById(AdherenceRecord.class, id);    
             }
+            System.out.println("SAVING?");
+//            hibernateHelper.saveOrUpdate(record);
         } else {
             hibernateHelper.saveOrUpdate(record);    
         }

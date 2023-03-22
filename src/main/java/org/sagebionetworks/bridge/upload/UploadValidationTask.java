@@ -6,9 +6,20 @@ import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Stopwatch;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import org.joda.time.DateTime;
+import org.sagebionetworks.bridge.dao.AdherenceRecordDao;
 import org.sagebionetworks.bridge.file.FileHelper;
+import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
+import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordList;
+import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSearch;
+import org.sagebionetworks.bridge.models.upload.Upload;
+import org.sagebionetworks.bridge.services.AdherenceService;
 import org.sagebionetworks.bridge.services.HealthDataService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,9 +40,14 @@ public class UploadValidationTask implements Runnable {
     private List<UploadValidationHandler> handlerList;
     private UploadDao uploadDao;
     private HealthDataService healthDataService;
+    private AdherenceRecordDao adherenceRecordDao;
 
     public final void setHealthDataService(HealthDataService healthDataService) {
         this.healthDataService = healthDataService;
+    }
+    
+    public final void setAdherenceRecordDao(AdherenceRecordDao adherenceRecordDao) {
+        this.adherenceRecordDao = adherenceRecordDao;
     }
 
     public HealthDataService getHealthDataService() {
@@ -137,6 +153,38 @@ public class UploadValidationTask implements Runnable {
             // ExceptionInterceptor doesn't handle asynchronous tasks, so we'll need to catch exceptions and log them
             // manually. Use the log helper function so we can verify it in unit tests.
             logWriteValidationStatusException(status, ex);
+        }
+    
+        System.out.println("Is this getting hit?");
+        
+        Upload upload = context.getUpload();
+        JsonNode metadata = upload.getMetadata();
+    
+        System.out.println(metadata.get("instanceGuid").toString());
+        System.out.println(metadata.get("eventTimestamp").toString());
+        System.out.println(metadata.get("userId").toString());
+        System.out.println(metadata.get("studyId").toString());
+        
+//        
+        if (context.getSuccess()) {
+            AdherenceRecord record = new AdherenceRecord();
+            record.setInstanceGuid(metadata.get("instanceGuid").textValue());
+            record.setEventTimestamp(DateTime.parse(metadata.get("eventTimestamp").textValue()));
+    
+            record.setUserId(metadata.get("userId").textValue());
+            record.setStudyId(metadata.get("studyId").textValue());
+    
+            System.out.println(uploadDao);
+            System.out.println(adherenceRecordDao);
+            
+            adherenceRecordDao.updateAdherenceRecord(record);
+            
+            System.out.println("Created adherence record?");
+//            AdherenceRecordsSearch search = new AdherenceRecordsSearch.Builder()
+//                    .withInstanceGuids(ImmutableSet.of(metadata.get("instanceGuid").toString()))
+//
+//                    .build();
+//            PagedResourceList<AdherenceRecord> recordList = adherenceService.getAdherenceRecords(context.getAppId(), search);
         }
 
         // TODO: if validation fails, wipe the files from S3

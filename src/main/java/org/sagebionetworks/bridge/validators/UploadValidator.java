@@ -44,6 +44,7 @@ public class UploadValidator implements Validator {
         } else {
             try {
                 final byte[] md5Bytes = Base64.decodeBase64(base64md5.getBytes(defaultCharset()));
+                System.out.println(md5Bytes.length);
                 if (md5Bytes.length != MD5_BYTE_LENGTH) {
                     errors.rejectValue("contentMd5", "MD5 hash must be 16 bytes.");
                 }

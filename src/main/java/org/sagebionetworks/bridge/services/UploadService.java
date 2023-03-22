@@ -29,8 +29,16 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableSet;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
+import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSearch;
+import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -71,6 +79,8 @@ public class UploadService {
     // package-scoped to be available in unit tests
     static final String CONFIG_KEY_UPLOAD_BUCKET = "upload.bucket";
 
+    private AccountService accountService;
+    private AdherenceService adherenceService;
     private AppService appService;
     private Exporter3Service exporter3Service;
     private HealthDataService healthDataService;
@@ -87,6 +97,16 @@ public class UploadService {
     private int pollValidationStatusMaxIterations = 7;
     private long pollValidationStatusSleepMillis = 5000;
 
+    @Autowired
+    public final void setAccountService(AccountService accountService) {
+        this.accountService = accountService;
+    }
+    
+    @Autowired
+    public final void setAdherenceService(AdherenceService adherenceService) {
+        this.adherenceService = adherenceService;
+    }
+    
     @Autowired
     public final void setAppService(AppService appService) {
         this.appService = appService;
@@ -453,6 +473,52 @@ public class UploadService {
             // and duplicate records.
             return;
         }
+        
+        // Create an adherence record noting the time of the first successful upload.
+        JsonNode metadata = upload.getMetadata();
+        JsonNode instanceGuidNode = metadata.get("instanceGuid");
+        JsonNode eventTimestampNode = metadata.get("eventTimestamp");
+        
+        System.out.println("completed on");
+        System.out.println(upload.getCompletedOn());
+        System.out.println("instanceGuid:");
+        System.out.println(instanceGuidNode.textValue());
+        System.out.println("eventTimestamp");
+        System.out.println(eventTimestampNode.textValue());
+        
+        if (instanceGuidNode != null && eventTimestampNode != null) {
+            String instanceGuid = instanceGuidNode.textValue();
+            DateTime eventTimestamp = DateTime.parse(eventTimestampNode.textValue());
+            
+            Account account = accountService.getAccount(AccountId.forHealthCode(appId, upload.getHealthCode()))
+                    .orElseThrow(() -> new EntityNotFoundException(Account.class));
+            
+            String userId = account.getId();
+            
+            // TODO: there has to be a better way to figure out which study this upload is related to.
+            for (Enrollment enrollment : account.getEnrollments()) {
+                // TODO: wrap in loop for edge case where this brings up a bunch of records.
+                 PagedResourceList<AdherenceRecord> recordList = adherenceService.getAdherenceRecords(appId, new AdherenceRecordsSearch.Builder()
+                        .withInstanceGuids(ImmutableSet.of(instanceGuid))
+//                        .withEventTimestamps() // TODO: have to find the trigger event for the map key
+                        .withStudyId(enrollment.getStudyId())
+                        .build());
+                 
+                 if (recordList.getTotal() > 0) {
+                     AdherenceRecord adherenceRecord = new AdherenceRecord();
+                     adherenceRecord.setAppId(appId);
+                     adherenceRecord.setStudyId(enrollment.getStudyId());
+                     adherenceRecord.setUserId(userId);
+                     adherenceRecord.setInstanceGuid(instanceGuid);
+                     adherenceRecord.setEventTimestamp(eventTimestamp);
+                     adherenceRecord.setUploadedOn(upload.getUploadDate().to);
+                 }
+            }
+        } else {
+            logger.info("Upload does not have metadata to update adherence record. AppID: " + appId + 
+                    " UploadId: " + uploadId);
+        }
+        
 
         // kick off upload validation
         App app = appService.getApp(appId);
@@ -464,14 +530,6 @@ public class UploadService {
         // disable this for new apps.
         uploadValidationService.validateUpload(appId, upload);
         
-        // Create an adherence record noting the time of the first successful upload.
-        System.out.println("completed on");
-        System.out.println(upload.getCompletedOn());
-        JsonNode node = upload.getMetadata();
-        System.out.println("instanceGuid:");
-        System.out.println(node.get("instanceGuid"));
-        System.out.println("eventTimestamp");
-        System.out.println(node.get("eventTimestamp").toString());
         
         upload.getMetadata();
     }
