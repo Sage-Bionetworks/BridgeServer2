@@ -46,6 +46,7 @@ import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.reports.ReportIndex;
 import org.sagebionetworks.bridge.models.reports.ReportType;
+import org.sagebionetworks.bridge.models.studies.Alert;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.time.DateUtils;
 
@@ -67,6 +68,8 @@ public class AccountService {
     private ReportService reportService;
     @Autowired
     private StudyActivityEventService studyActivityEventService;
+    @Autowired
+    private AlertService alertService;
     @Autowired
     private CacheProvider cacheProvider;
     
@@ -116,6 +119,12 @@ public class AccountService {
         if (!account.getEnrollments().isEmpty()) {
             activityEventService.publishEnrollmentEvent(
                     app, account.getHealthCode(), account.getCreatedOn());
+
+            // trigger alerts for new enrollment
+            for (Enrollment newEnrollment : account.getEnrollments()) {
+                alertService.createAlert(
+                        Alert.newEnrollment(newEnrollment.getStudyId(), newEnrollment.getAppId(), account.getId()));
+            }
         }
         StudyActivityEvent.Builder builder = new StudyActivityEvent.Builder()
                 .withAppId(app.getIdentifier())
@@ -182,7 +191,13 @@ public class AccountService {
         if (!newStudies.isEmpty()) {
             activityEventService.publishEnrollmentEvent(app,
                     account.getHealthCode(), account.getModifiedOn());
-            
+
+            // trigger alerts for new enrollment
+            for (String studyId : newStudies) {
+                alertService.createAlert(
+                        Alert.newEnrollment(studyId, account.getAppId(), account.getId()));
+            }
+
             StudyActivityEvent.Builder builder = new StudyActivityEvent.Builder()
                     .withAppId(app.getIdentifier())
                     .withUserId(account.getId())

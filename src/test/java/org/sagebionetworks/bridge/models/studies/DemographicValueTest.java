@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.models.studies;
 
 import static org.testng.Assert.assertEquals;
 
+import org.sagebionetworks.bridge.models.demographics.DemographicValue;
 import org.testng.annotations.Test;
 
 // JSON tests are located in DemographicValueDeserializerTest because DemographicValue uses a custom deserializer

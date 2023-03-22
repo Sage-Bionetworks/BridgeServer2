@@ -20,7 +20,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.models.studies.DemographicValuesValidationConfig;
+import org.sagebionetworks.bridge.models.demographics.DemographicValuesValidationConfig;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 

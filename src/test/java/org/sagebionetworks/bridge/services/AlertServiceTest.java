@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.services;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_EXTERNAL_ID;
@@ -68,6 +69,7 @@ public class AlertServiceTest {
 
     @Test
     public void createAlert() {
+        when(accountService.getAccount(any())).thenReturn(Optional.of(Account.create()));
         when(alertDao.getAlert(TEST_STUDY_ID, TEST_APP_ID, TEST_USER_ID, AlertCategory.NEW_ENROLLMENT)).thenReturn(Optional.empty());
 
         alertService.createAlert(alert);
@@ -80,7 +82,8 @@ public class AlertServiceTest {
     }
 
     @Test
-    public void createAlert_alreadyExists() {
+    public void createAlert_alertAlreadyExists() {
+        when(accountService.getAccount(any())).thenReturn(Optional.of(Account.create()));
         Alert existingAlert = new Alert();
         when(alertDao.getAlert(TEST_STUDY_ID, TEST_APP_ID, TEST_USER_ID, AlertCategory.NEW_ENROLLMENT))
                 .thenReturn(Optional.of(existingAlert));
@@ -93,6 +96,15 @@ public class AlertServiceTest {
         assertSame(alertCaptor.getValue(), alert);
         assertNotNull(alert.getId());
         assertNotNull(alert.getCreatedOn());
+    }
+
+    @Test
+    public void createAlert_accountDoesNotExist() {
+        when(accountService.getAccount(any())).thenReturn(Optional.empty());
+
+        alertService.createAlert(alert);
+
+        verifyZeroInteractions(alertDao);
     }
 
     @Test(expectedExceptions = NullPointerException.class)

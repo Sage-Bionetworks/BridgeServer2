@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.json;
 
 import java.io.IOException;
 
-import org.sagebionetworks.bridge.models.studies.DemographicValue;
+import org.sagebionetworks.bridge.models.demographics.DemographicValue;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;

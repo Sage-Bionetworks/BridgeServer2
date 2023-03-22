@@ -6,15 +6,17 @@ import static org.testng.Assert.assertNull;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.sagebionetworks.bridge.models.studies.Demographic;
-import org.sagebionetworks.bridge.models.studies.DemographicUser;
-import org.sagebionetworks.bridge.models.studies.DemographicUserAssessment;
-import org.sagebionetworks.bridge.models.studies.DemographicValue;
+import org.sagebionetworks.bridge.models.demographics.Demographic;
+import org.sagebionetworks.bridge.models.demographics.DemographicUser;
+import org.sagebionetworks.bridge.models.demographics.DemographicUserAssessment;
+import org.sagebionetworks.bridge.models.demographics.DemographicValue;
 import org.testng.annotations.Test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 @Test
 public class DemographicUserAssessmentDeserializerTest {
@@ -84,16 +86,11 @@ public class DemographicUserAssessmentDeserializerTest {
     }
 
     /**
-     * Tests whether deserializing JSON without children will succeed but result in
-     * a DemographicUser without demographics.
+     * Tests whether deserializing JSON without children will result in an error.
      */
-    @Test
+    @Test(expectedExceptions = MismatchedInputException.class)
     public void deserializeNoChildren() throws JsonProcessingException, JsonMappingException {
-        DemographicUser demographicUser = new DemographicUser(null, null, null, null, new HashMap<>());
-
-        assertEquals(BridgeObjectMapper.get().readValue("{\"stepHistory\": [5]}", DemographicUserAssessment.class)
-                .getDemographicUser().toString(),
-                demographicUser.toString());
+        BridgeObjectMapper.get().readValue("{\"stepHistory\": [5]}", DemographicUserAssessment.class);
     }
 
     /**
@@ -127,11 +124,16 @@ public class DemographicUserAssessmentDeserializerTest {
     }
 
     /**
-     * Tests whether deserilaizing children as an array of null throws an exception.
+     * Tests whether deserilaizing children as an array of null succeeds but results
+     * in empty demographics.
      */
-    @Test(expectedExceptions = JsonMappingException.class)
+    @Test
     public void deserializeNullChildren() throws JsonMappingException, JsonProcessingException {
-        BridgeObjectMapper.get().readValue("{\"stepHistory\": [{\"children\": [null]}]}", DemographicUserAssessment.class);
+        DemographicUser demographicUser = new DemographicUser(null, null, null, null, ImmutableMap.of());
+
+        assertEquals(BridgeObjectMapper.get()
+                .readValue("{\"stepHistory\": [{\"children\": [null]}]}", DemographicUserAssessment.class)
+                .getDemographicUser().toString(), demographicUser.toString());
     }
 
     /**
@@ -143,20 +145,21 @@ public class DemographicUserAssessmentDeserializerTest {
         BridgeObjectMapper.get().readValue("{\"stepHistory\": [{\"children\": [5]}]}", DemographicUserAssessment.class);
     }
 
-    /**
-     * Tests whether deserializing children as a nested array throws an exception.
-     */
     @Test(expectedExceptions = JsonMappingException.class)
     public void deserializeArrayChildren() throws JsonMappingException, JsonProcessingException {
-        BridgeObjectMapper.get().readValue("{\"stepHistory\": [{\"children\": [[]]}]}", DemographicUserAssessment.class);
+        BridgeObjectMapper.get().readValue("{\"stepHistory\": [{\"children\": [[]]}]}",
+                DemographicUserAssessment.class);
     }
 
     /**
-     * Tests whether deserializing JSON with without identifier results in an error.
+     * Tests whether deserializing JSON with without identifier is allowed
+     * (deserializes without error but should be caught by validator).
      */
-    @Test(expectedExceptions = JsonMappingException.class)
+    @Test
     public void deserializeMissingIdentifier() throws JsonProcessingException, JsonMappingException {
-        BridgeObjectMapper.get().readValue(
+        DemographicUser demographicUser = new DemographicUser(null, null, null, null, ImmutableMap.of());
+
+        assertEquals(BridgeObjectMapper.get().readValue(
                 "{" +
                         "    \"stepHistory\": [" +
                         "        {" +
@@ -168,15 +171,18 @@ public class DemographicUserAssessmentDeserializerTest {
                         "        }" +
                         "    ]" +
                         "}",
-                DemographicUserAssessment.class);
+                DemographicUserAssessment.class).getDemographicUser().toString(), demographicUser.toString());
     }
 
     /**
-     * Tests whether deserializing JSON with identifier as null results in an error.
+     * Tests whether deserializing JSON with identifier as null is allowed
+     * (deserializes without error but should be caught by validator).
      */
-    @Test(expectedExceptions = JsonMappingException.class)
+    @Test
     public void deserializeNullIdentifier() throws JsonProcessingException, JsonMappingException {
-        BridgeObjectMapper.get().readValue(
+        DemographicUser demographicUser = new DemographicUser(null, null, null, null, ImmutableMap.of());
+
+        assertEquals(BridgeObjectMapper.get().readValue(
                 "{" +
                         "    \"stepHistory\": [" +
                         "        {" +
@@ -189,16 +195,19 @@ public class DemographicUserAssessmentDeserializerTest {
                         "        }" +
                         "    ]" +
                         "}",
-                DemographicUserAssessment.class);
+                DemographicUserAssessment.class).getDemographicUser().toString(), demographicUser.toString());
     }
 
     /**
-     * Tests whether deserializing JSON with identifier as a non-string results in
-     * an error.
+     * Tests whether deserializing JSON with identifier as a non-string succeeds.
      */
-    @Test(expectedExceptions = JsonMappingException.class)
+    @Test
     public void deserializeNonStringIdentifier() throws JsonProcessingException, JsonMappingException {
-        BridgeObjectMapper.get().readValue(
+        DemographicUser demographicUser = new DemographicUser();
+        demographicUser.setDemographics(ImmutableMap.of("5", new Demographic(null, demographicUser, "5", false,
+                ImmutableList.of(new DemographicValue("foo")), null)));
+
+        assertEquals(BridgeObjectMapper.get().readValue(
                 "{" +
                         "    \"stepHistory\": [" +
                         "        {" +
@@ -211,15 +220,18 @@ public class DemographicUserAssessmentDeserializerTest {
                         "        }" +
                         "    ]" +
                         "}",
-                DemographicUserAssessment.class);
+                DemographicUserAssessment.class).getDemographicUser().toString(), demographicUser.toString());
     }
 
     /**
-     * Tests whether deserializing JSON with missing value results in an error.
+     * Tests whether deserializing JSON with missing value is allowed (deserializes
+     * without error but should be caught by validator).
      */
-    @Test(expectedExceptions = JsonMappingException.class)
+    @Test
     public void deserializeMissingValue() throws JsonProcessingException, JsonMappingException {
-        BridgeObjectMapper.get().readValue(
+        DemographicUser demographicUser = new DemographicUser(null, null, null, null, ImmutableMap.of());
+
+        assertEquals(BridgeObjectMapper.get().readValue(
                 "{" +
                         "    \"stepHistory\": [" +
                         "        {" +
@@ -231,15 +243,18 @@ public class DemographicUserAssessmentDeserializerTest {
                         "        }" +
                         "    ]" +
                         "}",
-                DemographicUserAssessment.class);
+                DemographicUserAssessment.class).getDemographicUser().toString(), demographicUser.toString());
     }
 
     /**
      * Tests whether deserializing JSON with an object within value of type object
-     * results in an error.
+     * succeeds and results in a value with the string "null".
      */
-    @Test(expectedExceptions = JsonMappingException.class)
+    @Test
     public void deserializeNestedObjectWithNullValue() throws JsonProcessingException, JsonMappingException {
+        DemographicUser demographicUser = new DemographicUser();
+        demographicUser.setDemographics(ImmutableMap.of("foo", new Demographic(null, demographicUser, "foo", false,
+                ImmutableList.of(new DemographicValue((String) null)), null)));
         BridgeObjectMapper.get().readValue(
                 "{" +
                         "    \"stepHistory\": [" +
@@ -342,6 +357,62 @@ public class DemographicUserAssessmentDeserializerTest {
                         "    ]" +
                         "}",
                 DemographicUserAssessment.class);
+    }
+
+    /**
+     * Tests whether deserializing JSON with null answerType succeeds but results in
+     * no units.
+     */
+    @Test
+    public void deserializeNullAnswerType() throws JsonProcessingException, JsonMappingException {
+        DemographicUser demographicUser = new DemographicUser();
+        demographicUser.setDemographics(ImmutableMap.of("foo", new Demographic(null, demographicUser, "foo", false,
+                ImmutableList.of(new DemographicValue("5")), null)));
+
+        assertEquals(BridgeObjectMapper.get().readValue(
+                "{" +
+                        "    \"stepHistory\": [" +
+                        "        {" +
+                        "            \"children\": [" +
+                        "                {" +
+                        "                    \"identifier\": \"foo\"," +
+                        "                    \"value\": 5," +
+                        "                    \"answerType\": null" +
+                        "                }" +
+                        "            ]" +
+                        "        }" +
+                        "    ]" +
+                        "}",
+                DemographicUserAssessment.class).getDemographicUser().toString(), demographicUser.toString());
+    }
+
+    /**
+     * Tests whether deserializing JSON with null unit in answerType succeeds but
+     * results in no units.
+     */
+    @Test
+    public void deserializeNullUnitInAnswerType() throws JsonProcessingException, JsonMappingException {
+        DemographicUser demographicUser = new DemographicUser();
+        demographicUser.setDemographics(ImmutableMap.of("foo", new Demographic(null, demographicUser, "foo", false,
+                ImmutableList.of(new DemographicValue("5")), null)));
+
+        assertEquals(BridgeObjectMapper.get().readValue(
+                "{" +
+                        "    \"stepHistory\": [" +
+                        "        {" +
+                        "            \"children\": [" +
+                        "                {" +
+                        "                    \"identifier\": \"foo\"," +
+                        "                    \"value\": 5," +
+                        "                    \"answerType\": {" +
+                        "                        \"unit\": null" +
+                        "                    }" +
+                        "                }" +
+                        "            ]" +
+                        "        }" +
+                        "    ]" +
+                        "}",
+                DemographicUserAssessment.class).getDemographicUser().toString(), demographicUser.toString());
     }
 
     /**

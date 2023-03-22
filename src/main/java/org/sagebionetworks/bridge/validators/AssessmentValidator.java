@@ -6,6 +6,7 @@ import static org.sagebionetworks.bridge.validators.Validate.BRIDGE_EVENT_ID_ERR
 import static org.sagebionetworks.bridge.validators.Validate.BRIDGE_EVENT_ID_PATTERN;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NEGATIVE;
+import static org.sagebionetworks.bridge.validators.Validate.INVALID_TYPE;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateColorScheme;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateJsonLength;
@@ -124,5 +125,22 @@ public class AssessmentValidator implements Validator {
             Validate.entity(ImageResourceValidator.INSTANCE, errors, assessment.getImageResource());
             errors.popNestedPath();
         }
+        validateStringLength(errors, 255, assessment.getFrameworkIdentifier(), "frameworkIdentifier");
+        validateStringLength(errors, 500, assessment.getJsonSchemaUrl(), "jsonSchemaUrl");
+        validateStringLength(errors, 255, assessment.getCategory(), "category");
+        if (assessment.getMinAge() != null && assessment.getMinAge() < 0) {
+            errors.rejectValue("minAge", "cannot be less than 0");
+        }
+        if (assessment.getMaxAge() != null && assessment.getMaxAge() < 0) {
+            errors.rejectValue("maxAge", "cannot be less than 0");
+        }
+        if (assessment.getMinAge() != null && assessment.getMaxAge() != null
+                && assessment.getMinAge() > assessment.getMaxAge()) {
+            errors.rejectValue("minAge and maxAge", "minAge cannot be larger than maxAge");
+        }
+        if (assessment.getAdditionalMetadata() != null && !assessment.getAdditionalMetadata().isObject()) {
+            errors.rejectValue("additionalMetadata", INVALID_TYPE);
+        }
+        validateJsonLength(errors, TEXT_SIZE, assessment.getAdditionalMetadata(), "additionalMetadata");
     }
 }

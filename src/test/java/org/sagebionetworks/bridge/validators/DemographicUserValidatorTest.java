@@ -9,8 +9,8 @@ import static org.testng.Assert.assertTrue;
 
 import java.util.HashMap;
 
-import org.sagebionetworks.bridge.models.studies.Demographic;
-import org.sagebionetworks.bridge.models.studies.DemographicUser;
+import org.sagebionetworks.bridge.models.demographics.Demographic;
+import org.sagebionetworks.bridge.models.demographics.DemographicUser;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 

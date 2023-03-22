@@ -1,4 +1,4 @@
-package org.sagebionetworks.bridge.models.studies;
+package org.sagebionetworks.bridge.models.demographics;
 
 import org.sagebionetworks.bridge.dynamodb.DynamoDemographicValuesValidationConfig;
 import org.sagebionetworks.bridge.models.BridgeEntity;

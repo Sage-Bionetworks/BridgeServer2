@@ -1061,3 +1061,13 @@ CREATE TABLE IF NOT EXISTS `Alerts` (
     CONSTRAINT `Alert-Account-Constraint` FOREIGN KEY (`userId`) REFERENCES `Accounts` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT `Alert-Study-Constraint` FOREIGN KEY (`studyId`, `appId`) REFERENCES `Substudies` (`id`, `studyId`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+-- changeset bridge:77
+
+ALTER TABLE `Assessments`
+ADD `frameworkIdentifier` varchar(255) DEFAULT NULL,
+ADD `jsonSchemaUrl` varchar(500) DEFAULT NULL,
+ADD `category` varchar(255) DEFAULT NULL,
+ADD `minAge` int DEFAULT NULL,
+ADD `maxAge` int DEFAULT NULL,
+ADD `additionalMetadata` text DEFAULT NULL;

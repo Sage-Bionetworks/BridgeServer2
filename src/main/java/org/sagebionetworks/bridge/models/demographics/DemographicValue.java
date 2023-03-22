@@ -1,4 +1,4 @@
-package org.sagebionetworks.bridge.models.studies;
+package org.sagebionetworks.bridge.models.demographics;
 
 import javax.persistence.Embeddable;
 import javax.validation.constraints.NotNull;
