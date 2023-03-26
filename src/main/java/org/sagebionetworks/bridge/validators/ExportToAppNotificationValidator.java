@@ -7,6 +7,7 @@ import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
 import org.sagebionetworks.bridge.models.exporter.ExportToAppNotification;
+import org.sagebionetworks.bridge.models.exporter.ExportedRecordInfo;
 
 /** Validator for notifications for exporting a health data record to Synapse for Exporter 3.0. */
 public class ExportToAppNotificationValidator implements Validator {
@@ -43,7 +44,7 @@ public class ExportToAppNotificationValidator implements Validator {
             }
 
             // Note that getStudyRecords() is never null.
-            for (Map.Entry<String, ExportToAppNotification.RecordInfo> studyRecordEntry :
+            for (Map.Entry<String, ExportedRecordInfo> studyRecordEntry :
                     notification.getStudyRecords().entrySet()) {
                 errors.pushNestedPath("studyRecords{" + studyRecordEntry.getKey() + "}");
                 validateRecordInfo(studyRecordEntry.getValue(), errors);
@@ -52,7 +53,7 @@ public class ExportToAppNotificationValidator implements Validator {
         }
     }
 
-    private static void validateRecordInfo(ExportToAppNotification.RecordInfo recordInfo, Errors errors) {
+    private static void validateRecordInfo(ExportedRecordInfo recordInfo, Errors errors) {
         if (StringUtils.isBlank(recordInfo.getParentProjectId())) {
             errors.rejectValue("parentProjectId", "is required");
         }

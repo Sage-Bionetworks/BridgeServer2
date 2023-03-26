@@ -61,6 +61,7 @@ import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.Exporter3Configuration;
 import org.sagebionetworks.bridge.models.exporter.ExportToAppNotification;
 import org.sagebionetworks.bridge.models.exporter.ExportToStudyNotification;
+import org.sagebionetworks.bridge.models.exporter.ExportedRecordInfo;
 import org.sagebionetworks.bridge.models.exporter.ExporterCreateStudyNotification;
 import org.sagebionetworks.bridge.models.exporter.ExporterSubscriptionRequest;
 import org.sagebionetworks.bridge.models.exporter.ExporterSubscriptionResult;
@@ -650,8 +651,8 @@ public class Exporter3Service {
         }
 
         // Send study-specific notifications. Note that getStudyRecords() is never null.
-        Map<String, ExportToAppNotification.RecordInfo> studyRecordMap = exportToAppNotification.getStudyRecords();
-        for (Map.Entry<String, ExportToAppNotification.RecordInfo> entry : studyRecordMap.entrySet()) {
+        Map<String, ExportedRecordInfo> studyRecordMap = exportToAppNotification.getStudyRecords();
+        for (Map.Entry<String, ExportedRecordInfo> entry : studyRecordMap.entrySet()) {
             String studyId = entry.getKey();
 
             try {
@@ -669,7 +670,7 @@ public class Exporter3Service {
                     continue;
                 }
 
-                ExportToAppNotification.RecordInfo recordInfo = entry.getValue();
+                ExportedRecordInfo recordInfo = entry.getValue();
                 ExportToStudyNotification exportToStudyNotification = new ExportToStudyNotification();
                 exportToStudyNotification.setAppId(appId);
                 exportToStudyNotification.setStudyId(studyId);

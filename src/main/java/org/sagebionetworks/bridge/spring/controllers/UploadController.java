@@ -8,6 +8,7 @@ import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 import java.util.EnumSet;
+import java.util.Optional;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.ImmutableSet;
@@ -33,6 +34,7 @@ import org.sagebionetworks.bridge.models.upload.UploadRequest;
 import org.sagebionetworks.bridge.models.upload.UploadSession;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStatus;
 import org.sagebionetworks.bridge.models.upload.UploadView;
+import org.sagebionetworks.bridge.models.upload.UploadViewEx3;
 import org.sagebionetworks.bridge.services.HealthDataService;
 import org.sagebionetworks.bridge.services.UploadService;
 import org.sagebionetworks.bridge.time.DateUtils;
@@ -199,5 +201,38 @@ public class UploadController extends BaseController {
             return uploadView;
         }
         throw new UnauthorizedException("Caller does not have permission to access upload.");
+    }
+
+    /**
+     * This method gets a view that includes both the upload and the record (if they exist) for a given upload ID.
+     * Optionally includes getting the timeline metadata and the adherence records, if they exist.
+     *
+     * App ID and upload ID are required. Study ID is only required if we are fetching adherence.
+     *
+     * Can only be called for your own uploads, for study coordinators and study designers that have access to the
+     * study (study ID is required), and for developers, researchers, and admins.
+     */
+    @GetMapping({"/v3/uploads/{uploadId}/exporter3",
+            "/v5/studies/{studyId}/uploads/{uploadId}/exporter3"})
+    public UploadViewEx3 getUploadViewForExporter3(@PathVariable(required = false) Optional<String> studyId,
+            @PathVariable String uploadId, @RequestParam(defaultValue = "false") boolean fetchTimeline,
+            @RequestParam(defaultValue = "false") boolean fetchAdherence) {
+        // UploadService handles fine-grained permissions checks. For the Controller, just check that we're
+        // authenticated.
+        UserSession session = getAuthenticatedSession();
+        return uploadService.getUploadViewForExporter3(session.getAppId(), studyId.orElse(null), uploadId,
+                fetchTimeline, fetchAdherence);
+    }
+
+    /** Worker equivalent to getUploadViewForExporter3. */
+    @GetMapping({"/v1/apps/{appId}/uploads/{uploadId}/exporter3",
+            "/v1/apps/{appId}/studies/{studyId}/uploads/{uploadId}/exporter3"})
+    public UploadViewEx3 getUploadEx3ForWorker(@PathVariable String appId,
+            @PathVariable(required = false) Optional<String> studyId, @PathVariable String uploadId,
+            @RequestParam(defaultValue = "false") boolean fetchTimeline,
+            @RequestParam(defaultValue = "false") boolean fetchAdherence) {
+        getAuthenticatedSession(WORKER);
+        return uploadService.getUploadViewForExporter3(appId, studyId.orElse(null), uploadId, fetchTimeline,
+                fetchAdherence);
     }
 }
