@@ -120,6 +120,10 @@ public interface Upload {
     /** @see #getUploadId */
     void setUploadId(String uploadId);
 
+    /** Participant's User-Agent header. */
+    String getUserAgent();
+    void setUserAgent(String userAgent);
+
     /** True if the upload is zipped. False if it is a single file. */
     boolean isZipped();
     void setZipped(boolean zipped);

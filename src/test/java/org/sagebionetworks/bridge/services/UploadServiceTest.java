@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static com.amazonaws.services.s3.Headers.SERVER_SIDE_ENCRYPTION;
 import static com.amazonaws.services.s3.model.ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION;
+import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
@@ -475,7 +476,7 @@ public class UploadServiceTest {
     @Test
     public void createUpload() throws Exception {
         // Set up RequestContext.
-        RequestContext.set(new RequestContext.Builder().withCallerClientInfo(CLIENT_INFO).build());
+        RequestContext.set(new RequestContext.Builder().withUserAgent(TestConstants.UA).build());
 
         // Create input.
         UploadRequest uploadRequest = constructUploadRequest();
@@ -502,9 +503,15 @@ public class UploadServiceTest {
         assertEquals(request.getMethod(), HttpMethod.PUT);
         assertEquals(request.getRequestParameters().get(SERVER_SIDE_ENCRYPTION), AES_256_SERVER_SIDE_ENCRYPTION);
 
+        // Verify client info and user agent.
         String clientInfoJsonText = upload.getClientInfo();
         ClientInfo deser = BridgeObjectMapper.get().readValue(clientInfoJsonText, ClientInfo.class);
         assertEquals(deser, CLIENT_INFO);
+
+        assertEquals(upload.getUserAgent(), TestConstants.UA);
+
+        // Verify that we save the updated upload back to the DAO.
+        verify(mockUploadDao).updateUpload(same(upload));
     }
     
     @Test

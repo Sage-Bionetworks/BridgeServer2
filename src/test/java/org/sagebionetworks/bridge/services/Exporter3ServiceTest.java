@@ -1277,7 +1277,7 @@ public class Exporter3ServiceTest {
 
         // Ensure there is no client info in the Request Context.
         RequestContext requestContext = new RequestContext.Builder().withCallerUserId(USER_ID)
-                .withCallerClientInfo(null).build();
+                .withUserAgent(null).build();
         RequestContext.set(requestContext);
 
         // Mock HealthDataEx3Service.
@@ -1313,7 +1313,7 @@ public class Exporter3ServiceTest {
 
         // Set RequestContext.
         RequestContext requestContext = new RequestContext.Builder().withCallerUserId(USER_ID)
-                .withCallerClientInfo(null).build();
+                .withUserAgent(null).build();
         RequestContext.set(requestContext);
 
         // Mock HealthDataEx3Service.
@@ -1351,7 +1351,7 @@ public class Exporter3ServiceTest {
 
         // Set RequestContext.
         RequestContext requestContext = new RequestContext.Builder().withCallerUserId(USER_ID)
-                .withCallerClientInfo(CLIENT_INFO).build();
+                .withUserAgent(TestConstants.UA).build();
         RequestContext.set(requestContext);
 
         // Mock HealthDataEx3Service.

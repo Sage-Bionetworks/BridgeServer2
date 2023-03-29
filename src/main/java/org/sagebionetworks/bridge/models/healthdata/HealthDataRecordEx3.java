@@ -129,6 +129,10 @@ public interface HealthDataRecordEx3 extends BridgeEntity {
     SharingScope getSharingScope();
     void setSharingScope(SharingScope sharingScope);
 
+    /** Participant's User-Agent header. */
+    String getUserAgent();
+    void setUserAgent(String userAgent);
+
     /**
      * Record version. This is used to detect concurrency conflicts. For creating new health data records, this field
      * should be left unspecified. For updating records, this field should match the version of the most recent GET

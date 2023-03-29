@@ -230,7 +230,8 @@ public class UploadService {
             uploadId = upload.getUploadId();
 
             // Get client info from Request Context, write it to the upload as JSON.
-            ClientInfo clientInfo = RequestContext.get().getCallerClientInfo();
+            RequestContext requestContext = RequestContext.get();
+            ClientInfo clientInfo = requestContext.getCallerClientInfo();
             try {
                 String clientInfoJsonText = BridgeObjectMapper.get().writerWithDefaultPrettyPrinter()
                         .writeValueAsString(clientInfo);
@@ -240,6 +241,13 @@ public class UploadService {
                 logger.error("Error serializing client info to JSON for app " + appId + " healthcode " +
                         participant.getHealthCode(), ex);
             }
+
+            // Also, get the User Agent.
+            String userAgent = requestContext.getUserAgent();
+            upload.setUserAgent(userAgent);
+
+            // Write the upload back to the upload table with the user agent and client info.
+            uploadDao.updateUpload(upload);
 
             if (originalUploadId != null) {
                 // We had a dupe of a previous completed upload. Log this for future analysis.

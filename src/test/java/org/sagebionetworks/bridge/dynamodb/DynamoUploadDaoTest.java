@@ -538,6 +538,13 @@ public class DynamoUploadDaoTest {
         dao.uploadComplete(APP, upload);
     }
 
+    @Test
+    public void updateUpload() {
+        Upload upload = Upload.create();
+        dao.updateUpload(upload);
+        verify(mockMapper).save(upload);
+    }
+
     private static UploadRequest createUploadRequest() {
         final String text = "test upload dao";
         return new UploadRequest.Builder().withName("test-upload-dao-filename").withContentType("text/plain")

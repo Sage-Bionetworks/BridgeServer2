@@ -45,7 +45,6 @@ import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
-import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.NotFoundException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.time.DateUtils;
@@ -333,5 +332,9 @@ public class DynamoUploadDao implements UploadDao {
 
         return uploadIdList;
     }
-}
 
+    @Override
+    public void updateUpload(Upload upload) {
+        mapper.save(upload);
+    }
+}

@@ -180,11 +180,12 @@ public class DynamoHealthDataRecordEx3Test {
         record.setExportedStudyRecords(STUDY_RECORD_INFO_MAP);
         record.setMetadata(METADATA_MAP);
         record.setSharingScope(SharingScope.SPONSORS_AND_PARTNERS);
+        record.setUserAgent(TestConstants.UA);
         record.setVersion(VERSION);
 
         // Convert to JsonNode.
         JsonNode jsonNode = BridgeObjectMapper.get().convertValue(record, JsonNode.class);
-        assertEquals(jsonNode.size(), 16);
+        assertEquals(jsonNode.size(), 17);
         assertEquals(jsonNode.get("id").textValue(), RECORD_ID);
         assertEquals(jsonNode.get("appId").textValue(), TestConstants.TEST_APP_ID);
         assertEquals(jsonNode.get("studyId").textValue(), STUDY_ID);
@@ -195,6 +196,7 @@ public class DynamoHealthDataRecordEx3Test {
         assertTrue(jsonNode.get("exported").booleanValue());
         assertEquals(jsonNode.get("exportedOn").textValue(), TestConstants.EXPORTED_ON.toString());
         assertEquals(jsonNode.get("sharingScope").textValue(), "sponsors_and_partners");
+        assertEquals(jsonNode.get("userAgent").textValue(), TestConstants.UA);
         assertEquals(jsonNode.get("version").longValue(), VERSION);
         assertEquals(jsonNode.get("type").textValue(), "HealthDataRecordEx3");
 
@@ -222,6 +224,7 @@ public class DynamoHealthDataRecordEx3Test {
         assertNotNull(record.getExportedRecord());
         assertEquals(record.getSharingScope(), SharingScope.SPONSORS_AND_PARTNERS);
         assertEquals(record.getMetadata(), METADATA_MAP);
+        assertEquals(record.getUserAgent(), TestConstants.UA);
         assertEquals(record.getVersion().longValue(), VERSION);
 
         Map<String, ExportedRecordInfo> exportedStudyRecordMap = record.getExportedStudyRecords();

@@ -50,6 +50,7 @@ public class DynamoUpload2 implements Upload {
     private UploadCompletionClient completedBy;
     private LocalDate uploadDate;
     private String uploadId;
+    private String userAgent;
     private final List<String> validationMessageList = new ArrayList<>();
     private Long version;
     private Boolean zipped;
@@ -307,6 +308,16 @@ public class DynamoUpload2 implements Upload {
     @Override
     public void setUploadId(String uploadId) {
         this.uploadId = uploadId;
+    }
+
+    @Override
+    public String getUserAgent() {
+        return userAgent;
+    }
+
+    @Override
+    public void setUserAgent(String userAgent) {
+        this.userAgent = userAgent;
     }
 
     /**
