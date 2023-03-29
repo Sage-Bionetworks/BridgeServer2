@@ -33,6 +33,8 @@ import com.google.common.collect.Iterables;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -56,6 +58,8 @@ import org.sagebionetworks.bridge.models.upload.UploadStatus;
 
 @Component
 public class DynamoUploadDao implements UploadDao {
+    private static final Logger LOG = LoggerFactory.getLogger(DynamoUploadDao.class);
+
     static final String PAGE_SIZE_ERROR = "pageSize must be from 1-"+API_MAXIMUM_PAGE_SIZE+" records";
 
     private DynamoDBMapper mapper;
@@ -118,26 +122,34 @@ public class DynamoUploadDao implements UploadDao {
     /** {@inheritDoc} */
     @Override
     public Upload getUpload(@Nonnull String uploadId) {
+        Upload upload = getUploadNoThrow(uploadId);
+        if (upload == null) {
+            throw new NotFoundException(String.format("Upload ID %s not found", uploadId));
+        }
+        return upload;
+    }
+
+    @Override
+    public Upload getUploadNoThrow(String uploadId) {
         // Fetch upload from DynamoUpload2
         DynamoUpload2 key = new DynamoUpload2();
         key.setUploadId(uploadId);
         DynamoUpload2 upload = mapper.load(key);
         if (upload != null) {
-            // Very old uploads (2+ years ago) did not have appId set; for these we must do 
+            // Very old uploads (2+ years ago) did not have appId set; for these we must do
             // a lookup in the legacy DynamoHealthCode table.
-            if (upload.getAppId() == null) { 
+            if (upload.getAppId() == null) {
                 String appId = healthCodeDao.getAppId(upload.getHealthCode());
                 if (appId == null) {
-                    throw new EntityNotFoundException(DynamoApp.class,
-                            "App not found for upload. User may have been deleted from system.");
+                    LOG.error("App not found for upload " + uploadId + ". User may have been deleted from system.");
+                    return null;
                 }
                 upload.setAppId(appId);
             }
-            return upload;
         }
-        throw new NotFoundException(String.format("Upload ID %s not found", uploadId));
+        return upload;
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public ForwardCursorPagedResourceList<Upload> getUploads(String healthCode, DateTime startTime, DateTime endTime,

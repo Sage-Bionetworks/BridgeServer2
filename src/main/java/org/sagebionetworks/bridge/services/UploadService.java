@@ -4,7 +4,11 @@ import static com.amazonaws.services.s3.Headers.SERVER_SIDE_ENCRYPTION;
 import static com.amazonaws.services.s3.model.ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
+import static org.sagebionetworks.bridge.AuthEvaluatorField.USER_ID;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_UPLOADS;
 import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.CANNOT_BE_BLANK;
@@ -14,7 +18,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
@@ -31,15 +35,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
-import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordList;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSearch;
@@ -60,6 +61,9 @@ import org.sagebionetworks.bridge.exceptions.NotFoundException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.apps.App;
+import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordEx3;
+import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadataView;
+import org.sagebionetworks.bridge.models.upload.UploadViewEx3;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -71,6 +75,7 @@ import org.sagebionetworks.bridge.models.upload.UploadSession;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStatus;
 import org.sagebionetworks.bridge.models.upload.UploadView;
+import org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator;
 import org.sagebionetworks.bridge.validators.UploadValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
@@ -92,6 +97,7 @@ public class UploadService {
     private AppService appService;
     private Exporter3Service exporter3Service;
     private HealthDataService healthDataService;
+    private HealthDataEx3Service healthDataEx3Service;
     private AmazonS3 s3UploadClient;
     private AmazonS3 s3Client;
     private Schedule2Service schedule2Service;
@@ -138,13 +144,8 @@ public class UploadService {
      * validation status.
      */
     @Autowired
-    public void setHealthDataService(HealthDataService healthDataService) {
+    public final void setHealthDataService(HealthDataService healthDataService) {
         this.healthDataService = healthDataService;
-    }
-    
-    @Autowired
-    public final void setSchedule2Service(Schedule2Service schedule2Service) {
-        this.schedule2Service = schedule2Service;
     }
     
     @Autowired
@@ -152,16 +153,27 @@ public class UploadService {
         this.studyService = studyService;
     }
 
+    @Autowired
+    public final void setHealthDataEx3Service(HealthDataEx3Service healthDataEx3Service) {
+        this.healthDataEx3Service = healthDataEx3Service;
+    }
+
     @Resource(name = "s3Client")
-    public void setS3UploadClient(AmazonS3 s3UploadClient) {
+    public final void setS3UploadClient(AmazonS3 s3UploadClient) {
         this.s3UploadClient = s3UploadClient;
     }
     @Resource(name = "s3Client")
-    public void setS3Client(AmazonS3 s3Client) {
+    public final void setS3Client(AmazonS3 s3Client) {
         this.s3Client = s3Client;
     }
+
     @Autowired
-    public void setUploadDao(UploadDao uploadDao) {
+    public final void setSchedule2Service(Schedule2Service schedule2Service) {
+        this.schedule2Service = schedule2Service;
+    }
+
+    @Autowired
+    public final void setUploadDao(UploadDao uploadDao) {
         this.uploadDao = uploadDao;
     }
 
@@ -521,6 +533,134 @@ public class UploadService {
             s3Client.deleteObject(uploadBucket, uploadId);
         }
     }
+
+    /**
+     * This method gets a view that includes both the upload and the record (if they exist) for a given upload ID.
+     * Optionally includes getting the timeline metadata and the adherence records, if they exist.
+     *
+     * App ID and upload ID are required. Study ID is only required if we are fetching adherence.
+     *
+     * Can only be called for your own uploads, for study coordinators and study designers that have access to the
+     * study (study ID is required), and for developers, researchers, workers, and admins.
+     */
+    public UploadViewEx3 getUploadViewForExporter3(String appId, String studyId, String uploadId,
+            boolean fetchTimeline, boolean fetchAdherence) {
+        checkNotNull(appId);
+        checkNotNull(uploadId);
+
+        if (fetchAdherence && isBlank(studyId)) {
+            throw new BadRequestException("Adherence requires study ID");
+        }
+
+        // Get upload, if it exists. This can be null if the record was created through the synchronous health data
+        // submission API.
+        Upload upload = uploadDao.getUploadNoThrow(uploadId);
+        if (upload != null && !appId.equals(upload.getAppId())) {
+            // Upload is from a different app.
+            throw new EntityNotFoundException(UploadViewEx3.class);
+        }
+
+        // Get record, if it exists. This can be null if the upload complete API was never called.
+        HealthDataRecordEx3 record = healthDataEx3Service.getRecord(uploadId, false).orElse(null);
+        if (record != null && !appId.equals(record.getAppId())) {
+            // Record is from a different app.
+            throw new EntityNotFoundException(UploadViewEx3.class);
+        }
+
+        // If neither upload nor record exist, then throw a 404.
+        if (upload == null && record == null) {
+            throw new EntityNotFoundException(UploadViewEx3.class);
+        }
+
+        // Uploads and Records only store health codes. We need the health code to get the User ID.
+        String healthCode = null;
+        if (upload != null) {
+            healthCode = upload.getHealthCode();
+        }
+        if (healthCode == null) {
+            // Fall back to record.
+            if (record != null) {
+                healthCode = record.getHealthCode();
+            }
+        }
+
+        // Get the user ID. We need this to check permissions.
+        String userId = accountService.getAccountId(appId, "healthcode:" + healthCode)
+                .orElseThrow(() -> new EntityNotFoundException(UploadViewEx3.class));
+        CAN_READ_UPLOADS.checkAndThrow(STUDY_ID, studyId, USER_ID, userId);
+
+        UploadViewEx3 view = new UploadViewEx3();
+        view.setId(uploadId);
+        view.setHealthCode(healthCode);
+        view.setRecord(record);
+        view.setUpload(upload);
+        view.setUserId(userId);
+
+        if (fetchTimeline || fetchAdherence) {
+            // Get the instanceGuid from upload/record metadata. This is needed for both timeline and adherence.
+            // instanceGuid in metadata instead of being a top-level attribute for legacy reasons.
+            String instanceGuid = null;
+            if (upload != null) {
+                ObjectNode metadataNode = upload.getMetadata();
+                if (metadataNode != null) {
+                    JsonNode instanceGuidNode = metadataNode.get(METADATA_KEY_INSTANCE_GUID);
+                    if (instanceGuidNode != null && instanceGuidNode.isTextual()) {
+                        instanceGuid = instanceGuidNode.textValue();
+                    }
+                }
+            }
+            if (instanceGuid == null) {
+                // Fall back to record.
+                if (record != null) {
+                    Map<String, String> metadataMap = record.getMetadata();
+                    if (metadataMap != null) {
+                        instanceGuid = metadataMap.get(METADATA_KEY_INSTANCE_GUID);
+                    }
+                }
+            }
+
+            if (instanceGuid != null) {
+                if (fetchTimeline) {
+                    // Fetch timeline metadata.
+                    Optional<TimelineMetadata> timelineMetadataOptional = schedule2Service.getTimelineMetadata(
+                            instanceGuid);
+                    if (timelineMetadataOptional.isPresent()) {
+                        TimelineMetadata timelineMetadata = timelineMetadataOptional.get();
+                        if (!appId.equals(timelineMetadata.getAppId())) {
+                            // This should never happen, but if it does, log an error and move on.
+                            // In this case, we log instead of throwing because there's still useful information in the
+                            // upload and/or record.
+                            logger.error(
+                                    "Timeline metadata associated with upload is from a different app, uploadId=" +
+                                            uploadId + ", upload appId=" + appId + ", timeline instanceGuid=" +
+                                            instanceGuid + ", timeline appId=" + timelineMetadata.getAppId());
+                        } else {
+                            // Wrap the TimelineMetadata in a TimelineMetadataView, because this is how our API exposes
+                            // TimelineMetadata externally.
+                            view.setTimelineMetadata(new TimelineMetadataView(timelineMetadata));
+                        }
+                    }
+                }
+
+                if (fetchAdherence) {
+                    // Fetch the adherence record(s). MAX_PAGE_SIZE is 500. It is very unlikely that a single
+                    // instanceGuid will map to more than 500 adherence records. If it somehow does, that's a problem
+                    // we can solve in the future.
+                    AdherenceRecordsSearch adherenceSearch = new AdherenceRecordsSearch.Builder()
+                            .withInstanceGuids(ImmutableSet.of(instanceGuid))
+                            .withPageSize(AdherenceRecordsSearchValidator.MAX_PAGE_SIZE)
+                            .withStudyId(studyId)
+                            .withUserId(userId)
+                            .build();
+                    List<AdherenceRecord> adherenceRecords = adherenceService.getAdherenceRecords(appId,
+                            adherenceSearch).getItems();
+                    view.setAdherenceRecords(adherenceRecords);
+                }
+            }
+        }
+
+        return view;
+    }
     
     // protected for unit tests
     protected void updateAdherenceWithUploadInfo(String appId, Upload upload) {
@@ -540,8 +680,8 @@ public class UploadService {
                     eventTimestampNode != null && eventTimestampNode.textValue() != null &&
                     startedOnNode != null && startedOnNode.textValue() != null) {
                 System.out.println("have the metadata");
-
-            
+                
+                
                 String instanceGuid = instanceGuidNode.textValue();
                 DateTime eventTimestamp;
                 try {
@@ -562,11 +702,11 @@ public class UploadService {
                             " errorMessage: " + ex.getMessage());
                     return;
                 }
-    
+                
                 System.out.println("parsed metadata");
                 String userId = accountService.getAccountId(appId, "healthcode:" + upload.getHealthCode())
                         .orElseThrow(() -> new EntityNotFoundException(Account.class));
-    
+                
                 System.out.println("found userId");
                 // Find the study using the instanceGuid referenced by the upload
                 TimelineMetadata timelineMetadata =  schedule2Service.getTimelineMetadata(instanceGuid).orElse(null);
@@ -575,11 +715,11 @@ public class UploadService {
                     
                     String scheduleGuid = timelineMetadata.getScheduleGuid();
                     List<String> studyIds = studyService.getStudyIdsUsingSchedule(appId, scheduleGuid);
-                
+                    
                     if (studyIds.size() == 1) {
                         String studyId = studyIds.get(0);
                         System.out.println("found single study ID");
-                    
+                        
                         // If adherence record already exists, update it. Otherwise, create a new one.
                         AdherenceRecordsSearch.Builder search = new AdherenceRecordsSearch.Builder()
                                 .withInstanceGuids(ImmutableSet.of(instanceGuid))
@@ -594,7 +734,7 @@ public class UploadService {
                         
                         List<AdherenceRecord> recordsToUpdate = new ArrayList<>();
                         boolean foundExistingRecord = false;
-
+                        
                         System.out.println("found related adherence records");
                         for (AdherenceRecord record : recordList.getItems()) {
                             if (timelineMetadata.isTimeWindowPersistent() && record.getStartedOn() != startedOn) {
@@ -615,7 +755,7 @@ public class UploadService {
                                 break;
                             }
                         }
-    
+                        
                         if (!foundExistingRecord) {
                             System.out.println("no records found, creating an adherence record");
                             AdherenceRecord record = new AdherenceRecord();
@@ -627,14 +767,14 @@ public class UploadService {
                             record.setStartedOn(startedOn);
                             record.setUploadedOn(new DateTime(upload.getCompletedOn()));
                             record.addUploadId(uploadId);
-                        
+                            
                             recordsToUpdate.add(record);
                         }
-    
+                        
                         System.out.println("requesting update from adherence service");
                         System.out.println(recordsToUpdate);
                         adherenceService.updateAdherenceRecords(appId, new AdherenceRecordList(recordsToUpdate));
-                    
+                        
                     } else if (studyIds.size() > 1) {
                         // It's unlikely that there are multiple studies tied to one schedule, but not impossible.
                         // If it does happen, the timelines for the studies would be identical. It would be possible
@@ -649,7 +789,7 @@ public class UploadService {
             }
         }
     }
-    
+
     @FunctionalInterface
     private static interface UploadSupplier {
         ForwardCursorPagedResourceList<Upload> get(DateTime startTime, DateTime endTime);

@@ -18,6 +18,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.sagebionetworks.bridge.json.DateTimeToLongDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
+import org.sagebionetworks.bridge.models.exporter.ExportedRecordInfo;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordEx3;
 
 @DynamoDBTable(tableName = "HealthDataRecordEx3")
@@ -35,6 +36,8 @@ public class DynamoHealthDataRecordEx3 implements HealthDataRecordEx3 {
     private String clientInfo;
     private boolean exported;
     private Long exportedOn;
+    private ExportedRecordInfo exportedRecord;
+    private Map<String, ExportedRecordInfo> exportedStudyRecords;
     private Map<String, String> metadata;
     private SharingScope sharingScope;
     private Long version;
@@ -171,6 +174,30 @@ public class DynamoHealthDataRecordEx3 implements HealthDataRecordEx3 {
     @Override
     public void setExportedOn(Long exportedOn) {
         this.exportedOn = exportedOn;
+    }
+
+    @DynamoDBTypeConverted(converter = ExportedRecordInfoMarshaller.class)
+    @Override
+    public ExportedRecordInfo getExportedRecord() {
+        return exportedRecord;
+    }
+
+    @Override
+    public void setExportedRecord(ExportedRecordInfo exportedRecord) {
+        this.exportedRecord = exportedRecord;
+    }
+
+    @DynamoDBTypeConverted(converter = ExportedRecordInfoMapMarshaller.class)
+    @Override
+    public Map<String, ExportedRecordInfo> getExportedStudyRecords() {
+        return exportedStudyRecords;
+    }
+
+    @Override
+    public void setExportedStudyRecords(Map<String, ExportedRecordInfo> exportedStudyRecords) {
+        // Dynamo DB doesn't support empty maps.
+        this.exportedStudyRecords = exportedStudyRecords != null && !exportedStudyRecords.isEmpty() ?
+                exportedStudyRecords : null;
     }
 
     @Override

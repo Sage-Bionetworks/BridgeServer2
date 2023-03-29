@@ -11,12 +11,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
-import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
+import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.SCHEDULE_GUID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
@@ -37,7 +39,9 @@ import static org.testng.Assert.fail;
 
 import java.net.URL;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import com.amazonaws.HttpMethod;
@@ -46,8 +50,10 @@ import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.mockito.ArgumentCaptor;
@@ -62,6 +68,7 @@ import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordList;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSearch;
 import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
+
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -77,6 +84,7 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.NotFoundException;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
@@ -84,12 +92,15 @@ import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
+import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordEx3;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
 import org.sagebionetworks.bridge.models.upload.UploadSession;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStatus;
 import org.sagebionetworks.bridge.models.upload.UploadView;
+import org.sagebionetworks.bridge.models.upload.UploadViewEx3;
+import org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator;
 
 @SuppressWarnings("ConstantConditions")
 public class UploadServiceTest {
@@ -97,6 +108,7 @@ public class UploadServiceTest {
 
     private static final DateTime START_TIME = DateTime.parse("2016-04-02T10:00:00.000Z");
     private static final DateTime END_TIME = DateTime.parse("2016-04-03T10:00:00.000Z");
+    private static final String INSTANCE_GUID = "dummy-instance-guid";
     private static final String MOCK_OFFSET_KEY = "mock-offset-key";
     private static final String UPLOAD_BUCKET_NAME = "upload-bucket";
     final static DateTime TIMESTAMP = DateTime.now();
@@ -109,16 +121,19 @@ public class UploadServiceTest {
 
     @Mock
     private AccountService mockAccountService;
-    
+
     @Mock
     private AdherenceService mockAdherenceService;
-    
+
     @Mock
     private AppService mockAppService;
 
     @Mock
     HealthDataService mockHealthDataService;
-    
+
+    @Mock
+    private HealthDataEx3Service mockHealthDataEx3Service;
+
     @Mock
     Upload mockUpload;
 
@@ -133,7 +148,10 @@ public class UploadServiceTest {
     
     @Mock
     AmazonS3 mockS3Client;
-    
+
+    @Mock
+    private Schedule2Service mockSchedule2Service;
+
     @Mock
     Schedule2Service mockScheduleService;
     
@@ -1004,5 +1022,523 @@ public class UploadServiceTest {
         String jsonText = "{\"" + key1 + "\":\"" + value1 + "\",\"" + key2 + "\":\"" + value2 + "\",\"" +
                 key3 + "\":\"" + value3 + "\"}";
         return (ObjectNode) BridgeObjectMapper.get().readTree(jsonText);
+    }
+
+    @Test(expectedExceptions = BadRequestException.class,
+            expectedExceptionsMessageRegExp = "Adherence requires study ID")
+    public void getUploadViewForExporter3_FetchAdherenceWithNoStudyId() {
+        svc.getUploadViewForExporter3(TEST_APP_ID, null, UPLOAD_ID_1, false, true);
+    }
+
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void getUploadViewForExporter3_UploadFromWrongApp() {
+        Upload upload = makeUploadForEx3Test();
+        upload.setAppId("wrong-app");
+        setupGetUploadViewForExporter3Test(upload, makeRecordForEx3Test());
+
+        svc.getUploadViewForExporter3(TEST_APP_ID, null, UPLOAD_ID_1, false, false);
+    }
+
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void getUploadViewForExporter3_RecordFromWrongApp() {
+        HealthDataRecordEx3 healthDataRecord = makeRecordForEx3Test();
+        healthDataRecord.setAppId("wrong-app");
+        setupGetUploadViewForExporter3Test(makeUploadForEx3Test(), healthDataRecord);
+
+        svc.getUploadViewForExporter3(TEST_APP_ID, null, UPLOAD_ID_1, false, false);
+    }
+
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void getUploadViewForExporter3_NoUploadNoRecord() {
+        setupGetUploadViewForExporter3Test(null, null);
+        svc.getUploadViewForExporter3(TEST_APP_ID, null, UPLOAD_ID_1, false, false);
+    }
+
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void getUploadViewForExporter3_AccountNotFound() {
+        setupGetUploadViewForExporter3Test(makeUploadForEx3Test(), makeRecordForEx3Test());
+
+        // Override mock to return no account ID.
+        when(mockAccountService.getAccountId(TEST_APP_ID, "healthcode:" + HEALTH_CODE)).thenReturn(
+                Optional.empty());
+
+        svc.getUploadViewForExporter3(TEST_APP_ID, null, UPLOAD_ID_1, false, false);
+    }
+
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void getUploadViewForExporter3_NotPermitted() {
+        setupGetUploadViewForExporter3Test(makeUploadForEx3Test(), makeRecordForEx3Test());
+
+        // Just test one case where we don't have permissions. The full permissions test is tested in AuthUtilsTest.
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("other-id")
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
+
+        svc.getUploadViewForExporter3(TEST_APP_ID, null, UPLOAD_ID_1, false, false);
+    }
+
+    @Test
+    public void getUploadViewForExporter3_NormalCase_NoTimelineNoAdherence() {
+        // Set up test.
+        Upload upload = makeUploadForEx3Test();
+        HealthDataRecordEx3 record = makeRecordForEx3Test();
+        setupGetUploadViewForExporter3Test(upload, record);
+
+        // Execute and validate.
+        UploadViewEx3 uploadView = svc.getUploadViewForExporter3(TEST_APP_ID, null, UPLOAD_ID_1,
+                false, false);
+        assertEquals(uploadView.getId(), UPLOAD_ID_1);
+        assertEquals(uploadView.getHealthCode(), HEALTH_CODE);
+        assertEquals(uploadView.getUserId(), TEST_USER_ID);
+        assertNull(uploadView.getAdherenceRecords());
+        assertSame(uploadView.getRecord(), record);
+        assertNull(uploadView.getTimelineMetadata());
+        assertSame(uploadView.getUpload(), upload);
+
+        // Verify back-end calls.
+        verify(mockUploadDao).getUploadNoThrow(UPLOAD_ID_1);
+        verify(mockHealthDataEx3Service).getRecord(UPLOAD_ID_1, false);
+        verify(mockAccountService).getAccountId(TEST_APP_ID, "healthcode:" + HEALTH_CODE);
+        verifyZeroInteractions(mockSchedule2Service, mockAdherenceService);
+    }
+
+    @Test
+    public void getUploadViewForExporter3_NormalCase_WithTimeline() {
+        // Setup test.
+        Upload upload = makeUploadForEx3Test();
+        HealthDataRecordEx3 record = makeRecordForEx3Test();
+        setupGetUploadViewForExporter3Test(upload, record);
+
+        mockTimelineMetadataForExporter3Test();
+
+        // Execute and validate.
+        UploadViewEx3 uploadView = svc.getUploadViewForExporter3(TEST_APP_ID, null, UPLOAD_ID_1,
+                true, false);
+        assertEquals(uploadView.getId(), UPLOAD_ID_1);
+        assertEquals(uploadView.getHealthCode(), HEALTH_CODE);
+        assertEquals(uploadView.getUserId(), TEST_USER_ID);
+        assertNull(uploadView.getAdherenceRecords());
+        assertSame(uploadView.getRecord(), record);
+        assertEquals(uploadView.getTimelineMetadata().getMetadata().get("assessmentInstanceGuid"), INSTANCE_GUID);
+        assertSame(uploadView.getUpload(), upload);
+
+        // Verify timeline call, but no adherence call.
+        verify(mockSchedule2Service).getTimelineMetadata(INSTANCE_GUID);
+        verifyZeroInteractions(mockAdherenceService);
+    }
+
+    @Test
+    public void getUploadViewForExporter3_NormalCase_WithAdherence() {
+        // Setup test.
+        Upload upload = makeUploadForEx3Test();
+        HealthDataRecordEx3 record = makeRecordForEx3Test();
+        setupGetUploadViewForExporter3Test(upload, record);
+
+        List<AdherenceRecord> adherenceRecordList = mockAdherenceForExporter3Test();
+
+        // Execute and validate.
+        UploadViewEx3 uploadView = svc.getUploadViewForExporter3(TEST_APP_ID, TEST_STUDY_ID, UPLOAD_ID_1,
+                false, true);
+        assertEquals(uploadView.getId(), UPLOAD_ID_1);
+        assertEquals(uploadView.getHealthCode(), HEALTH_CODE);
+        assertEquals(uploadView.getUserId(), TEST_USER_ID);
+        assertSame(uploadView.getAdherenceRecords(), adherenceRecordList);
+        assertSame(uploadView.getRecord(), record);
+        assertNull(uploadView.getTimelineMetadata());
+        assertSame(uploadView.getUpload(), upload);
+
+        // Verify adherence call, but no timeline call.
+        verifyZeroInteractions(mockSchedule2Service);
+
+        ArgumentCaptor<AdherenceRecordsSearch> searchCaptor = ArgumentCaptor.forClass(AdherenceRecordsSearch.class);
+        verify(mockAdherenceService).getAdherenceRecords(eq(TEST_APP_ID), searchCaptor.capture());
+        AdherenceRecordsSearch search = searchCaptor.getValue();
+        assertEquals(search.getInstanceGuids(), ImmutableSet.of(INSTANCE_GUID));
+        assertEquals(search.getPageSize().intValue(), AdherenceRecordsSearchValidator.MAX_PAGE_SIZE);
+        assertEquals(search.getStudyId(), TEST_STUDY_ID);
+        assertEquals(search.getUserId(), TEST_USER_ID);
+    }
+
+    @Test
+    public void getUploadViewForExporter3_NormalCase_WithBothTimelineAndAdherence() {
+        // Setup test.
+        Upload upload = makeUploadForEx3Test();
+        HealthDataRecordEx3 record = makeRecordForEx3Test();
+        setupGetUploadViewForExporter3Test(upload, record);
+
+        mockTimelineMetadataForExporter3Test();
+
+        List<AdherenceRecord> adherenceRecordList = mockAdherenceForExporter3Test();
+
+        // Execute and validate.
+        UploadViewEx3 uploadView = svc.getUploadViewForExporter3(TEST_APP_ID, TEST_STUDY_ID, UPLOAD_ID_1,
+                true, true);
+        assertEquals(uploadView.getId(), UPLOAD_ID_1);
+        assertEquals(uploadView.getHealthCode(), HEALTH_CODE);
+        assertEquals(uploadView.getUserId(), TEST_USER_ID);
+        assertSame(uploadView.getAdherenceRecords(), adherenceRecordList);
+        assertSame(uploadView.getRecord(), record);
+        assertEquals(uploadView.getTimelineMetadata().getMetadata().get("assessmentInstanceGuid"), INSTANCE_GUID);
+        assertSame(uploadView.getUpload(), upload);
+
+        // Verify both timeline and adherence calls. (Don't worry about search parameters.)
+        verify(mockSchedule2Service).getTimelineMetadata(INSTANCE_GUID);
+        verify(mockAdherenceService).getAdherenceRecords(eq(TEST_APP_ID), any());
+    }
+
+    @Test
+    public void getUploadViewForExporter3_UploadWithoutRecord() {
+        // Setup test.
+        Upload upload = makeUploadForEx3Test();
+        setupGetUploadViewForExporter3Test(upload, null);
+
+        mockTimelineMetadataForExporter3Test();
+
+        List<AdherenceRecord> adherenceRecordList = mockAdherenceForExporter3Test();
+
+        // Execute and validate.
+        UploadViewEx3 uploadView = svc.getUploadViewForExporter3(TEST_APP_ID, TEST_STUDY_ID, UPLOAD_ID_1,
+                true, true);
+        assertEquals(uploadView.getId(), UPLOAD_ID_1);
+        assertEquals(uploadView.getHealthCode(), HEALTH_CODE);
+        assertEquals(uploadView.getUserId(), TEST_USER_ID);
+        assertSame(uploadView.getAdherenceRecords(), adherenceRecordList);
+        assertNotNull(uploadView.getTimelineMetadata());
+        assertNull(uploadView.getRecord());
+        assertSame(uploadView.getUpload(), upload);
+
+        // Verify both timeline and adherence calls. (Don't worry about search parameters.)
+        verify(mockSchedule2Service).getTimelineMetadata(INSTANCE_GUID);
+        verify(mockAdherenceService).getAdherenceRecords(eq(TEST_APP_ID), any());
+    }
+
+    @Test
+    public void getUploadViewForExporter3_NormalCase_RecordWithoutUpload() {
+        // Setup test.
+        HealthDataRecordEx3 record = makeRecordForEx3Test();
+        setupGetUploadViewForExporter3Test(null, record);
+
+        mockTimelineMetadataForExporter3Test();
+
+        List<AdherenceRecord> adherenceRecordList = mockAdherenceForExporter3Test();
+
+        // Execute and validate.
+        UploadViewEx3 uploadView = svc.getUploadViewForExporter3(TEST_APP_ID, TEST_STUDY_ID, UPLOAD_ID_1,
+                true, true);
+        assertEquals(uploadView.getId(), UPLOAD_ID_1);
+        assertEquals(uploadView.getHealthCode(), HEALTH_CODE);
+        assertEquals(uploadView.getUserId(), TEST_USER_ID);
+        assertSame(uploadView.getAdherenceRecords(), adherenceRecordList);
+        assertSame(uploadView.getRecord(), record);
+        assertNotNull(uploadView.getTimelineMetadata());
+        assertNull(uploadView.getUpload());
+
+        // Verify both timeline and adherence calls. (Don't worry about search parameters.)
+        verify(mockSchedule2Service).getTimelineMetadata(INSTANCE_GUID);
+        verify(mockAdherenceService).getAdherenceRecords(eq(TEST_APP_ID), any());
+    }
+
+    @Test
+    public void getUploadViewForExporter3_NormalCase_UploadWithoutMetadata() {
+        // Setup test.
+        Upload upload = makeUploadForEx3Test();
+        upload.setMetadata(null);
+
+        HealthDataRecordEx3 record = makeRecordForEx3Test();
+        setupGetUploadViewForExporter3Test(upload, record);
+
+        mockTimelineMetadataForExporter3Test();
+
+        List<AdherenceRecord> adherenceRecordList = mockAdherenceForExporter3Test();
+
+        // Execute and validate.
+        UploadViewEx3 uploadView = svc.getUploadViewForExporter3(TEST_APP_ID, TEST_STUDY_ID, UPLOAD_ID_1,
+                true, true);
+        assertEquals(uploadView.getId(), UPLOAD_ID_1);
+        assertEquals(uploadView.getHealthCode(), HEALTH_CODE);
+        assertEquals(uploadView.getUserId(), TEST_USER_ID);
+        assertSame(uploadView.getAdherenceRecords(), adherenceRecordList);
+        assertSame(uploadView.getRecord(), record);
+        assertNotNull(uploadView.getTimelineMetadata());
+        assertSame(uploadView.getUpload(), upload);
+
+        // We can still call timeline and adherence because we fallback to the record metadata.
+        verify(mockSchedule2Service).getTimelineMetadata(INSTANCE_GUID);
+        verify(mockAdherenceService).getAdherenceRecords(eq(TEST_APP_ID), any());
+    }
+
+    @Test
+    public void getUploadViewForExporter3_NormalCase_UploadWithoutInstanceGuid() {
+        // Setup test.
+        Upload upload = makeUploadForEx3Test();
+        upload.getMetadata().remove(UploadService.METADATA_KEY_INSTANCE_GUID);
+
+        HealthDataRecordEx3 record = makeRecordForEx3Test();
+        setupGetUploadViewForExporter3Test(upload, record);
+
+        mockTimelineMetadataForExporter3Test();
+
+        List<AdherenceRecord> adherenceRecordList = mockAdherenceForExporter3Test();
+
+        // Execute and validate.
+        UploadViewEx3 uploadView = svc.getUploadViewForExporter3(TEST_APP_ID, TEST_STUDY_ID, UPLOAD_ID_1,
+                true, true);
+        assertEquals(uploadView.getId(), UPLOAD_ID_1);
+        assertEquals(uploadView.getHealthCode(), HEALTH_CODE);
+        assertEquals(uploadView.getUserId(), TEST_USER_ID);
+        assertSame(uploadView.getAdherenceRecords(), adherenceRecordList);
+        assertSame(uploadView.getRecord(), record);
+        assertNotNull(uploadView.getTimelineMetadata());
+        assertSame(uploadView.getUpload(), upload);
+
+        // We can still call timeline and adherence because we fallback to the record metadata.
+        verify(mockSchedule2Service).getTimelineMetadata(INSTANCE_GUID);
+        verify(mockAdherenceService).getAdherenceRecords(eq(TEST_APP_ID), any());
+    }
+
+    @Test
+    public void getUploadViewForExporter3_NormalCase_UploadInstanceGuidJsonNull() {
+        // Setup test.
+        Upload upload = makeUploadForEx3Test();
+        upload.getMetadata().set(UploadService.METADATA_KEY_INSTANCE_GUID, NullNode.getInstance());
+
+        HealthDataRecordEx3 record = makeRecordForEx3Test();
+        setupGetUploadViewForExporter3Test(upload, record);
+
+        mockTimelineMetadataForExporter3Test();
+
+        List<AdherenceRecord> adherenceRecordList = mockAdherenceForExporter3Test();
+
+        // Execute and validate.
+        UploadViewEx3 uploadView = svc.getUploadViewForExporter3(TEST_APP_ID, TEST_STUDY_ID, UPLOAD_ID_1,
+                true, true);
+        assertEquals(uploadView.getId(), UPLOAD_ID_1);
+        assertEquals(uploadView.getHealthCode(), HEALTH_CODE);
+        assertEquals(uploadView.getUserId(), TEST_USER_ID);
+        assertSame(uploadView.getAdherenceRecords(), adherenceRecordList);
+        assertSame(uploadView.getRecord(), record);
+        assertNotNull(uploadView.getTimelineMetadata());
+        assertSame(uploadView.getUpload(), upload);
+
+        // We can still call timeline and adherence because we fallback to the record metadata.
+        verify(mockSchedule2Service).getTimelineMetadata(INSTANCE_GUID);
+        verify(mockAdherenceService).getAdherenceRecords(eq(TEST_APP_ID), any());
+    }
+
+    @Test
+    public void getUploadViewForExporter3_NormalCase_UploadInstanceGuidWrongType() {
+        // Setup test.
+        Upload upload = makeUploadForEx3Test();
+        upload.getMetadata().put(UploadService.METADATA_KEY_INSTANCE_GUID, 123);
+
+        HealthDataRecordEx3 record = makeRecordForEx3Test();
+        setupGetUploadViewForExporter3Test(upload, record);
+
+        mockTimelineMetadataForExporter3Test();
+
+        List<AdherenceRecord> adherenceRecordList = mockAdherenceForExporter3Test();
+
+        // Execute and validate.
+        UploadViewEx3 uploadView = svc.getUploadViewForExporter3(TEST_APP_ID, TEST_STUDY_ID, UPLOAD_ID_1,
+                true, true);
+        assertEquals(uploadView.getId(), UPLOAD_ID_1);
+        assertEquals(uploadView.getHealthCode(), HEALTH_CODE);
+        assertEquals(uploadView.getUserId(), TEST_USER_ID);
+        assertSame(uploadView.getAdherenceRecords(), adherenceRecordList);
+        assertSame(uploadView.getRecord(), record);
+        assertNotNull(uploadView.getTimelineMetadata());
+        assertSame(uploadView.getUpload(), upload);
+
+        // We can still call timeline and adherence because we fallback to the record metadata.
+        verify(mockSchedule2Service).getTimelineMetadata(INSTANCE_GUID);
+        verify(mockAdherenceService).getAdherenceRecords(eq(TEST_APP_ID), any());
+    }
+
+    @Test
+    public void getUploadViewForExporter3_NormalCase_RecordWithoutMetadata() {
+        // Setup test.
+        Upload upload = makeUploadForEx3Test();
+        upload.setMetadata(null);
+
+        HealthDataRecordEx3 record = makeRecordForEx3Test();
+        record.setMetadata(null);
+
+        setupGetUploadViewForExporter3Test(upload, record);
+
+        // Execute and validate.
+        UploadViewEx3 uploadView = svc.getUploadViewForExporter3(TEST_APP_ID, TEST_STUDY_ID, UPLOAD_ID_1,
+                true, true);
+        assertEquals(uploadView.getId(), UPLOAD_ID_1);
+        assertEquals(uploadView.getHealthCode(), HEALTH_CODE);
+        assertEquals(uploadView.getUserId(), TEST_USER_ID);
+        assertNull(uploadView.getAdherenceRecords());
+        assertSame(uploadView.getRecord(), record);
+        assertNull(uploadView.getTimelineMetadata());
+        assertSame(uploadView.getUpload(), upload);
+
+        // Without metadata, we can't call timeline or adherence.
+        verifyZeroInteractions(mockSchedule2Service, mockAdherenceService);
+    }
+
+    @Test
+    public void getUploadViewForExporter3_NormalCase_RecordWithoutInstanceGuid() {
+        // Setup test.
+        Upload upload = makeUploadForEx3Test();
+        upload.setMetadata(null);
+
+        HealthDataRecordEx3 record = makeRecordForEx3Test();
+        record.getMetadata().remove(UploadService.METADATA_KEY_INSTANCE_GUID);
+
+        setupGetUploadViewForExporter3Test(upload, record);
+
+        // Execute and validate.
+        UploadViewEx3 uploadView = svc.getUploadViewForExporter3(TEST_APP_ID, TEST_STUDY_ID, UPLOAD_ID_1,
+                true, true);
+        assertEquals(uploadView.getId(), UPLOAD_ID_1);
+        assertEquals(uploadView.getHealthCode(), HEALTH_CODE);
+        assertEquals(uploadView.getUserId(), TEST_USER_ID);
+        assertNull(uploadView.getAdherenceRecords());
+        assertSame(uploadView.getRecord(), record);
+        assertNull(uploadView.getTimelineMetadata());
+        assertSame(uploadView.getUpload(), upload);
+
+        // Without metadata, we can't call timeline or adherence.
+        verifyZeroInteractions(mockSchedule2Service, mockAdherenceService);
+    }
+
+    @Test
+    public void getUploadViewForExporter3_TimelineNotPresent() {
+        // Setup test.
+        Upload upload = makeUploadForEx3Test();
+        HealthDataRecordEx3 record = makeRecordForEx3Test();
+        setupGetUploadViewForExporter3Test(upload, record);
+
+        when(mockSchedule2Service.getTimelineMetadata(INSTANCE_GUID)).thenReturn(Optional.empty());
+
+        // Execute and validate.
+        UploadViewEx3 uploadView = svc.getUploadViewForExporter3(TEST_APP_ID, null, UPLOAD_ID_1,
+                true, false);
+        assertEquals(uploadView.getId(), UPLOAD_ID_1);
+        assertEquals(uploadView.getHealthCode(), HEALTH_CODE);
+        assertEquals(uploadView.getUserId(), TEST_USER_ID);
+        assertNull(uploadView.getAdherenceRecords());
+        assertSame(uploadView.getRecord(), record);
+        assertNull(uploadView.getTimelineMetadata());
+        assertSame(uploadView.getUpload(), upload);
+
+        // Verify timeline call, but no adherence call.
+        verify(mockSchedule2Service).getTimelineMetadata(INSTANCE_GUID);
+        verifyZeroInteractions(mockAdherenceService);
+    }
+
+    @Test
+    public void getUploadViewForExporter3_TimelineFromWrongApp() {
+        // Setup test.
+        Upload upload = makeUploadForEx3Test();
+        HealthDataRecordEx3 record = makeRecordForEx3Test();
+        setupGetUploadViewForExporter3Test(upload, record);
+
+        TimelineMetadata timelineMetadata = new TimelineMetadata();
+        timelineMetadata.setAppId("wrong-app");
+        timelineMetadata.setAssessmentInstanceGuid(INSTANCE_GUID);
+        when(mockSchedule2Service.getTimelineMetadata(INSTANCE_GUID)).thenReturn(Optional.of(timelineMetadata));
+
+        // Execute and validate.
+        UploadViewEx3 uploadView = svc.getUploadViewForExporter3(TEST_APP_ID, null, UPLOAD_ID_1,
+                true, false);
+        assertEquals(uploadView.getId(), UPLOAD_ID_1);
+        assertEquals(uploadView.getHealthCode(), HEALTH_CODE);
+        assertEquals(uploadView.getUserId(), TEST_USER_ID);
+        assertNull(uploadView.getAdherenceRecords());
+        assertSame(uploadView.getRecord(), record);
+        assertNull(uploadView.getTimelineMetadata());
+        assertSame(uploadView.getUpload(), upload);
+
+        // Verify timeline call, but no adherence call.
+        verify(mockSchedule2Service).getTimelineMetadata(INSTANCE_GUID);
+        verifyZeroInteractions(mockAdherenceService);
+    }
+
+    @Test
+    public void getUploadViewForExporter3_NormalCase_EmptyAdherenceRecords() {
+        // Setup test.
+        Upload upload = makeUploadForEx3Test();
+        HealthDataRecordEx3 record = makeRecordForEx3Test();
+        setupGetUploadViewForExporter3Test(upload, record);
+
+        PagedResourceList<AdherenceRecord> pagedResourceList = new PagedResourceList<>(ImmutableList.of(), 0);
+        when(mockAdherenceService.getAdherenceRecords(eq(TEST_APP_ID), any())).thenReturn(pagedResourceList);
+
+        // Execute and validate.
+        UploadViewEx3 uploadView = svc.getUploadViewForExporter3(TEST_APP_ID, TEST_STUDY_ID, UPLOAD_ID_1,
+                false, true);
+        assertEquals(uploadView.getId(), UPLOAD_ID_1);
+        assertEquals(uploadView.getHealthCode(), HEALTH_CODE);
+        assertEquals(uploadView.getUserId(), TEST_USER_ID);
+        assertTrue(uploadView.getAdherenceRecords().isEmpty());
+        assertSame(uploadView.getRecord(), record);
+        assertNull(uploadView.getTimelineMetadata());
+        assertSame(uploadView.getUpload(), upload);
+
+        // Verify adherence call, but no timeline call.
+        verifyZeroInteractions(mockSchedule2Service);
+        verify(mockAdherenceService).getAdherenceRecords(eq(TEST_APP_ID), any());
+    }
+
+    private void setupGetUploadViewForExporter3Test(Upload upload, HealthDataRecordEx3 record) {
+        // Set request context. Developer has access to everything.
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("other-id")
+                .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
+
+        // Mock upload and record.
+        when(mockUploadDao.getUploadNoThrow(UPLOAD_ID_1)).thenReturn(upload);
+        when(mockHealthDataEx3Service.getRecord(UPLOAD_ID_1, false)).thenReturn(Optional.ofNullable(record));
+
+        // Mock account service.
+        when(mockAccountService.getAccountId(TEST_APP_ID, "healthcode:" + HEALTH_CODE)).thenReturn(
+                Optional.of(TEST_USER_ID));
+    }
+
+    private static Upload makeUploadForEx3Test() {
+        Upload upload = Upload.create();
+        upload.setAppId(TEST_APP_ID);
+        upload.setUploadId(UPLOAD_ID_1);
+        upload.setHealthCode(HEALTH_CODE);
+
+        ObjectNode metadataNode = BridgeObjectMapper.get().createObjectNode();
+        metadataNode.put(UploadService.METADATA_KEY_INSTANCE_GUID, INSTANCE_GUID);
+        upload.setMetadata(metadataNode);
+
+        return upload;
+    }
+
+    private static HealthDataRecordEx3 makeRecordForEx3Test() {
+        HealthDataRecordEx3 record = HealthDataRecordEx3.create();
+        record.setAppId(TEST_APP_ID);
+        record.setHealthCode(HEALTH_CODE);
+        record.setId(UPLOAD_ID_1);
+
+        Map<String, String> metadataMap = new HashMap<>();
+        metadataMap.put(UploadService.METADATA_KEY_INSTANCE_GUID, INSTANCE_GUID);
+        record.setMetadata(metadataMap);
+
+        return record;
+    }
+
+    private void mockTimelineMetadataForExporter3Test() {
+        TimelineMetadata timelineMetadata = new TimelineMetadata();
+        timelineMetadata.setAppId(TEST_APP_ID);
+        timelineMetadata.setAssessmentInstanceGuid(INSTANCE_GUID);
+
+        when(mockSchedule2Service.getTimelineMetadata(INSTANCE_GUID)).thenReturn(Optional.of(timelineMetadata));
+    }
+
+    private List<AdherenceRecord> mockAdherenceForExporter3Test() {
+        // We don't actually need any of the data in the adherence record, just the fact that it exists.
+        List<AdherenceRecord> adherenceRecordList = ImmutableList.of(new AdherenceRecord());
+        PagedResourceList<AdherenceRecord> pagedResourceList = new PagedResourceList<>(adherenceRecordList, 1);
+        when(mockAdherenceService.getAdherenceRecords(eq(TEST_APP_ID), any())).thenReturn(pagedResourceList);
+        return adherenceRecordList;
     }
 }

@@ -12,6 +12,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecordEx3;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
+import org.sagebionetworks.bridge.models.exporter.ExportedRecordInfo;
 import org.sagebionetworks.bridge.models.upload.Upload;
 
 /**
@@ -102,6 +103,20 @@ public interface HealthDataRecordEx3 extends BridgeEntity {
      */
     Long getExportedOn();
     void setExportedOn(Long exportedOn);
+
+    /**
+     * Record that is exported to the app-wide Synapse project. May be null if there is no app-wide Synapse project
+     * configured.
+     */
+    ExportedRecordInfo getExportedRecord();
+    void setExportedRecord(ExportedRecordInfo exportedRecord);
+
+    /**
+     * Records that are exported to the study-specific Synapse project, keyed by study ID. May be empty if there are no
+     * study-specific Synapse projects configured.
+     */
+    Map<String, ExportedRecordInfo> getExportedStudyRecords();
+    void setExportedStudyRecords(Map<String, ExportedRecordInfo> exportedStudyRecords);
 
     /** Client-submitted metadata, as a map of key-value pairs. */
     Map<String, String> getMetadata();
