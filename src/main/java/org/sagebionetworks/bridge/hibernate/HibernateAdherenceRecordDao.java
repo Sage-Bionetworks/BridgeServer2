@@ -8,6 +8,7 @@ import java.util.List;
 
 import javax.annotation.Resource;
 
+import org.joda.time.DateTime;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.dao.AdherenceRecordDao;
@@ -32,24 +33,49 @@ public class HibernateAdherenceRecordDao implements AdherenceRecordDao {
         this.hibernateHelper = hibernateHelper;
     }
     
+    /**
+     * Saves new or updates existing adherence record unless it does not have either a startedOn
+     * date or a declined flag. If both startedOn and declined are missing, then a new record will
+     * not be saved and any previously existing record will be deleted.
+     * If the incoming record will overwrite a previously existing record, the earlier of the
+     * two uploadedOn dates will be retained and all unique uploadIds will persist with the saved record.
+     */
     @Override
     public void updateAdherenceRecord(AdherenceRecord record) {
         checkNotNull(record);
         
-        if (record.getStartedOn() == null && !record.isDeclined()) {
-//            System.out.println("In AdherenceRecordDao update");
-            AdherenceRecordId id = new AdherenceRecordId(record.getUserId(), record.getStudyId(),
-                    record.getInstanceGuid(), record.getEventTimestamp(), record.getInstanceTimestamp());
-            // Cannot delete if the record is already not there, so check for this.
-            AdherenceRecord obj = hibernateHelper.getById(AdherenceRecord.class, id);
-//            System.out.println("obj is " + obj);
-            if (obj != null) {
-                hibernateHelper.deleteById(AdherenceRecord.class, id);    
+        // The record does not need to be persisted if there is no participant activity
+        boolean deleteRecord = record.getStartedOn() == null && !record.isDeclined();
+    
+        // Check if there is an existing record.
+        AdherenceRecordId id = new AdherenceRecordId(record.getUserId(), record.getStudyId(),
+                record.getInstanceGuid(), record.getEventTimestamp(), record.getInstanceTimestamp());
+        AdherenceRecord previousRecord = hibernateHelper.getById(AdherenceRecord.class, id);
+        
+        if (previousRecord != null) {
+            // If the updated record does not have a startedOn date and is not declined,
+            // then the previous record can be deleted.
+            if (deleteRecord) {
+                hibernateHelper.deleteById(AdherenceRecord.class, id);
+                return;
             }
-//            System.out.println("SAVING?");
-//            hibernateHelper.saveOrUpdate(record);
-        } else {
-            hibernateHelper.saveOrUpdate(record);    
+            
+            // Persisted record keeps the earliest uploadedOn date.
+            DateTime previousUploadedOn = previousRecord.getUploadedOn();
+            if (previousUploadedOn != null && previousUploadedOn.isBefore(record.getUploadedOn())) {
+                record.setUploadedOn(previousUploadedOn);
+            }
+            
+            // Keep uploadIds from both the previous and new record.
+            if (previousRecord.getUploadIds() != null) {
+                for (String uploadId : previousRecord.getUploadIds()) {
+                    record.addUploadId(uploadId);
+                }
+            }
+        }
+    
+        if (!deleteRecord) {
+            hibernateHelper.saveOrUpdate(record);
         }
     }
 

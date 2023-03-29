@@ -6,6 +6,7 @@ import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
+import static org.sagebionetworks.bridge.TestConstants.UPLOADED_ON;
 import static org.sagebionetworks.bridge.TestUtils.getAdherenceRecord;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordType.ASSESSMENT;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordType.SESSION;
@@ -15,6 +16,7 @@ import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValida
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -23,6 +25,7 @@ import java.util.function.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
+import com.google.common.collect.ImmutableSet;
 import org.hibernate.Session;
 import org.hibernate.query.NativeQuery;
 import org.joda.time.DateTime;
@@ -64,7 +67,7 @@ public class HibernateAdherenceRecordDaoTest extends Mockito {
     NativeQuery<Schedule2> mockQuery;
 
     @Captor
-    ArgumentCaptor<AdherenceRecordId> recordIdCaptor;
+    ArgumentCaptor<AdherenceRecord> recordCaptor;
 
     @Captor
     ArgumentCaptor<AdherenceRecordId> idCaptor;
@@ -307,6 +310,154 @@ public class HibernateAdherenceRecordDaoTest extends Mockito {
 
         verify(mockHelper).saveOrUpdate(record);
     }
+    
+    @Test
+    public void updateAdherenceRecord_retainPersistedUploadedOn() {
+        AdherenceRecord record = new AdherenceRecord();
+        record.setAppId(TEST_APP_ID);
+        record.setStudyId(TEST_STUDY_ID);
+        record.setUserId(TEST_USER_ID);
+        record.setInstanceGuid(GUID);
+        record.setEventTimestamp(MODIFIED_ON);
+        record.setInstanceTimestamp(MODIFIED_ON.plusHours(1));
+        record.setStartedOn(MODIFIED_ON.plusHours(2));
+        
+        AdherenceRecord persisted = new AdherenceRecord();
+        persisted.setUploadedOn(UPLOADED_ON);
+        when(mockHelper.getById(eq(AdherenceRecord.class), any())).thenReturn(persisted);
+        
+        dao.updateAdherenceRecord(record);
+        
+        verify(mockHelper).saveOrUpdate(recordCaptor.capture());
+        AdherenceRecord captured = recordCaptor.getValue();
+        assertEquals(captured.getAppId(), TEST_APP_ID);
+        assertEquals(captured.getUserId(), TEST_USER_ID);
+        assertEquals(captured.getStudyId(), TEST_STUDY_ID);
+        assertEquals(captured.getInstanceGuid(), GUID);
+        assertEquals(captured.getEventTimestamp(), MODIFIED_ON);
+        assertEquals(captured.getInstanceTimestamp(), MODIFIED_ON.plusHours(1));
+        assertEquals(captured.getStartedOn(), MODIFIED_ON.plusHours(2));
+        assertEquals(captured.getUploadedOn(), UPLOADED_ON);
+    }
+    
+    @Test
+    public void updateAdherenceRecord_retainEarlierPersistedUploadedOn() {
+        AdherenceRecord record = new AdherenceRecord();
+        record.setAppId(TEST_APP_ID);
+        record.setStudyId(TEST_STUDY_ID);
+        record.setUserId(TEST_USER_ID);
+        record.setInstanceGuid(GUID);
+        record.setEventTimestamp(MODIFIED_ON);
+        record.setInstanceTimestamp(MODIFIED_ON.plusHours(1));
+        record.setStartedOn(MODIFIED_ON.plusHours(2));
+        record.setUploadedOn(UPLOADED_ON.plusHours(1));
+        
+        AdherenceRecord persisted = new AdherenceRecord();
+        persisted.setUploadedOn(UPLOADED_ON);
+        when(mockHelper.getById(eq(AdherenceRecord.class), any())).thenReturn(persisted);
+        
+        dao.updateAdherenceRecord(record);
+        
+        verify(mockHelper).saveOrUpdate(recordCaptor.capture());
+        AdherenceRecord captured = recordCaptor.getValue();
+        assertEquals(captured.getAppId(), TEST_APP_ID);
+        assertEquals(captured.getUserId(), TEST_USER_ID);
+        assertEquals(captured.getStudyId(), TEST_STUDY_ID);
+        assertEquals(captured.getInstanceGuid(), GUID);
+        assertEquals(captured.getEventTimestamp(), MODIFIED_ON);
+        assertEquals(captured.getInstanceTimestamp(), MODIFIED_ON.plusHours(1));
+        assertEquals(captured.getStartedOn(), MODIFIED_ON.plusHours(2));
+        assertEquals(captured.getUploadedOn(), UPLOADED_ON);
+    }
+    
+    @Test
+    public void updateAdherenceRecord_ignoreLaterPersistedUploadedOn() {
+        AdherenceRecord record = new AdherenceRecord();
+        record.setAppId(TEST_APP_ID);
+        record.setStudyId(TEST_STUDY_ID);
+        record.setUserId(TEST_USER_ID);
+        record.setInstanceGuid(GUID);
+        record.setEventTimestamp(MODIFIED_ON);
+        record.setInstanceTimestamp(MODIFIED_ON.plusHours(1));
+        record.setStartedOn(MODIFIED_ON.plusHours(2));
+        record.setUploadedOn(UPLOADED_ON);
+        
+        AdherenceRecord persisted = new AdherenceRecord();
+        persisted.setUploadedOn(UPLOADED_ON.plusHours(1));
+        when(mockHelper.getById(eq(AdherenceRecord.class), any())).thenReturn(persisted);
+        
+        dao.updateAdherenceRecord(record);
+        
+        verify(mockHelper).saveOrUpdate(recordCaptor.capture());
+        AdherenceRecord captured = recordCaptor.getValue();
+        assertEquals(captured.getAppId(), TEST_APP_ID);
+        assertEquals(captured.getUserId(), TEST_USER_ID);
+        assertEquals(captured.getStudyId(), TEST_STUDY_ID);
+        assertEquals(captured.getInstanceGuid(), GUID);
+        assertEquals(captured.getEventTimestamp(), MODIFIED_ON);
+        assertEquals(captured.getInstanceTimestamp(), MODIFIED_ON.plusHours(1));
+        assertEquals(captured.getStartedOn(), MODIFIED_ON.plusHours(2));
+        assertEquals(captured.getUploadedOn(), UPLOADED_ON);
+    }
+    
+    @Test
+    public void updateAdherenceRecord_retainPersistedUploadIds() {
+        AdherenceRecord record = new AdherenceRecord();
+        record.setAppId(TEST_APP_ID);
+        record.setStudyId(TEST_STUDY_ID);
+        record.setUserId(TEST_USER_ID);
+        record.setInstanceGuid(GUID);
+        record.setEventTimestamp(MODIFIED_ON);
+        record.setInstanceTimestamp(MODIFIED_ON.plusHours(1));
+        record.setStartedOn(MODIFIED_ON.plusHours(2));
+        
+        AdherenceRecord persisted = new AdherenceRecord();
+        persisted.setUploadIds(ImmutableSet.of("upload-id"));
+        when(mockHelper.getById(eq(AdherenceRecord.class), any())).thenReturn(persisted);
+        
+        dao.updateAdherenceRecord(record);
+        
+        verify(mockHelper).saveOrUpdate(recordCaptor.capture());
+        AdherenceRecord captured = recordCaptor.getValue();
+        assertEquals(captured.getAppId(), TEST_APP_ID);
+        assertEquals(captured.getUserId(), TEST_USER_ID);
+        assertEquals(captured.getStudyId(), TEST_STUDY_ID);
+        assertEquals(captured.getInstanceGuid(), GUID);
+        assertEquals(captured.getEventTimestamp(), MODIFIED_ON);
+        assertEquals(captured.getInstanceTimestamp(), MODIFIED_ON.plusHours(1));
+        assertEquals(captured.getStartedOn(), MODIFIED_ON.plusHours(2));
+        assertEquals(captured.getUploadIds(), ImmutableSet.of("upload-id"));
+    }
+    
+    @Test
+    public void updateAdherenceRecord_retainUniqueUploadIds() {
+        AdherenceRecord record = new AdherenceRecord();
+        record.setAppId(TEST_APP_ID);
+        record.setStudyId(TEST_STUDY_ID);
+        record.setUserId(TEST_USER_ID);
+        record.setInstanceGuid(GUID);
+        record.setEventTimestamp(MODIFIED_ON);
+        record.setInstanceTimestamp(MODIFIED_ON.plusHours(1));
+        record.setStartedOn(MODIFIED_ON.plusHours(2));
+        record.setUploadIds(new HashSet<>(ImmutableList.of("upload-id-1", "upload-id-2")));
+        
+        AdherenceRecord persisted = new AdherenceRecord();
+        persisted.setUploadIds(ImmutableSet.of("upload-id-2", "upload-id-3"));
+        when(mockHelper.getById(eq(AdherenceRecord.class), any())).thenReturn(persisted);
+        
+        dao.updateAdherenceRecord(record);
+        
+        verify(mockHelper).saveOrUpdate(recordCaptor.capture());
+        AdherenceRecord captured = recordCaptor.getValue();
+        assertEquals(captured.getAppId(), TEST_APP_ID);
+        assertEquals(captured.getUserId(), TEST_USER_ID);
+        assertEquals(captured.getStudyId(), TEST_STUDY_ID);
+        assertEquals(captured.getInstanceGuid(), GUID);
+        assertEquals(captured.getEventTimestamp(), MODIFIED_ON);
+        assertEquals(captured.getInstanceTimestamp(), MODIFIED_ON.plusHours(1));
+        assertEquals(captured.getStartedOn(), MODIFIED_ON.plusHours(2));
+        assertEquals(captured.getUploadIds(), ImmutableSet.of("upload-id-1", "upload-id-2", "upload-id-3"));
+    }
 
     @Test
     public void updateAdherenceRecord_deleteOnUpdate() {
@@ -317,6 +468,8 @@ public class HibernateAdherenceRecordDaoTest extends Mockito {
         record.setInstanceGuid(GUID);
         record.setEventTimestamp(MODIFIED_ON);
         record.setInstanceTimestamp(MODIFIED_ON.plusHours(1));
+        record.setUploadedOn(UPLOADED_ON);
+        record.setUploadIds(ImmutableSet.of("upload-id-1"));
 
         AdherenceRecord persisted = new AdherenceRecord();
         when(mockHelper.getById(eq(AdherenceRecord.class), any())).thenReturn(persisted);
@@ -340,6 +493,8 @@ public class HibernateAdherenceRecordDaoTest extends Mockito {
         record.setInstanceGuid(GUID);
         record.setEventTimestamp(MODIFIED_ON);
         record.setInstanceTimestamp(MODIFIED_ON.plusHours(1));
+        record.setUploadedOn(UPLOADED_ON);
+        record.setUploadIds(ImmutableSet.of("upload-id-1"));
         when(mockHelper.getById(eq(AdherenceRecord.class), any())).thenReturn(null);
 
         dao.updateAdherenceRecord(record);

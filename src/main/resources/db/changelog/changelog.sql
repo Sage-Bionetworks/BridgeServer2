@@ -1071,3 +1071,8 @@ ADD `category` varchar(255) DEFAULT NULL,
 ADD `minAge` int DEFAULT NULL,
 ADD `maxAge` int DEFAULT NULL,
 ADD `additionalMetadata` text DEFAULT NULL;
+
+-- changeset bridge:78
+
+ALTER TABLE `AdherenceRecords`
+ADD COLUMN `uploadIds` text DEFAULT NULL;

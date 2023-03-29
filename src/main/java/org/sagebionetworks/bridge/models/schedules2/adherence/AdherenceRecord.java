@@ -12,7 +12,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.hibernate.DateTimeToLongAttributeConverter;
 import org.sagebionetworks.bridge.hibernate.JsonNodeAttributeConverter;
+import org.sagebionetworks.bridge.hibernate.StringSetConverter;
 import org.sagebionetworks.bridge.models.BridgeEntity;
+
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "AdherenceRecords")
@@ -48,6 +52,8 @@ public class AdherenceRecord implements BridgeEntity {
     private boolean declined;
     private String sessionGuid;
     private String assessmentGuid;
+    @Convert(converter = StringSetConverter.class)
+    private Set<String> uploadIds;
     
     public String getAppId() {
         return appId;
@@ -147,5 +153,17 @@ public class AdherenceRecord implements BridgeEntity {
     }
     public void setAssessmentGuid(String assessmentGuid) {
         this.assessmentGuid = assessmentGuid;
+    }
+    public Set<String> getUploadIds() {
+        return uploadIds;
+    }
+    public void setUploadIds(Set<String> uploadIds) {
+        this.uploadIds = uploadIds;
+    }
+    public void addUploadId(String uploadId) {
+        if (uploadIds == null) {
+            uploadIds = new HashSet<>();
+        }
+        uploadIds.add(uploadId);
     }
 }

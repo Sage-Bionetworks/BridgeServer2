@@ -10,12 +10,11 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.CANNOT_BE_BLANK;
 
 import java.net.URL;
-import java.time.Instant;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
@@ -33,6 +32,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -43,7 +43,7 @@ import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordList;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSearch;
-import org.sagebionetworks.bridge.models.studies.Enrollment;
+import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -83,6 +83,9 @@ public class UploadService {
     
     // package-scoped to be available in unit tests
     static final String CONFIG_KEY_UPLOAD_BUCKET = "upload.bucket";
+    static final String METADATA_KEY_EVENT_TIMESTAMP = "eventTimestamp";
+    static final String METADATA_KEY_INSTANCE_GUID = "instanceGuid";
+    static final String METADATA_KEY_STARTED_ON = "startedOn";
 
     private AccountService accountService;
     private AdherenceService adherenceService;
@@ -91,6 +94,8 @@ public class UploadService {
     private HealthDataService healthDataService;
     private AmazonS3 s3UploadClient;
     private AmazonS3 s3Client;
+    private Schedule2Service schedule2Service;
+    private StudyService studyService;
     private String uploadBucket;
     private UploadDao uploadDao;
     private UploadDedupeDao uploadDedupeDao;
@@ -135,6 +140,16 @@ public class UploadService {
     @Autowired
     public void setHealthDataService(HealthDataService healthDataService) {
         this.healthDataService = healthDataService;
+    }
+    
+    @Autowired
+    public final void setSchedule2Service(Schedule2Service schedule2Service) {
+        this.schedule2Service = schedule2Service;
+    }
+    
+    @Autowired
+    public final void setStudyService(StudyService studyService) {
+        this.studyService = studyService;
     }
 
     @Resource(name = "s3Client")
@@ -479,54 +494,8 @@ public class UploadService {
             return;
         }
         
-        // Create an adherence record noting the time of the first successful upload.
-        JsonNode metadata = upload.getMetadata();
-        JsonNode instanceGuidNode = metadata.get("instanceGuid");
-        JsonNode eventTimestampNode = metadata.get("eventTimestamp");
-        
-        System.out.println("completed on");
-        System.out.println(upload.getCompletedOn());
-        System.out.println("instanceGuid:");
-        System.out.println(instanceGuidNode.textValue());
-        System.out.println("eventTimestamp");
-        System.out.println(eventTimestampNode.textValue());
-        
-        if (instanceGuidNode != null && eventTimestampNode != null) {
-            String instanceGuid = instanceGuidNode.textValue();
-            DateTime eventTimestamp = DateTime.parse(eventTimestampNode.textValue());
-            
-            Account account = accountService.getAccount(AccountId.forHealthCode(appId, upload.getHealthCode()))
-                    .orElseThrow(() -> new EntityNotFoundException(Account.class));
-            
-            String userId = account.getId();
-            
-            // TODO: there has to be a better way to figure out which study this upload is related to.
-            for (Enrollment enrollment : account.getEnrollments()) {
-                // TODO: wrap in loop for edge case where this brings up a bunch of records.
-                 PagedResourceList<AdherenceRecord> recordList = adherenceService.getAdherenceRecords(appId, new AdherenceRecordsSearch.Builder()
-                        .withInstanceGuids(ImmutableSet.of(instanceGuid))
-//                        .withEventTimestamps() // TODO: have to find the trigger event for the map key
-                        .withStudyId(enrollment.getStudyId())
-                        .build());
-                 
-                 if (recordList.getTotal() > 0) {
-                     AdherenceRecord adherenceRecord = new AdherenceRecord();
-                     adherenceRecord.setAppId(appId);
-                     adherenceRecord.setStudyId(enrollment.getStudyId());
-                     adherenceRecord.setUserId(userId);
-                     adherenceRecord.setInstanceGuid(instanceGuid);
-                     adherenceRecord.setEventTimestamp(eventTimestamp);
-                     adherenceRecord.setUploadedOn(new DateTime(upload.getCompletedOn()));
-                     
-                     adherenceService.updateAdherenceRecords(appId, 
-                             new AdherenceRecordList(ImmutableList.of(adherenceRecord)));
-                 }
-            }
-        } else {
-            logger.info("Upload does not have metadata to update adherence record. AppID: " + appId + 
-                    " UploadId: " + uploadId);
-        }
-        
+        // Save uploadedOn date and uploadId to related adherence records.
+        updateAdherenceWithUploadInfo(appId, upload);
 
         // kick off upload validation
         App app = appService.getApp(appId);
@@ -537,9 +506,6 @@ public class UploadService {
         // For backwards compatibility, always call Legacy Exporter 2.0. In the future, we may introduce a setting to
         // disable this for new apps.
         uploadValidationService.validateUpload(appId, upload);
-        
-        
-        upload.getMetadata();
     }
     
     public void deleteUploadsForHealthCode(String healthCode) {
@@ -555,7 +521,135 @@ public class UploadService {
             s3Client.deleteObject(uploadBucket, uploadId);
         }
     }
+    
+    // protected for unit tests
+    protected void updateAdherenceWithUploadInfo(String appId, Upload upload) {
+        System.out.println("------------------------------");
+        System.out.println("UPDATING ADHERENCE WITH UPLOAD INFO");
+        
+        String uploadId = upload.getUploadId();
+        // Check for metadata that can tie the upload to an adherence record.
+        JsonNode metadata = upload.getMetadata();
+        if (metadata != null) {
+            JsonNode instanceGuidNode = metadata.get(METADATA_KEY_INSTANCE_GUID);
+            JsonNode eventTimestampNode = metadata.get(METADATA_KEY_EVENT_TIMESTAMP);
+            JsonNode startedOnNode = metadata.get(METADATA_KEY_STARTED_ON);
+            
+            
+            if (instanceGuidNode != null && instanceGuidNode.textValue() != null &&
+                    eventTimestampNode != null && eventTimestampNode.textValue() != null &&
+                    startedOnNode != null && startedOnNode.textValue() != null) {
+                System.out.println("have the metadata");
 
+            
+                String instanceGuid = instanceGuidNode.textValue();
+                DateTime eventTimestamp;
+                try {
+                    eventTimestamp = DateTime.parse(eventTimestampNode.textValue());
+                } catch (IllegalArgumentException ex) {
+                    logger.info("Upload sent with malformed eventTimestamp in metadata. UploadId: " + uploadId +
+                            " errorMessage: " + ex.getMessage());
+                    return;
+                }
+                
+                DateTime startedOn;
+                try {
+                    startedOn = DateTime.parse(startedOnNode.textValue());
+                } catch (IllegalArgumentException ex) {
+                    System.out.println("bad started on value");
+                    logger.info("Upload sent with malformed startedOn in metadata for persistent window." +
+                            " AppId: " + appId + " UploadId: " + uploadId +
+                            " errorMessage: " + ex.getMessage());
+                    return;
+                }
+    
+                System.out.println("parsed metadata");
+                String userId = accountService.getAccountId(appId, "healthcode:" + upload.getHealthCode())
+                        .orElseThrow(() -> new EntityNotFoundException(Account.class));
+    
+                System.out.println("found userId");
+                // Find the study using the instanceGuid referenced by the upload
+                TimelineMetadata timelineMetadata =  schedule2Service.getTimelineMetadata(instanceGuid).orElse(null);
+                if (timelineMetadata != null) {
+                    System.out.println("located timeline metadata");
+                    
+                    String scheduleGuid = timelineMetadata.getScheduleGuid();
+                    List<String> studyIds = studyService.getStudyIdsUsingSchedule(appId, scheduleGuid);
+                
+                    if (studyIds.size() == 1) {
+                        String studyId = studyIds.get(0);
+                        System.out.println("found single study ID");
+                    
+                        // If adherence record already exists, update it. Otherwise, create a new one.
+                        AdherenceRecordsSearch.Builder search = new AdherenceRecordsSearch.Builder()
+                                .withInstanceGuids(ImmutableSet.of(instanceGuid))
+                                .withUserId(userId)
+                                .withStudyId(studyId);
+                        if (timelineMetadata.isTimeWindowPersistent()) {
+                            search.withStartTime(startedOn);
+                            search.withEndTime(startedOn);
+                        }
+                        PagedResourceList<AdherenceRecord> recordList = adherenceService.getAdherenceRecords(appId,
+                                search.build());
+                        
+                        List<AdherenceRecord> recordsToUpdate = new ArrayList<>();
+                        boolean foundExistingRecord = false;
+
+                        System.out.println("found related adherence records");
+                        for (AdherenceRecord record : recordList.getItems()) {
+                            if (timelineMetadata.isTimeWindowPersistent() && record.getStartedOn() != startedOn) {
+                                // If the window is persistent then the records would have to share startedOn values
+                                // to be considered the same.
+                                System.out.println("persistent record with different startedOn; continuing");
+                                continue;
+                            }
+                            
+                            if (record.getEventTimestamp() == eventTimestamp) {
+                                System.out.println("updating an adherence record");
+                                // The DAO retains the earlier uploadedOn date and previous uploadIds
+                                // so these can ignore the calculation and pass in the new upload.
+                                record.setUploadedOn(new DateTime(upload.getCompletedOn()));
+                                record.addUploadId(uploadId);
+                                recordsToUpdate.add(record);
+                                foundExistingRecord = true;
+                                break;
+                            }
+                        }
+    
+                        if (!foundExistingRecord) {
+                            System.out.println("no records found, creating an adherence record");
+                            AdherenceRecord record = new AdherenceRecord();
+                            record.setAppId(appId);
+                            record.setStudyId(studyId);
+                            record.setUserId(userId);
+                            record.setInstanceGuid(instanceGuid);
+                            record.setEventTimestamp(eventTimestamp);
+                            record.setStartedOn(startedOn);
+                            record.setUploadedOn(new DateTime(upload.getCompletedOn()));
+                            record.addUploadId(uploadId);
+                        
+                            recordsToUpdate.add(record);
+                        }
+    
+                        System.out.println("requesting update from adherence service");
+                        System.out.println(recordsToUpdate);
+                        adherenceService.updateAdherenceRecords(appId, new AdherenceRecordList(recordsToUpdate));
+                    
+                    } else if (studyIds.size() > 1) {
+                        // It's unlikely that there are multiple studies tied to one schedule, but not impossible.
+                        // If it does happen, the timelines for the studies would be identical. It would be possible
+                        // to check which study a participant is enrolled in. But they can also enroll in multiple.
+                        logger.warn("Upload completion can not be noted in adherence since its schedule belongs " +
+                                "to multiple studies. uploadId: " + uploadId + " scheduleGuid: " + scheduleGuid);
+                    }
+                } else {
+                    logger.info("Upload referenced a non-existent instanceGuid. AppId: " + appId +
+                            " UploadId: " + uploadId);
+                }
+            }
+        }
+    }
+    
     @FunctionalInterface
     private static interface UploadSupplier {
         ForwardCursorPagedResourceList<Upload> get(DateTime startTime, DateTime endTime);

@@ -9,7 +9,6 @@ import org.sagebionetworks.bridge.dao.AdherenceRecordDao;
 import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.file.FileHelper;
 import org.sagebionetworks.bridge.models.upload.Upload;
-import org.sagebionetworks.bridge.services.AdherenceService;
 import org.sagebionetworks.bridge.services.HealthDataService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -25,7 +24,6 @@ public class UploadValidationTaskFactory {
     private List<UploadValidationHandler> handlerList;
     private UploadDao uploadDao;
     private HealthDataService healthDataService;
-    private AdherenceRecordDao adherenceRecordDao;
 
     /** File helper, used to create and delete the temp directory in which we process uploads. */
     @Autowired
@@ -48,11 +46,6 @@ public class UploadValidationTaskFactory {
     @Autowired
     public final void setHealthDataService(HealthDataService healthDataService) {
         this.healthDataService = healthDataService;
-    }
-    
-    @Autowired
-    public final void setAdherenceRecordDao(AdherenceRecordDao adherenceRecordDao) {
-        this.adherenceRecordDao = adherenceRecordDao;
     }
 
     /**
@@ -77,7 +70,6 @@ public class UploadValidationTaskFactory {
         task.setHandlerList(handlerList);
         task.setUploadDao(uploadDao);
         task.setHealthDataService(healthDataService);
-        task.setAdherenceRecordDao(adherenceRecordDao);
         return task;
     }
 }

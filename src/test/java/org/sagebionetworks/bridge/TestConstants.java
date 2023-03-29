@@ -175,6 +175,7 @@ public class TestConstants {
     public static final DateTime CREATED_ON = TIMESTAMP.minusHours(1);
     public static final DateTime EXPORTED_ON = CREATED_ON.plusMinutes(1);
     public static final DateTime MODIFIED_ON = TIMESTAMP.plusHours(1);
+    public static final DateTime UPLOADED_ON = TIMESTAMP.plusHours(2);
 
     public static final PropertyInfo INFO1 = new PropertyInfo.Builder().withPropName("foo").withLabel("foo label")
             .withDescription("a description").withPropType("string").build();
