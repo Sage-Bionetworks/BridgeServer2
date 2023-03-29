@@ -37,6 +37,7 @@ public class AdherenceRecordTest extends Mockito {
         record.setFinishedOn(MODIFIED_ON);
         record.setUploadedOn(MODIFIED_ON.plusHours(1));
         record.setEventTimestamp(CREATED_ON.plusHours(1));
+        record.setInstanceTimestamp(CREATED_ON.plusHours(2)); // doesn't serialize
         record.setClientData(TestUtils.getClientData());
         record.setClientTimeZone("America/Los_Angeles");
         record.setDeclined(true);

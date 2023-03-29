@@ -176,9 +176,6 @@ public class UploadServiceTest {
     @Captor
     ArgumentCaptor<GeneratePresignedUrlRequest> requestCaptor;
     
-    @Captor
-    ArgumentCaptor<List<AdherenceRecord>> recordListCaptor;
-    
     @InjectMocks
     @Spy
     UploadService svc;
@@ -969,6 +966,7 @@ public class UploadServiceTest {
         record1.setInstanceGuid(GUID);
         record1.setEventTimestamp(TIMESTAMP);
         record1.setStartedOn(TIMESTAMP.plusHours(1));
+        record1.addUploadId(UPLOAD_ID_2);
     
         AdherenceRecord record2 = new AdherenceRecord();
         record2.setAppId(TEST_APP_ID);
@@ -977,7 +975,7 @@ public class UploadServiceTest {
         record2.setInstanceGuid(GUID);
         record2.setEventTimestamp(TIMESTAMP.plusHours(2));
         record2.setUploadedOn(TIMESTAMP.plusHours(1));
-        record2.addUploadId(UPLOAD_ID_2);
+        record2.addUploadId("other-upload-id");
         
         PagedResourceList<AdherenceRecord> searchResult = new PagedResourceList<>(
                 ImmutableList.of(record2, record1), 2);
@@ -996,16 +994,90 @@ public class UploadServiceTest {
         List<AdherenceRecord> capturedRecordList = capturedAdherenceRecordList.getRecords();
         assertEquals(capturedRecordList.size(), 1);
         
-        AdherenceRecord capturedRecord1 = capturedRecordList.get(0);
-        assertEquals(capturedRecord1.getAppId(), TEST_APP_ID);
-        assertEquals(capturedRecord1.getStudyId(), TEST_STUDY_ID);
-        assertEquals(capturedRecord1.getUserId(), TEST_USER_ID);
-        assertEquals(capturedRecord1.getInstanceGuid(), GUID);
-        assertEquals(capturedRecord1.getEventTimestamp().toString(), TIMESTAMP.toString());
-        assertEquals(capturedRecord1.getStartedOn().toString(), TIMESTAMP.plusHours(1).toString());
-        assertEquals(capturedRecord1.getUploadedOn(), TIMESTAMP.plusHours(1));
-        assertNotNull(capturedRecord1.getUploadIds());
-        assertTrue(capturedRecord1.getUploadIds().contains(UPLOAD_ID_1));
+        AdherenceRecord capturedRecord = capturedRecordList.get(0);
+        assertEquals(capturedRecord.getAppId(), TEST_APP_ID);
+        assertEquals(capturedRecord.getStudyId(), TEST_STUDY_ID);
+        assertEquals(capturedRecord.getUserId(), TEST_USER_ID);
+        assertEquals(capturedRecord.getInstanceGuid(), GUID);
+        assertEquals(capturedRecord.getEventTimestamp().toString(), TIMESTAMP.toString());
+        assertEquals(capturedRecord.getStartedOn().toString(), TIMESTAMP.plusHours(1).toString());
+        assertEquals(capturedRecord.getUploadedOn(), TIMESTAMP.plusHours(1));
+        assertNotNull(capturedRecord.getUploadIds());
+        assertEquals(capturedRecord.getUploadIds().size(), 2);
+        assertTrue(capturedRecord.getUploadIds().contains(UPLOAD_ID_1));
+        assertTrue(capturedRecord.getUploadIds().contains(UPLOAD_ID_2));
+    }
+    
+    @Test
+    public void updateAdherenceWithUploadInfo_successfullyUpdateExistingPersistentRecord() throws JsonProcessingException {
+        DynamoUpload2 upload = new DynamoUpload2();
+        upload.setUploadId(UPLOAD_ID_1);
+        upload.setCompletedOn(TIMESTAMP.plusHours(1).getMillis());
+        upload.setHealthCode(HEALTH_CODE);
+        upload.setMetadata(constructMetadata(METADATA_KEY_INSTANCE_GUID, GUID,
+                METADATA_KEY_EVENT_TIMESTAMP, TIMESTAMP.toString(),
+                METADATA_KEY_STARTED_ON, TIMESTAMP.plusHours(1).toString()));
+        
+        when(mockAccountService.getAccountId(TEST_APP_ID, "healthcode:" + HEALTH_CODE))
+                .thenReturn(Optional.of(TEST_USER_ID));
+        
+        TimelineMetadata timelineMetadata = new TimelineMetadata();
+        timelineMetadata.setScheduleGuid(SCHEDULE_GUID);
+        timelineMetadata.setTimeWindowPersistent(true);
+        
+        when(mockSchedule2Service.getTimelineMetadata(GUID)).thenReturn(Optional.of(timelineMetadata));
+        
+        when(mockStudyService.getStudyIdsUsingSchedule(TEST_APP_ID, SCHEDULE_GUID))
+                .thenReturn(ImmutableList.of(TEST_STUDY_ID));
+        
+        AdherenceRecord record1 = new AdherenceRecord();
+        record1.setAppId(TEST_APP_ID);
+        record1.setStudyId(TEST_STUDY_ID);
+        record1.setUserId(TEST_USER_ID);
+        record1.setInstanceGuid(GUID);
+        record1.setEventTimestamp(TIMESTAMP);
+        record1.setStartedOn(TIMESTAMP.plusHours(1));
+        record1.addUploadId(UPLOAD_ID_2);
+        
+        AdherenceRecord record2 = new AdherenceRecord();
+        record2.setAppId(TEST_APP_ID);
+        record2.setStudyId(TEST_STUDY_ID);
+        record2.setUserId(TEST_USER_ID);
+        record2.setInstanceGuid(GUID);
+        record2.setEventTimestamp(TIMESTAMP.plusHours(10));
+        record2.setStartedOn(TIMESTAMP.plusHours(2));
+        record2.setUploadedOn(TIMESTAMP.plusHours(2));
+        record2.addUploadId("other-upload-id");
+        
+        PagedResourceList<AdherenceRecord> searchResult = new PagedResourceList<>(
+                ImmutableList.of(record2, record1), 2);
+        
+        when(mockAdherenceService.getAdherenceRecords(eq(TEST_APP_ID), any())).thenReturn(searchResult);
+        
+        svc.updateAdherenceWithUploadInfo(TEST_APP_ID, upload);
+        
+        // Verify the new adherence records are sent for update.
+        verify(mockAdherenceService).updateAdherenceRecords(eq(TEST_APP_ID), adherenceRecordListCaptor.capture());
+        
+        assertNotNull(adherenceRecordListCaptor);
+        assertNotNull(adherenceRecordListCaptor.getValue());
+        AdherenceRecordList capturedAdherenceRecordList = adherenceRecordListCaptor.getValue();
+        assertNotNull(capturedAdherenceRecordList.getRecords());
+        List<AdherenceRecord> capturedRecordList = capturedAdherenceRecordList.getRecords();
+        assertEquals(capturedRecordList.size(), 1);
+        
+        AdherenceRecord capturedRecord = capturedRecordList.get(0);
+        assertEquals(capturedRecord.getAppId(), TEST_APP_ID);
+        assertEquals(capturedRecord.getStudyId(), TEST_STUDY_ID);
+        assertEquals(capturedRecord.getUserId(), TEST_USER_ID);
+        assertEquals(capturedRecord.getInstanceGuid(), GUID);
+        assertEquals(capturedRecord.getEventTimestamp().toString(), TIMESTAMP.toString());
+        assertEquals(capturedRecord.getStartedOn().toString(), TIMESTAMP.plusHours(1).toString());
+        assertEquals(capturedRecord.getUploadedOn(), TIMESTAMP.plusHours(1));
+        assertNotNull(capturedRecord.getUploadIds());
+        assertEquals(capturedRecord.getUploadIds().size(), 2);
+        assertTrue(capturedRecord.getUploadIds().contains(UPLOAD_ID_1));
+        assertTrue(capturedRecord.getUploadIds().contains(UPLOAD_ID_2));
     }
     
     UploadRequest constructUploadRequest() {

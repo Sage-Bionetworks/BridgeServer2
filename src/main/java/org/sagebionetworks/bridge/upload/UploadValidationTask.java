@@ -33,7 +33,7 @@ public class UploadValidationTask implements Runnable {
     public final void setHealthDataService(HealthDataService healthDataService) {
         this.healthDataService = healthDataService;
     }
-    
+
     public HealthDataService getHealthDataService() {
         return this.healthDataService;
     }

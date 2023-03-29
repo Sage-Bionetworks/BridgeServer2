@@ -726,13 +726,13 @@ public class UploadService {
                         boolean foundExistingRecord = false;
                         
                         for (AdherenceRecord record : recordList.getItems()) {
-                            if (timelineMetadata.isTimeWindowPersistent() && record.getStartedOn() != startedOn) {
+                            if (timelineMetadata.isTimeWindowPersistent() && !record.getStartedOn().isEqual(startedOn)) {
                                 // If the window is persistent then the records would have to share startedOn values
                                 // to be considered the same.
                                 continue;
                             }
-                            
-                            if (record.getEventTimestamp() == eventTimestamp) {
+    
+                            if (record.getEventTimestamp().isEqual(eventTimestamp)) {
                                 // The DAO retains the earlier uploadedOn date and previous uploadIds
                                 // so these can ignore the calculation and pass in the new upload.
                                 record.setUploadedOn(new DateTime(upload.getCompletedOn()));
