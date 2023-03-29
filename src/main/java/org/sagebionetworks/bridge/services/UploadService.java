@@ -664,9 +664,6 @@ public class UploadService {
     
     // protected for unit tests
     protected void updateAdherenceWithUploadInfo(String appId, Upload upload) {
-        System.out.println("------------------------------");
-        System.out.println("UPDATING ADHERENCE WITH UPLOAD INFO");
-        
         String uploadId = upload.getUploadId();
         // Check for metadata that can tie the upload to an adherence record.
         JsonNode metadata = upload.getMetadata();
@@ -675,12 +672,10 @@ public class UploadService {
             JsonNode eventTimestampNode = metadata.get(METADATA_KEY_EVENT_TIMESTAMP);
             JsonNode startedOnNode = metadata.get(METADATA_KEY_STARTED_ON);
             
-            
+            // Must include instanceGuid, eventTimestamp, and startedOn
             if (instanceGuidNode != null && instanceGuidNode.textValue() != null &&
                     eventTimestampNode != null && eventTimestampNode.textValue() != null &&
                     startedOnNode != null && startedOnNode.textValue() != null) {
-                System.out.println("have the metadata");
-                
                 
                 String instanceGuid = instanceGuidNode.textValue();
                 DateTime eventTimestamp;
@@ -696,29 +691,24 @@ public class UploadService {
                 try {
                     startedOn = DateTime.parse(startedOnNode.textValue());
                 } catch (IllegalArgumentException ex) {
-                    System.out.println("bad started on value");
                     logger.info("Upload sent with malformed startedOn in metadata for persistent window." +
                             " AppId: " + appId + " UploadId: " + uploadId +
                             " errorMessage: " + ex.getMessage());
                     return;
                 }
                 
-                System.out.println("parsed metadata");
                 String userId = accountService.getAccountId(appId, "healthcode:" + upload.getHealthCode())
                         .orElseThrow(() -> new EntityNotFoundException(Account.class));
                 
-                System.out.println("found userId");
                 // Find the study using the instanceGuid referenced by the upload
                 TimelineMetadata timelineMetadata =  schedule2Service.getTimelineMetadata(instanceGuid).orElse(null);
                 if (timelineMetadata != null) {
-                    System.out.println("located timeline metadata");
                     
                     String scheduleGuid = timelineMetadata.getScheduleGuid();
                     List<String> studyIds = studyService.getStudyIdsUsingSchedule(appId, scheduleGuid);
                     
                     if (studyIds.size() == 1) {
                         String studyId = studyIds.get(0);
-                        System.out.println("found single study ID");
                         
                         // If adherence record already exists, update it. Otherwise, create a new one.
                         AdherenceRecordsSearch.Builder search = new AdherenceRecordsSearch.Builder()
@@ -735,17 +725,14 @@ public class UploadService {
                         List<AdherenceRecord> recordsToUpdate = new ArrayList<>();
                         boolean foundExistingRecord = false;
                         
-                        System.out.println("found related adherence records");
                         for (AdherenceRecord record : recordList.getItems()) {
                             if (timelineMetadata.isTimeWindowPersistent() && record.getStartedOn() != startedOn) {
                                 // If the window is persistent then the records would have to share startedOn values
                                 // to be considered the same.
-                                System.out.println("persistent record with different startedOn; continuing");
                                 continue;
                             }
                             
                             if (record.getEventTimestamp() == eventTimestamp) {
-                                System.out.println("updating an adherence record");
                                 // The DAO retains the earlier uploadedOn date and previous uploadIds
                                 // so these can ignore the calculation and pass in the new upload.
                                 record.setUploadedOn(new DateTime(upload.getCompletedOn()));
@@ -757,7 +744,6 @@ public class UploadService {
                         }
                         
                         if (!foundExistingRecord) {
-                            System.out.println("no records found, creating an adherence record");
                             AdherenceRecord record = new AdherenceRecord();
                             record.setAppId(appId);
                             record.setStudyId(studyId);
@@ -771,8 +757,6 @@ public class UploadService {
                             recordsToUpdate.add(record);
                         }
                         
-                        System.out.println("requesting update from adherence service");
-                        System.out.println(recordsToUpdate);
                         adherenceService.updateAdherenceRecords(appId, new AdherenceRecordList(recordsToUpdate));
                         
                     } else if (studyIds.size() > 1) {

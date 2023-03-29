@@ -151,9 +151,6 @@ public class UploadServiceTest {
 
     @Mock
     private Schedule2Service mockSchedule2Service;
-
-    @Mock
-    Schedule2Service mockScheduleService;
     
     @Mock
     StudyService mockStudyService;
@@ -736,7 +733,7 @@ public class UploadServiceTest {
         
         svc.updateAdherenceWithUploadInfo(TEST_APP_ID, upload);
         
-        verifyNoMoreInteractions(mockAccountService, mockAdherenceService, mockScheduleService, mockStudyService);
+        verifyNoMoreInteractions(mockAccountService, mockAdherenceService, mockSchedule2Service, mockStudyService);
     }
     
     @Test
@@ -749,7 +746,7 @@ public class UploadServiceTest {
         
         svc.updateAdherenceWithUploadInfo(TEST_APP_ID, upload);
         
-        verifyNoMoreInteractions(mockAccountService, mockAdherenceService, mockScheduleService, mockStudyService);
+        verifyNoMoreInteractions(mockAccountService, mockAdherenceService, mockSchedule2Service, mockStudyService);
     }
     
     @Test
@@ -762,7 +759,7 @@ public class UploadServiceTest {
         
         svc.updateAdherenceWithUploadInfo(TEST_APP_ID, upload);
         
-        verifyNoMoreInteractions(mockAccountService, mockAdherenceService, mockScheduleService, mockStudyService);
+        verifyNoMoreInteractions(mockAccountService, mockAdherenceService, mockSchedule2Service, mockStudyService);
     }
     
     @Test
@@ -775,7 +772,7 @@ public class UploadServiceTest {
         
         svc.updateAdherenceWithUploadInfo(TEST_APP_ID, upload);
         
-        verifyNoMoreInteractions(mockAccountService, mockAdherenceService, mockScheduleService, mockStudyService);
+        verifyNoMoreInteractions(mockAccountService, mockAdherenceService, mockSchedule2Service, mockStudyService);
     }
     
     @Test
@@ -788,7 +785,7 @@ public class UploadServiceTest {
         
         svc.updateAdherenceWithUploadInfo(TEST_APP_ID, upload);
         
-        verifyNoMoreInteractions(mockAccountService, mockAdherenceService, mockScheduleService, mockStudyService);
+        verifyNoMoreInteractions(mockAccountService, mockAdherenceService, mockSchedule2Service, mockStudyService);
     }
     
     @Test
@@ -801,7 +798,7 @@ public class UploadServiceTest {
         
         svc.updateAdherenceWithUploadInfo(TEST_APP_ID, upload);
         
-        verifyNoMoreInteractions(mockAccountService, mockAdherenceService, mockScheduleService, mockStudyService);
+        verifyNoMoreInteractions(mockAccountService, mockAdherenceService, mockSchedule2Service, mockStudyService);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -831,7 +828,7 @@ public class UploadServiceTest {
         when(mockAccountService.getAccountId(TEST_APP_ID, "healthcode:" + HEALTH_CODE))
                 .thenReturn(Optional.of(TEST_USER_ID));
         
-        when(mockScheduleService.getTimelineMetadata(GUID)).thenReturn(Optional.empty());
+        when(mockSchedule2Service.getTimelineMetadata(GUID)).thenReturn(Optional.empty());
         
         svc.updateAdherenceWithUploadInfo(TEST_APP_ID, upload);
     
@@ -853,7 +850,7 @@ public class UploadServiceTest {
         TimelineMetadata timelineMetadata = new TimelineMetadata();
         timelineMetadata.setScheduleGuid(SCHEDULE_GUID);
         
-        when(mockScheduleService.getTimelineMetadata(GUID)).thenReturn(Optional.of(timelineMetadata));
+        when(mockSchedule2Service.getTimelineMetadata(GUID)).thenReturn(Optional.of(timelineMetadata));
         
         when(mockStudyService.getStudyIdsUsingSchedule(TEST_APP_ID, SCHEDULE_GUID))
                 .thenReturn(ImmutableList.of());
@@ -880,7 +877,7 @@ public class UploadServiceTest {
         TimelineMetadata timelineMetadata = new TimelineMetadata();
         timelineMetadata.setScheduleGuid(SCHEDULE_GUID);
         
-        when(mockScheduleService.getTimelineMetadata(GUID)).thenReturn(Optional.of(timelineMetadata));
+        when(mockSchedule2Service.getTimelineMetadata(GUID)).thenReturn(Optional.of(timelineMetadata));
         
         when(mockStudyService.getStudyIdsUsingSchedule(TEST_APP_ID, SCHEDULE_GUID))
                 .thenReturn(ImmutableList.of(TEST_STUDY_ID, "other-study"));
@@ -906,7 +903,7 @@ public class UploadServiceTest {
         TimelineMetadata timelineMetadata = new TimelineMetadata();
         timelineMetadata.setScheduleGuid(SCHEDULE_GUID);
         
-        when(mockScheduleService.getTimelineMetadata(GUID)).thenReturn(Optional.of(timelineMetadata));
+        when(mockSchedule2Service.getTimelineMetadata(GUID)).thenReturn(Optional.of(timelineMetadata));
         
         when(mockStudyService.getStudyIdsUsingSchedule(TEST_APP_ID, SCHEDULE_GUID))
                 .thenReturn(ImmutableList.of(TEST_STUDY_ID));
@@ -960,7 +957,7 @@ public class UploadServiceTest {
         TimelineMetadata timelineMetadata = new TimelineMetadata();
         timelineMetadata.setScheduleGuid(SCHEDULE_GUID);
         
-        when(mockScheduleService.getTimelineMetadata(GUID)).thenReturn(Optional.of(timelineMetadata));
+        when(mockSchedule2Service.getTimelineMetadata(GUID)).thenReturn(Optional.of(timelineMetadata));
         
         when(mockStudyService.getStudyIdsUsingSchedule(TEST_APP_ID, SCHEDULE_GUID))
                 .thenReturn(ImmutableList.of(TEST_STUDY_ID));
