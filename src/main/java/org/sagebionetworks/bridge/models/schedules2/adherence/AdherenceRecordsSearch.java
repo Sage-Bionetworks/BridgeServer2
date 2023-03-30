@@ -88,7 +88,7 @@ public class AdherenceRecordsSearch implements BridgeEntity {
     private final Boolean currentTimestampsOnly;
     /**
      * Only retrieve records whose event timestamp at the time they were recorded
-     * is the timestamp provied for that event ID in this map.
+     * is the timestamp provided for that event ID in this map.
      */
     private final Map<String, DateTime> eventTimestamps;
     /**

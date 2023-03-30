@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.services;
 import static com.amazonaws.services.s3.Headers.SERVER_SIDE_ENCRYPTION;
 import static com.amazonaws.services.s3.model.ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.eq;
@@ -15,15 +16,20 @@ import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
+import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
+import static org.sagebionetworks.bridge.TestConstants.SCHEDULE_GUID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.models.upload.UploadCompletionClient.S3_WORKER;
 import static org.sagebionetworks.bridge.models.upload.UploadStatus.SUCCEEDED;
 import static org.sagebionetworks.bridge.models.upload.UploadStatus.VALIDATION_IN_PROGRESS;
+import static org.sagebionetworks.bridge.services.UploadService.METADATA_KEY_EVENT_TIMESTAMP;
+import static org.sagebionetworks.bridge.services.UploadService.METADATA_KEY_INSTANCE_GUID;
+import static org.sagebionetworks.bridge.services.UploadService.METADATA_KEY_STARTED_ON;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
@@ -43,6 +49,7 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
@@ -54,6 +61,13 @@ import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.mockito.Spy;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
+import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordList;
+import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSearch;
+import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
 
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
@@ -69,21 +83,16 @@ import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
-import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.NotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
-import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordEx3;
-import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
-import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSearch;
-import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
 import org.sagebionetworks.bridge.models.upload.UploadSession;
@@ -142,7 +151,10 @@ public class UploadServiceTest {
 
     @Mock
     private Schedule2Service mockSchedule2Service;
-
+    
+    @Mock
+    StudyService mockStudyService;
+    
     @Mock
     UploadValidationService mockUploadValidationService;
 
@@ -156,9 +168,16 @@ public class UploadServiceTest {
     BridgeConfig mockConfig;
     
     @Captor
+    ArgumentCaptor<AdherenceRecordList> adherenceRecordListCaptor;
+    
+    @Captor
+    ArgumentCaptor<AdherenceRecordsSearch> searchCaptor;
+    
+    @Captor
     ArgumentCaptor<GeneratePresignedUrlRequest> requestCaptor;
     
     @InjectMocks
+    @Spy
     UploadService svc;
     
     @BeforeMethod
@@ -634,10 +653,13 @@ public class UploadServiceTest {
         metadata.setSSEAlgorithm(AES_256_SERVER_SIDE_ENCRYPTION);
         when(mockS3Client.getObjectMetadata(UPLOAD_BUCKET_NAME, ORIGINAL_UPLOAD_ID)).thenReturn(metadata);
         
+        doNothing().when(svc).updateAdherenceWithUploadInfo(TEST_APP_ID, upload);
+        
         svc.uploadComplete(TEST_APP_ID, S3_WORKER, upload, true);
         
         verify(mockUploadDao).uploadComplete(S3_WORKER, upload);
         verify(mockUploadValidationService).validateUpload(TEST_APP_ID, upload);
+        verify(svc).updateAdherenceWithUploadInfo(TEST_APP_ID, upload);
     }
     
     @Test
@@ -653,6 +675,7 @@ public class UploadServiceTest {
         verify(mockS3Client, never()).getObjectMetadata(any(), any());
         verify(mockUploadDao, never()).uploadComplete(any(), any());
         verify(mockUploadValidationService, never()).validateUpload(any(), any());
+        verify(svc, never()).updateAdherenceWithUploadInfo(any(), any());
     }
 
     @Test(expectedExceptions = BridgeServiceException.class)
@@ -697,12 +720,377 @@ public class UploadServiceTest {
         
         verify(mockUploadDao).uploadComplete(S3_WORKER, upload);
         verify(mockUploadValidationService, never()).validateUpload(TEST_APP_ID, upload);
+        verify(svc, never()).updateAdherenceWithUploadInfo(any(), any());
+    }
+    
+    @Test
+    public void updateAdherenceWithUploadInfo_nullMetadata() throws JsonProcessingException {
+        DynamoUpload2 upload = new DynamoUpload2();
+        upload.setUploadId(UPLOAD_ID_1);
+        
+        svc.updateAdherenceWithUploadInfo(TEST_APP_ID, upload);
+        
+        verifyNoMoreInteractions(mockAccountService, mockAdherenceService, mockSchedule2Service, mockStudyService);
+    }
+    
+    @Test
+    public void updateAdherenceWithUploadInfo_noInstanceGuidMetadata() throws JsonProcessingException {
+        DynamoUpload2 upload = new DynamoUpload2();
+        upload.setUploadId(UPLOAD_ID_1);
+        upload.setMetadata(constructMetadata("other-key", GUID, 
+                METADATA_KEY_EVENT_TIMESTAMP, TIMESTAMP.toString(), 
+                METADATA_KEY_STARTED_ON, TIMESTAMP.plusHours(1).toString()));
+        
+        svc.updateAdherenceWithUploadInfo(TEST_APP_ID, upload);
+        
+        verifyNoMoreInteractions(mockAccountService, mockAdherenceService, mockSchedule2Service, mockStudyService);
+    }
+    
+    @Test
+    public void updateAdherenceWithUploadInfo_noEventTimestampMetadata() throws JsonProcessingException {
+        DynamoUpload2 upload = new DynamoUpload2();
+        upload.setUploadId(UPLOAD_ID_1);
+        upload.setMetadata(constructMetadata(METADATA_KEY_INSTANCE_GUID, GUID,
+                "other-key", TIMESTAMP.toString(), 
+                METADATA_KEY_STARTED_ON, TIMESTAMP.plusHours(1).toString()));
+        
+        svc.updateAdherenceWithUploadInfo(TEST_APP_ID, upload);
+        
+        verifyNoMoreInteractions(mockAccountService, mockAdherenceService, mockSchedule2Service, mockStudyService);
+    }
+    
+    @Test
+    public void updateAdherenceWithUploadInfo_noStartedOnMetadata() throws JsonProcessingException {
+        DynamoUpload2 upload = new DynamoUpload2();
+        upload.setUploadId(UPLOAD_ID_1);
+        upload.setMetadata(constructMetadata(METADATA_KEY_INSTANCE_GUID, GUID, 
+                METADATA_KEY_EVENT_TIMESTAMP, TIMESTAMP.toString(), 
+                "other-key", TIMESTAMP.plusHours(1).toString()));
+        
+        svc.updateAdherenceWithUploadInfo(TEST_APP_ID, upload);
+        
+        verifyNoMoreInteractions(mockAccountService, mockAdherenceService, mockSchedule2Service, mockStudyService);
+    }
+    
+    @Test
+    public void updateAdherenceWithUploadInfo_malformedEventTimestamp() throws JsonProcessingException {
+        DynamoUpload2 upload = new DynamoUpload2();
+        upload.setUploadId(UPLOAD_ID_1);
+        upload.setMetadata(constructMetadata(METADATA_KEY_INSTANCE_GUID, GUID,
+                METADATA_KEY_EVENT_TIMESTAMP, "not-a-timestamp",
+                METADATA_KEY_STARTED_ON, TIMESTAMP.plusHours(1).toString()));
+        
+        svc.updateAdherenceWithUploadInfo(TEST_APP_ID, upload);
+        
+        verifyNoMoreInteractions(mockAccountService, mockAdherenceService, mockSchedule2Service, mockStudyService);
+    }
+    
+    @Test
+    public void updateAdherenceWithUploadInfo_malformedStartedOn() throws JsonProcessingException {
+        DynamoUpload2 upload = new DynamoUpload2();
+        upload.setUploadId(UPLOAD_ID_1);
+        upload.setMetadata(constructMetadata(METADATA_KEY_INSTANCE_GUID, GUID,
+                METADATA_KEY_EVENT_TIMESTAMP, TIMESTAMP.toString(),
+                METADATA_KEY_STARTED_ON, "not-a-timestamp"));
+        
+        svc.updateAdherenceWithUploadInfo(TEST_APP_ID, upload);
+        
+        verifyNoMoreInteractions(mockAccountService, mockAdherenceService, mockSchedule2Service, mockStudyService);
+    }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void updateAdherenceWithUploadInfo_participantAccountNotFound() throws JsonProcessingException {
+        DynamoUpload2 upload = new DynamoUpload2();
+        upload.setUploadId(UPLOAD_ID_1);
+        upload.setHealthCode(HEALTH_CODE);
+        upload.setMetadata(constructMetadata(METADATA_KEY_INSTANCE_GUID, GUID,
+                METADATA_KEY_EVENT_TIMESTAMP, TIMESTAMP.toString(),
+                METADATA_KEY_STARTED_ON, TIMESTAMP.plusHours(1).toString()));
+        
+        when(mockAccountService.getAccountId(TEST_APP_ID, "healthcode:" + HEALTH_CODE))
+                .thenReturn(Optional.empty());
+        
+        svc.updateAdherenceWithUploadInfo(TEST_APP_ID, upload);
+    }
+    
+    @Test
+    public void updateAdherenceWithUploadInfo_noTimelineMetadata() throws JsonProcessingException {
+        DynamoUpload2 upload = new DynamoUpload2();
+        upload.setUploadId(UPLOAD_ID_1);
+        upload.setHealthCode(HEALTH_CODE);
+        upload.setMetadata(constructMetadata(METADATA_KEY_INSTANCE_GUID, GUID,
+                METADATA_KEY_EVENT_TIMESTAMP, TIMESTAMP.toString(),
+                METADATA_KEY_STARTED_ON, TIMESTAMP.plusHours(1).toString()));
+        
+        when(mockAccountService.getAccountId(TEST_APP_ID, "healthcode:" + HEALTH_CODE))
+                .thenReturn(Optional.of(TEST_USER_ID));
+        
+        when(mockSchedule2Service.getTimelineMetadata(GUID)).thenReturn(Optional.empty());
+        
+        svc.updateAdherenceWithUploadInfo(TEST_APP_ID, upload);
+    
+        verifyNoMoreInteractions(mockAdherenceService, mockStudyService);
+    }
+    
+    @Test
+    public void updateAdherenceWithUploadInfo_noStudiesRelatedToSchedule() throws JsonProcessingException {
+        DynamoUpload2 upload = new DynamoUpload2();
+        upload.setUploadId(UPLOAD_ID_1);
+        upload.setHealthCode(HEALTH_CODE);
+        upload.setMetadata(constructMetadata(METADATA_KEY_INSTANCE_GUID, GUID,
+                METADATA_KEY_EVENT_TIMESTAMP, TIMESTAMP.toString(),
+                METADATA_KEY_STARTED_ON, TIMESTAMP.plusHours(1).toString()));
+        
+        when(mockAccountService.getAccountId(TEST_APP_ID, "healthcode:" + HEALTH_CODE))
+                .thenReturn(Optional.of(TEST_USER_ID));
+    
+        TimelineMetadata timelineMetadata = new TimelineMetadata();
+        timelineMetadata.setScheduleGuid(SCHEDULE_GUID);
+        
+        when(mockSchedule2Service.getTimelineMetadata(GUID)).thenReturn(Optional.of(timelineMetadata));
+        
+        when(mockStudyService.getStudyIdsUsingSchedule(TEST_APP_ID, SCHEDULE_GUID))
+                .thenReturn(ImmutableList.of());
+        
+        svc.updateAdherenceWithUploadInfo(TEST_APP_ID, upload);
+        
+        verifyNoMoreInteractions(mockAdherenceService);
+    }
+    
+    @Test
+    public void updateAdherenceWithUploadInfo_multipleStudiesRelatedToSchedule() throws JsonProcessingException {
+        // This is an extreme edge case, but it's technically possible to have multiple studies sharing the same
+        // schedule.
+        DynamoUpload2 upload = new DynamoUpload2();
+        upload.setUploadId(UPLOAD_ID_1);
+        upload.setHealthCode(HEALTH_CODE);
+        upload.setMetadata(constructMetadata(METADATA_KEY_INSTANCE_GUID, GUID,
+                METADATA_KEY_EVENT_TIMESTAMP, TIMESTAMP.toString(),
+                METADATA_KEY_STARTED_ON, TIMESTAMP.plusHours(1).toString()));
+        
+        when(mockAccountService.getAccountId(TEST_APP_ID, "healthcode:" + HEALTH_CODE))
+                .thenReturn(Optional.of(TEST_USER_ID));
+        
+        TimelineMetadata timelineMetadata = new TimelineMetadata();
+        timelineMetadata.setScheduleGuid(SCHEDULE_GUID);
+        
+        when(mockSchedule2Service.getTimelineMetadata(GUID)).thenReturn(Optional.of(timelineMetadata));
+        
+        when(mockStudyService.getStudyIdsUsingSchedule(TEST_APP_ID, SCHEDULE_GUID))
+                .thenReturn(ImmutableList.of(TEST_STUDY_ID, "other-study"));
+        
+        svc.updateAdherenceWithUploadInfo(TEST_APP_ID, upload);
+        
+        verifyNoMoreInteractions(mockAdherenceService);
+    }
+    
+    @Test
+    public void updateAdherenceWithUploadInfo_successfullyCreateNewRecord() throws JsonProcessingException {
+        DynamoUpload2 upload = new DynamoUpload2();
+        upload.setUploadId(UPLOAD_ID_1);
+        upload.setCompletedOn(TIMESTAMP.plusHours(1).getMillis());
+        upload.setHealthCode(HEALTH_CODE);
+        upload.setMetadata(constructMetadata(METADATA_KEY_INSTANCE_GUID, GUID,
+                METADATA_KEY_EVENT_TIMESTAMP, TIMESTAMP.toString(),
+                METADATA_KEY_STARTED_ON, TIMESTAMP.plusHours(1).toString()));
+        
+        when(mockAccountService.getAccountId(TEST_APP_ID, "healthcode:" + HEALTH_CODE))
+                .thenReturn(Optional.of(TEST_USER_ID));
+        
+        TimelineMetadata timelineMetadata = new TimelineMetadata();
+        timelineMetadata.setScheduleGuid(SCHEDULE_GUID);
+        
+        when(mockSchedule2Service.getTimelineMetadata(GUID)).thenReturn(Optional.of(timelineMetadata));
+        
+        when(mockStudyService.getStudyIdsUsingSchedule(TEST_APP_ID, SCHEDULE_GUID))
+                .thenReturn(ImmutableList.of(TEST_STUDY_ID));
+        
+        PagedResourceList<AdherenceRecord> searchResult = new PagedResourceList<>(ImmutableList.of(), 0);
+        
+        when(mockAdherenceService.getAdherenceRecords(eq(TEST_APP_ID), searchCaptor.capture())).thenReturn(searchResult);
+        
+        svc.updateAdherenceWithUploadInfo(TEST_APP_ID, upload);
+        
+        // Verify record search includes required fields.
+        AdherenceRecordsSearch capturedSearch = searchCaptor.getValue();
+        assertEquals(capturedSearch.getUserId(), TEST_USER_ID);
+        assertEquals(capturedSearch.getStudyId(), TEST_STUDY_ID);
+        assertEquals(capturedSearch.getInstanceGuids().size(), 1);
+        assertTrue(capturedSearch.getInstanceGuids().contains(GUID));
+        
+        // Verify the new adherence record is sent for update.
+        verify(mockAdherenceService).updateAdherenceRecords(eq(TEST_APP_ID), adherenceRecordListCaptor.capture());
+        
+        assertNotNull(adherenceRecordListCaptor);
+        assertNotNull(adherenceRecordListCaptor.getValue());
+        AdherenceRecordList capturedAdherenceRecordList = adherenceRecordListCaptor.getValue();
+        assertNotNull(capturedAdherenceRecordList.getRecords());
+        List<AdherenceRecord> capturedRecordList = capturedAdherenceRecordList.getRecords();
+        assertEquals(capturedRecordList.size(), 1);
+        AdherenceRecord capturedRecord = capturedRecordList.get(0);
+        assertEquals(capturedRecord.getAppId(), TEST_APP_ID);
+        assertEquals(capturedRecord.getStudyId(), TEST_STUDY_ID);
+        assertEquals(capturedRecord.getUserId(), TEST_USER_ID);
+        assertEquals(capturedRecord.getInstanceGuid(), GUID);
+        assertEquals(capturedRecord.getEventTimestamp().toString(), TIMESTAMP.toString());
+        assertEquals(capturedRecord.getUploadedOn(), TIMESTAMP.plusHours(1));
+        assertEquals(capturedRecord.getUploadIds().size(), 1);
+        assertTrue(capturedRecord.getUploadIds().contains(UPLOAD_ID_1));
+    }
+    
+    @Test
+    public void updateAdherenceWithUploadInfo_successfullyUpdateExistingRecord() throws JsonProcessingException {
+        DynamoUpload2 upload = new DynamoUpload2();
+        upload.setUploadId(UPLOAD_ID_1);
+        upload.setCompletedOn(TIMESTAMP.plusHours(1).getMillis());
+        upload.setHealthCode(HEALTH_CODE);
+        upload.setMetadata(constructMetadata(METADATA_KEY_INSTANCE_GUID, GUID,
+                METADATA_KEY_EVENT_TIMESTAMP, TIMESTAMP.toString(),
+                METADATA_KEY_STARTED_ON, TIMESTAMP.plusHours(1).toString()));
+        
+        when(mockAccountService.getAccountId(TEST_APP_ID, "healthcode:" + HEALTH_CODE))
+                .thenReturn(Optional.of(TEST_USER_ID));
+        
+        TimelineMetadata timelineMetadata = new TimelineMetadata();
+        timelineMetadata.setScheduleGuid(SCHEDULE_GUID);
+        
+        when(mockSchedule2Service.getTimelineMetadata(GUID)).thenReturn(Optional.of(timelineMetadata));
+        
+        when(mockStudyService.getStudyIdsUsingSchedule(TEST_APP_ID, SCHEDULE_GUID))
+                .thenReturn(ImmutableList.of(TEST_STUDY_ID));
+        
+        AdherenceRecord record1 = new AdherenceRecord();
+        record1.setAppId(TEST_APP_ID);
+        record1.setStudyId(TEST_STUDY_ID);
+        record1.setUserId(TEST_USER_ID);
+        record1.setInstanceGuid(GUID);
+        record1.setEventTimestamp(TIMESTAMP);
+        record1.setStartedOn(TIMESTAMP.plusHours(1));
+        record1.addUploadId(UPLOAD_ID_2);
+    
+        AdherenceRecord record2 = new AdherenceRecord();
+        record2.setAppId(TEST_APP_ID);
+        record2.setStudyId(TEST_STUDY_ID);
+        record2.setUserId(TEST_USER_ID);
+        record2.setInstanceGuid(GUID);
+        record2.setEventTimestamp(TIMESTAMP.plusHours(2));
+        record2.setUploadedOn(TIMESTAMP.plusHours(1));
+        record2.addUploadId("other-upload-id");
+        
+        PagedResourceList<AdherenceRecord> searchResult = new PagedResourceList<>(
+                ImmutableList.of(record2, record1), 2);
+        
+        when(mockAdherenceService.getAdherenceRecords(eq(TEST_APP_ID), any())).thenReturn(searchResult);
+        
+        svc.updateAdherenceWithUploadInfo(TEST_APP_ID, upload);
+        
+        // Verify the new adherence records are sent for update.
+        verify(mockAdherenceService).updateAdherenceRecords(eq(TEST_APP_ID), adherenceRecordListCaptor.capture());
+        
+        assertNotNull(adherenceRecordListCaptor);
+        assertNotNull(adherenceRecordListCaptor.getValue());
+        AdherenceRecordList capturedAdherenceRecordList = adherenceRecordListCaptor.getValue();
+        assertNotNull(capturedAdherenceRecordList.getRecords());
+        List<AdherenceRecord> capturedRecordList = capturedAdherenceRecordList.getRecords();
+        assertEquals(capturedRecordList.size(), 1);
+        
+        AdherenceRecord capturedRecord = capturedRecordList.get(0);
+        assertEquals(capturedRecord.getAppId(), TEST_APP_ID);
+        assertEquals(capturedRecord.getStudyId(), TEST_STUDY_ID);
+        assertEquals(capturedRecord.getUserId(), TEST_USER_ID);
+        assertEquals(capturedRecord.getInstanceGuid(), GUID);
+        assertEquals(capturedRecord.getEventTimestamp().toString(), TIMESTAMP.toString());
+        assertEquals(capturedRecord.getStartedOn().toString(), TIMESTAMP.plusHours(1).toString());
+        assertEquals(capturedRecord.getUploadedOn(), TIMESTAMP.plusHours(1));
+        assertNotNull(capturedRecord.getUploadIds());
+        assertEquals(capturedRecord.getUploadIds().size(), 2);
+        assertTrue(capturedRecord.getUploadIds().contains(UPLOAD_ID_1));
+        assertTrue(capturedRecord.getUploadIds().contains(UPLOAD_ID_2));
+    }
+    
+    @Test
+    public void updateAdherenceWithUploadInfo_successfullyUpdateExistingPersistentRecord() throws JsonProcessingException {
+        DynamoUpload2 upload = new DynamoUpload2();
+        upload.setUploadId(UPLOAD_ID_1);
+        upload.setCompletedOn(TIMESTAMP.plusHours(1).getMillis());
+        upload.setHealthCode(HEALTH_CODE);
+        upload.setMetadata(constructMetadata(METADATA_KEY_INSTANCE_GUID, GUID,
+                METADATA_KEY_EVENT_TIMESTAMP, TIMESTAMP.toString(),
+                METADATA_KEY_STARTED_ON, TIMESTAMP.plusHours(1).toString()));
+        
+        when(mockAccountService.getAccountId(TEST_APP_ID, "healthcode:" + HEALTH_CODE))
+                .thenReturn(Optional.of(TEST_USER_ID));
+        
+        TimelineMetadata timelineMetadata = new TimelineMetadata();
+        timelineMetadata.setScheduleGuid(SCHEDULE_GUID);
+        timelineMetadata.setTimeWindowPersistent(true);
+        
+        when(mockSchedule2Service.getTimelineMetadata(GUID)).thenReturn(Optional.of(timelineMetadata));
+        
+        when(mockStudyService.getStudyIdsUsingSchedule(TEST_APP_ID, SCHEDULE_GUID))
+                .thenReturn(ImmutableList.of(TEST_STUDY_ID));
+        
+        AdherenceRecord record1 = new AdherenceRecord();
+        record1.setAppId(TEST_APP_ID);
+        record1.setStudyId(TEST_STUDY_ID);
+        record1.setUserId(TEST_USER_ID);
+        record1.setInstanceGuid(GUID);
+        record1.setEventTimestamp(TIMESTAMP);
+        record1.setStartedOn(TIMESTAMP.plusHours(1));
+        record1.addUploadId(UPLOAD_ID_2);
+        
+        AdherenceRecord record2 = new AdherenceRecord();
+        record2.setAppId(TEST_APP_ID);
+        record2.setStudyId(TEST_STUDY_ID);
+        record2.setUserId(TEST_USER_ID);
+        record2.setInstanceGuid(GUID);
+        record2.setEventTimestamp(TIMESTAMP.plusHours(10));
+        record2.setStartedOn(TIMESTAMP.plusHours(2));
+        record2.setUploadedOn(TIMESTAMP.plusHours(2));
+        record2.addUploadId("other-upload-id");
+        
+        PagedResourceList<AdherenceRecord> searchResult = new PagedResourceList<>(
+                ImmutableList.of(record2, record1), 2);
+        
+        when(mockAdherenceService.getAdherenceRecords(eq(TEST_APP_ID), any())).thenReturn(searchResult);
+        
+        svc.updateAdherenceWithUploadInfo(TEST_APP_ID, upload);
+        
+        // Verify the new adherence records are sent for update.
+        verify(mockAdherenceService).updateAdherenceRecords(eq(TEST_APP_ID), adherenceRecordListCaptor.capture());
+        
+        assertNotNull(adherenceRecordListCaptor);
+        assertNotNull(adherenceRecordListCaptor.getValue());
+        AdherenceRecordList capturedAdherenceRecordList = adherenceRecordListCaptor.getValue();
+        assertNotNull(capturedAdherenceRecordList.getRecords());
+        List<AdherenceRecord> capturedRecordList = capturedAdherenceRecordList.getRecords();
+        assertEquals(capturedRecordList.size(), 1);
+        
+        AdherenceRecord capturedRecord = capturedRecordList.get(0);
+        assertEquals(capturedRecord.getAppId(), TEST_APP_ID);
+        assertEquals(capturedRecord.getStudyId(), TEST_STUDY_ID);
+        assertEquals(capturedRecord.getUserId(), TEST_USER_ID);
+        assertEquals(capturedRecord.getInstanceGuid(), GUID);
+        assertEquals(capturedRecord.getEventTimestamp().toString(), TIMESTAMP.toString());
+        assertEquals(capturedRecord.getStartedOn().toString(), TIMESTAMP.plusHours(1).toString());
+        assertEquals(capturedRecord.getUploadedOn(), TIMESTAMP.plusHours(1));
+        assertNotNull(capturedRecord.getUploadIds());
+        assertEquals(capturedRecord.getUploadIds().size(), 2);
+        assertTrue(capturedRecord.getUploadIds().contains(UPLOAD_ID_1));
+        assertTrue(capturedRecord.getUploadIds().contains(UPLOAD_ID_2));
     }
     
     UploadRequest constructUploadRequest() {
         return new UploadRequest.Builder().withName("oneUpload").withContentLength(1048L)
                 .withContentMd5("AAAAAAAAAAAAAAAAAAAAAA==")
                 .withContentType("application/binary").build();
+    }
+    
+    ObjectNode constructMetadata(String key1, String value1, String key2, 
+                                 String value2, String key3, String value3) throws JsonProcessingException {
+        String jsonText = "{\"" + key1 + "\":\"" + value1 + "\",\"" + key2 + "\":\"" + value2 + "\",\"" +
+                key3 + "\":\"" + value3 + "\"}";
+        return (ObjectNode) BridgeObjectMapper.get().readTree(jsonText);
     }
 
     @Test(expectedExceptions = BadRequestException.class,

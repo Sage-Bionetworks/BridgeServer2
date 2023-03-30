@@ -20,6 +20,7 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.mockito.Spy;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -58,6 +59,7 @@ public class UploadServiceUploadCompleteTest {
     private UploadValidationService mockUploadValidationService;
 
     @InjectMocks
+    @Spy
     private UploadService svc;
 
     @BeforeMethod
@@ -85,8 +87,10 @@ public class UploadServiceUploadCompleteTest {
         // execute
         svc.uploadComplete(TEST_APP_ID, APP, upload, false);
 
-        // Verify upload DAO and validation aren't called. Can skip S3 because we don't want to over-specify our tests.
+        // Verify upload DAO, validation, and adherence aren't called.
+        // Can skip S3 because we don't want to over-specify our tests.
         verifyZeroInteractions(mockUploadDao, mockUploadValidationService);
+        verify(svc, never()).updateAdherenceWithUploadInfo(any(), any());
     }
 
     @Test
@@ -103,8 +107,9 @@ public class UploadServiceUploadCompleteTest {
         // execute
         svc.uploadComplete(TEST_APP_ID, APP, upload, false);
 
-        // Similarly, verify upload DAO and validation aren't called.
+        // Similarly, verify upload DAO, validation, and adherence aren't called.
         verifyZeroInteractions(mockUploadDao, mockUploadValidationService);
+        verify(svc, never()).updateAdherenceWithUploadInfo(any(), any());
     }
 
     @Test
@@ -127,8 +132,9 @@ public class UploadServiceUploadCompleteTest {
             // expected exception
         }
 
-        // Verify upload DAO and validation aren't called.
+        // Verify upload DAO, validation, and adherence aren't called.
         verifyZeroInteractions(mockUploadDao, mockUploadValidationService);
+        verify(svc, never()).updateAdherenceWithUploadInfo(any(), any());
     }
 
     @Test
@@ -152,8 +158,9 @@ public class UploadServiceUploadCompleteTest {
             assertFalse(ex instanceof NotFoundException);
         }
 
-        // Verify upload DAO and validation aren't called.
+        // Verify upload DAO, validation, and adherence aren't called.
         verifyZeroInteractions(mockUploadDao, mockUploadValidationService);
+        verify(svc, never()).updateAdherenceWithUploadInfo(any(), any());
     }
 
     @Test
@@ -166,8 +173,9 @@ public class UploadServiceUploadCompleteTest {
         // execute
         svc.uploadComplete(TEST_APP_ID, APP, upload, false);
 
-        // Verify S3, upload DAO and validation aren't called.
+        // Verify S3, upload DAO, validation, and adherence aren't called.
         verifyZeroInteractions(mockUploadDao, mockUploadValidationService, mockS3Client);
+        verify(svc, never()).updateAdherenceWithUploadInfo(any(), any());
     }
 
     @Test
@@ -188,8 +196,9 @@ public class UploadServiceUploadCompleteTest {
         // execute
         svc.uploadComplete(TEST_APP_ID, APP, upload, false);
 
-        // Verify upload DAO and validation.
+        // Verify upload DAO, validation, and adherence.
         verify(mockUploadValidationService, never()).validateUpload(any(String.class), any(Upload.class));
+        verify(svc, never()).updateAdherenceWithUploadInfo(any(), any());
     }
 
     @Test
@@ -207,9 +216,10 @@ public class UploadServiceUploadCompleteTest {
         // execute
         svc.uploadComplete(TEST_APP_ID, APP, upload, false);
 
-        // Verify upload DAO and validation.
+        // Verify upload DAO, validation, and adherence.
         verify(mockUploadDao).uploadComplete(APP, upload);
         verify(mockUploadValidationService).validateUpload(TEST_APP_ID, upload);
+        verify(svc).updateAdherenceWithUploadInfo(TEST_APP_ID, upload);
     }
 
     @Test
@@ -236,6 +246,9 @@ public class UploadServiceUploadCompleteTest {
         // Verify that we still call Exporter 2.0.
         verify(mockUploadDao).uploadComplete(APP, upload);
         verify(mockUploadValidationService).validateUpload(TEST_APP_ID, upload);
+        
+        // Verify we still update adherence.
+        verify(svc).updateAdherenceWithUploadInfo(TEST_APP_ID, upload);
     }
 
     @Test
@@ -262,5 +275,8 @@ public class UploadServiceUploadCompleteTest {
         // Verify upload DAO and validation.
         verify(mockUploadDao).uploadComplete(APP, upload);
         verify(mockUploadValidationService).validateUpload(TEST_APP_ID, upload);
+        
+        // Verify we update adherence.
+        verify(svc).updateAdherenceWithUploadInfo(TEST_APP_ID, upload);
     }
 }
