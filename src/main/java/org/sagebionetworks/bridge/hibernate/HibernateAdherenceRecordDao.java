@@ -67,10 +67,8 @@ public class HibernateAdherenceRecordDao implements AdherenceRecordDao {
             }
             
             // Keep uploadIds from both the previous and new record.
-            if (previousRecord.getUploadIds() != null) {
-                for (String uploadId : previousRecord.getUploadIds()) {
-                    record.addUploadId(uploadId);
-                }
+            for (String uploadId : previousRecord.getUploadIds()) {
+                record.addUploadId(uploadId);
             }
         }
     

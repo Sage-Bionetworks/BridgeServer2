@@ -9,7 +9,6 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -80,11 +79,19 @@ public class AdherenceRecordTest extends Mockito {
     }
     
     @Test
+    public void getUploadIds_returnsEmptyWhenNull() {
+        AdherenceRecord record = new AdherenceRecord();
+        assertTrue(record.getUploadIds().isEmpty());
+        
+        record.setUploadIds(new HashSet<>());
+        assertTrue(record.getUploadIds().isEmpty());
+    }
+    
+    @Test
     public void addUploadId_setNull() {
         AdherenceRecord record = new AdherenceRecord();
-        assertNull(record.getUploadIds());
-        
         record.addUploadId("uploadId");
+        
         assertEquals(record.getUploadIds().size(), 1);
         assertTrue(record.getUploadIds().contains("uploadId"));
     }

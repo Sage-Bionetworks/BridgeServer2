@@ -1074,5 +1074,14 @@ ADD `additionalMetadata` text DEFAULT NULL;
 
 -- changeset bridge:78
 
-ALTER TABLE `AdherenceRecords`
-ADD COLUMN `uploadIds` text DEFAULT NULL;
+CREATE TABLE IF NOT EXISTS `AdherenceUploads` (
+    `userId` varchar(255) NOT NULL,
+    `studyId` varchar(60) NOT NULL,
+    `instanceGuid` varchar(128) NOT NULL,
+    `eventTimestamp` bigint(20) unsigned,
+    `instanceTimestamp` bigint(20) unsigned,
+    `uploadId` varchar(256) NOT NULL,
+    UNIQUE KEY (`userId`, `studyId`, `instanceGuid`, `eventTimestamp`, `instanceTimestamp`, `uploadId`),
+    CONSTRAINT `AdherenceUpload-AdherenceRecord-Constraint` FOREIGN KEY (`userId`, `studyId`, `instanceGuid`, `eventTimestamp`, `instanceTimestamp`) REFERENCES `AdherenceRecords` (`userId`, `studyId`, `instanceGuid`, `eventTimestamp`, `instanceTimestamp`) ON DELETE CASCADE,
+    INDEX (`uploadId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;

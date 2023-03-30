@@ -505,9 +505,6 @@ public class UploadService {
             // and duplicate records.
             return;
         }
-        
-        // Save uploadedOn date and uploadId to related adherence records.
-        updateAdherenceWithUploadInfo(appId, upload);
 
         // kick off upload validation
         App app = appService.getApp(appId);
@@ -518,6 +515,9 @@ public class UploadService {
         // For backwards compatibility, always call Legacy Exporter 2.0. In the future, we may introduce a setting to
         // disable this for new apps.
         uploadValidationService.validateUpload(appId, upload);
+        
+        // Save uploadedOn date and uploadId to related adherence records.
+        updateAdherenceWithUploadInfo(appId, upload);
     }
     
     public void deleteUploadsForHealthCode(String healthCode) {
@@ -683,7 +683,7 @@ public class UploadService {
                     eventTimestamp = DateTime.parse(eventTimestampNode.textValue());
                 } catch (IllegalArgumentException ex) {
                     logger.info("Upload sent with malformed eventTimestamp in metadata. UploadId: " + uploadId +
-                            " errorMessage: " + ex.getMessage());
+                            ", ErrorMessage: " + ex.getMessage());
                     return;
                 }
                 
@@ -691,9 +691,8 @@ public class UploadService {
                 try {
                     startedOn = DateTime.parse(startedOnNode.textValue());
                 } catch (IllegalArgumentException ex) {
-                    logger.info("Upload sent with malformed startedOn in metadata for persistent window." +
-                            " AppId: " + appId + " UploadId: " + uploadId +
-                            " errorMessage: " + ex.getMessage());
+                    logger.info("Upload sent with malformed startedOn in metadata. UploadId: " + uploadId +
+                            ", ErrorMessage: " + ex.getMessage());
                     return;
                 }
                 
@@ -729,12 +728,17 @@ public class UploadService {
                             if (timelineMetadata.isTimeWindowPersistent() && !record.getStartedOn().isEqual(startedOn)) {
                                 // If the window is persistent then the records would have to share startedOn values
                                 // to be considered the same.
+                                logger.info("Unexpected adherence record returned when searching persistent window. " +
+                                        "AppId: " + appId + ", StudyId: " + studyId + ", InstanceGuid: " + 
+                                        instanceGuid + ", searched StartedOn: " + startedOn + 
+                                        ", returned StartedOn: " + record.getStartedOn());
                                 continue;
                             }
     
                             if (record.getEventTimestamp().isEqual(eventTimestamp)) {
                                 // The DAO retains the earlier uploadedOn date and previous uploadIds
                                 // so these can ignore the calculation and pass in the new upload.
+                                // Since there is an existing record, let the persisted startedOn date remain.
                                 record.setUploadedOn(new DateTime(upload.getCompletedOn()));
                                 record.addUploadId(uploadId);
                                 recordsToUpdate.add(record);
@@ -764,11 +768,11 @@ public class UploadService {
                         // If it does happen, the timelines for the studies would be identical. It would be possible
                         // to check which study a participant is enrolled in. But they can also enroll in multiple.
                         logger.warn("Upload completion can not be noted in adherence since its schedule belongs " +
-                                "to multiple studies. uploadId: " + uploadId + " scheduleGuid: " + scheduleGuid);
+                                "to multiple studies. UploadId: " + uploadId + ", ScheduleGuid: " + scheduleGuid);
                     }
                 } else {
                     logger.info("Upload referenced a non-existent instanceGuid. AppId: " + appId +
-                            " UploadId: " + uploadId);
+                            ", UploadId: " + uploadId);
                 }
             }
         }
