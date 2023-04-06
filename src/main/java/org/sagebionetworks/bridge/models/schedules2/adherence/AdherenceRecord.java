@@ -1,18 +1,27 @@
 package org.sagebionetworks.bridge.models.schedules2.adherence;
 
+import javax.persistence.CollectionTable;
+import javax.persistence.Column;
 import javax.persistence.Convert;
+import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.Id;
 import javax.persistence.IdClass;
+import javax.persistence.JoinColumn;
 import javax.persistence.Table;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 
+import com.google.common.collect.ImmutableSet;
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.hibernate.DateTimeToLongAttributeConverter;
 import org.sagebionetworks.bridge.hibernate.JsonNodeAttributeConverter;
 import org.sagebionetworks.bridge.models.BridgeEntity;
+
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "AdherenceRecords")
@@ -48,6 +57,15 @@ public class AdherenceRecord implements BridgeEntity {
     private boolean declined;
     private String sessionGuid;
     private String assessmentGuid;
+    @CollectionTable(name = "AdherenceUploads",
+            joinColumns = { @JoinColumn(name = "userId", referencedColumnName = "userId"),
+                    @JoinColumn(name = "studyId", referencedColumnName = "studyId"),
+                    @JoinColumn(name = "instanceGuid", referencedColumnName = "instanceGuid"), 
+                    @JoinColumn(name = "eventTimestamp", referencedColumnName = "eventTimestamp"),
+                    @JoinColumn(name = "instanceTimestamp", referencedColumnName = "instanceTimestamp")})
+    @Column(name = "uploadId")
+    @ElementCollection(fetch = FetchType.EAGER)
+    private Set<String> uploadIds;
     
     public String getAppId() {
         return appId;
@@ -147,5 +165,17 @@ public class AdherenceRecord implements BridgeEntity {
     }
     public void setAssessmentGuid(String assessmentGuid) {
         this.assessmentGuid = assessmentGuid;
+    }
+    public Set<String> getUploadIds() {
+        return (uploadIds != null) ? uploadIds : ImmutableSet.of();
+    }
+    public void setUploadIds(Set<String> uploadIds) {
+        this.uploadIds = uploadIds;
+    }
+    public void addUploadId(String uploadId) {
+        if (uploadIds == null) {
+            uploadIds = new HashSet<>();
+        }
+        uploadIds.add(uploadId);
     }
 }

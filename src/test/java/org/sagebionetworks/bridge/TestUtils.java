@@ -13,6 +13,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_CLIENT_TIME_ZONE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_NOTE;
+import static org.sagebionetworks.bridge.TestConstants.UPLOADED_ON;
 import static org.springframework.http.HttpStatus.ACCEPTED;
 import static org.springframework.http.HttpStatus.CREATED;
 import static org.testng.Assert.assertEquals;
@@ -27,6 +28,7 @@ import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -710,6 +712,8 @@ public class TestUtils {
         record.setClientTimeZone("America/Los_Angeles");
         record.setStartedOn(MODIFIED_ON);
         record.setInstanceGuid(instanceGuid);
+        record.setUploadedOn(UPLOADED_ON);
+        record.setUploadIds(new HashSet<>(ImmutableList.of("upload-id")));
         return record;
     }
 

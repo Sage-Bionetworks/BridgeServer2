@@ -14,6 +14,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.CANNOT_BE_BLANK;
 
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +38,13 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
+import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordList;
+import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSearch;
+import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,15 +57,11 @@ import org.sagebionetworks.bridge.dao.UploadDedupeDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
-import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.NotFoundException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordEx3;
-import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
-import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSearch;
-import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
 import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadataView;
 import org.sagebionetworks.bridge.models.upload.UploadViewEx3;
 import org.sagebionetworks.bridge.time.DateUtils;
@@ -84,7 +88,9 @@ public class UploadService {
     
     // package-scoped to be available in unit tests
     static final String CONFIG_KEY_UPLOAD_BUCKET = "upload.bucket";
+    static final String METADATA_KEY_EVENT_TIMESTAMP = "eventTimestamp";
     static final String METADATA_KEY_INSTANCE_GUID = "instanceGuid";
+    static final String METADATA_KEY_STARTED_ON = "startedOn";
 
     private AccountService accountService;
     private AdherenceService adherenceService;
@@ -95,6 +101,7 @@ public class UploadService {
     private AmazonS3 s3UploadClient;
     private AmazonS3 s3Client;
     private Schedule2Service schedule2Service;
+    private StudyService studyService;
     private String uploadBucket;
     private UploadDao uploadDao;
     private UploadDedupeDao uploadDedupeDao;
@@ -110,12 +117,12 @@ public class UploadService {
     public final void setAccountService(AccountService accountService) {
         this.accountService = accountService;
     }
-
+    
     @Autowired
     public final void setAdherenceService(AdherenceService adherenceService) {
         this.adherenceService = adherenceService;
     }
-
+    
     @Autowired
     public final void setAppService(AppService appService) {
         this.appService = appService;
@@ -139,6 +146,11 @@ public class UploadService {
     @Autowired
     public final void setHealthDataService(HealthDataService healthDataService) {
         this.healthDataService = healthDataService;
+    }
+    
+    @Autowired
+    public final void setStudyService(StudyService studyService) {
+        this.studyService = studyService;
     }
 
     @Autowired
@@ -511,6 +523,9 @@ public class UploadService {
         // For backwards compatibility, always call Legacy Exporter 2.0. In the future, we may introduce a setting to
         // disable this for new apps.
         uploadValidationService.validateUpload(appId, upload);
+        
+        // Save uploadedOn date and uploadId to related adherence records.
+        updateAdherenceWithUploadInfo(appId, upload);
     }
     
     public void deleteUploadsForHealthCode(String healthCode) {
@@ -653,6 +668,122 @@ public class UploadService {
         }
 
         return view;
+    }
+    
+    // protected for unit tests
+    protected void updateAdherenceWithUploadInfo(String appId, Upload upload) {
+        String uploadId = upload.getUploadId();
+        // Check for metadata that can tie the upload to an adherence record.
+        JsonNode metadata = upload.getMetadata();
+        if (metadata != null) {
+            JsonNode instanceGuidNode = metadata.get(METADATA_KEY_INSTANCE_GUID);
+            JsonNode eventTimestampNode = metadata.get(METADATA_KEY_EVENT_TIMESTAMP);
+            JsonNode startedOnNode = metadata.get(METADATA_KEY_STARTED_ON);
+            
+            // Must include instanceGuid, eventTimestamp, and startedOn
+            if (instanceGuidNode != null && instanceGuidNode.textValue() != null &&
+                    eventTimestampNode != null && eventTimestampNode.textValue() != null &&
+                    startedOnNode != null && startedOnNode.textValue() != null) {
+                
+                String instanceGuid = instanceGuidNode.textValue();
+                DateTime eventTimestamp;
+                try {
+                    eventTimestamp = DateTime.parse(eventTimestampNode.textValue());
+                } catch (IllegalArgumentException ex) {
+                    logger.info("Upload sent with malformed eventTimestamp in metadata. UploadId: " + uploadId +
+                            ", ErrorMessage: " + ex.getMessage());
+                    return;
+                }
+                
+                DateTime startedOn;
+                try {
+                    startedOn = DateTime.parse(startedOnNode.textValue());
+                } catch (IllegalArgumentException ex) {
+                    logger.info("Upload sent with malformed startedOn in metadata. UploadId: " + uploadId +
+                            ", ErrorMessage: " + ex.getMessage());
+                    return;
+                }
+                
+                String userId = accountService.getAccountId(appId, "healthcode:" + upload.getHealthCode())
+                        .orElseThrow(() -> new EntityNotFoundException(Account.class));
+                
+                // Find the study using the instanceGuid referenced by the upload
+                TimelineMetadata timelineMetadata =  schedule2Service.getTimelineMetadata(instanceGuid).orElse(null);
+                if (timelineMetadata != null) {
+                    
+                    String scheduleGuid = timelineMetadata.getScheduleGuid();
+                    List<String> studyIds = studyService.getStudyIdsUsingSchedule(appId, scheduleGuid);
+                    
+                    if (studyIds.size() == 1) {
+                        String studyId = studyIds.get(0);
+                        
+                        // If adherence record already exists, update it. Otherwise, create a new one.
+                        AdherenceRecordsSearch.Builder search = new AdherenceRecordsSearch.Builder()
+                                .withInstanceGuids(ImmutableSet.of(instanceGuid))
+                                .withUserId(userId)
+                                .withStudyId(studyId);
+                        if (timelineMetadata.isTimeWindowPersistent()) {
+                            search.withStartTime(startedOn);
+                            search.withEndTime(startedOn);
+                        }
+                        PagedResourceList<AdherenceRecord> recordList = adherenceService.getAdherenceRecords(appId,
+                                search.build());
+                        
+                        List<AdherenceRecord> recordsToUpdate = new ArrayList<>();
+                        boolean foundExistingRecord = false;
+                        
+                        for (AdherenceRecord record : recordList.getItems()) {
+                            if (timelineMetadata.isTimeWindowPersistent() && !record.getStartedOn().isEqual(startedOn)) {
+                                // If the window is persistent then the records would have to share startedOn values
+                                // to be considered the same.
+                                logger.info("Unexpected adherence record returned when searching persistent window. " +
+                                        "AppId: " + appId + ", StudyId: " + studyId + ", InstanceGuid: " + 
+                                        instanceGuid + ", searched StartedOn: " + startedOn + 
+                                        ", returned StartedOn: " + record.getStartedOn());
+                                continue;
+                            }
+    
+                            if (record.getEventTimestamp().isEqual(eventTimestamp)) {
+                                // The DAO retains the earlier uploadedOn date and previous uploadIds
+                                // so these can ignore the calculation and pass in the new upload.
+                                // Since there is an existing record, let the persisted startedOn date remain.
+                                record.setUploadedOn(new DateTime(upload.getCompletedOn()));
+                                record.addUploadId(uploadId);
+                                recordsToUpdate.add(record);
+                                foundExistingRecord = true;
+                                break;
+                            }
+                        }
+                        
+                        if (!foundExistingRecord) {
+                            AdherenceRecord record = new AdherenceRecord();
+                            record.setAppId(appId);
+                            record.setStudyId(studyId);
+                            record.setUserId(userId);
+                            record.setInstanceGuid(instanceGuid);
+                            record.setEventTimestamp(eventTimestamp);
+                            record.setStartedOn(startedOn);
+                            record.setUploadedOn(new DateTime(upload.getCompletedOn()));
+                            record.addUploadId(uploadId);
+                            
+                            recordsToUpdate.add(record);
+                        }
+                        
+                        adherenceService.updateAdherenceRecords(appId, new AdherenceRecordList(recordsToUpdate));
+                        
+                    } else if (studyIds.size() > 1) {
+                        // It's unlikely that there are multiple studies tied to one schedule, but not impossible.
+                        // If it does happen, the timelines for the studies would be identical. It would be possible
+                        // to check which study a participant is enrolled in. But they can also enroll in multiple.
+                        logger.warn("Upload completion can not be noted in adherence since its schedule belongs " +
+                                "to multiple studies. UploadId: " + uploadId + ", ScheduleGuid: " + scheduleGuid);
+                    }
+                } else {
+                    logger.info("Upload referenced a non-existent instanceGuid. AppId: " + appId +
+                            ", UploadId: " + uploadId);
+                }
+            }
+        }
     }
 
     @FunctionalInterface
