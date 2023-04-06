@@ -40,6 +40,7 @@ public class DynamoHealthDataRecordEx3 implements HealthDataRecordEx3 {
     private Map<String, ExportedRecordInfo> exportedStudyRecords;
     private Map<String, String> metadata;
     private SharingScope sharingScope;
+    private String userAgent;
     private Long version;
     private String downloadUrl;
     private long downloadExpiration;
@@ -220,6 +221,16 @@ public class DynamoHealthDataRecordEx3 implements HealthDataRecordEx3 {
     @Override
     public void setSharingScope(SharingScope sharingScope) {
         this.sharingScope = sharingScope;
+    }
+
+    @Override
+    public String getUserAgent() {
+        return userAgent;
+    }
+
+    @Override
+    public void setUserAgent(String userAgent) {
+        this.userAgent = userAgent;
     }
 
     @DynamoDBVersionAttribute

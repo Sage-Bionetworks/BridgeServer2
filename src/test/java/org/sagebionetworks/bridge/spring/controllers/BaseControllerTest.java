@@ -152,8 +152,8 @@ public class BaseControllerTest extends Mockito {
         app = App.create();
         
         RequestContext.set(new RequestContext.Builder()
-                .withCallerClientInfo(ClientInfo.fromUserAgentCache(UA))
-                .withCallerLanguages(ImmutableList.of("en", "fr")).build());
+                .withCallerLanguages(ImmutableList.of("en", "fr"))
+                .withUserAgent(UA).build());
     }
     
     @AfterMethod
@@ -394,8 +394,8 @@ public class BaseControllerTest extends Mockito {
     @Test
     public void getCriteriaContextWithAppId() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerClientInfo(ClientInfo.fromUserAgentCache(UA))
                 .withCallerLanguages(ImmutableList.of("en"))
+                .withUserAgent(UA)
                 .build());
         when(mockRequest.getHeader(BridgeConstants.X_FORWARDED_FOR_HEADER)).thenReturn(IP_ADDRESS);
         

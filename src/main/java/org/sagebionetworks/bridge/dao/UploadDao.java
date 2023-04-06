@@ -88,4 +88,7 @@ public interface UploadDao {
      * @return a list of upload IDs to be deleted
      */
     List<String> deleteUploadsForHealthCode(@Nonnull String healthCode);
+
+    /** Update an upload record. */
+    void updateUpload(Upload upload);
 }

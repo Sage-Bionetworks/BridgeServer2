@@ -19,6 +19,7 @@ import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.upload.UploadCompletionClient;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
@@ -55,6 +56,7 @@ public class DynamoUpload2Test {
         upload.setAppId(TEST_APP_ID);
         upload.setUploadDate(LocalDate.parse("2016-10-10"));
         upload.setUploadId("DEF");
+        upload.setUserAgent(TestConstants.UA);
         upload.setValidationMessageList(Lists.newArrayList("message 1", "message 2"));
         upload.setVersion(2L);
         upload.setZipped(false);
@@ -77,6 +79,7 @@ public class DynamoUpload2Test {
         assertEquals(node.get("filename").textValue(), "filename.zip");
         assertEquals(node.get("appId").textValue(), TEST_APP_ID);
         assertEquals(node.get("studyId").textValue(), TEST_APP_ID);
+        assertEquals(node.get("userAgent").textValue(), TestConstants.UA);
         assertEquals(node.get("version").longValue(), 2L);
         assertEquals(node.get("healthCode").textValue(), "healthCode");
         assertFalse(node.get("zipped").booleanValue());

@@ -1269,6 +1269,7 @@ public class Exporter3ServiceTest {
         upload.setClientInfo("dummy upload client info string");
         upload.setHealthCode(TestConstants.HEALTH_CODE);
         upload.setUploadId(RECORD_ID);
+        upload.setUserAgent(TestConstants.UA);
 
         // Mock AccountService.
         Account account = Account.create();
@@ -1277,7 +1278,7 @@ public class Exporter3ServiceTest {
 
         // Ensure there is no client info in the Request Context.
         RequestContext requestContext = new RequestContext.Builder().withCallerUserId(USER_ID)
-                .withCallerClientInfo(null).build();
+                .withUserAgent(null).build();
         RequestContext.set(requestContext);
 
         // Mock HealthDataEx3Service.
@@ -1297,6 +1298,7 @@ public class Exporter3ServiceTest {
 
         HealthDataRecordEx3 recordToCreate = recordToCreateCaptor.getValue();
         assertEquals(recordToCreate.getClientInfo(), "dummy upload client info string");
+        assertEquals(recordToCreate.getUserAgent(), TestConstants.UA);
     }
 
     @Test
@@ -1313,7 +1315,7 @@ public class Exporter3ServiceTest {
 
         // Set RequestContext.
         RequestContext requestContext = new RequestContext.Builder().withCallerUserId(USER_ID)
-                .withCallerClientInfo(null).build();
+                .withUserAgent(null).build();
         RequestContext.set(requestContext);
 
         // Mock HealthDataEx3Service.
@@ -1335,6 +1337,7 @@ public class Exporter3ServiceTest {
         String clientInfoJsonText = recordToCreate.getClientInfo();
         ClientInfo deser = BridgeObjectMapper.get().readValue(clientInfoJsonText, ClientInfo.class);
         assertEquals(deser, ClientInfo.UNKNOWN_CLIENT);
+        assertNull(recordToCreate.getUserAgent());
     }
 
     @Test
@@ -1351,7 +1354,7 @@ public class Exporter3ServiceTest {
 
         // Set RequestContext.
         RequestContext requestContext = new RequestContext.Builder().withCallerUserId(USER_ID)
-                .withCallerClientInfo(CLIENT_INFO).build();
+                .withUserAgent(TestConstants.UA).build();
         RequestContext.set(requestContext);
 
         // Mock HealthDataEx3Service.
@@ -1373,6 +1376,7 @@ public class Exporter3ServiceTest {
         String clientInfoJsonText = recordToCreate.getClientInfo();
         ClientInfo deser = BridgeObjectMapper.get().readValue(clientInfoJsonText, ClientInfo.class);
         assertEquals(deser, CLIENT_INFO);
+        assertEquals(recordToCreate.getUserAgent(), TestConstants.UA);
     }
 
     @Test
@@ -1410,6 +1414,7 @@ public class Exporter3ServiceTest {
         String clientInfoJsonText = recordToCreate.getClientInfo();
         ClientInfo deser = BridgeObjectMapper.get().readValue(clientInfoJsonText, ClientInfo.class);
         assertEquals(deser, ClientInfo.UNKNOWN_CLIENT);
+        assertNull(recordToCreate.getUserAgent());
     }
 
     @Test
@@ -1450,6 +1455,7 @@ public class Exporter3ServiceTest {
         String clientInfoJsonText = recordToCreate.getClientInfo();
         ClientInfo deser = BridgeObjectMapper.get().readValue(clientInfoJsonText, ClientInfo.class);
         assertEquals(deser, ClientInfo.UNKNOWN_CLIENT);
+        assertNull(recordToCreate.getUserAgent());
     }
 
     @Test
@@ -1474,7 +1480,8 @@ public class Exporter3ServiceTest {
         when(mockHealthDataEx3Service.createOrUpdateRecord(any())).thenReturn(createdRecord);
 
         // Mock RequestInfoService.
-        RequestInfo requestInfo = new RequestInfo.Builder().withClientInfo(CLIENT_INFO).build();
+        RequestInfo requestInfo = new RequestInfo.Builder().withClientInfo(CLIENT_INFO).withUserAgent(TestConstants.UA)
+                .build();
         when(mockRequestInfoService.getRequestInfo(USER_ID)).thenReturn(requestInfo);
 
         // Mock SQS. Return type doesn't actually matter except for logs, but we don't want it to be null.
@@ -1491,6 +1498,7 @@ public class Exporter3ServiceTest {
         String clientInfoJsonText = recordToCreate.getClientInfo();
         ClientInfo deser = BridgeObjectMapper.get().readValue(clientInfoJsonText, ClientInfo.class);
         assertEquals(deser, CLIENT_INFO);
+        assertEquals(recordToCreate.getUserAgent(), TestConstants.UA);
     }
 
     @Test

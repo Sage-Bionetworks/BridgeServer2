@@ -844,23 +844,30 @@ public class Exporter3Service {
         SharingScope sharingScope = account.getSharingScope();
         record.setSharingScope(sharingScope);
 
-        // Handle Client Info.
+        // Handle Client Info and User Agent.
         String clientInfoJsonText;
-        if (upload.getClientInfo() != null) {
+        String userAgent;
+        if (upload.getUserAgent() != null) {
             clientInfoJsonText = upload.getClientInfo();
+            userAgent = upload.getUserAgent();
         } else {
-            ClientInfo clientInfo = ClientInfo.UNKNOWN_CLIENT;
+            ClientInfo clientInfo;
             RequestContext requestContext = RequestContext.get();
             String calledUserId = requestContext.getCallerUserId();
             String uploaderUserId = account.getId();
             if (Objects.equals(calledUserId, uploaderUserId)) {
                 // The caller is the uploader. Get the Client Info from the RequestContext.
                 clientInfo = requestContext.getCallerClientInfo();
+                userAgent = requestContext.getUserAgent();
             } else {
                 // The caller is _not_ the uploader. Get the Client Info from the RequestInfoService.
                 RequestInfo requestInfo = requestInfoService.getRequestInfo(uploaderUserId);
                 if (requestInfo != null && requestInfo.getClientInfo() != null) {
                     clientInfo = requestInfo.getClientInfo();
+                    userAgent = requestInfo.getUserAgent();
+                } else {
+                    clientInfo = ClientInfo.UNKNOWN_CLIENT;
+                    userAgent = null;
                 }
             }
 
@@ -868,6 +875,7 @@ public class Exporter3Service {
                     .writeValueAsString(clientInfo);
         }
         record.setClientInfo(clientInfoJsonText);
+        record.setUserAgent(userAgent);
 
         // Also mark with the latest participant version.
         Optional<ParticipantVersion> participantVersion = participantVersionService
