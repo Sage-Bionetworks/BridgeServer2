@@ -12,6 +12,7 @@ import org.joda.time.DateTime;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.dao.AdherenceRecordDao;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.hibernate.QueryBuilder.WhereClauseBuilder;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
@@ -23,9 +24,17 @@ public class HibernateAdherenceRecordDao implements AdherenceRecordDao {
     
     static final String BASE_QUERY = "FROM AdherenceRecords AS ar "
         + "LEFT OUTER JOIN TimelineMetadata AS tm "
-        + "ON ar.instanceGuid = tm.guid"; 
+        + "ON ar.instanceGuid = tm.guid";
+    static final String QUERY_BY_UPLOAD_ID = "FROM AdherenceRecords AS ar JOIN AdherenceUploads AS au " +
+            "ON ar.userId = au.userId AND ar.studyId = au.studyID AND ar.instanceGuid = au.instanceGuid " +
+            "AND ar.eventTimestamp = au.eventTimestamp AND ar.instanceTimestamp = au.instanceTimestamp " +
+            "LEFT OUTER JOIN TimelineMetadata AS tm ON ar.instanceGuid = tm.guid";
+    static final String UPLOAD_ID_SUBQUERY = "(SELECT COUNT(DISTINCT uploadId) FROM AdherenceUploads AS au " +
+            "WHERE ar.userId = au.userId AND ar.studyId = au.studyId AND ar.instanceGuid = au.instanceGuid " +
+            "AND ar.eventTimestamp = au.eventTimestamp AND ar.instanceTimestamp = au.instanceTimestamp)";
+    static final String WHERE_HAS_MULTIPLE_UPLOAD_IDS = UPLOAD_ID_SUBQUERY + " > 1";
+    static final String WHERE_HAS_NO_UPLOAD_IDS = UPLOAD_ID_SUBQUERY + " = 0";
 
-    
     private HibernateHelper hibernateHelper;
 
     @Resource(name = "mysqlHibernateHelper")
@@ -95,14 +104,32 @@ public class HibernateAdherenceRecordDao implements AdherenceRecordDao {
 
     protected QueryBuilder createQuery(AdherenceRecordsSearch search) {
         QueryBuilder builder = new QueryBuilder();
-        builder.append(BASE_QUERY);
-        
+
+        // Special query for upload IDs.
+        if (search.getUploadId() != null) {
+            builder.append(QUERY_BY_UPLOAD_ID);
+        } else {
+            builder.append(BASE_QUERY);
+        }
+
         WhereClauseBuilder where = builder.startWhere(AND);
+        // Either app ID or user ID are required. If both are specified, we use the user ID.
+        // Note that the validator ensures that at least one of these is specified.
         if (search.getUserId() != null) {
             where.appendRequired("ar.userId = :userId", "userId", search.getUserId());    
+        } else if (search.getAppId() != null) {
+            where.appendRequired("ar.appId = :appId", "appId", search.getAppId());
+        } else {
+            // The validator should catch this, but just in case...
+            throw new BadRequestException("appId or userId is required");
         }
         where.appendRequired("ar.studyId = :studyId", "studyId", search.getStudyId());
-        
+
+        // If upload ID is specified, we use it to find the records.
+        if (search.getUploadId() != null) {
+            where.appendRequired("au.uploadId = :uploadId", "uploadId", search.getUploadId());
+        }
+
         // Note that by design, this finds both shared/local assessments with the
         // same ID
         if (!search.getAssessmentIds().isEmpty()) {
@@ -146,7 +173,25 @@ public class HibernateAdherenceRecordDao implements AdherenceRecordDao {
             where.append("ar.startedOn <= :endTime", 
                     "endTime", search.getEndTime().getMillis());
         }
+
+        if (search.getEventTimestampStart() != null) {
+            where.append("ar.eventTimestamp >= :eventTimestampStart", "eventTimestampStart",
+                    search.getEventTimestampStart().getMillis());
+        }
+        if (search.getEventTimestampEnd() != null) {
+            where.append("ar.eventTimestamp < :eventTimestampEnd", "eventTimestampEnd",
+                    search.getEventTimestampEnd().getMillis());
+        }
+
+        if (search.hasMultipleUploadIds()) {
+            where.append(WHERE_HAS_MULTIPLE_UPLOAD_IDS);
+        } else if (search.hasNoUploadIds()) {
+            where.append(WHERE_HAS_NO_UPLOAD_IDS);
+        }
+
+        // Note: This needs to be last, because any call to builder.append() will close out the where clause.
         builder.append("ORDER BY ar.startedOn " + search.getSortOrder().name());
+
         return builder;
     }
 

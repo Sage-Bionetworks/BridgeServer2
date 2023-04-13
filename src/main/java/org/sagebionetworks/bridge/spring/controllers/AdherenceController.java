@@ -155,6 +155,7 @@ public class AdherenceController extends BaseController {
         
         AdherenceRecordsSearch payload = parseJson(AdherenceRecordsSearch.class);
         AdherenceRecordsSearch search = payload.toBuilder()
+                .withAppId(session.getAppId())
                 .withUserId(null)
                 .withStudyId(studyId).build();
 
