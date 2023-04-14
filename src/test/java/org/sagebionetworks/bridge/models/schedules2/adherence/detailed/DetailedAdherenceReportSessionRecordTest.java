@@ -3,6 +3,8 @@ package org.sagebionetworks.bridge.models.schedules2.adherence.detailed;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState;
 import org.testng.annotations.Test;
@@ -11,11 +13,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.sagebionetworks.bridge.TestConstants.TEST_CLIENT_TIME_ZONE;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.testng.Assert.assertEquals;
 
 
 public class DetailedAdherenceReportSessionRecordTest {
+    private final DateTime TIMESTAMP_WITH_OFFSET = TIMESTAMP.withZone(DateTimeZone.forID(TEST_CLIENT_TIME_ZONE));
     
     @Test
     public void canSerialize() {
@@ -32,9 +36,9 @@ public class DetailedAdherenceReportSessionRecordTest {
         record.setSessionGuid("session-guid");
         record.setSessionInstanceGuid("session-instance-guid");
         record.setSessionStatus(SessionCompletionState.COMPLETED);
-        record.setSessionStart(TIMESTAMP);
-        record.setSessionCompleted(TIMESTAMP);
-        record.setSessionExpiration(TIMESTAMP);
+        record.setSessionStart(TIMESTAMP_WITH_OFFSET);
+        record.setSessionCompleted(TIMESTAMP_WITH_OFFSET);
+        record.setSessionExpiration(TIMESTAMP_WITH_OFFSET);
         record.setAssessmentRecords(assessmentRecords);
         record.setSortPriority(1);
         
@@ -46,9 +50,9 @@ public class DetailedAdherenceReportSessionRecordTest {
         assertEquals(node.get("sessionGuid").textValue(), "session-guid");
         assertEquals(node.get("sessionInstanceGuid").textValue(), "session-instance-guid");
         assertEquals(node.get("sessionStatus").textValue(), "completed");
-        assertEquals(node.get("sessionStart").textValue(), TIMESTAMP.toString());
-        assertEquals(node.get("sessionCompleted").textValue(), TIMESTAMP.toString());
-        assertEquals(node.get("sessionExpiration").textValue(), TIMESTAMP.toString());
+        assertEquals(node.get("sessionStart").textValue(), TIMESTAMP_WITH_OFFSET.toString());
+        assertEquals(node.get("sessionCompleted").textValue(), TIMESTAMP_WITH_OFFSET.toString());
+        assertEquals(node.get("sessionExpiration").textValue(), TIMESTAMP_WITH_OFFSET.toString());
         assertEquals(node.get("type").textValue(), "DetailedAdherenceReportSessionRecord");
         
         assertEquals(node.get("assessmentRecords").get(0).get("assessmentInstanceGuid").textValue(),

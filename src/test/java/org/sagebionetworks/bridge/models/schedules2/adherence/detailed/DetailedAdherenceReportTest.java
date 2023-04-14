@@ -3,6 +3,8 @@ package org.sagebionetworks.bridge.models.schedules2.adherence.detailed;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountRef;
@@ -12,12 +14,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.sagebionetworks.bridge.TestConstants.TEST_CLIENT_TIME_ZONE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
 public class DetailedAdherenceReportTest {
+    
+    private final DateTime TIMESTAMP_WITH_OFFSET = TIMESTAMP.withZone(DateTimeZone.forID(TEST_CLIENT_TIME_ZONE));
     
     @Test
     public void canSerialize() {
@@ -36,18 +41,17 @@ public class DetailedAdherenceReportTest {
         record.setParticipant(participant);
         record.setTestAccount(true);
         record.setClientTimeZone("client-time-zone");
-        record.setJoinedDate(TIMESTAMP);
+        record.setJoinedDate(TIMESTAMP_WITH_OFFSET);
         record.setSessionRecords(sessionRecords);
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(record);
-        System.out.println(node.toPrettyString());
         
         assertEquals(node.size(), 6);
         assertEquals(node.get("participant").get("type").textValue(), "AccountRef");
         assertEquals(node.get("participant").get("identifier").textValue(), TEST_USER_ID);
         assertTrue(node.get("testAccount").booleanValue());
         assertEquals(node.get("clientTimeZone").textValue(), "client-time-zone");
-        assertEquals(node.get("joinedDate").textValue(), TIMESTAMP.toString());
+        assertEquals(node.get("joinedDate").textValue(), TIMESTAMP_WITH_OFFSET.toString());
         assertEquals(node.get("type").textValue(), "DetailedAdherenceReport");
         
         assertEquals(node.get("sessionRecords").get(0).get("sessionInstanceGuid").textValue(),

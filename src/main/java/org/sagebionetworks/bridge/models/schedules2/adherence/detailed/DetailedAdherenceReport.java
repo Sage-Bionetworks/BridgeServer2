@@ -1,10 +1,12 @@
 package org.sagebionetworks.bridge.models.schedules2.adherence.detailed;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Ordering;
 import org.joda.time.DateTime;
+import org.sagebionetworks.bridge.json.DateTimeSerializer;
 import org.sagebionetworks.bridge.models.accounts.AccountRef;
 
 import java.util.Comparator;
@@ -35,6 +37,7 @@ public class DetailedAdherenceReport {
         this.testAccount = testAccount;
     }
     
+    @JsonSerialize(using = DateTimeSerializer.class)
     public DateTime getJoinedDate() {
         return joinedDate;
     }

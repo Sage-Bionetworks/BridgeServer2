@@ -1,10 +1,12 @@
 package org.sagebionetworks.bridge.models.schedules2.adherence.detailed;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Ordering;
 import org.joda.time.DateTime;
+import org.sagebionetworks.bridge.json.DateTimeSerializer;
 import org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState;
 
 import java.util.Comparator;
@@ -19,7 +21,7 @@ public class DetailedAdherenceReportSessionRecord {
     private String sessionName;
     private String sessionGuid;
     private String sessionInstanceGuid;
-    private SessionCompletionState sessionStatus; // object?
+    private SessionCompletionState sessionStatus;
     private DateTime sessionStart; // date time
     private DateTime sessionCompleted; // date time
     private DateTime sessionExpiration;
@@ -74,6 +76,7 @@ public class DetailedAdherenceReportSessionRecord {
         this.sessionStatus = sessionStatus;
     }
     
+    @JsonSerialize(using = DateTimeSerializer.class)
     public DateTime getSessionStart() {
         return sessionStart;
     }
@@ -82,6 +85,7 @@ public class DetailedAdherenceReportSessionRecord {
         this.sessionStart = sessionStart;
     }
     
+    @JsonSerialize(using = DateTimeSerializer.class)
     public DateTime getSessionCompleted() {
         return sessionCompleted;
     }
@@ -90,6 +94,7 @@ public class DetailedAdherenceReportSessionRecord {
         this.sessionCompleted = sessionCompleted;
     }
     
+    @JsonSerialize(using = DateTimeSerializer.class)
     public DateTime getSessionExpiration() {
         return sessionExpiration;
     }

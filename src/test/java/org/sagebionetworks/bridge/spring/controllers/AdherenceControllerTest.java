@@ -800,4 +800,18 @@ public class AdherenceControllerTest extends Mockito {
         
         controller.getDetailedParticipantAdherenceReport(TEST_STUDY_ID, TEST_USER_ID);
     }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void getDetailedParticipantAdherenceReport_accountNotFound() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(TEST_USER_ID)
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR)).build());
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_DESIGNER, STUDY_COORDINATOR);
+    
+        when(mockAccountService.getAccount(AccountId.forId(TEST_APP_ID, TEST_USER_ID)))
+                .thenReturn(Optional.empty());
+    
+        controller.getDetailedParticipantAdherenceReport(TEST_STUDY_ID, TEST_USER_ID);
+    }
 }

@@ -1,7 +1,9 @@
 package org.sagebionetworks.bridge.models.schedules2.adherence.detailed;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.joda.time.DateTime;
+import org.sagebionetworks.bridge.json.DateTimeSerializer;
 
 public class DetailedAdherenceReportAssessmentRecord {
     private String assessmentName;
@@ -54,6 +56,7 @@ public class DetailedAdherenceReportAssessmentRecord {
         this.assessmentStatus = assessmentStatus;
     }
     
+    @JsonSerialize(using = DateTimeSerializer.class)
     public DateTime getAssessmentStart() {
         return assessmentStart;
     }
@@ -62,6 +65,7 @@ public class DetailedAdherenceReportAssessmentRecord {
         this.assessmentStart = assessmentStart;
     }
     
+    @JsonSerialize(using = DateTimeSerializer.class)
     public DateTime getAssessmentCompleted() {
         return assessmentCompleted;
     }
@@ -70,6 +74,7 @@ public class DetailedAdherenceReportAssessmentRecord {
         this.assessmentCompleted = assessmentCompleted;
     }
     
+    @JsonSerialize(using = DateTimeSerializer.class)
     public DateTime getAssessmentUploadedOn() {
         return assessmentUploadedOn;
     }

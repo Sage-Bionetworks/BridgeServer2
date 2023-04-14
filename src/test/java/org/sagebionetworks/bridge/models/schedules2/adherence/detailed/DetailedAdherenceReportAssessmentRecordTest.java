@@ -2,13 +2,18 @@ package org.sagebionetworks.bridge.models.schedules2.adherence.detailed;
 
 
 import com.fasterxml.jackson.databind.JsonNode;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.testng.annotations.Test;
 
+import static org.sagebionetworks.bridge.TestConstants.TEST_CLIENT_TIME_ZONE;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.testng.Assert.assertEquals;
 
 public class DetailedAdherenceReportAssessmentRecordTest {
+    
+    private final DateTime TIMESTAMP_WITH_OFFSET = TIMESTAMP.withZone(DateTimeZone.forID(TEST_CLIENT_TIME_ZONE));
     
     @Test
     public void canSerialize() {
@@ -18,9 +23,9 @@ public class DetailedAdherenceReportAssessmentRecordTest {
         record.setAssessmentGuid("assessment-guid");
         record.setAssessmentInstanceGuid("assessment-instance-guid");
         record.setAssessmentStatus("assessment-status");
-        record.setAssessmentStart(TIMESTAMP);
-        record.setAssessmentCompleted(TIMESTAMP);
-        record.setAssessmentUploadedOn(TIMESTAMP);
+        record.setAssessmentStart(TIMESTAMP_WITH_OFFSET);
+        record.setAssessmentCompleted(TIMESTAMP_WITH_OFFSET);
+        record.setAssessmentUploadedOn(TIMESTAMP_WITH_OFFSET);
         record.setSortPriority(1);
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(record);
@@ -30,9 +35,9 @@ public class DetailedAdherenceReportAssessmentRecordTest {
         assertEquals(node.get("assessmentGuid").textValue(), "assessment-guid");
         assertEquals(node.get("assessmentInstanceGuid").textValue(), "assessment-instance-guid");
         assertEquals(node.get("assessmentStatus").textValue(), "assessment-status");
-        assertEquals(node.get("assessmentStart").textValue(), TIMESTAMP.toString());
-        assertEquals(node.get("assessmentCompleted").textValue(), TIMESTAMP.toString());
-        assertEquals(node.get("assessmentUploadedOn").textValue(), TIMESTAMP.toString());
+        assertEquals(node.get("assessmentStart").textValue(), TIMESTAMP_WITH_OFFSET.toString());
+        assertEquals(node.get("assessmentCompleted").textValue(), TIMESTAMP_WITH_OFFSET.toString());
+        assertEquals(node.get("assessmentUploadedOn").textValue(), TIMESTAMP_WITH_OFFSET.toString());
         assertEquals(node.get("type").textValue(), "DetailedAdherenceReportAssessmentRecord");
     }
 }
