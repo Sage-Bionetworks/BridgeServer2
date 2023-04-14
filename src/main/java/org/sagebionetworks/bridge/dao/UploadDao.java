@@ -37,7 +37,10 @@ public interface UploadDao {
      * @return upload metadata
      */
     Upload getUpload(@Nonnull String uploadId);
-    
+
+    /** Get upload. Returns null if the upload doesn't exist. */
+    Upload getUploadNoThrow(String uploadId);
+
     /**
      * Get the uploads for an indicated time range.
      */
@@ -85,4 +88,7 @@ public interface UploadDao {
      * @return a list of upload IDs to be deleted
      */
     List<String> deleteUploadsForHealthCode(@Nonnull String healthCode);
+
+    /** Update an upload record. */
+    void updateUpload(Upload upload);
 }

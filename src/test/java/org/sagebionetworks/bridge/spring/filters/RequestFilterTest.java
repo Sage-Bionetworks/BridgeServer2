@@ -45,7 +45,6 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.RequestContext;
-import org.sagebionetworks.bridge.models.ClientInfo;
 
 public class RequestFilterTest extends Mockito {
 
@@ -83,6 +82,9 @@ public class RequestFilterTest extends Mockito {
     public void testWithXForwardForHeader() throws Exception {
         when(mockRequest.getHeader(BridgeConstants.X_REQUEST_ID_HEADER)).thenReturn("ABCXZ");
         when(mockRequest.getHeaderNames()).thenReturn(new Vector<String>().elements());
+
+        // And test a few other headers while we're at it.
+        when(mockRequest.getHeader(USER_AGENT)).thenReturn(UA);
         
         filter.doFilter(mockRequest, mockResponse, mockFilterChain);
         
@@ -90,6 +92,7 @@ public class RequestFilterTest extends Mockito {
         
         HttpServletRequest wrapper = requestCaptor.getValue();
         assertEquals(wrapper.getHeader(BridgeConstants.X_REQUEST_ID_HEADER), "ABCXZ");
+        assertEquals(wrapper.getHeader(USER_AGENT), UA);
         
         boolean foundRequestId = false;
         Enumeration<String> enumeration = wrapper.getHeaderNames();
@@ -157,17 +160,20 @@ public class RequestFilterTest extends Mockito {
     @Test
     public void getClientInfoFromUserAgentHeader() {
         when(mockRequest.getHeader(USER_AGENT)).thenReturn(UA);
+        String userAgent = RequestFilter.getUserAgentHeader(mockRequest, mockResponse);
+        assertEquals(userAgent, UA);
 
-        ClientInfo info = RequestFilter.getClientInfoFromUserAgentHeader(mockRequest, mockResponse);
-        
-        assertEquals(info, ClientInfo.fromUserAgentCache(UA));
+        // We don't add a warning if the header is present.
+        verify(mockResponse, never()).setHeader(any(), any());
     }
 
     @Test
     public void getClientInfoFromUserAgentHeaderMissing() {
-        ClientInfo info = RequestFilter.getClientInfoFromUserAgentHeader(mockRequest, mockResponse);
-        
-        assertEquals(info, ClientInfo.UNKNOWN_CLIENT);
+        String userAgent = RequestFilter.getUserAgentHeader(mockRequest, mockResponse);
+        assertNull(userAgent);
+
+        // Verify that we add a warning.
+        verify(mockResponse).setHeader(BRIDGE_API_STATUS_HEADER, WARN_NO_USER_AGENT);
     }
     
     @Test
@@ -190,55 +196,6 @@ public class RequestFilterTest extends Mockito {
     
     // Tests from original Play tests.
     
-    @Test
-    public void doesNotThrowErrorWhenUserAgentStringInvalid() throws Exception {
-        when(mockRequest.getHeader(USER_AGENT)).thenReturn(
-                "Amazon Route 53 Health Check Service; ref:c97cd53f-2272-49d6-a8cd-3cd658d9d020; report http://amzn.to/1vsZADi");
-        
-        ClientInfo info = RequestFilter.getClientInfoFromUserAgentHeader(mockRequest, mockResponse);
-        assertEquals(info, ClientInfo.UNKNOWN_CLIENT);
-        assertNull(info.getAppName());
-        assertNull(info.getAppVersion());
-        assertNull(info.getOsName());
-        assertNull(info.getOsVersion());
-        assertNull(info.getSdkName());
-        assertNull(info.getSdkVersion());
-    }
-
-    @Test
-    public void doesNotSetWarningHeaderWhenHasUserAgent() throws Exception {
-        when(mockRequest.getHeader(USER_AGENT)).thenReturn(UA);
-        
-        RequestFilter.getClientInfoFromUserAgentHeader(mockRequest, mockResponse);
-        
-        verify(mockResponse, never()).setHeader(any(), any());
-    }
-
-    @Test
-    public void setWarningHeaderWhenNoUserAgent() throws Exception {
-        RequestFilter.getClientInfoFromUserAgentHeader(mockRequest, mockResponse);
-
-        verify(mockResponse).setHeader(BRIDGE_API_STATUS_HEADER, WARN_NO_USER_AGENT);
-    }
-
-    @Test
-    public void setWarningHeaderWhenEmptyUserAgent() throws Exception {
-        when(mockRequest.getHeader(USER_AGENT)).thenReturn("");
-
-        RequestFilter.getClientInfoFromUserAgentHeader(mockRequest, mockResponse);
-
-        verify(mockResponse).setHeader(BRIDGE_API_STATUS_HEADER, WARN_NO_USER_AGENT);
-    }
-
-    @Test
-    public void setWarningHeaderWhenNullUserAgent() throws Exception {
-        when(mockRequest.getHeader(USER_AGENT)).thenReturn(null);
-
-        RequestFilter.getClientInfoFromUserAgentHeader(mockRequest, mockResponse);
-
-        verify(mockResponse).setHeader(BRIDGE_API_STATUS_HEADER, WARN_NO_USER_AGENT);
-    }
-
     @Test
     public void canRetrieveLanguagesWhenHeaderIsNull() throws Exception {
         when(mockRequest.getHeader(ACCEPT_LANGUAGE)).thenReturn(null);

@@ -35,7 +35,6 @@ import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dao.HealthCodeDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
-import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.NotFoundException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.upload.Upload;
@@ -197,7 +196,7 @@ public class DynamoUploadDaoTest {
         assertEquals(retVal.getAppId(), TEST_APP_ID);
     }
 
-    @Test(expectedExceptions = EntityNotFoundException.class)
+    @Test(expectedExceptions = NotFoundException.class)
     public void getUploadWithoutAppIdAndNoHealthCodeRecord() {
         DynamoUpload2 upload = new DynamoUpload2();
         upload.setHealthCode("healthCode");
@@ -224,6 +223,25 @@ public class DynamoUploadDaoTest {
 
         // validate we passed in the expected key
         assertEquals(uploadCaptor.getValue().getUploadId(), "test-get-404");
+    }
+
+    @Test
+    public void getUploadNoThrow_WithoutAppIdAndNoHealthCodeRecord() {
+        DynamoUpload2 upload = new DynamoUpload2();
+        upload.setHealthCode("healthCode");
+        when(mockMapper.load(any())).thenReturn(upload);
+
+        when(healthCodeDao.getAppId(upload.getHealthCode())).thenReturn(null);
+
+        Upload result = dao.getUploadNoThrow("test-get-upload");
+        assertNull(result);
+    }
+
+    @Test
+    public void getUploadNoThrow_NotFound() {
+        when(mockMapper.load(any())).thenReturn(null);
+        Upload result = dao.getUploadNoThrow("test-get-upload");
+        assertNull(result);
     }
 
     @Test
@@ -518,6 +536,13 @@ public class DynamoUploadDaoTest {
         Upload upload = new DynamoUpload2();
 
         dao.uploadComplete(APP, upload);
+    }
+
+    @Test
+    public void updateUpload() {
+        Upload upload = Upload.create();
+        dao.updateUpload(upload);
+        verify(mockMapper).save(upload);
     }
 
     private static UploadRequest createUploadRequest() {

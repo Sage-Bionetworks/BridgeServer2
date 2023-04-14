@@ -39,7 +39,6 @@ import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.cache.ViewCache;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.GuidVersionHolder;
 import org.sagebionetworks.bridge.models.ResourceList;
@@ -139,7 +138,7 @@ public class AppConfigControllerTest extends Mockito {
     public void getAppConfigByCriteria() throws Exception {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerLanguages(ImmutableList.of("en"))
-                .withCallerClientInfo(ClientInfo.fromUserAgentCache(UA)).build());
+                .withUserAgent(UA).build());
         
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
         when(mockService.getAppConfigForUser(contextCaptor.capture(), eq(true))).thenReturn(appConfig);
@@ -256,7 +255,7 @@ public class AppConfigControllerTest extends Mockito {
     public void getAppConfigByCriteriaAddsToCache() throws Exception {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerLanguages(ImmutableList.of("en"))
-                .withCallerClientInfo(ClientInfo.fromUserAgentCache(UA)).build());
+                .withUserAgent(UA).build());
         mockRequestBody(mockRequest, appConfig);
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
         when(mockService.getAppConfigForUser(any(), eq(true))).thenReturn(appConfig);

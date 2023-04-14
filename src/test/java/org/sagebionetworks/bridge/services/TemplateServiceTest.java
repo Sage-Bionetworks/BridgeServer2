@@ -632,7 +632,7 @@ public class TemplateServiceTest extends Mockito {
     public void getRevisionForUser() throws Exception {
         ClientInfo clientInfo = ClientInfo.fromUserAgentCache(UA);
         RequestContext.set(new RequestContext.Builder()
-                .withCallerClientInfo(clientInfo).withCallerLanguages(LANGUAGES).build());
+                .withCallerLanguages(LANGUAGES).withUserAgent(UA).build());
         
         DateTime createdOn = DateTime.now();
         Template t1 = makeTemplate(GUID1, "de");
@@ -661,9 +661,8 @@ public class TemplateServiceTest extends Mockito {
     @Test(expectedExceptions = EntityNotFoundException.class, 
             expectedExceptionsMessageRegExp = "TemplateRevision not found.")
     public void getRevisionForUserWhenTemplateExistsButRevisionMissing() throws Exception {
-        ClientInfo clientInfo = ClientInfo.fromUserAgentCache(UA);
         RequestContext.set(new RequestContext.Builder()
-                .withCallerClientInfo(clientInfo).withCallerLanguages(LANGUAGES).build());
+                .withCallerLanguages(LANGUAGES).withUserAgent(UA).build());
         
         DateTime createdOn = DateTime.now();
         Template t1 = makeTemplate(GUID1, "en");

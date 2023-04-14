@@ -7,6 +7,7 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.models.exporter.ExportToAppNotification;
+import org.sagebionetworks.bridge.models.exporter.ExportedRecordInfo;
 
 public class ExportToAppNotificationValidatorTest {
     private static final String FILE_ENTITY_ID = "syn1111";
@@ -87,7 +88,7 @@ public class ExportToAppNotificationValidatorTest {
     @Test
     public void nullParentProjectId() {
         ExportToAppNotification notification = makeValidNotification();
-        ExportToAppNotification.RecordInfo recordInfo = makeValidRecordInfo();
+        ExportedRecordInfo recordInfo = makeValidRecordInfo();
         recordInfo.setParentProjectId(null);
         notification.setRecord(recordInfo);
         assertValidatorMessage(ExportToAppNotificationValidator.INSTANCE, notification,
@@ -97,7 +98,7 @@ public class ExportToAppNotificationValidatorTest {
     @Test
     public void emptyParentProjectId() {
         ExportToAppNotification notification = makeValidNotification();
-        ExportToAppNotification.RecordInfo recordInfo = makeValidRecordInfo();
+        ExportedRecordInfo recordInfo = makeValidRecordInfo();
         recordInfo.setParentProjectId("");
         notification.setRecord(recordInfo);
         assertValidatorMessage(ExportToAppNotificationValidator.INSTANCE, notification,
@@ -107,7 +108,7 @@ public class ExportToAppNotificationValidatorTest {
     @Test
     public void blankParentProjectId() {
         ExportToAppNotification notification = makeValidNotification();
-        ExportToAppNotification.RecordInfo recordInfo = makeValidRecordInfo();
+        ExportedRecordInfo recordInfo = makeValidRecordInfo();
         recordInfo.setParentProjectId("   ");
         notification.setRecord(recordInfo);
         assertValidatorMessage(ExportToAppNotificationValidator.INSTANCE, notification,
@@ -117,7 +118,7 @@ public class ExportToAppNotificationValidatorTest {
     @Test
     public void nullRawFolderId() {
         ExportToAppNotification notification = makeValidNotification();
-        ExportToAppNotification.RecordInfo recordInfo = makeValidRecordInfo();
+        ExportedRecordInfo recordInfo = makeValidRecordInfo();
         recordInfo.setRawFolderId(null);
         notification.setRecord(recordInfo);
         assertValidatorMessage(ExportToAppNotificationValidator.INSTANCE, notification,
@@ -127,7 +128,7 @@ public class ExportToAppNotificationValidatorTest {
     @Test
     public void emptyRawFolderId() {
         ExportToAppNotification notification = makeValidNotification();
-        ExportToAppNotification.RecordInfo recordInfo = makeValidRecordInfo();
+        ExportedRecordInfo recordInfo = makeValidRecordInfo();
         recordInfo.setRawFolderId("");
         notification.setRecord(recordInfo);
         assertValidatorMessage(ExportToAppNotificationValidator.INSTANCE, notification,
@@ -137,7 +138,7 @@ public class ExportToAppNotificationValidatorTest {
     @Test
     public void blankRawFolderId() {
         ExportToAppNotification notification = makeValidNotification();
-        ExportToAppNotification.RecordInfo recordInfo = makeValidRecordInfo();
+        ExportedRecordInfo recordInfo = makeValidRecordInfo();
         recordInfo.setRawFolderId("   ");
         notification.setRecord(recordInfo);
         assertValidatorMessage(ExportToAppNotificationValidator.INSTANCE, notification,
@@ -147,7 +148,7 @@ public class ExportToAppNotificationValidatorTest {
     @Test
     public void nullFileEntityId() {
         ExportToAppNotification notification = makeValidNotification();
-        ExportToAppNotification.RecordInfo recordInfo = makeValidRecordInfo();
+        ExportedRecordInfo recordInfo = makeValidRecordInfo();
         recordInfo.setFileEntityId(null);
         notification.setRecord(recordInfo);
         assertValidatorMessage(ExportToAppNotificationValidator.INSTANCE, notification,
@@ -157,7 +158,7 @@ public class ExportToAppNotificationValidatorTest {
     @Test
     public void emptyFileEntityId() {
         ExportToAppNotification notification = makeValidNotification();
-        ExportToAppNotification.RecordInfo recordInfo = makeValidRecordInfo();
+        ExportedRecordInfo recordInfo = makeValidRecordInfo();
         recordInfo.setFileEntityId("");
         notification.setRecord(recordInfo);
         assertValidatorMessage(ExportToAppNotificationValidator.INSTANCE, notification,
@@ -167,7 +168,7 @@ public class ExportToAppNotificationValidatorTest {
     @Test
     public void blankFileEntityId() {
         ExportToAppNotification notification = makeValidNotification();
-        ExportToAppNotification.RecordInfo recordInfo = makeValidRecordInfo();
+        ExportedRecordInfo recordInfo = makeValidRecordInfo();
         recordInfo.setFileEntityId("   ");
         notification.setRecord(recordInfo);
         assertValidatorMessage(ExportToAppNotificationValidator.INSTANCE, notification,
@@ -177,7 +178,7 @@ public class ExportToAppNotificationValidatorTest {
     @Test
     public void nullS3Bucket() {
         ExportToAppNotification notification = makeValidNotification();
-        ExportToAppNotification.RecordInfo recordInfo = makeValidRecordInfo();
+        ExportedRecordInfo recordInfo = makeValidRecordInfo();
         recordInfo.setS3Bucket(null);
         notification.setRecord(recordInfo);
         assertValidatorMessage(ExportToAppNotificationValidator.INSTANCE, notification,
@@ -187,7 +188,7 @@ public class ExportToAppNotificationValidatorTest {
     @Test
     public void emptyS3Bucket() {
         ExportToAppNotification notification = makeValidNotification();
-        ExportToAppNotification.RecordInfo recordInfo = makeValidRecordInfo();
+        ExportedRecordInfo recordInfo = makeValidRecordInfo();
         recordInfo.setS3Bucket("");
         notification.setRecord(recordInfo);
         assertValidatorMessage(ExportToAppNotificationValidator.INSTANCE, notification,
@@ -197,7 +198,7 @@ public class ExportToAppNotificationValidatorTest {
     @Test
     public void blankS3Bucket() {
         ExportToAppNotification notification = makeValidNotification();
-        ExportToAppNotification.RecordInfo recordInfo = makeValidRecordInfo();
+        ExportedRecordInfo recordInfo = makeValidRecordInfo();
         recordInfo.setS3Bucket("   ");
         notification.setRecord(recordInfo);
         assertValidatorMessage(ExportToAppNotificationValidator.INSTANCE, notification,
@@ -207,7 +208,7 @@ public class ExportToAppNotificationValidatorTest {
     @Test
     public void nullS3Key() {
         ExportToAppNotification notification = makeValidNotification();
-        ExportToAppNotification.RecordInfo recordInfo = makeValidRecordInfo();
+        ExportedRecordInfo recordInfo = makeValidRecordInfo();
         recordInfo.setS3Key(null);
         notification.setRecord(recordInfo);
         assertValidatorMessage(ExportToAppNotificationValidator.INSTANCE, notification,
@@ -217,7 +218,7 @@ public class ExportToAppNotificationValidatorTest {
     @Test
     public void emptyS3Key() {
         ExportToAppNotification notification = makeValidNotification();
-        ExportToAppNotification.RecordInfo recordInfo = makeValidRecordInfo();
+        ExportedRecordInfo recordInfo = makeValidRecordInfo();
         recordInfo.setS3Key("");
         notification.setRecord(recordInfo);
         assertValidatorMessage(ExportToAppNotificationValidator.INSTANCE, notification,
@@ -227,7 +228,7 @@ public class ExportToAppNotificationValidatorTest {
     @Test
     public void blankS3Key() {
         ExportToAppNotification notification = makeValidNotification();
-        ExportToAppNotification.RecordInfo recordInfo = makeValidRecordInfo();
+        ExportedRecordInfo recordInfo = makeValidRecordInfo();
         recordInfo.setS3Key("   ");
         notification.setRecord(recordInfo);
         assertValidatorMessage(ExportToAppNotificationValidator.INSTANCE, notification,
@@ -237,7 +238,7 @@ public class ExportToAppNotificationValidatorTest {
     @Test
     public void invalidStudyRecord() {
         ExportToAppNotification notification = makeValidNotification();
-        ExportToAppNotification.RecordInfo recordInfo = makeValidRecordInfo();
+        ExportedRecordInfo recordInfo = makeValidRecordInfo();
         recordInfo.setParentProjectId(null);
         notification.setStudyRecords(ImmutableMap.of(TestConstants.TEST_STUDY_ID, recordInfo));
         assertValidatorMessage(ExportToAppNotificationValidator.INSTANCE, notification,
@@ -251,8 +252,8 @@ public class ExportToAppNotificationValidatorTest {
         return notification;
     }
 
-    private static ExportToAppNotification.RecordInfo makeValidRecordInfo() {
-        ExportToAppNotification.RecordInfo recordInfo = new ExportToAppNotification.RecordInfo();
+    private static ExportedRecordInfo makeValidRecordInfo() {
+        ExportedRecordInfo recordInfo = new ExportedRecordInfo();
         recordInfo.setParentProjectId(PARENT_PROJECT_ID);
         recordInfo.setRawFolderId(RAW_FOLDER_ID);
         recordInfo.setFileEntityId(FILE_ENTITY_ID);

@@ -1071,3 +1071,17 @@ ADD `category` varchar(255) DEFAULT NULL,
 ADD `minAge` int DEFAULT NULL,
 ADD `maxAge` int DEFAULT NULL,
 ADD `additionalMetadata` text DEFAULT NULL;
+
+-- changeset bridge:78
+
+CREATE TABLE IF NOT EXISTS `AdherenceUploads` (
+    `userId` varchar(255) NOT NULL,
+    `studyId` varchar(60) NOT NULL,
+    `instanceGuid` varchar(128) NOT NULL,
+    `eventTimestamp` bigint(20) unsigned,
+    `instanceTimestamp` bigint(20) unsigned,
+    `uploadId` varchar(256) NOT NULL,
+    UNIQUE KEY (`userId`, `studyId`, `instanceGuid`, `eventTimestamp`, `instanceTimestamp`, `uploadId`),
+    CONSTRAINT `AdherenceUpload-AdherenceRecord-Constraint` FOREIGN KEY (`userId`, `studyId`, `instanceGuid`, `eventTimestamp`, `instanceTimestamp`) REFERENCES `AdherenceRecords` (`userId`, `studyId`, `instanceGuid`, `eventTimestamp`, `instanceTimestamp`) ON DELETE CASCADE,
+    INDEX (`uploadId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;

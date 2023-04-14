@@ -104,7 +104,7 @@ public class RequestFilter implements Filter {
         RequestContext.Builder builder = new RequestContext.Builder()
                 .withRequestId(requestId)
                 .withCallerIpAddress(parseIpAddress(getRemoteAddress(request)))
-                .withCallerClientInfo(getClientInfoFromUserAgentHeader(request, response))
+                .withUserAgent(getUserAgentHeader(request, response))
                 .withCallerLanguages(getLanguagesFromAcceptLanguageHeader(request, response));
         setRequestContext(builder.build());
 
@@ -172,17 +172,19 @@ public class RequestFilter implements Filter {
         return ImmutableList.of();
     }
     
-    static ClientInfo getClientInfoFromUserAgentHeader(HttpServletRequest request, HttpServletResponse response) {
+    static String getUserAgentHeader(HttpServletRequest request, HttpServletResponse response) {
         String userAgentHeader = request.getHeader(USER_AGENT);
-        ClientInfo info = ClientInfo.fromUserAgentCache(userAgentHeader);
 
         // if the user agent cannot be parsed (probably due to missing user agent string or unrecognizable user agent),
         // should set an extra header to http response as warning - we should have an user agent info for filtering to work
+        ClientInfo info = ClientInfo.fromUserAgentCache(userAgentHeader);
         if (info.equals(UNKNOWN_CLIENT)) {
             addWarningMessage(response, WARN_NO_USER_AGENT);
         }
         LOG.debug("User-Agent: '"+userAgentHeader+"' converted to " + info);    
-        return info;
+
+        // Return the User-Agent header value.
+        return userAgentHeader;
     }
     
     /**

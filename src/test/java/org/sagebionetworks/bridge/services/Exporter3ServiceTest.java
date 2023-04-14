@@ -83,6 +83,7 @@ import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.Exporter3Configuration;
 import org.sagebionetworks.bridge.models.exporter.ExportToAppNotification;
 import org.sagebionetworks.bridge.models.exporter.ExportToStudyNotification;
+import org.sagebionetworks.bridge.models.exporter.ExportedRecordInfo;
 import org.sagebionetworks.bridge.models.exporter.ExporterCreateStudyNotification;
 import org.sagebionetworks.bridge.models.exporter.ExporterSubscriptionRequest;
 import org.sagebionetworks.bridge.models.exporter.ExporterSubscriptionResult;
@@ -901,7 +902,7 @@ public class Exporter3ServiceTest {
         notification.setAppId(TestConstants.TEST_APP_ID);
         notification.setRecordId(RECORD_ID);
 
-        ExportToAppNotification.RecordInfo appRecordInfo = new ExportToAppNotification.RecordInfo();
+        ExportedRecordInfo appRecordInfo = new ExportedRecordInfo();
         appRecordInfo.setParentProjectId(APP_PARENT_PROJECT_ID);
         appRecordInfo.setRawFolderId(APP_RAW_FOLDER_ID);
         appRecordInfo.setFileEntityId(APP_FILE_ENTITY_ID);
@@ -909,22 +910,22 @@ public class Exporter3ServiceTest {
         appRecordInfo.setS3Key(APP_S3_KEY);
         notification.setRecord(appRecordInfo);
 
-        ExportToAppNotification.RecordInfo study1RecordInfo = new ExportToAppNotification.RecordInfo();
+        ExportedRecordInfo study1RecordInfo = new ExportedRecordInfo();
         study1RecordInfo.setParentProjectId(STUDY_1_PARENT_PROJECT_ID);
         study1RecordInfo.setRawFolderId(STUDY_1_RAW_FOLDER_ID);
         study1RecordInfo.setFileEntityId(STUDY_1_FILE_ENTITY_ID);
         study1RecordInfo.setS3Bucket(STUDY_1_S3_BUCKET);
         study1RecordInfo.setS3Key(STUDY_1_S3_KEY);
 
-        ExportToAppNotification.RecordInfo study2RecordInfo = new ExportToAppNotification.RecordInfo();
+        ExportedRecordInfo study2RecordInfo = new ExportedRecordInfo();
         study2RecordInfo.setParentProjectId(STUDY_2_PARENT_PROJECT_ID);
         study2RecordInfo.setRawFolderId(STUDY_2_RAW_FOLDER_ID);
         study2RecordInfo.setFileEntityId(STUDY_2_FILE_ENTITY_ID);
         study2RecordInfo.setS3Bucket(STUDY_2_S3_BUCKET);
         study2RecordInfo.setS3Key(STUDY_2_S3_KEY);
 
-        Map<String, ExportToAppNotification.RecordInfo> studyRecordMap =
-                new ImmutableMap.Builder<String, ExportToAppNotification.RecordInfo>()
+        Map<String, ExportedRecordInfo> studyRecordMap =
+                new ImmutableMap.Builder<String, ExportedRecordInfo>()
                         .put(STUDY_1_ID, study1RecordInfo)
                         .put(STUDY_2_ID, study2RecordInfo)
                         .build();
@@ -942,23 +943,23 @@ public class Exporter3ServiceTest {
         assertEquals(appNotification.getAppId(), TEST_APP_ID);
         assertEquals(appNotification.getRecordId(), RECORD_ID);
 
-        ExportToAppNotification.RecordInfo appRecordInfo = appNotification.getRecord();
+        ExportedRecordInfo appRecordInfo = appNotification.getRecord();
         assertEquals(appRecordInfo.getParentProjectId(), APP_PARENT_PROJECT_ID);
         assertEquals(appRecordInfo.getRawFolderId(), APP_RAW_FOLDER_ID);
         assertEquals(appRecordInfo.getFileEntityId(), APP_FILE_ENTITY_ID);
         assertEquals(appRecordInfo.getS3Bucket(), APP_S3_BUCKET);
         assertEquals(appRecordInfo.getS3Key(), APP_S3_KEY);
 
-        Map<String, ExportToAppNotification.RecordInfo> studyRecordMap = appNotification.getStudyRecords();
+        Map<String, ExportedRecordInfo> studyRecordMap = appNotification.getStudyRecords();
 
-        ExportToAppNotification.RecordInfo study1RecordInfo = studyRecordMap.get(STUDY_1_ID);
+        ExportedRecordInfo study1RecordInfo = studyRecordMap.get(STUDY_1_ID);
         assertEquals(study1RecordInfo.getParentProjectId(), STUDY_1_PARENT_PROJECT_ID);
         assertEquals(study1RecordInfo.getRawFolderId(), STUDY_1_RAW_FOLDER_ID);
         assertEquals(study1RecordInfo.getFileEntityId(), STUDY_1_FILE_ENTITY_ID);
         assertEquals(study1RecordInfo.getS3Bucket(), STUDY_1_S3_BUCKET);
         assertEquals(study1RecordInfo.getS3Key(), STUDY_1_S3_KEY);
 
-        ExportToAppNotification.RecordInfo study2RecordInfo = studyRecordMap.get(STUDY_2_ID);
+        ExportedRecordInfo study2RecordInfo = studyRecordMap.get(STUDY_2_ID);
         assertEquals(study2RecordInfo.getParentProjectId(), STUDY_2_PARENT_PROJECT_ID);
         assertEquals(study2RecordInfo.getRawFolderId(), STUDY_2_RAW_FOLDER_ID);
         assertEquals(study2RecordInfo.getFileEntityId(), STUDY_2_FILE_ENTITY_ID);
@@ -1268,6 +1269,7 @@ public class Exporter3ServiceTest {
         upload.setClientInfo("dummy upload client info string");
         upload.setHealthCode(TestConstants.HEALTH_CODE);
         upload.setUploadId(RECORD_ID);
+        upload.setUserAgent(TestConstants.UA);
 
         // Mock AccountService.
         Account account = Account.create();
@@ -1276,7 +1278,7 @@ public class Exporter3ServiceTest {
 
         // Ensure there is no client info in the Request Context.
         RequestContext requestContext = new RequestContext.Builder().withCallerUserId(USER_ID)
-                .withCallerClientInfo(null).build();
+                .withUserAgent(null).build();
         RequestContext.set(requestContext);
 
         // Mock HealthDataEx3Service.
@@ -1296,6 +1298,7 @@ public class Exporter3ServiceTest {
 
         HealthDataRecordEx3 recordToCreate = recordToCreateCaptor.getValue();
         assertEquals(recordToCreate.getClientInfo(), "dummy upload client info string");
+        assertEquals(recordToCreate.getUserAgent(), TestConstants.UA);
     }
 
     @Test
@@ -1312,7 +1315,7 @@ public class Exporter3ServiceTest {
 
         // Set RequestContext.
         RequestContext requestContext = new RequestContext.Builder().withCallerUserId(USER_ID)
-                .withCallerClientInfo(null).build();
+                .withUserAgent(null).build();
         RequestContext.set(requestContext);
 
         // Mock HealthDataEx3Service.
@@ -1334,6 +1337,7 @@ public class Exporter3ServiceTest {
         String clientInfoJsonText = recordToCreate.getClientInfo();
         ClientInfo deser = BridgeObjectMapper.get().readValue(clientInfoJsonText, ClientInfo.class);
         assertEquals(deser, ClientInfo.UNKNOWN_CLIENT);
+        assertNull(recordToCreate.getUserAgent());
     }
 
     @Test
@@ -1350,7 +1354,7 @@ public class Exporter3ServiceTest {
 
         // Set RequestContext.
         RequestContext requestContext = new RequestContext.Builder().withCallerUserId(USER_ID)
-                .withCallerClientInfo(CLIENT_INFO).build();
+                .withUserAgent(TestConstants.UA).build();
         RequestContext.set(requestContext);
 
         // Mock HealthDataEx3Service.
@@ -1372,6 +1376,7 @@ public class Exporter3ServiceTest {
         String clientInfoJsonText = recordToCreate.getClientInfo();
         ClientInfo deser = BridgeObjectMapper.get().readValue(clientInfoJsonText, ClientInfo.class);
         assertEquals(deser, CLIENT_INFO);
+        assertEquals(recordToCreate.getUserAgent(), TestConstants.UA);
     }
 
     @Test
@@ -1409,6 +1414,7 @@ public class Exporter3ServiceTest {
         String clientInfoJsonText = recordToCreate.getClientInfo();
         ClientInfo deser = BridgeObjectMapper.get().readValue(clientInfoJsonText, ClientInfo.class);
         assertEquals(deser, ClientInfo.UNKNOWN_CLIENT);
+        assertNull(recordToCreate.getUserAgent());
     }
 
     @Test
@@ -1449,6 +1455,7 @@ public class Exporter3ServiceTest {
         String clientInfoJsonText = recordToCreate.getClientInfo();
         ClientInfo deser = BridgeObjectMapper.get().readValue(clientInfoJsonText, ClientInfo.class);
         assertEquals(deser, ClientInfo.UNKNOWN_CLIENT);
+        assertNull(recordToCreate.getUserAgent());
     }
 
     @Test
@@ -1473,7 +1480,8 @@ public class Exporter3ServiceTest {
         when(mockHealthDataEx3Service.createOrUpdateRecord(any())).thenReturn(createdRecord);
 
         // Mock RequestInfoService.
-        RequestInfo requestInfo = new RequestInfo.Builder().withClientInfo(CLIENT_INFO).build();
+        RequestInfo requestInfo = new RequestInfo.Builder().withClientInfo(CLIENT_INFO).withUserAgent(TestConstants.UA)
+                .build();
         when(mockRequestInfoService.getRequestInfo(USER_ID)).thenReturn(requestInfo);
 
         // Mock SQS. Return type doesn't actually matter except for logs, but we don't want it to be null.
@@ -1490,6 +1498,7 @@ public class Exporter3ServiceTest {
         String clientInfoJsonText = recordToCreate.getClientInfo();
         ClientInfo deser = BridgeObjectMapper.get().readValue(clientInfoJsonText, ClientInfo.class);
         assertEquals(deser, CLIENT_INFO);
+        assertEquals(recordToCreate.getUserAgent(), TestConstants.UA);
     }
 
     @Test

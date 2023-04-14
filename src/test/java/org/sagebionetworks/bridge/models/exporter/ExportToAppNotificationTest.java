@@ -42,7 +42,7 @@ public class ExportToAppNotificationTest {
         assertTrue(notification.getStudyRecords().isEmpty());
 
         // Set to non-empty.
-        notification.setStudyRecords(ImmutableMap.of(STUDY_1_ID, new ExportToAppNotification.RecordInfo()));
+        notification.setStudyRecords(ImmutableMap.of(STUDY_1_ID, new ExportedRecordInfo()));
         assertEquals(notification.getStudyRecords().size(), 1);
 
         // Set to null. It's empty again.
@@ -57,7 +57,7 @@ public class ExportToAppNotificationTest {
         notification.setAppId(TestConstants.TEST_APP_ID);
         notification.setRecordId(RECORD_ID);
 
-        ExportToAppNotification.RecordInfo appRecordInfo = new ExportToAppNotification.RecordInfo();
+        ExportedRecordInfo appRecordInfo = new ExportedRecordInfo();
         appRecordInfo.setParentProjectId(APP_PARENT_PROJECT_ID);
         appRecordInfo.setRawFolderId(APP_RAW_FOLDER_ID);
         appRecordInfo.setFileEntityId(APP_FILE_ENTITY_ID);
@@ -65,22 +65,22 @@ public class ExportToAppNotificationTest {
         appRecordInfo.setS3Key(APP_S3_KEY);
         notification.setRecord(appRecordInfo);
 
-        ExportToAppNotification.RecordInfo study1RecordInfo = new ExportToAppNotification.RecordInfo();
+        ExportedRecordInfo study1RecordInfo = new ExportedRecordInfo();
         study1RecordInfo.setParentProjectId(STUDY_1_PARENT_PROJECT_ID);
         study1RecordInfo.setRawFolderId(STUDY_1_RAW_FOLDER_ID);
         study1RecordInfo.setFileEntityId(STUDY_1_FILE_ENTITY_ID);
         study1RecordInfo.setS3Bucket(STUDY_1_S3_BUCKET);
         study1RecordInfo.setS3Key(STUDY_1_S3_KEY);
 
-        ExportToAppNotification.RecordInfo study2RecordInfo = new ExportToAppNotification.RecordInfo();
+        ExportedRecordInfo study2RecordInfo = new ExportedRecordInfo();
         study2RecordInfo.setParentProjectId(STUDY_2_PARENT_PROJECT_ID);
         study2RecordInfo.setRawFolderId(STUDY_2_RAW_FOLDER_ID);
         study2RecordInfo.setFileEntityId(STUDY_2_FILE_ENTITY_ID);
         study2RecordInfo.setS3Bucket(STUDY_2_S3_BUCKET);
         study2RecordInfo.setS3Key(STUDY_2_S3_KEY);
 
-        Map<String, ExportToAppNotification.RecordInfo> studyRecordMap =
-                new ImmutableMap.Builder<String, ExportToAppNotification.RecordInfo>()
+        Map<String, ExportedRecordInfo> studyRecordMap =
+                new ImmutableMap.Builder<String, ExportedRecordInfo>()
                         .put(STUDY_1_ID, study1RecordInfo)
                         .put(STUDY_2_ID, study2RecordInfo)
                         .build();
@@ -100,7 +100,7 @@ public class ExportToAppNotificationTest {
         assertEquals(appRecordInfoNode.get("fileEntityId").textValue(), APP_FILE_ENTITY_ID);
         assertEquals(appRecordInfoNode.get("s3Bucket").textValue(), APP_S3_BUCKET);
         assertEquals(appRecordInfoNode.get("s3Key").textValue(), APP_S3_KEY);
-        assertEquals(appRecordInfoNode.get("type").textValue(), "RecordInfo");
+        assertEquals(appRecordInfoNode.get("type").textValue(), "ExportedRecordInfo");
 
         JsonNode studyRecordsObjectNode = jsonNode.get("studyRecords");
         assertEquals(studyRecordsObjectNode.size(), 2);
@@ -112,7 +112,7 @@ public class ExportToAppNotificationTest {
         assertEquals(study1RecordInfoNode.get("fileEntityId").textValue(), STUDY_1_FILE_ENTITY_ID);
         assertEquals(study1RecordInfoNode.get("s3Bucket").textValue(), STUDY_1_S3_BUCKET);
         assertEquals(study1RecordInfoNode.get("s3Key").textValue(), STUDY_1_S3_KEY);
-        assertEquals(study1RecordInfoNode.get("type").textValue(), "RecordInfo");
+        assertEquals(study1RecordInfoNode.get("type").textValue(), "ExportedRecordInfo");
 
         JsonNode study2RecordInfoNode = studyRecordsObjectNode.get(STUDY_2_ID);
         assertEquals(study2RecordInfoNode.size(), 6);
@@ -121,7 +121,7 @@ public class ExportToAppNotificationTest {
         assertEquals(study2RecordInfoNode.get("fileEntityId").textValue(), STUDY_2_FILE_ENTITY_ID);
         assertEquals(study2RecordInfoNode.get("s3Bucket").textValue(), STUDY_2_S3_BUCKET);
         assertEquals(study2RecordInfoNode.get("s3Key").textValue(), STUDY_2_S3_KEY);
-        assertEquals(study2RecordInfoNode.get("type").textValue(), "RecordInfo");
+        assertEquals(study2RecordInfoNode.get("type").textValue(), "ExportedRecordInfo");
 
         // Convert back to POJO.
         notification = BridgeObjectMapper.get().treeToValue(jsonNode, ExportToAppNotification.class);

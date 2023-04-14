@@ -61,6 +61,7 @@ import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.Exporter3Configuration;
 import org.sagebionetworks.bridge.models.exporter.ExportToAppNotification;
 import org.sagebionetworks.bridge.models.exporter.ExportToStudyNotification;
+import org.sagebionetworks.bridge.models.exporter.ExportedRecordInfo;
 import org.sagebionetworks.bridge.models.exporter.ExporterCreateStudyNotification;
 import org.sagebionetworks.bridge.models.exporter.ExporterSubscriptionRequest;
 import org.sagebionetworks.bridge.models.exporter.ExporterSubscriptionResult;
@@ -650,8 +651,8 @@ public class Exporter3Service {
         }
 
         // Send study-specific notifications. Note that getStudyRecords() is never null.
-        Map<String, ExportToAppNotification.RecordInfo> studyRecordMap = exportToAppNotification.getStudyRecords();
-        for (Map.Entry<String, ExportToAppNotification.RecordInfo> entry : studyRecordMap.entrySet()) {
+        Map<String, ExportedRecordInfo> studyRecordMap = exportToAppNotification.getStudyRecords();
+        for (Map.Entry<String, ExportedRecordInfo> entry : studyRecordMap.entrySet()) {
             String studyId = entry.getKey();
 
             try {
@@ -669,7 +670,7 @@ public class Exporter3Service {
                     continue;
                 }
 
-                ExportToAppNotification.RecordInfo recordInfo = entry.getValue();
+                ExportedRecordInfo recordInfo = entry.getValue();
                 ExportToStudyNotification exportToStudyNotification = new ExportToStudyNotification();
                 exportToStudyNotification.setAppId(appId);
                 exportToStudyNotification.setStudyId(studyId);
@@ -843,23 +844,30 @@ public class Exporter3Service {
         SharingScope sharingScope = account.getSharingScope();
         record.setSharingScope(sharingScope);
 
-        // Handle Client Info.
+        // Handle Client Info and User Agent.
         String clientInfoJsonText;
-        if (upload.getClientInfo() != null) {
+        String userAgent;
+        if (upload.getUserAgent() != null) {
             clientInfoJsonText = upload.getClientInfo();
+            userAgent = upload.getUserAgent();
         } else {
-            ClientInfo clientInfo = ClientInfo.UNKNOWN_CLIENT;
+            ClientInfo clientInfo;
             RequestContext requestContext = RequestContext.get();
             String calledUserId = requestContext.getCallerUserId();
             String uploaderUserId = account.getId();
             if (Objects.equals(calledUserId, uploaderUserId)) {
                 // The caller is the uploader. Get the Client Info from the RequestContext.
                 clientInfo = requestContext.getCallerClientInfo();
+                userAgent = requestContext.getUserAgent();
             } else {
                 // The caller is _not_ the uploader. Get the Client Info from the RequestInfoService.
                 RequestInfo requestInfo = requestInfoService.getRequestInfo(uploaderUserId);
                 if (requestInfo != null && requestInfo.getClientInfo() != null) {
                     clientInfo = requestInfo.getClientInfo();
+                    userAgent = requestInfo.getUserAgent();
+                } else {
+                    clientInfo = ClientInfo.UNKNOWN_CLIENT;
+                    userAgent = null;
                 }
             }
 
@@ -867,6 +875,7 @@ public class Exporter3Service {
                     .writeValueAsString(clientInfo);
         }
         record.setClientInfo(clientInfoJsonText);
+        record.setUserAgent(userAgent);
 
         // Also mark with the latest participant version.
         Optional<ParticipantVersion> participantVersion = participantVersionService

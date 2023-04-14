@@ -66,7 +66,8 @@ public class ScheduleControllerTest extends Mockito {
         MockitoAnnotations.initMocks(this);
         
         appId = TestUtils.randomName(ScheduleControllerTest.class);
-        ClientInfo clientInfo = ClientInfo.fromUserAgentCache("app name/9");
+        String userAgent = "app name/9";
+        ClientInfo clientInfo = ClientInfo.fromUserAgentCache(userAgent);
         
         List<SchedulePlan> plans = TestUtils.getSchedulePlans(appId);
         
@@ -94,7 +95,7 @@ public class ScheduleControllerTest extends Mockito {
         session.setAppId(appId);
         
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
-        RequestContext.set(new RequestContext.Builder().withCallerClientInfo(clientInfo).build());
+        RequestContext.set(new RequestContext.Builder().withUserAgent(userAgent).build());
         
         doReturn(mockRequest).when(controller).request();
         doReturn(mockResponse).when(controller).response();

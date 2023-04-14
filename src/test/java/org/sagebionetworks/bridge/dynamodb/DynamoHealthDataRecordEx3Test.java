@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
@@ -14,6 +15,7 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
+import org.sagebionetworks.bridge.models.exporter.ExportedRecordInfo;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordEx3;
 import org.sagebionetworks.bridge.models.upload.Upload;
 
@@ -25,6 +27,8 @@ public class DynamoHealthDataRecordEx3Test {
     private static final long VERSION = 3L;
 
     private static final String APP_STUDY_KEY = TestConstants.TEST_APP_ID + ':' + STUDY_ID;
+    private static final Map<String, ExportedRecordInfo> STUDY_RECORD_INFO_MAP =
+            ImmutableMap.of(STUDY_ID, new ExportedRecordInfo());
 
     @Test
     public void createFromUpload() throws Exception {
@@ -116,6 +120,28 @@ public class DynamoHealthDataRecordEx3Test {
     }
 
     @Test
+    public void getSetExportedStudyRecords() {
+        // Initially null.
+        DynamoHealthDataRecordEx3 record = new DynamoHealthDataRecordEx3();
+        assertNull(record.getExportedStudyRecords());
+
+        // Set non-empty.
+        record.setExportedStudyRecords(STUDY_RECORD_INFO_MAP);
+        assertEquals(record.getExportedStudyRecords(), STUDY_RECORD_INFO_MAP);
+
+        // Set empty, gets changed to null.
+        record.setExportedStudyRecords(ImmutableMap.of());
+        assertNull(record.getExportedStudyRecords());
+
+        // Set non-empty, then set null. Null is null.
+        record.setExportedStudyRecords(STUDY_RECORD_INFO_MAP);
+        assertEquals(record.getExportedStudyRecords(), STUDY_RECORD_INFO_MAP);
+
+        record.setExportedStudyRecords(null);
+        assertNull(record.getExportedStudyRecords());
+    }
+
+    @Test
     public void getSetMetadata() {
         // Initially null.
         DynamoHealthDataRecordEx3 record = new DynamoHealthDataRecordEx3();
@@ -150,13 +176,16 @@ public class DynamoHealthDataRecordEx3Test {
         record.setClientInfo("dummy client info");
         record.setExported(true);
         record.setExportedOn(TestConstants.EXPORTED_ON.getMillis());
+        record.setExportedRecord(new ExportedRecordInfo());
+        record.setExportedStudyRecords(STUDY_RECORD_INFO_MAP);
         record.setMetadata(METADATA_MAP);
         record.setSharingScope(SharingScope.SPONSORS_AND_PARTNERS);
+        record.setUserAgent(TestConstants.UA);
         record.setVersion(VERSION);
 
         // Convert to JsonNode.
         JsonNode jsonNode = BridgeObjectMapper.get().convertValue(record, JsonNode.class);
-        assertEquals(jsonNode.size(), 14);
+        assertEquals(jsonNode.size(), 17);
         assertEquals(jsonNode.get("id").textValue(), RECORD_ID);
         assertEquals(jsonNode.get("appId").textValue(), TestConstants.TEST_APP_ID);
         assertEquals(jsonNode.get("studyId").textValue(), STUDY_ID);
@@ -167,12 +196,19 @@ public class DynamoHealthDataRecordEx3Test {
         assertTrue(jsonNode.get("exported").booleanValue());
         assertEquals(jsonNode.get("exportedOn").textValue(), TestConstants.EXPORTED_ON.toString());
         assertEquals(jsonNode.get("sharingScope").textValue(), "sponsors_and_partners");
+        assertEquals(jsonNode.get("userAgent").textValue(), TestConstants.UA);
         assertEquals(jsonNode.get("version").longValue(), VERSION);
         assertEquals(jsonNode.get("type").textValue(), "HealthDataRecordEx3");
 
         JsonNode metadataMapNode = jsonNode.get("metadata");
         assertEquals(metadataMapNode.size(), 1);
         assertEquals(metadataMapNode.get("foo").textValue(), "bar");
+
+        // Just check that the record infos exist. The actual JSON serialization is tested elsewhere.
+        assertTrue(jsonNode.hasNonNull("exportedRecord"));
+        JsonNode exportedStudyRecordsNode = jsonNode.get("exportedStudyRecords");
+        assertEquals(exportedStudyRecordsNode.size(), 1);
+        assertTrue(exportedStudyRecordsNode.hasNonNull(STUDY_ID));
 
         // Convert back to POJO.
         record = BridgeObjectMapper.get().treeToValue(jsonNode, HealthDataRecordEx3.class);
@@ -185,8 +221,14 @@ public class DynamoHealthDataRecordEx3Test {
         assertEquals(record.getClientInfo(), "dummy client info");
         assertTrue(record.isExported());
         assertEquals(record.getExportedOn().longValue(), TestConstants.EXPORTED_ON.getMillis());
+        assertNotNull(record.getExportedRecord());
         assertEquals(record.getSharingScope(), SharingScope.SPONSORS_AND_PARTNERS);
         assertEquals(record.getMetadata(), METADATA_MAP);
+        assertEquals(record.getUserAgent(), TestConstants.UA);
         assertEquals(record.getVersion().longValue(), VERSION);
+
+        Map<String, ExportedRecordInfo> exportedStudyRecordMap = record.getExportedStudyRecords();
+        assertEquals(exportedStudyRecordMap.size(), 1);
+        assertNotNull(exportedStudyRecordMap.get(STUDY_ID));
     }
 }
