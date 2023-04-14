@@ -1914,21 +1914,9 @@ public class AdherenceServiceTest extends Mockito {
         when(mockStudyActivityEventService.getRecentStudyActivityEvents(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID))
                 .thenReturn(new ResourceList<StudyActivityEvent>(ImmutableList.of(event1, event2)));
     
-//        AdherenceRecord assessmentRecord1 = ar(STARTED_ON, FINISHED_ON, "assessment-instance-guid-1", false);
-//        assessmentRecord1.setUploadedOn(UPLOADED_ON);
-//        AdherenceRecord sessionRecord1 = sar(STARTED_ON, FINISHED_ON, "session-instance-guid-1", false);
-//    
-//        AdherenceRecord assessmentRecord2 = ar(STARTED_ON, FINISHED_ON, "assessment-instance-guid-2", false);
-//        AdherenceRecord studyBurstRecord1 = sar(STARTED_ON, FINISHED_ON, "study-burst-session-guid-2", false);
-    
         PagedResourceList<AdherenceRecord> recordList = new PagedResourceList<>(testAdherenceRecords, 
                 testAdherenceRecords.size());
         doReturn(recordList).when(service).getAdherenceRecords(any(), any());
-    
-        AdherenceRecordList list = mockRecordUpdate(
-                ar(STARTED_ON, FINISHED_ON, "AAA", false),
-                ar(STARTED_ON, FINISHED_ON, "BBB", false),
-                sar(STARTED_ON, null, false));
     
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, TEST_EXTERNAL_ID);
         enrollment.setEnrolledOn(ENROLLMENT);
