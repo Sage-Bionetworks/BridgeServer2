@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -27,9 +28,10 @@ import org.sagebionetworks.bridge.models.StringSearchPosition;
  */
 @JsonDeserialize(builder = AdherenceRecordsSearch.Builder.class)
 public class AdherenceRecordsSearch implements BridgeEntity {
-    
+    /** Searches must be scoped to an app. */
+    private final String appId;
     /**
-     * Searches must be scoped to a user.
+     * User that the search is scoped to.
      */
     private final String userId;
     /**
@@ -91,6 +93,10 @@ public class AdherenceRecordsSearch implements BridgeEntity {
      * is the timestamp provided for that event ID in this map.
      */
     private final Map<String, DateTime> eventTimestamps;
+    /** Return records where the `eventTimestamp` value of the record is on or after the timestamp provided. */
+    private final DateTime eventTimestampStart;
+    /** Return records where the `eventTimestamp` value of the record is before the timestamp provided, but not on. */
+    private final DateTime eventTimestampEnd;
     /**
      * Return records where `startedOn` value of record is on or after the 
      * `startTime`, if provided.
@@ -127,8 +133,18 @@ public class AdherenceRecordsSearch implements BridgeEntity {
      * are declined.
      */
     private final Boolean declined;
-    
+
+    /** Search for a specific upload ID. */
+    private final String uploadId;
+
+    /** Return only adherence records associated with multiple upload IDs. If not specified, defaults to false. */
+    private final boolean hasMultipleUploadIds;
+
+    /** Return only adherence records that are associated with no upload IDs. If not specified, defaults to false. */
+    private final boolean hasNoUploadIds;
+
     private AdherenceRecordsSearch(AdherenceRecordsSearch.Builder builder) {
+        this.appId = builder.appId;
         this.userId = builder.userId;
         this.studyId = builder.studyId;
         this.instanceGuids = nullSafeImmutableSet(builder.instanceGuids);
@@ -140,6 +156,8 @@ public class AdherenceRecordsSearch implements BridgeEntity {
         this.includeRepeats = builder.includeRepeats;
         this.currentTimestampsOnly = builder.currentTimestampsOnly;
         this.eventTimestamps = nullSafeImmutableMap(builder.eventTimestamps);
+        this.eventTimestampStart = builder.eventTimestampStart;
+        this.eventTimestampEnd = builder.eventTimestampEnd;
         this.startTime = builder.startTime;
         this.endTime = builder.endTime;
         this.offsetBy = builder.offsetBy;
@@ -148,8 +166,15 @@ public class AdherenceRecordsSearch implements BridgeEntity {
         this.predicate = builder.predicate;
         this.stringSearchPosition = builder.stringSearchPosition;
         this.declined = builder.declined;
+        this.uploadId = builder.uploadId;
+        this.hasMultipleUploadIds = builder.hasMultipleUploadIds;
+        this.hasNoUploadIds = builder.hasNoUploadIds;
     }
-    
+
+    public String getAppId() {
+        return appId;
+    }
+
     public String getUserId() {
         return userId;
     }
@@ -194,6 +219,14 @@ public class AdherenceRecordsSearch implements BridgeEntity {
         return eventTimestamps;
     }
 
+    public DateTime getEventTimestampStart() {
+        return eventTimestampStart;
+    }
+
+    public DateTime getEventTimestampEnd() {
+        return eventTimestampEnd;
+    }
+
     public DateTime getStartTime() {
         return startTime;
     }
@@ -225,9 +258,24 @@ public class AdherenceRecordsSearch implements BridgeEntity {
     public Boolean isDeclined() {
         return declined;
     }
-    
+
+    public String getUploadId() {
+        return uploadId;
+    }
+
+    @JsonProperty("hasMultipleUploadIds")
+    public boolean hasMultipleUploadIds() {
+        return hasMultipleUploadIds;
+    }
+
+    @JsonProperty("hasNoUploadIds")
+    public boolean hasNoUploadIds() {
+        return hasNoUploadIds;
+    }
+
     public AdherenceRecordsSearch.Builder toBuilder() {
         return new AdherenceRecordsSearch.Builder()
+                .withAppId(appId)
                 .withUserId(userId)
                 .withStudyId(studyId)
                 .withInstanceGuids(nullSafeImmutableSet(instanceGuids))
@@ -239,6 +287,8 @@ public class AdherenceRecordsSearch implements BridgeEntity {
                 .withIncludeRepeats(includeRepeats)
                 .withCurrentTimestampsOnly(currentTimestampsOnly)
                 .withEventTimestamps(nullSafeImmutableMap(eventTimestamps))
+                .withEventTimestampStart(eventTimestampStart)
+                .withEventTimestampEnd(eventTimestampEnd)
                 .withStartTime(startTime)
                 .withEndTime(endTime)
                 .withOffsetBy(offsetBy)
@@ -246,10 +296,14 @@ public class AdherenceRecordsSearch implements BridgeEntity {
                 .withSortOrder(sortOrder)
                 .withPredicate(predicate)
                 .withStringSearchPosition(stringSearchPosition)
-                .withDeclined(declined);
+                .withDeclined(declined)
+                .withUploadId(uploadId)
+                .withHasMultipleUploadIds(hasMultipleUploadIds)
+                .withHasNoUploadIds(hasNoUploadIds);
     }
 
     public static class Builder {
+        private String appId;
         private String userId;
         private String studyId;
         private Set<String> instanceGuids;
@@ -261,6 +315,8 @@ public class AdherenceRecordsSearch implements BridgeEntity {
         private Boolean includeRepeats;
         private Boolean currentTimestampsOnly;
         private Map<String, DateTime> eventTimestamps;
+        private DateTime eventTimestampStart;
+        private DateTime eventTimestampEnd;
         private DateTime startTime;
         private DateTime endTime;
         private Integer offsetBy;
@@ -269,7 +325,15 @@ public class AdherenceRecordsSearch implements BridgeEntity {
         private SearchTermPredicate predicate;
         private StringSearchPosition stringSearchPosition;
         private Boolean declined;
-        
+        private String uploadId;
+        private boolean hasMultipleUploadIds = false;
+        private boolean hasNoUploadIds = false;
+
+        public Builder withAppId(String appId) {
+            this.appId = appId;
+            return this;
+        }
+
         public Builder withUserId(String userId) {
             this.userId = userId;
             return this;
@@ -314,6 +378,17 @@ public class AdherenceRecordsSearch implements BridgeEntity {
             this.eventTimestamps = eventTimestamps;
             return this;
         }
+
+        public Builder withEventTimestampStart(DateTime eventTimestampStart) {
+            this.eventTimestampStart = eventTimestampStart;
+            return this;
+        }
+
+        public Builder withEventTimestampEnd(DateTime eventTimestampEnd) {
+            this.eventTimestampEnd = eventTimestampEnd;
+            return this;
+        }
+
         public Builder withStartTime(DateTime startTime) {
             this.startTime = startTime;
             return this;
@@ -346,7 +421,22 @@ public class AdherenceRecordsSearch implements BridgeEntity {
             this.declined = declined;
             return this;
         }
-        
+
+        public Builder withUploadId(String uploadId) {
+            this.uploadId = uploadId;
+            return this;
+        }
+
+        public Builder withHasMultipleUploadIds(boolean hasMultipleUploadIds) {
+            this.hasMultipleUploadIds = hasMultipleUploadIds;
+            return this;
+        }
+
+        public Builder withHasNoUploadIds(boolean hasNoUploadIds) {
+            this.hasNoUploadIds = hasNoUploadIds;
+            return this;
+        }
+
         public AdherenceRecordsSearch build() {
             if (instanceGuids == null) {
                 instanceGuids = ImmutableSet.of();

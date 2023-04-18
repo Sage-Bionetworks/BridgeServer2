@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.models.schedules2.adherence;
 
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
@@ -19,6 +20,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
+import org.joda.time.DateTime;
 import org.mockito.Mockito;
 import org.testng.annotations.Test;
 
@@ -26,13 +28,17 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
 public class AdherenceRecordsSearchTest extends Mockito {
-    
+    private static final DateTime EVENT_TIMESTAMP_START = DateTime.parse("2023-04-11T14:36:47.529Z");
+    private static final DateTime EVENT_TIMESTAMP_END = DateTime.parse("2023-04-11T14:36:58.871Z");
+    private static final String UPLOAD_ID = "test-upload-id";
+
     @Test
     public void canSerialize() throws Exception {
         AdherenceRecordsSearch search = createSearch();
                 
         JsonNode node = BridgeObjectMapper.get().valueToTree(search);
-        assertEquals(node.size(), 19);
+        assertEquals(node.size(), 25);
+        assertEquals(node.get("appId").textValue(), TEST_APP_ID);
         assertEquals(node.get("userId").textValue(), TEST_USER_ID);
         assertEquals(node.get("studyId").textValue(), TEST_STUDY_ID);
         assertEquals(node.get("instanceGuids").get(0).textValue(), "A");
@@ -43,6 +49,8 @@ public class AdherenceRecordsSearchTest extends Mockito {
         assertTrue(node.get("includeRepeats").booleanValue());
         assertTrue(node.get("currentTimestampsOnly").booleanValue());
         assertEquals(node.get("eventTimestamps").get("E").textValue(), CREATED_ON.toString());
+        assertEquals(node.get("eventTimestampStart").textValue(), EVENT_TIMESTAMP_START.toString());
+        assertEquals(node.get("eventTimestampEnd").textValue(), EVENT_TIMESTAMP_END.toString());
         assertEquals(node.get("startTime").textValue(), CREATED_ON.toString());
         assertEquals(node.get("endTime").textValue(), MODIFIED_ON.toString());
         assertEquals(node.get("offsetBy").intValue(), 100);
@@ -53,9 +61,13 @@ public class AdherenceRecordsSearchTest extends Mockito {
         assertEquals(node.get("stringSearchPosition").textValue(), "infix");
         assertNull(node.get("guidToStartedOnMap"));
         assertTrue(node.get("declined").booleanValue());
-        
+        assertEquals(node.get("uploadId").textValue(), UPLOAD_ID);
+        assertTrue(node.get("hasMultipleUploadIds").booleanValue());
+        assertTrue(node.get("hasNoUploadIds").booleanValue());
+
         AdherenceRecordsSearch deser = BridgeObjectMapper.get()
                 .readValue(node.toString(), AdherenceRecordsSearch.class);
+        assertEquals(deser.getAppId(), TEST_APP_ID);
         assertEquals(deser.getUserId(), TEST_USER_ID);
         assertEquals(deser.getStudyId(), TEST_STUDY_ID);
         assertEquals(deser.getInstanceGuids(), ImmutableSet.of("A"));
@@ -66,6 +78,8 @@ public class AdherenceRecordsSearchTest extends Mockito {
         assertTrue(deser.getIncludeRepeats());
         assertTrue(deser.getCurrentTimestampsOnly());
         assertEquals(deser.getEventTimestamps().get("E"), CREATED_ON);
+        assertEquals(deser.getEventTimestampStart(), EVENT_TIMESTAMP_START);
+        assertEquals(deser.getEventTimestampEnd(), EVENT_TIMESTAMP_END);
         assertEquals(deser.getStartTime(), CREATED_ON);
         assertEquals(deser.getEndTime(), MODIFIED_ON);
         assertEquals(deser.getOffsetBy(), Integer.valueOf(100));
@@ -74,6 +88,9 @@ public class AdherenceRecordsSearchTest extends Mockito {
         assertEquals(deser.getInstanceGuidStartedOnMap(), ImmutableMap.of());
         assertEquals(deser.getPredicate(), OR);
         assertTrue(deser.isDeclined());
+        assertEquals(deser.getUploadId(), UPLOAD_ID);
+        assertTrue(deser.hasMultipleUploadIds());
+        assertTrue(deser.hasNoUploadIds());
     }
     
     // We don't want these to throw 500s. These probably exist elsewhere in our APIs.
@@ -90,6 +107,10 @@ public class AdherenceRecordsSearchTest extends Mockito {
         assertTrue(deser.getInstanceGuids().isEmpty());
         assertTrue(deser.getEventTimestamps().isEmpty());
         assertEquals(deser.getPredicate(), AND);
+
+        // hasMultipleUploadIds and hasNoUploadIds default to false.
+        assertFalse(deser.hasMultipleUploadIds());
+        assertFalse(deser.hasNoUploadIds());
     }
     
     @Test
@@ -97,6 +118,7 @@ public class AdherenceRecordsSearchTest extends Mockito {
         AdherenceRecordsSearch search = createSearch();
         
         AdherenceRecordsSearch copy = search.toBuilder().build();
+        assertEquals(copy.getAppId(), TEST_APP_ID);
         assertEquals(copy.getUserId(), TEST_USER_ID);
         assertEquals(copy.getStudyId(), TEST_STUDY_ID);
         assertEquals(copy.getInstanceGuids(), ImmutableSet.of("A"));
@@ -107,6 +129,8 @@ public class AdherenceRecordsSearchTest extends Mockito {
         assertTrue(copy.getIncludeRepeats());
         assertTrue(copy.getCurrentTimestampsOnly());
         assertEquals(copy.getEventTimestamps().get("E"), CREATED_ON);
+        assertEquals(copy.getEventTimestampStart(), EVENT_TIMESTAMP_START);
+        assertEquals(copy.getEventTimestampEnd(), EVENT_TIMESTAMP_END);
         assertEquals(copy.getInstanceGuidStartedOnMap().get("E"), CREATED_ON);
         assertEquals(copy.getStartTime(), CREATED_ON);
         assertEquals(copy.getEndTime(), MODIFIED_ON);
@@ -115,10 +139,14 @@ public class AdherenceRecordsSearchTest extends Mockito {
         assertEquals(copy.getSortOrder(), DESC);
         assertEquals(copy.getPredicate(), OR);
         assertEquals(copy.isDeclined(), Boolean.TRUE);
+        assertEquals(copy.getUploadId(), UPLOAD_ID);
+        assertTrue(copy.hasMultipleUploadIds());
+        assertTrue(copy.hasNoUploadIds());
     }
 
     protected AdherenceRecordsSearch createSearch() {
         AdherenceRecordsSearch search = new AdherenceRecordsSearch.Builder()
+                .withAppId(TEST_APP_ID)
                 .withUserId(TEST_USER_ID)
                 .withStudyId(TEST_STUDY_ID)
                 .withInstanceGuids(ImmutableSet.of("A"))
@@ -129,6 +157,8 @@ public class AdherenceRecordsSearchTest extends Mockito {
                 .withIncludeRepeats(Boolean.TRUE)
                 .withCurrentTimestampsOnly(Boolean.TRUE)
                 .withEventTimestamps(ImmutableMap.of("E", CREATED_ON))
+                .withEventTimestampStart(EVENT_TIMESTAMP_START)
+                .withEventTimestampEnd(EVENT_TIMESTAMP_END)
                 .withInstanceGuidStartedOnMap(ImmutableMap.of("E", CREATED_ON))
                 .withStartTime(CREATED_ON)
                 .withEndTime(MODIFIED_ON)
@@ -137,6 +167,9 @@ public class AdherenceRecordsSearchTest extends Mockito {
                 .withSortOrder(DESC)
                 .withPredicate(OR)
                 .withDeclined(Boolean.TRUE)
+                .withUploadId(UPLOAD_ID)
+                .withHasMultipleUploadIds(true)
+                .withHasNoUploadIds(true)
                 .build();
         return search;
     }
@@ -155,5 +188,7 @@ public class AdherenceRecordsSearchTest extends Mockito {
         assertEquals(search.getPageSize(), Integer.valueOf(DEFAULT_PAGE_SIZE));
         assertEquals(search.getSortOrder(), ASC);
         assertEquals(search.getPredicate(), AND);
+        assertFalse(search.hasMultipleUploadIds());
+        assertFalse(search.hasNoUploadIds());
     }
 }
