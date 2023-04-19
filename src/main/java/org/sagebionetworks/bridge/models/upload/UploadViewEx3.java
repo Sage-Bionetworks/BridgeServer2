@@ -15,7 +15,8 @@ public class UploadViewEx3 implements BridgeEntity {
     private String id;
     private String healthCode;
     private String userId;
-    private List<AdherenceRecord> adherenceRecords;
+    private List<AdherenceRecord> adherenceRecordsForSchedule;
+    private List<AdherenceRecord> adherenceRecordsForUpload;
     private HealthDataRecordEx3 record;
     private TimelineMetadataView timelineMetadata;
     private Upload upload;
@@ -50,13 +51,22 @@ public class UploadViewEx3 implements BridgeEntity {
         this.userId = userId;
     }
 
-    /** Adherence records associated with this upload/record. */
-    public List<AdherenceRecord> getAdherenceRecords() {
-        return adherenceRecords;
+    /** Adherence records associated with this upload/record via the associated instanceGuid. */
+    public List<AdherenceRecord> getAdherenceRecordsForSchedule() {
+        return adherenceRecordsForSchedule;
     }
 
-    public void setAdherenceRecords(List<AdherenceRecord> adherenceRecords) {
-        this.adherenceRecords = adherenceRecords;
+    public void setAdherenceRecordsForSchedule(List<AdherenceRecord> adherenceRecordsForSchedule) {
+        this.adherenceRecordsForSchedule = adherenceRecordsForSchedule;
+    }
+
+    /** Adherence records associated with this upload/record via the upload ID. */
+    public List<AdherenceRecord> getAdherenceRecordsForUpload() {
+        return adherenceRecordsForUpload;
+    }
+
+    public void setAdherenceRecordsForUpload(List<AdherenceRecord> adherenceRecordsForUpload) {
+        this.adherenceRecordsForUpload = adherenceRecordsForUpload;
     }
 
     /** Health data record corresponding to this upload, if it exists. */

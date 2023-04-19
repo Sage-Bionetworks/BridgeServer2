@@ -662,9 +662,24 @@ public class UploadService {
                             .build();
                     List<AdherenceRecord> adherenceRecords = adherenceService.getAdherenceRecords(appId,
                             adherenceSearch).getItems();
-                    view.setAdherenceRecords(adherenceRecords);
+                    view.setAdherenceRecordsForSchedule(adherenceRecords);
                 }
             }
+        }
+
+        // We can also fetch adherence by upload ID. This doesn't require instanceGuid, but it does require study ID.
+        if (fetchAdherence) {
+            // Fetch the adherence record(s). Similar to above, it's unlikely that we have more than 500 records for
+            // a given upload ID.
+            AdherenceRecordsSearch adherenceSearch = new AdherenceRecordsSearch.Builder()
+                    .withPageSize(AdherenceRecordsSearchValidator.MAX_PAGE_SIZE)
+                    .withStudyId(studyId)
+                    .withUploadId(uploadId)
+                    .withUserId(userId)
+                    .build();
+            List<AdherenceRecord> adherenceRecords = adherenceService.getAdherenceRecords(appId, adherenceSearch)
+                    .getItems();
+            view.setAdherenceRecordsForUpload(adherenceRecords);
         }
 
         return view;
