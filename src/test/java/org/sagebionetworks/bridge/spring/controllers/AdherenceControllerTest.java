@@ -44,6 +44,7 @@ import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
+import org.sagebionetworks.bridge.models.schedules2.adherence.detailed.DetailedAdherenceReport;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -131,6 +132,7 @@ public class AdherenceControllerTest extends Mockito {
         assertPost(AdherenceController.class, "searchForAdherenceRecordsForSelf");
         assertPost(AdherenceController.class, "searchForAdherenceRecords");
         assertDelete(AdherenceController.class, "deleteAdherenceRecord");
+        assertGet(AdherenceController.class, "getDetailedParticipantAdherenceReport");
     }
     
     @Test
@@ -755,5 +757,62 @@ public class AdherenceControllerTest extends Mockito {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_DESIGNER, STUDY_COORDINATOR);
         
         controller.getAdherenceStatistics(TEST_STUDY_ID, null);
+    }
+    
+    @Test
+    public void getDetailedParticipantAdherenceReport() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(TEST_USER_ID)
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR)).build());
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_DESIGNER, STUDY_COORDINATOR);
+        
+        Account account = Account.create();
+        account.setId(TEST_USER_ID);
+        account.setClientTimeZone(CLIENT_TIME_ZONE);
+        when(mockAccountService.getAccount(AccountId.forId(TEST_APP_ID, TEST_USER_ID)))
+                .thenReturn(Optional.of(account));
+        
+        DetailedAdherenceReport report = new DetailedAdherenceReport();
+        when(mockService.getDetailedAdherenceReportForParticipant(TEST_APP_ID, TEST_STUDY_ID, account))
+                .thenReturn(report);
+        
+        DetailedAdherenceReport retValue = controller.getDetailedParticipantAdherenceReport(TEST_STUDY_ID, TEST_USER_ID);
+        assertSame(retValue, report);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void getDetailedParticipantAdherenceReport_unauthorizedStudy() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(TEST_USER_ID)
+                .withOrgSponsoredStudies(ImmutableSet.of("some-other-study"))
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR)).build());
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_DESIGNER, STUDY_COORDINATOR);
+        
+        controller.getDetailedParticipantAdherenceReport(TEST_STUDY_ID, TEST_USER_ID);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void getDetailedParticipantAdherenceReport_missingRole() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(TEST_USER_ID)
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID)).build());
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_DESIGNER, STUDY_COORDINATOR);
+        
+        controller.getDetailedParticipantAdherenceReport(TEST_STUDY_ID, TEST_USER_ID);
+    }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void getDetailedParticipantAdherenceReport_accountNotFound() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(TEST_USER_ID)
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR)).build());
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_DESIGNER, STUDY_COORDINATOR);
+    
+        when(mockAccountService.getAccount(AccountId.forId(TEST_APP_ID, TEST_USER_ID)))
+                .thenReturn(Optional.empty());
+    
+        controller.getDetailedParticipantAdherenceReport(TEST_STUDY_ID, TEST_USER_ID);
     }
 }
