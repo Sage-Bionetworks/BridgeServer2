@@ -154,6 +154,7 @@ public class AdherenceControllerTest extends Mockito {
         verify(mockService).getAdherenceRecords(eq(TEST_APP_ID), searchCaptor.capture());
         
         AdherenceRecordsSearch captured = searchCaptor.getValue();
+        assertEquals(captured.getAppId(), TEST_APP_ID);
         assertNull(captured.getUserId());
         assertEquals(captured.getStudyId(), TEST_STUDY_ID);
         assertEquals(captured.getAssessmentIds(), ImmutableSet.of("A", "B", "C"));

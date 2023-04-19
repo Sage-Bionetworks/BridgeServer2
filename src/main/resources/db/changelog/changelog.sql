@@ -1085,3 +1085,9 @@ CREATE TABLE IF NOT EXISTS `AdherenceUploads` (
     CONSTRAINT `AdherenceUpload-AdherenceRecord-Constraint` FOREIGN KEY (`userId`, `studyId`, `instanceGuid`, `eventTimestamp`, `instanceTimestamp`) REFERENCES `AdherenceRecords` (`userId`, `studyId`, `instanceGuid`, `eventTimestamp`, `instanceTimestamp`) ON DELETE CASCADE,
     INDEX (`uploadId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+-- changeset bridge:79
+
+ALTER TABLE `AdherenceRecords`
+ADD INDEX `AdherenceRecords-AppId-StudyId-EventTimestamp` (appId, studyId, eventTimestamp),
+ADD INDEX `AdherenceRecords-AppId-StudyId-UserId-EventTimestamp` (appId, studyId, userId, eventTimestamp);
