@@ -9,6 +9,7 @@ import org.testng.annotations.Test;
 
 import static org.sagebionetworks.bridge.TestConstants.TEST_CLIENT_TIME_ZONE;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
+import static org.sagebionetworks.bridge.models.schedules2.adherence.AssessmentCompletionState.COMPLETED;
 import static org.testng.Assert.assertEquals;
 
 public class DetailedAdherenceReportAssessmentRecordTest {
@@ -22,7 +23,7 @@ public class DetailedAdherenceReportAssessmentRecordTest {
         record.setAssessmentId("assessment-id");
         record.setAssessmentGuid("assessment-guid");
         record.setAssessmentInstanceGuid("assessment-instance-guid");
-        record.setAssessmentStatus("assessment-status");
+        record.setAssessmentStatus(COMPLETED);
         record.setAssessmentStart(TIMESTAMP_WITH_OFFSET);
         record.setAssessmentCompleted(TIMESTAMP_WITH_OFFSET);
         record.setAssessmentUploadedOn(TIMESTAMP_WITH_OFFSET);
@@ -34,7 +35,7 @@ public class DetailedAdherenceReportAssessmentRecordTest {
         assertEquals(node.get("assessmentId").textValue(), "assessment-id");
         assertEquals(node.get("assessmentGuid").textValue(), "assessment-guid");
         assertEquals(node.get("assessmentInstanceGuid").textValue(), "assessment-instance-guid");
-        assertEquals(node.get("assessmentStatus").textValue(), "assessment-status");
+        assertEquals(node.get("assessmentStatus").textValue(), "completed");
         assertEquals(node.get("assessmentStart").textValue(), TIMESTAMP_WITH_OFFSET.toString());
         assertEquals(node.get("assessmentCompleted").textValue(), TIMESTAMP_WITH_OFFSET.toString());
         assertEquals(node.get("assessmentUploadedOn").textValue(), TIMESTAMP_WITH_OFFSET.toString());

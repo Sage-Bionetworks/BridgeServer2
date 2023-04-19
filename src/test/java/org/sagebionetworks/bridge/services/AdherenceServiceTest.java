@@ -70,6 +70,7 @@ import org.mockito.Spy;
 import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.schedules2.AssessmentReference;
 import org.sagebionetworks.bridge.models.schedules2.TimeWindow;
+import org.sagebionetworks.bridge.models.schedules2.adherence.AssessmentCompletionState;
 import org.sagebionetworks.bridge.models.schedules2.adherence.detailed.DetailedAdherenceReport;
 import org.sagebionetworks.bridge.models.schedules2.adherence.detailed.DetailedAdherenceReportAssessmentRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.detailed.DetailedAdherenceReportSessionRecord;
@@ -126,6 +127,7 @@ public class AdherenceServiceTest extends Mockito {
     private static final DateTime FINISHED_ON = MODIFIED_ON;
     private static final DateTime EVENT_TS = CREATED_ON.minusWeeks(1);
     private static final DateTime UPLOADED_ON = MODIFIED_ON.plusHours(1);
+    private static final String NON_LOCAL_TIME_ZONE = "America/New_York";
 
     @Mock
     AdherenceRecordDao mockRecordDao;
@@ -1403,10 +1405,12 @@ public class AdherenceServiceTest extends Mockito {
         AdherenceRecord sessionRecord1 = sar(STARTED_ON, FINISHED_ON, "session-instance-guid-1", false);
 
         AdherenceRecord assessmentRecord2 = ar(STARTED_ON, FINISHED_ON, "assessment-instance-guid-2", false);
+        AdherenceRecord assessmentRecord3 = ar(STARTED_ON.minusHours(1), FINISHED_ON.minusHours(1), 
+                "assessment-instance-guid-3", false);
         AdherenceRecord studyBurstRecord1 = sar(STARTED_ON, FINISHED_ON, "study-burst-session-guid-2", false);
         
         Account account = mockDetailedAdherenceTimeline(ImmutableList.of(assessmentRecord1, sessionRecord1, 
-                assessmentRecord2, studyBurstRecord1));
+                assessmentRecord2, assessmentRecord3, studyBurstRecord1));
         
         
         DetailedAdherenceReport report = service.getDetailedAdherenceReportForParticipant(
@@ -1415,8 +1419,8 @@ public class AdherenceServiceTest extends Mockito {
         assertEquals(report.getParticipant().getIdentifier(), TEST_USER_ID);
         assertEquals(report.getParticipant().getExternalId(), TEST_EXTERNAL_ID);
         assertTrue(report.isTestAccount());
-        assertEquals(report.getJoinedDate().withZone(DateTimeZone.forID("America/Los_Angeles")).toString(),
-                ENROLLMENT.toString());
+        assertEquals(report.getJoinedDate().toString(), 
+                ENROLLMENT.withZone(DateTimeZone.forID(NON_LOCAL_TIME_ZONE)).toString());
         
         List<DetailedAdherenceReportSessionRecord> sessionRecords = report.getSessionRecords();
         assertEquals(sessionRecords.size(), 2);
@@ -1429,11 +1433,11 @@ public class AdherenceServiceTest extends Mockito {
         assertEquals(sessionRecord.getSessionInstanceGuid(), "session-instance-guid-1");
         assertEquals(sessionRecord.getSessionStatus(), COMPLETED);
         assertEquals(sessionRecord.getSessionStart().toString(), STARTED_ON.withZone(DateTimeZone.forID(
-                TEST_CLIENT_TIME_ZONE)).toString()); // 2015-01-26T15:38:32.486-08:00
+                NON_LOCAL_TIME_ZONE)).toString());
         assertEquals(sessionRecord.getSessionCompleted().toString(), FINISHED_ON.withZone(DateTimeZone.forID(
-                TEST_CLIENT_TIME_ZONE)).toString()); // 2015-01-26T17:38:32.486-08:00
+                NON_LOCAL_TIME_ZONE)).toString());
         assertEquals(sessionRecord.getSessionExpiration(), STARTED_ON.plusDays(2).withZone(DateTimeZone.forID(
-                TEST_CLIENT_TIME_ZONE))); // 2015-01-20T15:38:32.486-08:00
+                NON_LOCAL_TIME_ZONE)));
         
         List<DetailedAdherenceReportAssessmentRecord> assessmentRecords = sessionRecord.getAssessmentRecords();
         assertEquals(assessmentRecords.size(), 1);
@@ -1443,13 +1447,13 @@ public class AdherenceServiceTest extends Mockito {
         assertEquals(assessmentRecord.getAssessmentId(), "assessment-id-1");
         assertEquals(assessmentRecord.getAssessmentGuid(), "assessment-guid-1");
         assertEquals(assessmentRecord.getAssessmentInstanceGuid(), "assessment-instance-guid-1");
-        assertEquals(assessmentRecord.getAssessmentStatus(), "Completed");
+        assertEquals(assessmentRecord.getAssessmentStatus(), AssessmentCompletionState.COMPLETED);
         assertEquals(assessmentRecord.getAssessmentStart().toString(), STARTED_ON.withZone(DateTimeZone.forID(
-                TEST_CLIENT_TIME_ZONE)).toString()); // 2015-01-26T15:38:32.486-08:00
+                NON_LOCAL_TIME_ZONE)).toString());
         assertEquals(assessmentRecord.getAssessmentCompleted().toString(), FINISHED_ON.withZone(DateTimeZone.forID(
-                TEST_CLIENT_TIME_ZONE)).toString()); // 2015-01-26T17:38:32.486-08:00
+                NON_LOCAL_TIME_ZONE)).toString());
         assertEquals(assessmentRecord.getAssessmentUploadedOn().toString(), UPLOADED_ON.withZone(DateTimeZone.forID(
-                TEST_CLIENT_TIME_ZONE)).toString());
+                NON_LOCAL_TIME_ZONE)).toString());
     
         DetailedAdherenceReportSessionRecord studyBurstRecord = sessionRecords.get(1);
         assertEquals(studyBurstRecord.getBurstName(), "Week 2/Burst 1");
@@ -1459,26 +1463,38 @@ public class AdherenceServiceTest extends Mockito {
         assertEquals(studyBurstRecord.getSessionInstanceGuid(), "study-burst-session-guid-2");
         assertEquals(studyBurstRecord.getSessionStatus(), COMPLETED);
         assertEquals(studyBurstRecord.getSessionStart().toString(), STARTED_ON.withZone(DateTimeZone.forID(
-                TEST_CLIENT_TIME_ZONE)).toString()); // 2015-01-26T15:38:32.486-08:00
+                NON_LOCAL_TIME_ZONE)).toString());
         assertEquals(studyBurstRecord.getSessionCompleted().toString(), FINISHED_ON.withZone(DateTimeZone.forID(
-                TEST_CLIENT_TIME_ZONE)).toString()); // 2015-01-26T17:38:32.486-08:00
+                NON_LOCAL_TIME_ZONE)).toString());
         assertEquals(studyBurstRecord.getSessionExpiration(), STARTED_ON.plusDays(2).withZone(DateTimeZone.forID(
-                TEST_CLIENT_TIME_ZONE))); // 2015-01-20T15:38:32.486-08:00
+                NON_LOCAL_TIME_ZONE)));
     
         List<DetailedAdherenceReportAssessmentRecord> studyBurstAssessmentRecords = studyBurstRecord.getAssessmentRecords();
-        assertEquals(studyBurstAssessmentRecords.size(), 1);
+        assertEquals(studyBurstAssessmentRecords.size(), 2);
         
         DetailedAdherenceReportAssessmentRecord studyBurstAssessmentRecord = studyBurstAssessmentRecords.get(0);
         assertEquals(studyBurstAssessmentRecord.getAssessmentName(), "assessment-name-2");
         assertEquals(studyBurstAssessmentRecord.getAssessmentId(), "assessment-id-2");
         assertEquals(studyBurstAssessmentRecord.getAssessmentGuid(), "assessment-guid-2");
         assertEquals(studyBurstAssessmentRecord.getAssessmentInstanceGuid(), "assessment-instance-guid-2");
-        assertEquals(studyBurstAssessmentRecord.getAssessmentStatus(), "Completed");
+        assertEquals(studyBurstAssessmentRecord.getAssessmentStatus(), AssessmentCompletionState.COMPLETED);
         assertEquals(studyBurstAssessmentRecord.getAssessmentStart().toString(), STARTED_ON.withZone(DateTimeZone.forID(
-                TEST_CLIENT_TIME_ZONE)).toString()); // 2015-01-26T15:38:32.486-08:00
+                NON_LOCAL_TIME_ZONE)).toString());
         assertEquals(studyBurstAssessmentRecord.getAssessmentCompleted().toString(), FINISHED_ON.withZone(DateTimeZone.forID(
-                TEST_CLIENT_TIME_ZONE)).toString()); // 2015-01-26T17:38:32.486-08:00
+                NON_LOCAL_TIME_ZONE)).toString());
         assertNull(studyBurstAssessmentRecord.getAssessmentUploadedOn());
+    
+        DetailedAdherenceReportAssessmentRecord studyBurstAssessmentRecord2 = studyBurstAssessmentRecords.get(1);
+        assertEquals(studyBurstAssessmentRecord2.getAssessmentName(), "assessment-name-1");
+        assertEquals(studyBurstAssessmentRecord2.getAssessmentId(), "assessment-id-1");
+        assertEquals(studyBurstAssessmentRecord2.getAssessmentGuid(), "assessment-guid-1");
+        assertEquals(studyBurstAssessmentRecord2.getAssessmentInstanceGuid(), "assessment-instance-guid-3");
+        assertEquals(studyBurstAssessmentRecord2.getAssessmentStatus(), AssessmentCompletionState.COMPLETED);
+        assertEquals(studyBurstAssessmentRecord2.getAssessmentStart().toString(), STARTED_ON.minusHours(1)
+                .withZone(DateTimeZone.forID(NON_LOCAL_TIME_ZONE)).toString());
+        assertEquals(studyBurstAssessmentRecord2.getAssessmentCompleted().toString(), FINISHED_ON.minusHours(1)
+                .withZone(DateTimeZone.forID(NON_LOCAL_TIME_ZONE)).toString());
+        assertNull(studyBurstAssessmentRecord2.getAssessmentUploadedOn());
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -1488,6 +1504,9 @@ public class AdherenceServiceTest extends Mockito {
         
         Study study = Study.create();
         when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+        
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID))
+                .thenThrow(new EntityNotFoundException(Schedule2.class));
     
         DetailedAdherenceReport report = service.getDetailedAdherenceReportForParticipant(
                 TEST_APP_ID, TEST_STUDY_ID, Account.create());
@@ -1497,8 +1516,8 @@ public class AdherenceServiceTest extends Mockito {
     public void getDetailedAdherenceReportForParticipant_persistentWindowsIgnored() {
         // This test includes one persistent session and one not. Only the non-persistent session and its
         // child assessment should be included in the report.
-        when(mockStudyService.getZoneId(TEST_APP_ID, TEST_STUDY_ID, TEST_CLIENT_TIME_ZONE))
-                .thenReturn(TEST_CLIENT_TIME_ZONE);
+        when(mockStudyService.getZoneId(TEST_APP_ID, TEST_STUDY_ID, NON_LOCAL_TIME_ZONE))
+                .thenReturn(NON_LOCAL_TIME_ZONE);
     
         Study study = Study.create();
         study.setScheduleGuid(SCHEDULE_GUID);
@@ -1619,7 +1638,7 @@ public class AdherenceServiceTest extends Mockito {
         account.setId(TEST_USER_ID);
         account.setDataGroups(ImmutableSet.of("test_user"));
         account.setEnrollments(ImmutableSet.of(enrollment));
-        account.setClientTimeZone(TEST_CLIENT_TIME_ZONE);
+        account.setClientTimeZone(NON_LOCAL_TIME_ZONE);
         
     
         DetailedAdherenceReport report = service.getDetailedAdherenceReportForParticipant(
@@ -1628,8 +1647,8 @@ public class AdherenceServiceTest extends Mockito {
         assertEquals(report.getParticipant().getIdentifier(), TEST_USER_ID);
         assertEquals(report.getParticipant().getExternalId(), TEST_EXTERNAL_ID);
         assertTrue(report.isTestAccount());
-        assertEquals(report.getJoinedDate().withZone(DateTimeZone.forID("America/Los_Angeles")).toString(),
-                ENROLLMENT.toString());
+        assertEquals(report.getJoinedDate().toString(),
+                ENROLLMENT.withZone(DateTimeZone.forID(NON_LOCAL_TIME_ZONE)).toString());
         
         List<DetailedAdherenceReportSessionRecord> sessionRecords = report.getSessionRecords();
         assertEquals(sessionRecords.size(), 1);
@@ -1642,11 +1661,11 @@ public class AdherenceServiceTest extends Mockito {
         assertEquals(studyBurstRecord.getSessionInstanceGuid(), "study-burst-session-guid-2");
         assertEquals(studyBurstRecord.getSessionStatus(), COMPLETED);
         assertEquals(studyBurstRecord.getSessionStart().toString(), STARTED_ON.withZone(DateTimeZone.forID(
-                TEST_CLIENT_TIME_ZONE)).toString()); // 2015-01-26T15:38:32.486-08:00
+                NON_LOCAL_TIME_ZONE)).toString());
         assertEquals(studyBurstRecord.getSessionCompleted().toString(), FINISHED_ON.withZone(DateTimeZone.forID(
-                TEST_CLIENT_TIME_ZONE)).toString()); // 2015-01-26T17:38:32.486-08:00
+                NON_LOCAL_TIME_ZONE)).toString());
         assertEquals(studyBurstRecord.getSessionExpiration(), STARTED_ON.plusDays(2).withZone(DateTimeZone.forID(
-                TEST_CLIENT_TIME_ZONE))); // 2015-01-20T15:38:32.486-08:00
+                NON_LOCAL_TIME_ZONE)));
     
         List<DetailedAdherenceReportAssessmentRecord> studyBurstAssessmentRecords = studyBurstRecord.getAssessmentRecords();
         assertEquals(studyBurstAssessmentRecords.size(), 1);
@@ -1656,11 +1675,11 @@ public class AdherenceServiceTest extends Mockito {
         assertEquals(studyBurstAssessmentRecord.getAssessmentId(), "assessment-id-2");
         assertEquals(studyBurstAssessmentRecord.getAssessmentGuid(), "assessment-guid-2");
         assertEquals(studyBurstAssessmentRecord.getAssessmentInstanceGuid(), "assessment-instance-guid-2");
-        assertEquals(studyBurstAssessmentRecord.getAssessmentStatus(), "Completed");
+        assertEquals(studyBurstAssessmentRecord.getAssessmentStatus(), AssessmentCompletionState.COMPLETED);
         assertEquals(studyBurstAssessmentRecord.getAssessmentStart().toString(), STARTED_ON.withZone(DateTimeZone.forID(
-                TEST_CLIENT_TIME_ZONE)).toString()); // 2015-01-26T15:38:32.486-08:00
+                NON_LOCAL_TIME_ZONE)).toString());
         assertEquals(studyBurstAssessmentRecord.getAssessmentCompleted().toString(), FINISHED_ON.withZone(DateTimeZone.forID(
-                TEST_CLIENT_TIME_ZONE)).toString()); // 2015-01-26T17:38:32.486-08:00
+                NON_LOCAL_TIME_ZONE)).toString());
         assertNull(studyBurstAssessmentRecord.getAssessmentUploadedOn());
     }
     
@@ -1679,11 +1698,11 @@ public class AdherenceServiceTest extends Mockito {
     
         DetailedAdherenceReportAssessmentRecord assessmentRecord = assessmentRecords.get(0);
         assertEquals(assessmentRecord.getAssessmentInstanceGuid(), "assessment-instance-guid-1");
-        assertEquals(assessmentRecord.getAssessmentStatus(), "Completed");
+        assertEquals(assessmentRecord.getAssessmentStatus(), AssessmentCompletionState.COMPLETED);
         assertEquals(assessmentRecord.getAssessmentStart().toString(), STARTED_ON.withZone(DateTimeZone.forID(
-                TEST_CLIENT_TIME_ZONE)).toString());
+                NON_LOCAL_TIME_ZONE)).toString());
         assertEquals(assessmentRecord.getAssessmentCompleted().toString(), FINISHED_ON.withZone(DateTimeZone.forID(
-                TEST_CLIENT_TIME_ZONE)).toString());
+                NON_LOCAL_TIME_ZONE)).toString());
     }
     
     @Test
@@ -1701,9 +1720,9 @@ public class AdherenceServiceTest extends Mockito {
     
         DetailedAdherenceReportAssessmentRecord assessmentRecord = assessmentRecords.get(0);
         assertEquals(assessmentRecord.getAssessmentInstanceGuid(), "assessment-instance-guid-1");
-        assertEquals(assessmentRecord.getAssessmentStatus(), "Not Completed");
+        assertEquals(assessmentRecord.getAssessmentStatus(), AssessmentCompletionState.NOT_COMPLETED);
         assertEquals(assessmentRecord.getAssessmentStart().toString(), STARTED_ON.withZone(DateTimeZone.forID(
-                TEST_CLIENT_TIME_ZONE)).toString());
+                NON_LOCAL_TIME_ZONE)).toString());
         assertNull(assessmentRecord.getAssessmentCompleted());
     }
     
@@ -1722,9 +1741,9 @@ public class AdherenceServiceTest extends Mockito {
     
         DetailedAdherenceReportAssessmentRecord assessmentRecord = assessmentRecords.get(0);
         assertEquals(assessmentRecord.getAssessmentInstanceGuid(), "assessment-instance-guid-1");
-        assertEquals(assessmentRecord.getAssessmentStatus(), "Declined");
+        assertEquals(assessmentRecord.getAssessmentStatus(), AssessmentCompletionState.DECLINED);
         assertEquals(assessmentRecord.getAssessmentStart().toString(), STARTED_ON.withZone(DateTimeZone.forID(
-                TEST_CLIENT_TIME_ZONE)).toString());
+                NON_LOCAL_TIME_ZONE)).toString());
         assertNull(assessmentRecord.getAssessmentCompleted());
     }
     
@@ -1814,8 +1833,8 @@ public class AdherenceServiceTest extends Mockito {
     }
     
     private Account mockDetailedAdherenceTimeline(List<AdherenceRecord> testAdherenceRecords) {
-        when(mockStudyService.getZoneId(TEST_APP_ID, TEST_STUDY_ID, TEST_CLIENT_TIME_ZONE))
-                .thenReturn(TEST_CLIENT_TIME_ZONE);
+        when(mockStudyService.getZoneId(TEST_APP_ID, TEST_STUDY_ID, NON_LOCAL_TIME_ZONE))
+                .thenReturn(NON_LOCAL_TIME_ZONE);
         
         Study study = Study.create();
         study.setScheduleGuid(SCHEDULE_GUID);
@@ -1850,6 +1869,12 @@ public class AdherenceServiceTest extends Mockito {
                 .withReference(assessmentReference2)
                 .build();
     
+        ScheduledAssessment scheduledAssessment3 = new ScheduledAssessment.Builder()
+                .withInstanceGuid("assessment-instance-guid-3")
+                .withRefKey(assessmentInfo1.getKey())
+                .withReference(assessmentReference1)
+                .build();
+    
         TimeWindow timeWindow = new TimeWindow();
     
         Session session = new Session();
@@ -1882,6 +1907,7 @@ public class AdherenceServiceTest extends Mockito {
                 .withStartDay(8)
                 .withEndDay(9)
                 .withScheduledAssessment(scheduledAssessment2)
+                .withScheduledAssessment(scheduledAssessment3)
                 .build();
     
         SessionInfo studyBurstInfo = SessionInfo.createTimelineEntry(studyBurst);
@@ -1925,7 +1951,7 @@ public class AdherenceServiceTest extends Mockito {
         account.setId(TEST_USER_ID);
         account.setDataGroups(ImmutableSet.of("test_user"));
         account.setEnrollments(ImmutableSet.of(enrollment));
-        account.setClientTimeZone(TEST_CLIENT_TIME_ZONE);
+        account.setClientTimeZone(NON_LOCAL_TIME_ZONE);
         
         return account;
     }

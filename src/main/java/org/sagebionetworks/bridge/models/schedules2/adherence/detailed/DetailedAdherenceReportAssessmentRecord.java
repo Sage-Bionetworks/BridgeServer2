@@ -4,15 +4,16 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.json.DateTimeSerializer;
+import org.sagebionetworks.bridge.models.schedules2.adherence.AssessmentCompletionState;
 
 public class DetailedAdherenceReportAssessmentRecord {
     private String assessmentName;
     private String assessmentId;
     private String assessmentGuid;
     private String assessmentInstanceGuid;
-    private String assessmentStatus;
-    private DateTime assessmentStart; // date time
-    private DateTime assessmentCompleted; // date time
+    private AssessmentCompletionState assessmentStatus;
+    private DateTime assessmentStart;
+    private DateTime assessmentCompleted;
     private DateTime assessmentUploadedOn;
     private int sortPriority;
     
@@ -48,11 +49,11 @@ public class DetailedAdherenceReportAssessmentRecord {
         this.assessmentInstanceGuid = assessmentInstanceGuid;
     }
     
-    public String getAssessmentStatus() {
+    public AssessmentCompletionState getAssessmentStatus() {
         return assessmentStatus;
     }
     
-    public void setAssessmentStatus(String assessmentStatus) {
+    public void setAssessmentStatus(AssessmentCompletionState assessmentStatus) {
         this.assessmentStatus = assessmentStatus;
     }
     

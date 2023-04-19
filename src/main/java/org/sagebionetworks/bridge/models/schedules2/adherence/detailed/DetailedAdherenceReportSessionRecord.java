@@ -22,8 +22,8 @@ public class DetailedAdherenceReportSessionRecord {
     private String sessionGuid;
     private String sessionInstanceGuid;
     private SessionCompletionState sessionStatus;
-    private DateTime sessionStart; // date time
-    private DateTime sessionCompleted; // date time
+    private DateTime sessionStart;
+    private DateTime sessionCompleted;
     private DateTime sessionExpiration;
     private Map<String, DetailedAdherenceReportAssessmentRecord> assessmentRecords = new HashMap<>();
     private int sortPriority;

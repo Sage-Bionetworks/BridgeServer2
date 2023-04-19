@@ -5,6 +5,7 @@ import static java.lang.Boolean.TRUE;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_ACCESS_ADHERENCE_DATA;
+import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.BridgeUtils.formatActivityEventId;
 import static org.sagebionetworks.bridge.models.ResourceList.ADHERENCE_RECORD_TYPE;
@@ -30,6 +31,7 @@ import static org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceUt
 import static org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantStudyProgress.UNSTARTED;
 import static org.sagebionetworks.bridge.validators.AdherenceRecordListValidator.INSTANCE;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -45,6 +47,7 @@ import com.google.common.collect.ImmutableSet;
 
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.models.schedules2.AssessmentReference;
+import org.sagebionetworks.bridge.models.schedules2.adherence.AssessmentCompletionState;
 import org.sagebionetworks.bridge.models.schedules2.adherence.detailed.DetailedAdherenceReport;
 import org.sagebionetworks.bridge.models.schedules2.adherence.detailed.DetailedAdherenceReportAssessmentRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.detailed.DetailedAdherenceReportSessionRecord;
@@ -574,9 +577,7 @@ public class AdherenceService {
         builder.withClientTimeZone(zoneId);
         
         Study study = studyService.getStudy(appId, studyId, true);
-        if (study.getScheduleGuid() == null) {
-            throw new EntityNotFoundException(Schedule2.class);
-        }
+        
         Schedule2 schedule = scheduleService.getScheduleForStudy(appId, studyId)
                 .orElseThrow(() -> new EntityNotFoundException(Schedule2.class));
         List<TimelineMetadata> metadata = scheduleService.getScheduleMetadata(study.getScheduleGuid());
@@ -586,14 +587,27 @@ public class AdherenceService {
         List<StudyActivityEvent> events = studyActivityEventService.getRecentStudyActivityEvents(
                 appId, studyId, account.getId()).getItems();
         
-        List<AdherenceRecord> adherenceRecords = getAdherenceRecords(appId, new AdherenceRecordsSearch.Builder()
-                .withCurrentTimestampsOnly(true)
-                // If includeRepeats=false (which is counter-intuitive) you will not get declined sessions with no 
-                // startedOn value, but it's not needed because persistent time windows are excluded from adherence.
-                .withIncludeRepeats(true)
-                .withStudyId(studyId)
-                .withUserId(account.getId())
-                .build()).getItems();
+        List<AdherenceRecord> adherenceRecords = new ArrayList<>();
+        int total;
+        int offset = 0;
+        do {
+            PagedResourceList<AdherenceRecord> pagedAdherenceRecords = getAdherenceRecords(appId, 
+                    new AdherenceRecordsSearch.Builder()
+                            .withCurrentTimestampsOnly(true)
+                            // If includeRepeats=false (which is counter-intuitive) you will not get declined sessions with no
+                            // startedOn value, but it's not needed because persistent time windows are excluded from adherence.
+                            .withIncludeRepeats(true)
+                            .withStudyId(studyId)
+                            .withUserId(account.getId())
+                            .withPageSize(API_MAXIMUM_PAGE_SIZE)
+                            .withOffsetBy(offset)
+                            .build());
+            
+            adherenceRecords.addAll(pagedAdherenceRecords.getItems());
+            
+            total = pagedAdherenceRecords.getTotal();
+            offset += API_MAXIMUM_PAGE_SIZE;
+        } while (offset < total);
         
         builder.withMetadata(metadata);
         builder.withEvents(events);
@@ -693,11 +707,11 @@ public class AdherenceService {
                 
                 
                 if (record.isDeclined()) {
-                    assessmentRecord.setAssessmentStatus("Declined");
+                    assessmentRecord.setAssessmentStatus(AssessmentCompletionState.DECLINED);
                 } else if (record.getFinishedOn() != null) {
-                    assessmentRecord.setAssessmentStatus("Completed");
+                    assessmentRecord.setAssessmentStatus(AssessmentCompletionState.COMPLETED);
                 } else if (record.getStartedOn() != null) {
-                    assessmentRecord.setAssessmentStatus("Not Completed");
+                    assessmentRecord.setAssessmentStatus(AssessmentCompletionState.NOT_COMPLETED);
                 }
                 
                 assessmentRecord.setSortPriority(sortReferenceMap.get(instanceGuid));
@@ -705,8 +719,7 @@ public class AdherenceService {
                 String parentInstanceGuid = assessmentParentMap.get(instanceGuid);
                 ScheduledSession scheduledSession = scheduledSessionMap.get(parentInstanceGuid);
                 
-                fillSessionRecord(sessionRecords, scheduledSession, //sessionMap, 
-                        state, sortReferenceMap, null);
+                fillSessionRecord(sessionRecords, scheduledSession, state, sortReferenceMap, null);
                 
                 Map<String, DetailedAdherenceReportAssessmentRecord> assessmentRecords = sessionRecords
                         .get(scheduledSession.getInstanceGuid()).getAssessmentRecordMap();
@@ -724,6 +737,13 @@ public class AdherenceService {
         return detailedAdherenceReport;
     }
     
+    /**
+     * Fills a detailed adherence report session record. If the record does not exist yet,
+     * it will be created with identifying info such as name and GUID. The adherence status
+     * for this record will only be updated if the adherence record is passed in. The session
+     * record can be created without adherence status in order to begin adding child
+     * assessment records as they are encountered.
+     */
     private void fillSessionRecord(Map<String, DetailedAdherenceReportSessionRecord> sessionRecords,
                                    ScheduledSession scheduledSession,
                                    AdherenceState state,

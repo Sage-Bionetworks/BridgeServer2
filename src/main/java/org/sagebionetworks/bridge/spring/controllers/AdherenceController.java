@@ -1,7 +1,9 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
+import static org.sagebionetworks.bridge.AuthEvaluatorField.USER_ID;
 import static org.sagebionetworks.bridge.AuthUtils.CANNOT_ACCESS_PARTICIPANTS;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_ACCESS_ADHERENCE_DATA;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_PARTICIPANT_REPORTS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_STUDIES;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
@@ -251,7 +253,7 @@ public class AdherenceController extends BaseController {
                                                                          @PathVariable String userId) {
         UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_DESIGNER, STUDY_COORDINATOR);
         
-        CAN_READ_STUDIES.checkAndThrow(STUDY_ID, studyId);
+        CAN_ACCESS_ADHERENCE_DATA.checkAndThrow(STUDY_ID, studyId, USER_ID, userId);
         
         AccountId accountId = AccountId.forId(session.getAppId(), userId);
         Account account = accountService.getAccount(accountId)
