@@ -92,6 +92,7 @@ public class Exporter3Service {
 
     // Package-scoped to be available in unit tests.
     static final String CONFIG_KEY_ADMIN_SYNAPSE_ID = "admin.synapse.id";
+    static final String CONFIG_KEY_BUCKET_SUFFIX = "bucket.suffix";
     static final String CONFIG_KEY_DOWNSTREAM_ETL_SYNAPSE_ID = "downstream.etl.synapse.id";
     static final String CONFIG_KEY_EXPORTER_SYNAPSE_ID = "exporter.synapse.id";
     static final String CONFIG_KEY_EXPORTER_SYNAPSE_USER = "exporter.synapse.user";
@@ -250,6 +251,7 @@ public class Exporter3Service {
     private Long exporterSynapseId;
     private String exporterSynapseUser;
     private String rawHealthDataBucket;
+    private String snsTopicSuffix;
     private String synapseTrackingViewId;
 
     private AccountService accountService;
@@ -274,6 +276,9 @@ public class Exporter3Service {
         exporterSynapseUser = config.getProperty(CONFIG_KEY_EXPORTER_SYNAPSE_USER);
         rawHealthDataBucket = config.getProperty(CONFIG_KEY_RAW_HEALTH_DATA_BUCKET);
         synapseTrackingViewId = config.getProperty(CONFIG_KEY_SYNAPSE_TRACKING_VIEW);
+
+        // It's called the bucket suffix in config, but it can be used as a general suffix for any resource.
+        snsTopicSuffix = config.getProperty(CONFIG_KEY_BUCKET_SUFFIX);
 
         String adminSynapseIdStr = config.get(CONFIG_KEY_ADMIN_SYNAPSE_ID);
         if (StringUtils.isNotBlank(adminSynapseIdStr)) {
@@ -741,7 +746,7 @@ public class Exporter3Service {
         // Has the SNS topic been created for this app?
         String topicArn = getter.apply(ex3Config);
         if (topicArn == null) {
-            String topicName = topicPrefix + '-' + appId;
+            String topicName = topicPrefix + '-' + appId + '-' + snsTopicSuffix;
             CreateTopicResult createTopicResult = snsClient.createTopic(topicName);
             topicArn = createTopicResult.getTopicArn();
             LOG.info("Created SNS topic name=" + topicName + ", arn=" + topicArn);
@@ -796,7 +801,7 @@ public class Exporter3Service {
         // Has the SNS topic been created for this app?
         String topicArn = getter.apply(ex3Config);
         if (topicArn == null) {
-            String topicName = topicPrefix + '-' + appId + '-' + studyId;
+            String topicName = topicPrefix + '-' + appId + '-' + studyId + '-' + snsTopicSuffix;
             CreateTopicResult createTopicResult = snsClient.createTopic(topicName);
             topicArn = createTopicResult.getTopicArn();
             LOG.info("Created SNS topic name=" + topicName + ", arn=" + topicArn);
