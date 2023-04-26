@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 
 import org.aopalliance.intercept.MethodInvocation;
+import org.apache.catalina.connector.ClientAbortException;
 import org.hibernate.QueryParameterException;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
@@ -219,7 +220,15 @@ public class BridgeExceptionHandlerTest extends Mockito {
         // Verify log.
         verify(logger).error(contains(ex.getMessage()), same(ex));
     }
-    
+
+    @Test
+    public void clientAbortException() throws Exception {
+        // Execute. The output is not important. We just want to verify that we log a warning instead of an error.
+        ClientAbortException ex = new ClientAbortException("dummy exception message");
+        handler.handleException(mockRequest, ex);
+        verify(logger).warn(contains(ex.getMessage()), same(ex));
+    }
+
     // If you do not wrap a RuntimeException in BridgeServiceException, it's still reported as a 500 response, 
     // but the JSON will be based on that object, so e.g. the type will be the type of the exception. That and 
     // usually other details are internal to the system and will not make sense to an API caller.
