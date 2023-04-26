@@ -100,6 +100,7 @@ public class Exporter3ServiceTest {
     private static final long ADMIN_SYNAPSE_ID = 555L;
     private static final long BRIDGE_ADMIN_TEAM_ID = 1111L;
     private static final long BRIDGE_STAFF_TEAM_ID = 2222L;
+    private static final String BUCKET_SUFFIX = "bucket-suffix";
     private static final ClientInfo CLIENT_INFO = ClientInfo.fromUserAgentCache(TestConstants.UA);
     private static final long DATA_ACCESS_TEAM_ID = 3333L;
     private static final long DOWNSTREAM_ETL_SYNAPSE_ID = 3888L;
@@ -529,6 +530,7 @@ public class Exporter3ServiceTest {
                 .thenReturn(String.valueOf(ADMIN_SYNAPSE_ID));
         when(mockConfig.getInt(Exporter3Service.CONFIG_KEY_TEAM_BRIDGE_ADMIN)).thenReturn((int) BRIDGE_ADMIN_TEAM_ID);
         when(mockConfig.getInt(Exporter3Service.CONFIG_KEY_TEAM_BRIDGE_STAFF)).thenReturn((int) BRIDGE_STAFF_TEAM_ID);
+        when(mockConfig.getProperty(Exporter3Service.CONFIG_KEY_BUCKET_SUFFIX)).thenReturn(BUCKET_SUFFIX);
         when(mockConfig.get(Exporter3Service.CONFIG_KEY_DOWNSTREAM_ETL_SYNAPSE_ID))
                 .thenReturn(String.valueOf(DOWNSTREAM_ETL_SYNAPSE_ID));
         when(mockConfig.getInt(Exporter3Service.CONFIG_KEY_EXPORTER_SYNAPSE_ID)).thenReturn((int) EXPORTER_SYNAPSE_ID);
@@ -1017,7 +1019,7 @@ public class Exporter3ServiceTest {
         assertEquals(exporterSubscriptionResult.getSubscriptionArn(), SUBSCRIPTION_ARN);
 
         // Verify backends.
-        String topicName = Exporter3Service.TOPIC_PREFIX_CREATE_STUDY + '-' + TEST_APP_ID;
+        String topicName = Exporter3Service.TOPIC_PREFIX_CREATE_STUDY + '-' + TEST_APP_ID + '-' + BUCKET_SUFFIX;
         verify(mockSnsClient).createTopic(topicName);
         verifySnsSubscribe(TOPIC_ARN_CREATE_STUDY);
 
@@ -1056,7 +1058,7 @@ public class Exporter3ServiceTest {
         assertEquals(exporterSubscriptionResult.getSubscriptionArn(), SUBSCRIPTION_ARN);
 
         // Verify backends.
-        String topicName = Exporter3Service.TOPIC_PREFIX_EXPORT + '-' + TEST_APP_ID;
+        String topicName = Exporter3Service.TOPIC_PREFIX_EXPORT + '-' + TEST_APP_ID + '-' + BUCKET_SUFFIX;
         verify(mockSnsClient).createTopic(topicName);
         verifySnsSubscribe(TOPIC_ARN_EXPORT_FOR_APP);
 
@@ -1084,7 +1086,8 @@ public class Exporter3ServiceTest {
         assertEquals(exporterSubscriptionResult.getSubscriptionArn(), SUBSCRIPTION_ARN);
 
         // Verify backends.
-        String topicName = Exporter3Service.TOPIC_PREFIX_EXPORT + '-' + TEST_APP_ID + '-' + TEST_STUDY_ID;
+        String topicName = Exporter3Service.TOPIC_PREFIX_EXPORT + '-' + TEST_APP_ID + '-' + TEST_STUDY_ID + '-'
+                + BUCKET_SUFFIX;
         verify(mockSnsClient).createTopic(topicName);
         verifySnsSubscribe(TOPIC_ARN_EXPORT_FOR_STUDY);
 
