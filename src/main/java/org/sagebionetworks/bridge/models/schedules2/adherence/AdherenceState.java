@@ -54,8 +54,12 @@ public final class AdherenceState {
         daysSinceEventByEventId = new HashMap<>();
         eventTimestampByEventId = new HashMap<>();
         streamsByStreamKey = new HashMap<>();
-        adherenceByGuid = builder.adherenceRecords.stream()
-                .collect(toMap(AdherenceRecord::getInstanceGuid, (a) -> a));
+        
+        adherenceByGuid = new HashMap<>();
+
+        for (AdherenceRecord adherenceRecord : adherenceRecords) {
+            adherenceByGuid.put(adherenceRecord.getInstanceGuid(), adherenceRecord);
+        }
         
         for (StudyActivityEvent event : builder.events) {
             DateTime eventTimestamp = event.getTimestamp().withZone(zone);
