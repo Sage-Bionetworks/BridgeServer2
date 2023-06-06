@@ -261,6 +261,20 @@ public final class ClientInfo {
     }
     
     static ClientInfo parseUserAgentString(String userAgent) {
+        // BRIDGE-3349: A client bug sometimes causes it to send a User-Agent string, which is two identical strings
+        // concatenated with a comma. This hack checks if the middle character is a comma, and if the front and back
+        // halves of the string are identical.
+        if (userAgent != null) {
+            int midpoint = userAgent.length() / 2;
+            if (userAgent.charAt(midpoint) == ',') {
+                String frontHalf = userAgent.substring(0, midpoint);
+                String backHalf = userAgent.substring(midpoint + 1);
+                if (frontHalf.equals(backHalf)) {
+                    userAgent = frontHalf;
+                }
+            }
+        }
+
         if (StringUtils.isBlank(userAgent) ||
             userAgent.length() > BridgeConstants.MAX_USER_AGENT_LENGTH ||
             MULTI_PARENS.matcher(userAgent).matches() ||

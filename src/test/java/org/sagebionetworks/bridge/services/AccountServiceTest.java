@@ -67,6 +67,7 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
 import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.ReportTypeResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountSecret;
@@ -75,10 +76,13 @@ import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.apps.App;
+import org.sagebionetworks.bridge.models.reports.ReportIndex;
+import org.sagebionetworks.bridge.models.reports.ReportType;
+import org.sagebionetworks.bridge.models.studies.Alert;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
+import org.sagebionetworks.bridge.models.studies.Alert.AlertCategory;
 
 public class AccountServiceTest extends Mockito {
-
     private static final AccountId ACCOUNT_ID_WITH_EMAIL = AccountId.forEmail(TEST_APP_ID, EMAIL);
     private static final DateTime MOCK_DATETIME = DateTime.parse("2017-05-19T14:45:27.593Z");
     private static final String DUMMY_PASSWORD = "Aa!Aa!Aa!Aa!1";
@@ -86,7 +90,8 @@ public class AccountServiceTest extends Mockito {
     private static final String OTHER_EMAIL = "other-email@example.com";
     private static final String OTHER_USER_ID = "other-user-id";
     private static final String OTHER_CLIENT_TIME_ZONE = "Africa/Sao_Tome";
-    
+    private static final String REPORT_ID_1 = "report1";
+    private static final String REPORT_ID_2 = "report2";
     private static final String STUDY_A = "studyA";
     private static final String STUDY_B = "studyB";
     private static final Set<Enrollment> ACCOUNT_ENROLLMENTS = ImmutableSet
@@ -100,7 +105,16 @@ public class AccountServiceTest extends Mockito {
     
     @Mock
     AppService mockAppService;
-    
+
+    @Mock
+    ParticipantDataService mockParticipantDataService;
+
+    @Mock
+    ParticipantFileService mockParticipantFileService;
+
+    @Mock
+    ReportService mockReportService;
+
     @Mock
     StudyActivityEventService mockStudyActivityEventService;
 
@@ -143,6 +157,9 @@ public class AccountServiceTest extends Mockito {
     @Mock
     AccountService mockAccountService;
 
+    @Mock
+    AlertService mockAlertService;
+
     @InjectMocks
     @Spy
     AccountService service;
@@ -155,6 +172,9 @@ public class AccountServiceTest extends Mockito {
     
     @Captor
     ArgumentCaptor<AccountSummarySearch> searchCaptor;
+
+    @Captor
+    ArgumentCaptor<Alert> alertCaptor;
 
     @BeforeClass
     public static void mockNow() {
@@ -210,7 +230,7 @@ public class AccountServiceTest extends Mockito {
         verify(mockCacheProvider).setObject(CacheKey.etag(DateTimeZone.class, TEST_USER_ID), MOCK_DATETIME);
 
         // Verify we also create a participant version.
-        verify(mockParticipantVersionService).createParticipantVersionFromAccount(same(createdAccount));
+        verify(mockParticipantVersionService).createParticipantVersionFromAccount(same(app), same(createdAccount));
     }
     
     @Test
@@ -252,7 +272,11 @@ public class AccountServiceTest extends Mockito {
     @Test
     public void updateAccount() throws Exception {
         mockGetAccountById(ACCOUNT_ID, false);
-        
+
+        App app = App.create();
+        app.setIdentifier(TEST_APP_ID);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
+
         Account updated = Account.create();
         updated.setAppId(TEST_APP_ID);
         updated.setId(TEST_USER_ID);
@@ -265,7 +289,7 @@ public class AccountServiceTest extends Mockito {
         verify(mockCacheProvider).setObject(CacheKey.etag(DateTimeZone.class, TEST_USER_ID), MOCK_DATETIME);
 
         // Verify we also create a participant version.
-        verify(mockParticipantVersionService).createParticipantVersionFromAccount(same(updated));
+        verify(mockParticipantVersionService).createParticipantVersionFromAccount(same(app), same(updated));
     }
     
     @Test
@@ -582,6 +606,20 @@ public class AccountServiceTest extends Mockito {
         assertEquals(event2.getUserId(), TEST_USER_ID);
         assertEquals(event2.getEventId(), "enrollment");
         assertEquals(event2.getTimestamp(), account.getCreatedOn());
+
+        verify(mockAlertService, times(2)).createAlert(alertCaptor.capture());
+        Alert alert1 = getElement(alertCaptor.getAllValues(), Alert::getStudyId, STUDY_A)
+                .orElseThrow(() -> new NullPointerException("STUDY_A new enrollment alert not found"));
+        assertEquals(alert1.getAppId(), TEST_APP_ID);
+        assertEquals(alert1.getStudyId(), STUDY_A);
+        assertEquals(alert1.getUserId(), TEST_USER_ID);
+        assertEquals(alert1.getCategory(), AlertCategory.NEW_ENROLLMENT);
+        Alert alert2 = getElement(alertCaptor.getAllValues(), Alert::getStudyId, STUDY_B)
+                .orElseThrow(() -> new NullPointerException("STUDY_B new enrollment alert not found"));
+        assertEquals(alert2.getAppId(), TEST_APP_ID);
+        assertEquals(alert2.getStudyId(), STUDY_B);
+        assertEquals(alert2.getUserId(), TEST_USER_ID);
+        assertEquals(alert2.getCategory(), AlertCategory.NEW_ENROLLMENT);
     }
 
     @Test
@@ -685,6 +723,13 @@ public class AccountServiceTest extends Mockito {
         assertEquals(event.getUserId(), TEST_USER_ID);
         assertEquals(event.getTimestamp(), MOCK_DATETIME);
         assertEquals(event.getEventId(), "enrollment");
+
+        verify(mockAlertService).createAlert(alertCaptor.capture());
+        Alert alert = alertCaptor.getValue();
+        assertEquals(alert.getAppId(), TEST_APP_ID);
+        assertEquals(alert.getStudyId(), STUDY_B);
+        assertEquals(alert.getUserId(), TEST_USER_ID);
+        assertEquals(alert.getCategory(), AlertCategory.NEW_ENROLLMENT);
     }
     
     @Test
@@ -826,7 +871,7 @@ public class AccountServiceTest extends Mockito {
     }
 
     @Test
-    public void deleteAllAccounts() { 
+    public void deleteAllAccounts() {
         service.deleteAllAccounts(TEST_APP_ID);
         verify(mockAccountDao).deleteAllAccounts(TEST_APP_ID);
     }
@@ -941,6 +986,7 @@ public class AccountServiceTest extends Mockito {
 
     @Test
     public void deleteAccount() {
+        // Mock dependencies.
         Account account = Account.create();
         account.setAppId(TEST_APP_ID);
         account.setId(TEST_USER_ID);
@@ -953,7 +999,15 @@ public class AccountServiceTest extends Mockito {
         account.setEnrollments(enrollments);
         
         when(mockAccountDao.getAccount(accountId)).thenReturn(Optional.of(account));
-        
+
+        ReportIndex reportIndex1 = ReportIndex.create();
+        reportIndex1.setIdentifier(REPORT_ID_1);
+        ReportIndex reportIndex2 = ReportIndex.create();
+        reportIndex2.setIdentifier(REPORT_ID_2);
+        doReturn(new ReportTypeResourceList<>(ImmutableList.of(reportIndex1, reportIndex2))).when(mockReportService)
+                .getReportIndices(TEST_APP_ID, ReportType.PARTICIPANT);
+
+        // Delete account.
         service.deleteAccount(accountId);
         
         verify(service).deleteAccount(accountId);
@@ -964,12 +1018,18 @@ public class AccountServiceTest extends Mockito {
         verify(mockHealthDataService).deleteRecordsForHealthCode(HEALTH_CODE);
         verify(mockHealthDataEx3Service).deleteRecordsForHealthCode(HEALTH_CODE);
         verify(mockNotificationsService).deleteAllRegistrations(TEST_APP_ID, HEALTH_CODE);
+        verify(mockParticipantDataService).deleteAllParticipantData(TEST_USER_ID);
+        verify(mockParticipantFileService).deleteAllFilesForParticipant(TEST_USER_ID);
         verify(mockUploadService).deleteUploadsForHealthCode(HEALTH_CODE);
         verify(mockScheduledActivityService).deleteActivitiesForUser(HEALTH_CODE);
         verify(mockActivityEventService, atLeastOnce()).deleteActivityEvents(TEST_APP_ID, HEALTH_CODE);
         verify(mockAccountDao).deleteAccount(TEST_USER_ID);
         verify(mockCacheProvider).removeObject(CacheKey.etag(DateTimeZone.class, TEST_USER_ID));
         verify(mockCacheProvider).removeObject(CacheKey.etag(StudyActivityEvent.class, TEST_USER_ID));
+
+        verify(mockReportService).getReportIndices(TEST_APP_ID, ReportType.PARTICIPANT);
+        verify(mockReportService).deleteParticipantReport(TEST_APP_ID, TEST_USER_ID, REPORT_ID_1, HEALTH_CODE);
+        verify(mockReportService).deleteParticipantReport(TEST_APP_ID, TEST_USER_ID, REPORT_ID_2, HEALTH_CODE);
     }
     
     @Test

@@ -69,7 +69,8 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
 
     public static StudyAdherenceReport createReport() throws Exception {
         AdherenceState state = createAdherenceState().build();
-        return INSTANCE.generate(state);
+        Schedule2 schedule = createSchedule();
+        return INSTANCE.generate(state, schedule);
     }
     
     public static List<AdherenceRecord> createAdherenceRecords() {
@@ -270,7 +271,8 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
         AdherenceState.Builder builder = createAdherenceState();
         builder.withAdherenceRecords(createAdherenceRecords());
         builder.withClientTimeZone("America/Chicago");
-        StudyAdherenceReport report = INSTANCE.generate(builder.build());
+        Schedule2 schedule = createSchedule();
+        StudyAdherenceReport report = INSTANCE.generate(builder.build(), schedule);
         
         // testAccount is set in the service, not the generator
         assertEquals(report.getAdherencePercent(), Integer.valueOf(50));
@@ -541,7 +543,8 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
     public void generate_noClientTimeZone() throws Exception {
         AdherenceState.Builder builder = createAdherenceState();
         builder.withAdherenceRecords(createAdherenceRecords());
-        StudyAdherenceReport report = INSTANCE.generate(builder.build());
+        Schedule2 schedule = createSchedule();
+        StudyAdherenceReport report = INSTANCE.generate(builder.build(), schedule);
         
         assertEquals(report.getEventTimestamps().get("timeline_retrieved"), TIMELINE_RETRIEVED_TS);
         assertEquals(report.getEventTimestamps().get("study_burst:Study Burst:01"), STUDY_BURST_1_TS);
@@ -553,7 +556,8 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
     public void generate_noAdherenceRecords() throws Exception {
         AdherenceState.Builder builder = createAdherenceState();
         builder.withClientTimeZone("America/Chicago");
-        StudyAdherenceReport report = INSTANCE.generate(builder.build());
+        Schedule2 schedule = createSchedule();
+        StudyAdherenceReport report = INSTANCE.generate(builder.build(), schedule);
         
         assertEquals(report.getAdherencePercent(), Integer.valueOf(0));
         StudyReportWeek week1 = report.getWeeks().get(0);
@@ -588,8 +592,9 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
         builder.withAdherenceRecords(createAdherenceRecords());
         builder.withClientTimeZone("America/Chicago");
         builder.withEvents(ImmutableList.of());
+        Schedule2 schedule = createSchedule();
         
-        StudyAdherenceReport report = INSTANCE.generate(builder.build());
+        StudyAdherenceReport report = INSTANCE.generate(builder.build(), schedule);
         
         // testAccount is set in the service, not the generator
         assertNull(report.getAdherencePercent());
@@ -614,8 +619,9 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
         builder.withMetadata(ImmutableList.of());
         builder.withAdherenceRecords(createAdherenceRecords());
         builder.withClientTimeZone("America/Chicago");
+        Schedule2 schedule = createSchedule();
         
-        StudyAdherenceReport report = INSTANCE.generate(builder.build());
+        StudyAdherenceReport report = INSTANCE.generate(builder.build(), schedule);
         assertEquals(report.getProgression(), ParticipantStudyProgress.UNSTARTED);
         assertTrue(report.getWeeks().isEmpty());
         assertTrue(report.getUnsetEventIds().isEmpty());
@@ -641,7 +647,8 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
         builder.withEvents(createEvents().subList(1,  createEvents().size()));
         builder.withAdherenceRecords(createAdherenceRecords());
         builder.withClientTimeZone("America/Chicago");
-        StudyAdherenceReport report = INSTANCE.generate(builder.build());
+        Schedule2 schedule = createSchedule();
+        StudyAdherenceReport report = INSTANCE.generate(builder.build(), schedule);
         
         // testAccount is set in the service, not the generator
         assertEquals(report.getAdherencePercent(), Integer.valueOf(0));
@@ -714,7 +721,7 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
         builder.withMetadata(metadata);
         builder.withEvents(events);
         
-        StudyAdherenceReport report = INSTANCE.generate(builder.build());
+        StudyAdherenceReport report = INSTANCE.generate(builder.build(), schedule);
         
         // testAccount is set in the service, not the generator
         assertEquals(report.getAdherencePercent(), Integer.valueOf(40));
@@ -834,7 +841,9 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
         AdherenceState state = createAdherenceState()
                 .withNow(DateTime.parse("2022-04-15T00:00:00.000-08:00"))
                 .withEvents(events).build();
-        StudyAdherenceReport report = INSTANCE.generate(state);
+        Schedule2 schedule = createSchedule();
+    
+        StudyAdherenceReport report = INSTANCE.generate(state, schedule);
         
         assertEquals(report.getNextActivity().getSessionGuid(), "session5");
         assertEquals(report.getNextActivity().getSessionName(), "Supplemental Survey");
@@ -845,7 +854,7 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
         // should be null in this case.
         state = createAdherenceState().withNow(DateTime.parse("2022-04-30T00:00:00.000-08:00"))
                 .withEvents(events).build();
-        report = INSTANCE.generate(state);
+        report = INSTANCE.generate(state, schedule);
         assertNull(report.getNextActivity());
     }    
     
@@ -860,8 +869,7 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
         AdherenceState.Builder builder = createAdherenceState();
         builder.withMetadata(meta);
         builder.withNow(DateTime.parse("2022-04-15T12:00:00.000-08:00"));
-        
-        StudyAdherenceReport report = INSTANCE.generate(builder.build());
+        StudyAdherenceReport report = INSTANCE.generate(builder.build(), schedule);
         
         StudyReportWeek weekReport = report.getWeekReport();
         
@@ -903,7 +911,7 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
         builder.withMetadata(meta);
         builder.withNow(DateTime.parse("2022-04-12T12:00:00.000-08:00"));
         
-        StudyAdherenceReport report = INSTANCE.generate(builder.build());
+        StudyAdherenceReport report = INSTANCE.generate(builder.build(), schedule);
         
         StudyReportWeek weekReport = report.getWeekReport();
         
@@ -966,7 +974,8 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
     @Test
     public void todaySet() throws Exception {
         AdherenceState state = createAdherenceState().build();
-        StudyAdherenceReport report = INSTANCE.generate(state);
+        Schedule2 schedule = createSchedule();
+        StudyAdherenceReport report = INSTANCE.generate(state, schedule);
         
         for (StudyReportWeek week : report.getWeeks()) {
             for (List<EventStreamDay> days : week.getByDayEntries().values()) {
@@ -985,7 +994,8 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
     public void timestampAfterSchedule() throws Exception {
         AdherenceState state = createAdherenceState()
                 .withNow(DateTime.parse("2022-05-01T00:00:00.000-08:00")).build();
-        StudyAdherenceReport report = INSTANCE.generate(state);
+        Schedule2 schedule = createSchedule();
+        StudyAdherenceReport report = INSTANCE.generate(state, schedule);
         for (StudyReportWeek week : report.getWeeks()) {
             for (List<EventStreamDay> days : week.getByDayEntries().values()) {
                 for (EventStreamDay oneDay : days) {
@@ -1001,7 +1011,8 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
     public void timestampBeforeSchedule() throws Exception {
         AdherenceState state = createAdherenceState()
                 .withNow(DateTime.parse("2020-01-01T00:00:00.000-08:00")).build();
-        StudyAdherenceReport report = INSTANCE.generate(state);
+        Schedule2 schedule = createSchedule();
+        StudyAdherenceReport report = INSTANCE.generate(state, schedule);
         
         for (StudyReportWeek week : report.getWeeks()) {
             for (List<EventStreamDay> days : week.getByDayEntries().values()) {
@@ -1052,7 +1063,7 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
                 .build();
         
         // this now has a gap and the 15th (now) falls into it
-        StudyAdherenceReport report = INSTANCE.generate(state);
+        StudyAdherenceReport report = INSTANCE.generate(state, schedule);
         
         List<StudyReportWeek> weeks = ImmutableList.copyOf(report.getWeeks());
         assertEquals(weeks.get(0).getWeekInStudy(), 1);
@@ -1127,7 +1138,7 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
         builder.withMetadata(meta);
         builder.withNow(DateTime.parse("2022-04-15T12:00:00.000-08:00"));
         
-        StudyAdherenceReport report = INSTANCE.generate(builder.build());
+        StudyAdherenceReport report = INSTANCE.generate(builder.build(), schedule);
         
         // Lacking any relevant events, we just show "Week 1" with any relevant tasks. This should
         // be reported as "unstarted" which is usually shown differently in UIs instead of this week one 
@@ -1157,7 +1168,7 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
         builder.withAdherenceRecords(createAdherenceRecords());
         builder.withNow(DateTime.parse("2022-04-15T12:00:00.000-08:00"));
         
-        StudyAdherenceReport report = INSTANCE.generate(builder.build());
+        StudyAdherenceReport report = INSTANCE.generate(builder.build(), schedule);
         
         StudyReportWeek weekReport = report.getWeekReport();
         assertTrue(weekReport.getByDayEntries().get(0).isEmpty());
@@ -1183,7 +1194,7 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
         builder.withMetadata(meta);
         builder.withNow(DateTime.parse("2022-04-15T12:00:00.000-08:00"));
         
-        StudyAdherenceReport report = INSTANCE.generate(builder.build());
+        StudyAdherenceReport report = INSTANCE.generate(builder.build(), schedule);
         
         StudyReportWeek weekReport = report.getWeekReport();
         
@@ -1237,7 +1248,7 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
         // Remove initial survey
         builder.withAdherenceRecords(records.subList(1, records.size()));
         
-        StudyAdherenceReport report = INSTANCE.generate(builder.build());
+        StudyAdherenceReport report = INSTANCE.generate(builder.build(), schedule);
         // If the initial survey is not done and not carried over (we remove the AR for it),
         // adherence is 25%.
         assertEquals(report.getAdherencePercent(), Integer.valueOf(25));
@@ -1260,7 +1271,7 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
         // Remove initial survey
         builder.withAdherenceRecords(records);
         
-        StudyAdherenceReport report = INSTANCE.generate(builder.build());
+        StudyAdherenceReport report = INSTANCE.generate(builder.build(), schedule);
         // If the initial survey is declared as done by including the adherence recored for it,
         // adherence is 50%.
         assertEquals(report.getAdherencePercent(), Integer.valueOf(50));
@@ -1312,7 +1323,8 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
                 .withMetadata(createTimelineMetadata())
                 .withEvents(createEvents())
                 .withNow(DateTime.parse("2022-03-7T01:00:00.000-08:00")).build();
-        StudyAdherenceReport report = INSTANCE.generate(state);
+        Schedule2 schedule = createSchedule();
+        StudyAdherenceReport report = INSTANCE.generate(state, schedule);
         
         List<StudyReportWeek> weeks = ImmutableList.copyOf(report.getWeeks());
         assertEquals(weeks.get(0).getAdherencePercent(), Integer.valueOf(0));
@@ -1376,7 +1388,7 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
                 .withNow(NOW).build();
 
         // This used to throw an exception but now returns the full date range of the dates.
-        StudyAdherenceReport report = INSTANCE.generate(state);
+        StudyAdherenceReport report = INSTANCE.generate(state, schedule);
         assertEquals(report.getDateRange().getStartDate(), LocalDate.parse("2022-02-08"));
         assertEquals(report.getDateRange().getEndDate(), LocalDate.parse("2022-03-08"));
     }
@@ -1444,7 +1456,7 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
                 .withMetadata(metadata)
                 .withNow(now).build();
         
-        StudyAdherenceReport report = StudyAdherenceReportGenerator.INSTANCE.generate(state);
+        StudyAdherenceReport report = StudyAdherenceReportGenerator.INSTANCE.generate(state, schedule);
         
         StudyReportWeek weeklyReport = report.getWeekReport();
         
@@ -1548,7 +1560,7 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
                 .withStudyStartEventId("custom:First Clinic visit")
                 .build();
             
-        StudyAdherenceReport report = StudyAdherenceReportGenerator.INSTANCE.generate(state);
+        StudyAdherenceReport report = StudyAdherenceReportGenerator.INSTANCE.generate(state, schedule);
         StudyReportWeek weeklyReport = report.getWeekReport();
         
         assertStartDate(weeklyReport, 0, LocalDate.parse("2022-04-08"));
@@ -1615,7 +1627,7 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
                 .withStudyStartEventId("custom:event2")
                 .build();
             
-        StudyAdherenceReport report = StudyAdherenceReportGenerator.INSTANCE.generate(state);
+        StudyAdherenceReport report = StudyAdherenceReportGenerator.INSTANCE.generate(state, schedule);
         
         StudyReportWeek week = report.getWeeks().get(0);
         assertEquals(week.getWeekInStudy(), -1);
@@ -1713,7 +1725,7 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
                 .withStudyStartEventId("custom:event2")
                 .build();
             
-        StudyAdherenceReport report = StudyAdherenceReportGenerator.INSTANCE.generate(state);
+        StudyAdherenceReport report = StudyAdherenceReportGenerator.INSTANCE.generate(state, schedule);
         
         StudyReportWeek week = report.getWeeks().get(0);
         assertEquals(week.getWeekInStudy(), 0);

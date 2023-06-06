@@ -31,10 +31,10 @@ import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dao.HealthCodeDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
-import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.NotFoundException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.upload.Upload;
@@ -59,7 +59,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 
 public class DynamoUploadDaoTest {
-
+    private static final String INDEX_NAME_HEALTH_CODE = "healthCode";
     private static String UPLOAD_ID = "uploadId";
     private static String UPLOAD_ID_2 = "uploadId2";
     private static String UPLOAD_ID_3 = "uploadId3";
@@ -196,7 +196,7 @@ public class DynamoUploadDaoTest {
         assertEquals(retVal.getAppId(), TEST_APP_ID);
     }
 
-    @Test(expectedExceptions = EntityNotFoundException.class)
+    @Test(expectedExceptions = NotFoundException.class)
     public void getUploadWithoutAppIdAndNoHealthCodeRecord() {
         DynamoUpload2 upload = new DynamoUpload2();
         upload.setHealthCode("healthCode");
@@ -223,6 +223,25 @@ public class DynamoUploadDaoTest {
 
         // validate we passed in the expected key
         assertEquals(uploadCaptor.getValue().getUploadId(), "test-get-404");
+    }
+
+    @Test
+    public void getUploadNoThrow_WithoutAppIdAndNoHealthCodeRecord() {
+        DynamoUpload2 upload = new DynamoUpload2();
+        upload.setHealthCode("healthCode");
+        when(mockMapper.load(any())).thenReturn(upload);
+
+        when(healthCodeDao.getAppId(upload.getHealthCode())).thenReturn(null);
+
+        Upload result = dao.getUploadNoThrow("test-get-upload");
+        assertNull(result);
+    }
+
+    @Test
+    public void getUploadNoThrow_NotFound() {
+        when(mockMapper.load(any())).thenReturn(null);
+        Upload result = dao.getUploadNoThrow("test-get-upload");
+        assertNull(result);
     }
 
     @Test
@@ -479,12 +498,22 @@ public class DynamoUploadDaoTest {
 
     @Test
     public void deleteUploadsForHealthCode() {
-        List<DynamoUpload2> uploads = ImmutableList.of(new DynamoUpload2());
-        when(mockIndexHelper.queryKeys(DynamoUpload2.class, "healthCode", "oneHealthCode", null)).thenReturn(uploads);
+        // Make uploads to delete.
+        DynamoUpload2 upload1 = new DynamoUpload2();
+        upload1.setUploadId(UPLOAD_ID);
 
-        dao.deleteUploadsForHealthCode("oneHealthCode");
+        DynamoUpload2 upload2 = new DynamoUpload2();
+        upload2.setUploadId(UPLOAD_ID_2);
 
-        verify(mockIndexHelper).queryKeys(DynamoUpload2.class, "healthCode", "oneHealthCode", null);
+        List<DynamoUpload2> uploads = ImmutableList.of(upload1, upload2);
+        when(mockIndexHelper.queryKeys(DynamoUpload2.class, INDEX_NAME_HEALTH_CODE, TestConstants.HEALTH_CODE, null)).thenReturn(uploads);
+
+        // Execute.
+        List<String> uploadIdList = dao.deleteUploadsForHealthCode(TestConstants.HEALTH_CODE);
+        assertEquals(uploadIdList, ImmutableList.of(UPLOAD_ID, UPLOAD_ID_2));
+
+        // Verify dependencies.
+        verify(mockIndexHelper).queryKeys(DynamoUpload2.class, INDEX_NAME_HEALTH_CODE, TestConstants.HEALTH_CODE, null);
         verify(mockMapper).batchDelete(uploads);
     }
 
@@ -507,6 +536,13 @@ public class DynamoUploadDaoTest {
         Upload upload = new DynamoUpload2();
 
         dao.uploadComplete(APP, upload);
+    }
+
+    @Test
+    public void updateUpload() {
+        Upload upload = Upload.create();
+        dao.updateUpload(upload);
+        verify(mockMapper).save(upload);
     }
 
     private static UploadRequest createUploadRequest() {

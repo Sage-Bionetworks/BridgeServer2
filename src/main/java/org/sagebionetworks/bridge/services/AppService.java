@@ -65,11 +65,17 @@ import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.GuidVersionHolder;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.appconfig.AppConfig;
+import org.sagebionetworks.bridge.models.appconfig.AppConfigElement;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
+import org.sagebionetworks.bridge.models.reports.ReportIndex;
+import org.sagebionetworks.bridge.models.reports.ReportType;
+import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.apps.AppAndUsers;
 import org.sagebionetworks.bridge.models.templates.Template;
@@ -120,13 +126,25 @@ public class AppService {
     @Resource(name="uploadCertificateService")
     private UploadCertificateService uploadCertService;
     @Autowired
+    private AppConfigService appConfigService;
+    @Autowired
+    private AppConfigElementService appConfigElementService;
+    @Autowired
     private AppDao appDao;
     @Autowired
     private CacheProvider cacheProvider;
     @Autowired
+    private HealthDataDocumentationService healthDataDocumentationService;
+    @Autowired
+    private ReportService reportService;
+    @Autowired
+    private SchedulePlanService schedulePlanService;
+    @Autowired
     private SubpopulationService subpopService;
     @Autowired
     private NotificationTopicService topicService;
+    @Autowired
+    private UploadSchemaService uploadSchemaService;
     @Autowired
     private EmailVerificationService emailVerificationService;
     @Autowired
@@ -151,6 +169,8 @@ public class AppService {
     private AccountWorkflowService accountWorkflowService;
     @Autowired
     private AdminAccountService adminAccountService;
+    @Autowired
+    private DemographicService demographicService;
     
     // Not defaults, if you wish to change these, change in source. Not configurable per app
     private String appEmailVerificationTemplate;
@@ -575,8 +595,10 @@ public class AppService {
         } else {
             // delete app data
             accountService.deleteAllAccounts(existing.getIdentifier());
+            healthDataDocumentationService.deleteAllHealthDataDocumentation(identifier);
             studyService.deleteAllStudies(existing.getIdentifier());
             scheduleService.deleteAllSchedules(existing.getIdentifier());
+            uploadSchemaService.deleteAllUploadSchemasAllRevisionsPermanently(identifier);
             assessmentResourceService.deleteAllAssessmentResources(existing.getIdentifier());
             assessmentService.deleteAllAssessments(existing.getIdentifier());
             organizationService.deleteAllOrganizations(existing.getIdentifier());
@@ -586,7 +608,32 @@ public class AppService {
             subpopService.deleteAllSubpopulations(existing.getIdentifier());
             topicService.deleteAllTopics(existing.getIdentifier());
             fileService.deleteAllAppFiles(existing.getIdentifier());
-            
+            demographicService.deleteAllValidationConfigs(existing.getIdentifier(), null);
+
+            List<AppConfig> appConfigList = appConfigService.getAppConfigs(identifier, true);
+            for (AppConfig appConfig : appConfigList) {
+                appConfigService.deleteAppConfigPermanently(identifier, appConfig.getGuid());
+            }
+
+            List<AppConfigElement> appConfigElementList = appConfigElementService.getMostRecentElements(identifier,
+                    true);
+            for (AppConfigElement appConfigElement : appConfigElementList) {
+                appConfigElementService.deleteElementAllRevisionsPermanently(identifier, appConfigElement.getId());
+            }
+
+            List<? extends ReportIndex> reportIndexList = reportService.getReportIndices(identifier, ReportType.STUDY)
+                    .getItems();
+            for (ReportIndex reportIndex : reportIndexList) {
+                reportService.deleteStudyReport(identifier, reportIndex.getIdentifier());
+            }
+
+            // Note: ClientInfo isn't actually used anymore. Pass in a dummy value.
+            List<SchedulePlan> schedulePlanList = schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT,
+                    identifier, true);
+            for (SchedulePlan schedulePlan : schedulePlanList) {
+                schedulePlanService.deleteSchedulePlanPermanently(identifier, schedulePlan.getGuid());
+            }
+
             // actual delete
             appDao.deleteApp(existing);
         }

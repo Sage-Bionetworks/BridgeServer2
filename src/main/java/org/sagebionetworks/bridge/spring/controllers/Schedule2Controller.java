@@ -125,8 +125,19 @@ public class Schedule2Controller extends BaseController {
     @GetMapping("/v1/apps/{appId}/timelinemetadata/{instanceGuid}")
     public TimelineMetadataView getTimelineMetadataForWorker(@PathVariable String appId, @PathVariable String instanceGuid) { 
         getAuthenticatedSession(WORKER);
-        
+
         Optional<TimelineMetadata> optional = service.getTimelineMetadata(instanceGuid);
-        return (optional.isPresent()) ? new TimelineMetadataView(optional.get()) : EMPTY_VIEW;
+        if (optional.isPresent()) {
+            // Check that the timeline metadata is from the correct app.
+            // While the Worker does have permissions to access all apps, we want to validate that the timeline is from
+            // the app we expect to mitigate any possibility of cross-app data leaks.
+            TimelineMetadata timelineMetadata = optional.get();
+            if (!appId.equals(timelineMetadata.getAppId())) {
+                return EMPTY_VIEW;
+            }
+            return new TimelineMetadataView(timelineMetadata);
+        } else {
+            return EMPTY_VIEW;
+        }
     }
 }

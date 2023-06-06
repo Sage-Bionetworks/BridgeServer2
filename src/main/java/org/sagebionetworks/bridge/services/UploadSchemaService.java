@@ -278,6 +278,12 @@ public class UploadSchemaService {
         return uploadSchemaDao.getAllUploadSchemasAllRevisions(appId, includeDeleted);
     }
 
+    /** Internal method to delete all revisions of all upload schemas in an app permanently. */
+    public void deleteAllUploadSchemasAllRevisionsPermanently(String appId) {
+        List<UploadSchema> schemaList = uploadSchemaDao.getAllUploadSchemasAllRevisions(appId, true);
+        uploadSchemaDao.deleteUploadSchemasPermanently(schemaList);
+    }
+
     /** Service handler for fetching the most recent revision of all upload schemas in a app. */
     public List<UploadSchema> getUploadSchemasForApp(String appId, boolean includeDeleted) {
         // Get all schemas. No simple query for just latest schemas.

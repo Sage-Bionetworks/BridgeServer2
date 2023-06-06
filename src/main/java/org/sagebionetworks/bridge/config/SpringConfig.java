@@ -74,6 +74,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoAppConfig;
 import org.sagebionetworks.bridge.dynamodb.DynamoAppConfigElement;
 import org.sagebionetworks.bridge.dynamodb.DynamoCompoundActivityDefinition;
 import org.sagebionetworks.bridge.dynamodb.DynamoCriteria;
+import org.sagebionetworks.bridge.dynamodb.DynamoDemographicValuesValidationConfig;
 import org.sagebionetworks.bridge.dynamodb.DynamoExternalIdentifier;
 import org.sagebionetworks.bridge.dynamodb.DynamoFPHSExternalIdentifier;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthCode;
@@ -125,6 +126,9 @@ import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.assessments.HibernateAssessment;
 import org.sagebionetworks.bridge.models.assessments.HibernateAssessmentResource;
 import org.sagebionetworks.bridge.models.assessments.config.HibernateAssessmentConfig;
+import org.sagebionetworks.bridge.models.demographics.Demographic;
+import org.sagebionetworks.bridge.models.demographics.DemographicUser;
+import org.sagebionetworks.bridge.models.demographics.DemographicValue;
 import org.sagebionetworks.bridge.models.files.FileMetadata;
 import org.sagebionetworks.bridge.models.files.FileRevision;
 import org.sagebionetworks.bridge.models.organizations.HibernateOrganization;
@@ -135,6 +139,7 @@ import org.sagebionetworks.bridge.models.schedules2.Session;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.weekly.WeeklyAdherenceReport;
 import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
+import org.sagebionetworks.bridge.models.studies.Alert;
 import org.sagebionetworks.bridge.redis.JedisOps;
 import org.sagebionetworks.bridge.s3.S3Helper;
 import org.sagebionetworks.bridge.spring.filters.MetricsFilter;
@@ -404,6 +409,12 @@ public class SpringConfig {
     public DynamoDBMapper appConfigElementDdbMapper(DynamoUtils dynamoUtils) {
         return dynamoUtils.getMapper(DynamoAppConfigElement.class);
     }
+
+    @Bean(name = "demographicValidationDdbMapper")
+    @Autowired
+    public DynamoDBMapper demographicValidationDdbMapper(DynamoUtils dynamoUtils) {
+        return dynamoUtils.getMapper(DynamoDemographicValuesValidationConfig.class);
+    }
     
     @Bean(name = "surveyMapper")
     @Autowired
@@ -655,6 +666,10 @@ public class SpringConfig {
         metadataSources.addAnnotatedClass(Notification.class);
         metadataSources.addAnnotatedClass(WeeklyAdherenceReport.class);
         metadataSources.addAnnotatedClass(Permission.class);
+        metadataSources.addAnnotatedClass(Demographic.class);
+        metadataSources.addAnnotatedClass(DemographicUser.class);
+        metadataSources.addAnnotatedClass(DemographicValue.class);
+        metadataSources.addAnnotatedClass(Alert.class);
         
         SessionFactory factory = metadataSources.buildMetadata().buildSessionFactory();
         

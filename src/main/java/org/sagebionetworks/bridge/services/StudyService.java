@@ -10,6 +10,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.models.ResourceList.INCLUDE_DELETED;
 import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
@@ -39,6 +40,7 @@ import org.sagebionetworks.bridge.dao.StudyDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEventIdsMap;
@@ -65,6 +67,10 @@ public class StudyService {
     private Schedule2Service scheduleService;
     @Autowired
     private AccountService accountService;
+    @Autowired
+    private DemographicService demographicService;
+    @Autowired
+    private AlertService alertService;
     
     protected String getDefaultTimeZoneId() { 
         return DateTimeZone.getDefault().getID();
@@ -286,6 +292,9 @@ public class StudyService {
         
         cacheKey = CacheKey.etag(Study.class, appId, studyId);
         cacheProvider.removeObject(cacheKey);
+
+        // delete alerts for this study
+        alertService.deleteAlertsForStudy(appId, studyId);
     }
     
     public void deleteStudyPermanently(String appId, String studyId) {
@@ -310,6 +319,8 @@ public class StudyService {
 
         cacheKey = CacheKey.etag(Study.class, appId, studyId);
         cacheProvider.removeObject(cacheKey);
+
+        demographicService.deleteAllValidationConfigs(appId, studyId);
     }
     
     public void deleteAllStudies(String appId) {
@@ -379,6 +390,36 @@ public class StudyService {
     }
     
     /**
+     * Moves a study to design without regard to the study's current phase.
+     * Only available to SUPERADMIN users.
+     */
+    public Study revertToDesign(String appId, String studyId) {
+        checkNotNull(appId);
+        checkNotNull(studyId);
+        
+        if (!RequestContext.get().isInRole(SUPERADMIN)) {
+            throw new UnauthorizedException("Only superadmins can revert studies to design");
+        }
+    
+        Study study = studyDao.getStudy(appId, studyId);
+        if (study == null) {
+            throw new EntityNotFoundException(Study.class);
+        }
+    
+        study.setPhase(DESIGN);
+        study.setModifiedOn(getDateTime());
+        studyDao.updateStudy(study);
+    
+        CacheKey cacheKey = CacheKey.publicStudy(appId, studyId);
+        cacheProvider.removeObject(cacheKey);
+    
+        cacheKey = CacheKey.etag(Study.class, appId, studyId);
+        cacheProvider.setObject(cacheKey, study.getModifiedOn());
+    
+        return study;
+    }
+    
+    /**
      * Simple phase transition with no other business logic.
      */
     private Study phaseTransition(String appId, String studyId, StudyPhase targetPhase, Consumer<Study> consumer) {
@@ -409,6 +450,11 @@ public class StudyService {
         
         cacheKey = CacheKey.etag(Study.class, appId, studyId);
         cacheProvider.setObject(cacheKey, study.getModifiedOn());
+
+        // delete alerts for this study if it is transitioned to completed
+        if (targetPhase == StudyPhase.COMPLETED) {
+            alertService.deleteAlertsForStudy(appId, studyId);
+        }
 
         return study;
     }

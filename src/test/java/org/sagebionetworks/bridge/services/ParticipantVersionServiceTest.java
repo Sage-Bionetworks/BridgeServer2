@@ -13,27 +13,18 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import com.amazonaws.services.sqs.AmazonSQS;
-import com.amazonaws.services.sqs.model.SendMessageResult;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
-
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
@@ -46,9 +37,22 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ParticipantVersion;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.apps.App;
+import org.sagebionetworks.bridge.models.demographics.Demographic;
+import org.sagebionetworks.bridge.models.demographics.DemographicUser;
+import org.sagebionetworks.bridge.models.demographics.DemographicValue;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.worker.Ex3ParticipantVersionRequest;
 import org.sagebionetworks.bridge.models.worker.WorkerRequest;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
+
+import com.amazonaws.services.sqs.AmazonSQS;
+import com.amazonaws.services.sqs.model.SendMessageResult;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 
 public class ParticipantVersionServiceTest {
     private static final String ACCOUNT_ID = "test-account-id";
@@ -62,10 +66,22 @@ public class ParticipantVersionServiceTest {
     private static final String STUDY_ID_2 = "study2";
     private static final Map<String, String> STUDY_MEMBERSHIPS = ImmutableMap.of(STUDY_ID_1, EXTERNAL_ID_1);
     private static final String TIME_ZONE = "America/Los_Angeles";
+    private static final Map<String, Demographic> APP_DEMOGRAPHICS = ImmutableMap.of("category1", new Demographic("id1",
+            null, "category1", false, ImmutableList.of(new DemographicValue("value1")), "units"));
+    private static final Map<String, Map<String, Demographic>> STUDY_DEMOGRAPHICS = ImmutableMap.of(
+            STUDY_ID_1,
+            ImmutableMap.of("category2", new Demographic("id2", null, "category2", true,
+                    ImmutableList.of(new DemographicValue("value2"), new DemographicValue("3"),
+                            new DemographicValue("-4"), new DemographicValue("true"),
+                            new DemographicValue("k", "v")),
+                    null)));
     private static final String WORKER_QUEUE_URL = "http://example.com/dummy-sqs-url";
 
     @Mock
     private AppService mockAppService;
+
+    @Mock
+    private DemographicService demographicService;
 
     @Mock
     private ParticipantVersionDao mockParticipantVersionDao;
@@ -110,9 +126,18 @@ public class ParticipantVersionServiceTest {
         when(mockParticipantVersionDao.getLatestParticipantVersionForHealthCode(TestConstants.TEST_APP_ID,
                 TestConstants.HEALTH_CODE)).thenReturn(Optional.empty());
         when(mockSqsClient.sendMessage(anyString(), anyString())).thenReturn(new SendMessageResult());
+        DemographicUser appDemographicUser = new DemographicUser();
+        appDemographicUser.setDemographics(APP_DEMOGRAPHICS);
+        when(demographicService.getDemographicUser(TestConstants.TEST_APP_ID, null, ACCOUNT_ID)).thenReturn(Optional.of(appDemographicUser));
+        DemographicUser study1DemographicUser = new DemographicUser();
+        study1DemographicUser.setDemographics(STUDY_DEMOGRAPHICS.get(STUDY_ID_1));
+        when(demographicService.getDemographicUser(TestConstants.TEST_APP_ID, STUDY_ID_1, ACCOUNT_ID)).thenReturn(Optional.of(study1DemographicUser));
+        // account is in this study but does not have demographics in it
+        when(demographicService.getDemographicUser(TestConstants.TEST_APP_ID, STUDY_ID_2, ACCOUNT_ID)).thenReturn(Optional.empty());
 
         // Make Account. Populate it with attributes we care about for Participant Versions.
         Account account = Account.create();
+        account.setId(ACCOUNT_ID);
         account.setAppId(TestConstants.TEST_APP_ID);
         account.setHealthCode(TestConstants.HEALTH_CODE);
         account.setCreatedOn(CREATED_ON);
@@ -131,6 +156,9 @@ public class ParticipantVersionServiceTest {
         ArgumentCaptor<ParticipantVersion> participantVersionCaptor = ArgumentCaptor.forClass(
                 ParticipantVersion.class);
         verify(mockParticipantVersionDao).createParticipantVersion(participantVersionCaptor.capture());
+        verify(demographicService).getDemographicUser(TestConstants.TEST_APP_ID, null, ACCOUNT_ID);
+        verify(demographicService).getDemographicUser(TestConstants.TEST_APP_ID, STUDY_ID_1, ACCOUNT_ID);
+        verify(demographicService).getDemographicUser(TestConstants.TEST_APP_ID, STUDY_ID_2, ACCOUNT_ID);
 
         ParticipantVersion participantVersion = participantVersionCaptor.getValue();
         assertEquals(participantVersion.getAppId(), TestConstants.TEST_APP_ID);
@@ -142,6 +170,10 @@ public class ParticipantVersionServiceTest {
         assertEquals(participantVersion.getParticipantVersion(), 1);
         assertEquals(participantVersion.getSharingScope(), SharingScope.ALL_QUALIFIED_RESEARCHERS);
         assertEquals(participantVersion.getTimeZone(), TIME_ZONE);
+        assertEquals(participantVersion.getAppDemographics(), APP_DEMOGRAPHICS);
+        Map<String, Map<String, Demographic>> expectedStudyDemographics = new HashMap<>(STUDY_DEMOGRAPHICS);
+        expectedStudyDemographics.put(STUDY_ID_2, ImmutableMap.of());
+        assertEquals(participantVersion.getStudyDemographics(), expectedStudyDemographics);
 
         Map<String, String> studyMembershipMap = participantVersion.getStudyMemberships();
         assertEquals(studyMembershipMap.size(), 2);
@@ -203,6 +235,36 @@ public class ParticipantVersionServiceTest {
 
         participantVersionService.createParticipantVersionFromAccount(account);
         verifyZeroInteractions(mockParticipantVersionDao);
+    }
+
+    @Test
+    public void createParticipantVersionFromAccount_noAppDemographics() {
+        when(mockSqsClient.sendMessage(anyString(), anyString())).thenReturn(new SendMessageResult());
+        when(demographicService.getDemographicUser(TestConstants.TEST_APP_ID, null, ACCOUNT_ID))
+                .thenReturn(Optional.empty());
+
+        Account account = Account.create();
+        account.setId(ACCOUNT_ID);
+        account.setAppId(TestConstants.TEST_APP_ID);
+        account.setHealthCode(TestConstants.HEALTH_CODE);
+        account.setCreatedOn(CREATED_ON);
+        account.setDataGroups(DATA_GROUPS);
+        account.setLanguages(LANGUAGES);
+        account.setSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS);
+        account.setClientTimeZone(TIME_ZONE);
+        Enrollment enrollment = Enrollment.create(TestConstants.TEST_APP_ID, STUDY_ID_1, ACCOUNT_ID, EXTERNAL_ID_1);
+        account.setEnrollments(ImmutableSet.of(enrollment));
+
+        // Execute and validate.
+        participantVersionService.createParticipantVersionFromAccount(account);
+
+        ArgumentCaptor<ParticipantVersion> participantVersionCaptor = ArgumentCaptor.forClass(
+                ParticipantVersion.class);
+        verify(mockParticipantVersionDao).createParticipantVersion(participantVersionCaptor.capture());
+        verify(demographicService).getDemographicUser(TestConstants.TEST_APP_ID, null, ACCOUNT_ID);
+
+        ParticipantVersion participantVersion = participantVersionCaptor.getValue();
+        assertEquals(participantVersion.getAppDemographics(), null);
     }
 
     // branch coverage: initial version with no createdOn
@@ -371,6 +433,70 @@ public class ParticipantVersionServiceTest {
         assertFalse(ParticipantVersionService.isIdenticalParticipantVersion(participantVersion1, participantVersion2));
     }
 
+    @Test
+    public void isIdenticalParticipantVersion_SameAppDemographics() {
+        ParticipantVersion participantVersion1 = makeParticipantVersion();
+        participantVersion1.setAppDemographics(
+                ImmutableMap.of("category1", new Demographic("id1", new DemographicUser(), "category1",
+                        false, ImmutableList.of(new DemographicValue("value1")), "units")));
+
+        ParticipantVersion participantVersion2 = makeParticipantVersion();
+        // need deep copy so re-create
+        // id, demographicUser, and categoryName should be ignored
+        participantVersion2.setAppDemographics(
+                ImmutableMap.of("category1", new Demographic(null, null, null, false,
+                        ImmutableList.of(new DemographicValue("value1")), "units")));
+
+        assertTrue(ParticipantVersionService.isIdenticalParticipantVersion(participantVersion1, participantVersion2));
+    }
+
+    @Test
+    public void isIdenticalParticipantVersion_DifferentAppDemographics() {
+        ParticipantVersion participantVersion1 = makeParticipantVersion();
+        participantVersion1.setAppDemographics(APP_DEMOGRAPHICS);
+
+        ParticipantVersion participantVersion2 = makeParticipantVersion();
+        participantVersion2.setAppDemographics(ImmutableMap.<String, Demographic>builder()
+                .putAll(APP_DEMOGRAPHICS).put("another category", new Demographic()).build());
+
+        assertFalse(ParticipantVersionService.isIdenticalParticipantVersion(participantVersion1, participantVersion2));
+    }
+
+    @Test
+    public void isIdenticalParticipantVersion_SameStudyDemographics() {
+        ParticipantVersion participantVersion1 = makeParticipantVersion();
+        participantVersion1.setStudyDemographics(ImmutableMap.of(
+            STUDY_ID_1,
+            ImmutableMap.of("category2", new Demographic("id2", new DemographicUser(), "category2", true,
+                    ImmutableList.of(new DemographicValue("value2"), new DemographicValue("3"),
+                            new DemographicValue("-4"), new DemographicValue("true"), new DemographicValue("k", "v")),
+                    null))));
+
+        ParticipantVersion participantVersion2 = makeParticipantVersion();
+        // need deep copy so re-create
+        // id, demographicUser, and categoryName should be ignored
+        participantVersion2.setStudyDemographics(ImmutableMap.of(
+                STUDY_ID_1,
+                ImmutableMap.of("category2", new Demographic(null, null, null, true,
+                        ImmutableList.of(new DemographicValue("value2"), new DemographicValue("3"),
+                                new DemographicValue("-4"), new DemographicValue("true"), new DemographicValue("k", "v")),
+                        null))));
+
+        assertTrue(ParticipantVersionService.isIdenticalParticipantVersion(participantVersion1, participantVersion2));
+    }
+
+    @Test
+    public void isIdenticalParticipantVersion_DifferentStudyDemographics() {
+        ParticipantVersion participantVersion1 = makeParticipantVersion();
+        participantVersion1.setStudyDemographics(STUDY_DEMOGRAPHICS);
+
+        ParticipantVersion participantVersion2 = makeParticipantVersion();
+        participantVersion2.setStudyDemographics(ImmutableMap.<String, Map<String, Demographic>>builder()
+                .putAll(STUDY_DEMOGRAPHICS).put("another category", ImmutableMap.of()).build());
+
+        assertFalse(ParticipantVersionService.isIdenticalParticipantVersion(participantVersion1, participantVersion2));
+    }
+
     private static ParticipantVersion makeParticipantVersion() {
         ParticipantVersion participantVersion = ParticipantVersion.create();
         participantVersion.setAppId(TestConstants.TEST_APP_ID);
@@ -383,6 +509,8 @@ public class ParticipantVersionServiceTest {
         participantVersion.setSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS);
         participantVersion.setStudyMemberships(STUDY_MEMBERSHIPS);
         participantVersion.setTimeZone(TIME_ZONE);
+        participantVersion.setAppDemographics(APP_DEMOGRAPHICS);
+        participantVersion.setStudyDemographics(STUDY_DEMOGRAPHICS);
         return participantVersion;
     }
 

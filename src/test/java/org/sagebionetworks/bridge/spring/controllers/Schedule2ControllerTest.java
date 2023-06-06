@@ -25,7 +25,6 @@ import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
@@ -259,6 +258,7 @@ public class Schedule2ControllerTest extends Mockito {
         doReturn(session).when(controller).getAuthenticatedSession(WORKER);
         
         TimelineMetadata meta = TimelineMetadataTest.createTimelineMetadata();
+        meta.setAppId(TEST_APP_ID);
         when(mockService.getTimelineMetadata("instanceGuid")).thenReturn(Optional.of(meta));
         
         TimelineMetadataView view = controller.getTimelineMetadataForWorker(TEST_APP_ID, "instanceGuid");
@@ -267,7 +267,22 @@ public class Schedule2ControllerTest extends Mockito {
     }
 
     @Test
-    public void getTimelineMetadataForWorker_noData() throws JsonProcessingException { 
+    public void getTimelineMetadataForWorker_wrongApp() {
+        doReturn(session).when(controller).getAuthenticatedSession(WORKER);
+
+        TimelineMetadata meta = TimelineMetadataTest.createTimelineMetadata();
+        meta.setAppId("wrongAppId");
+        when(mockService.getTimelineMetadata("instanceGuid")).thenReturn(Optional.of(meta));
+
+        TimelineMetadataView view = controller.getTimelineMetadataForWorker(TEST_APP_ID, "instanceGuid");
+        // Map is populated but empty. It serializes to an empty map.
+        for (Map.Entry<String, String> entry : view.getMetadata().entrySet()) {
+            assertNull(entry.getValue());
+        }
+    }
+
+    @Test
+    public void getTimelineMetadataForWorker_noData() {
         doReturn(session).when(controller).getAuthenticatedSession(WORKER);
         
         when(mockService.getTimelineMetadata("instanceGuid")).thenReturn(Optional.empty());

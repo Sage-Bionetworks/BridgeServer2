@@ -18,6 +18,8 @@ public class Exporter3ConfigurationTest {
         Exporter3Configuration config = new Exporter3Configuration();
         config.setDataAccessTeamId(1L);
         config.setParticipantVersionTableId("test-table-id");
+        config.setParticipantVersionDemographicsTableId("test-table-id");
+        config.setParticipantVersionDemographicsViewId("test-view-id");
         config.setProjectId("test-project-id");
         config.setRawDataFolderId("test-folder-id");
         config.setStorageLocationId(2L);
@@ -33,6 +35,20 @@ public class Exporter3ConfigurationTest {
         config.setParticipantVersionTableId(null);
         assertFalse(config.isConfigured());
         config.setParticipantVersionTableId("test-table-id");
+        assertTrue(config.isConfigured());
+
+        // Null participant version demographics table ID.
+        // Demographics should be ignored in isConfigured
+        config.setParticipantVersionDemographicsTableId(null);
+        assertTrue(config.isConfigured());
+        config.setParticipantVersionDemographicsTableId("test-table-id");
+        assertTrue(config.isConfigured());
+
+        // Null participant version demographics view ID.
+        // Demographics should be ignored in isConfigured
+        config.setParticipantVersionDemographicsViewId(null);
+        assertTrue(config.isConfigured());
+        config.setParticipantVersionDemographicsViewId("test-view-id");
         assertTrue(config.isConfigured());
 
         // Null project ID.
@@ -58,18 +74,26 @@ public class Exporter3ConfigurationTest {
     public void serialize() throws Exception {
         // Make POJO.
         Exporter3Configuration config = new Exporter3Configuration();
+        config.setCreateStudyNotificationTopicArn("arn:1111:test-topic");
         config.setDataAccessTeamId(1L);
+        config.setExportNotificationTopicArn("arn:2222:export-topic");
         config.setParticipantVersionTableId("test-table-id");
+        config.setParticipantVersionDemographicsTableId("test-table-id");
+        config.setParticipantVersionDemographicsViewId("test-view-id");
         config.setProjectId("test-project-id");
         config.setRawDataFolderId("test-folder-id");
         config.setStorageLocationId(2L);
 
         // Convert to JsonNode.
         JsonNode jsonNode = BridgeObjectMapper.get().convertValue(config, JsonNode.class);
-        assertEquals(jsonNode.size(), 7);
+        assertEquals(jsonNode.size(), 11);
         assertTrue(jsonNode.get("configured").booleanValue());
+        assertEquals(jsonNode.get("createStudyNotificationTopicArn").textValue(), "arn:1111:test-topic");
         assertEquals(jsonNode.get("dataAccessTeamId").intValue(), 1);
+        assertEquals(jsonNode.get("exportNotificationTopicArn").textValue(), "arn:2222:export-topic");
         assertEquals(jsonNode.get("participantVersionTableId").textValue(), "test-table-id");
+        assertEquals(jsonNode.get("participantVersionDemographicsTableId").textValue(), "test-table-id");
+        assertEquals(jsonNode.get("participantVersionDemographicsViewId").textValue(), "test-view-id");
         assertEquals(jsonNode.get("projectId").textValue(), "test-project-id");
         assertEquals(jsonNode.get("rawDataFolderId").textValue(), "test-folder-id");
         assertEquals(jsonNode.get("storageLocationId").intValue(), 2);

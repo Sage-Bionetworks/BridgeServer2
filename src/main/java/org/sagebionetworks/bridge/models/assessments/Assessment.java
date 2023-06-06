@@ -14,6 +14,8 @@ import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.Label;
 import org.sagebionetworks.bridge.models.assessments.config.PropertyInfo;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
 public class Assessment implements BridgeEntity {
     
     public static Assessment create(HibernateAssessment assessment) {
@@ -38,6 +40,13 @@ public class Assessment implements BridgeEntity {
         dto.setModifiedOn(assessment.getModifiedOn());
         dto.setDeleted(assessment.isDeleted());
         dto.setVersion(assessment.getVersion());
+        dto.setImageResource(assessment.getImageResource());
+        dto.setFrameworkIdentifier(assessment.getFrameworkIdentifier());
+        dto.setJsonSchemaUrl(assessment.getJsonSchemaUrl());
+        dto.setCategory(assessment.getCategory());
+        dto.setMinAge(assessment.getMinAge());
+        dto.setMaxAge(assessment.getMaxAge());
+        dto.setAdditionalMetadata(assessment.getAdditionalMetadata());
         return dto;
     }
     
@@ -65,7 +74,14 @@ public class Assessment implements BridgeEntity {
     private DateTime modifiedOn;
     private boolean deleted;
     private long version;
-    
+    private ImageResource imageResource;
+    private String frameworkIdentifier;
+    private String jsonSchemaUrl;
+    private String category;
+    private Integer minAge;
+    private Integer maxAge;
+    private JsonNode additionalMetadata;
+
     public String getAppId() {
         return appId;
     }
@@ -191,5 +207,59 @@ public class Assessment implements BridgeEntity {
     }
     public void setVersion(long version) {
         this.version = version;
-    }    
+    }
+    public ImageResource getImageResource() {
+        return imageResource;
+    }
+    public void setImageResource(ImageResource imageResource) {
+        this.imageResource = imageResource;
+    }
+
+    public String getFrameworkIdentifier() {
+        return frameworkIdentifier;
+    }
+
+    public void setFrameworkIdentifier(String frameworkIdentifier) {
+        this.frameworkIdentifier = frameworkIdentifier;
+    }
+
+    public String getJsonSchemaUrl() {
+        return jsonSchemaUrl;
+    }
+
+    public void setJsonSchemaUrl(String jsonSchemaUrl) {
+        this.jsonSchemaUrl = jsonSchemaUrl;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
+    }
+
+    public Integer getMinAge() {
+        return minAge;
+    }
+
+    public void setMinAge(Integer minAge) {
+        this.minAge = minAge;
+    }
+
+    public Integer getMaxAge() {
+        return maxAge;
+    }
+
+    public void setMaxAge(Integer maxAge) {
+        this.maxAge = maxAge;
+    }
+
+    public JsonNode getAdditionalMetadata() {
+        return additionalMetadata;
+    }
+
+    public void setAdditionalMetadata(JsonNode additionalMetadata) {
+        this.additionalMetadata = additionalMetadata;
+    }
 }

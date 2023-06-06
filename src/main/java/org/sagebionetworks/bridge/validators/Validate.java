@@ -95,9 +95,9 @@ public class Validate {
      */
     public static void entityThrowingException(Validator validator, Object object) throws InvalidEntityException {
         checkNotNull(validator);
+        checkNotNull(object);
         checkArgument(object instanceof BridgeEntity);
         checkArgument(validator.supports(object.getClass()), "Invalid validator");
-        checkNotNull(object);
         
         Errors errors = getErrorsFor(object);
         validator.validate(object, errors);
@@ -106,10 +106,10 @@ public class Validate {
     
     static void entity(Validator validator, Errors errors, Object object) {
         checkNotNull(validator);
+        checkNotNull(object);
         checkArgument(object instanceof BridgeEntity);
         checkArgument(validator.supports(object.getClass()), "Invalid validator");
         checkNotNull(errors);
-        checkNotNull(object);
         
         validator.validate(object, errors);
     }

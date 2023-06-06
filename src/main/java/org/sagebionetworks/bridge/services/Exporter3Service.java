@@ -2,16 +2,24 @@ package org.sagebionetworks.bridge.services;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.Base64;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 import javax.annotation.Resource;
 
+import com.amazonaws.services.sns.AmazonSNS;
+import com.amazonaws.services.sns.model.CreateTopicResult;
+import com.amazonaws.services.sns.model.PublishResult;
+import com.amazonaws.services.sns.model.SubscribeRequest;
+import com.amazonaws.services.sns.model.SubscribeResult;
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.model.SendMessageResult;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -19,7 +27,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.client.SynapseClient;
 import org.sagebionetworks.client.exceptions.SynapseException;
@@ -30,13 +37,14 @@ import org.sagebionetworks.repo.model.Team;
 import org.sagebionetworks.repo.model.dao.WikiPageKey;
 import org.sagebionetworks.repo.model.dao.WikiPageKeyHelper;
 import org.sagebionetworks.repo.model.file.CloudProviderFileHandleInterface;
-import org.sagebionetworks.repo.model.file.FileHandle;
-import org.sagebionetworks.repo.model.file.S3FileHandle;
+import org.sagebionetworks.repo.model.annotation.v2.AnnotationsValue;
+import org.sagebionetworks.repo.model.annotation.v2.AnnotationsValueType;
 import org.sagebionetworks.repo.model.project.ExternalS3StorageLocationSetting;
 import org.sagebionetworks.repo.model.table.ColumnModel;
 import org.sagebionetworks.repo.model.table.ColumnType;
 import org.sagebionetworks.repo.model.table.EntityView;
 import org.sagebionetworks.repo.model.v2.wiki.V2WikiPage;
+import org.sagebionetworks.repo.model.table.MaterializedView;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,12 +52,16 @@ import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.SecureTokenGenerator;
 import org.sagebionetworks.bridge.config.BridgeConfig;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.BridgeSynapseException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.ClientInfo;
+import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ParticipantVersion;
@@ -57,7 +69,12 @@ import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.Exporter3Configuration;
-import org.sagebionetworks.bridge.models.files.FileMetadata;
+import org.sagebionetworks.bridge.models.exporter.ExportToAppNotification;
+import org.sagebionetworks.bridge.models.exporter.ExportToStudyNotification;
+import org.sagebionetworks.bridge.models.exporter.ExportedRecordInfo;
+import org.sagebionetworks.bridge.models.exporter.ExporterCreateStudyNotification;
+import org.sagebionetworks.bridge.models.exporter.ExporterSubscriptionRequest;
+import org.sagebionetworks.bridge.models.exporter.ExporterSubscriptionResult;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordEx3;
 import org.sagebionetworks.bridge.models.schedules2.timelines.Timeline;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -66,6 +83,9 @@ import org.sagebionetworks.bridge.models.worker.Exporter3Request;
 import org.sagebionetworks.bridge.models.worker.WorkerRequest;
 import org.sagebionetworks.bridge.s3.S3Helper;
 import org.sagebionetworks.bridge.synapse.SynapseHelper;
+import org.sagebionetworks.bridge.validators.ExportToAppNotificationValidator;
+import org.sagebionetworks.bridge.validators.ExporterSubscriptionRequestValidator;
+import org.sagebionetworks.bridge.validators.Validate;
 
 /**
  * <p>
@@ -83,6 +103,7 @@ public class Exporter3Service {
 
     // Package-scoped to be available in unit tests.
     static final String CONFIG_KEY_ADMIN_SYNAPSE_ID = "admin.synapse.id";
+    static final String CONFIG_KEY_BUCKET_SUFFIX = "bucket.suffix";
     static final String CONFIG_KEY_DOWNSTREAM_ETL_SYNAPSE_ID = "downstream.etl.synapse.id";
     static final String CONFIG_KEY_EXPORTER_SYNAPSE_ID = "exporter.synapse.id";
     static final String CONFIG_KEY_EXPORTER_SYNAPSE_USER = "exporter.synapse.user";
@@ -92,6 +113,27 @@ public class Exporter3Service {
     static final String CONFIG_KEY_TEAM_BRIDGE_STAFF = "team.bridge.staff";
     static final String FOLDER_NAME_BRIDGE_RAW_DATA = "Bridge Raw Data";
     static final String TABLE_NAME_PARTICIPANT_VERSIONS = "Participant Versions";
+    static final String TABLE_NAME_PARTICIPANT_VERSIONS_DEMOGRAPHICS = "Participant Versions Demographics";
+    static final String TOPIC_PREFIX_CREATE_STUDY = "Bridge-Create-Study-Notification";
+    static final String TOPIC_PREFIX_EXPORT = "Bridge-Export-Notification";
+    static final String VIEW_NAME_PARTICIPANT_VERSIONS_DEMOGRAPHICS = "Participant Versions Demographics Joined View";
+    static final String VIEW_DEFINING_SQL = "SELECT%n" +
+            "    participants.healthCode AS healthCode,%n" +
+            "    participants.participantVersion AS participantVersion,%n" +
+            "    participants.createdOn AS createdOn,%n" +
+            "    participants.modifiedOn AS modifiedOn,%n" +
+            "    participants.dataGroups AS dataGroups,%n" +
+            "    participants.languages AS languages,%n" +
+            "    participants.sharingScope AS sharingScope,%n" +
+            "    participants.studyMemberships AS studyMemberships,%n" +
+            "    participants.clientTimeZone AS clientTimeZone,%n" +
+            "    demographics.studyId AS studyId,%n" +
+            "    demographics.demographicCategoryName AS demographicCategoryName,%n" +
+            "    demographics.demographicValue AS demographicValue,%n" +
+            "    demographics.demographicUnits AS demographicUnits,%n" +
+            "    demographics.demographicInvalidity AS demographicInvalidity%n" +
+            "FROM %s as participants JOIN %s as demographics%n" +
+            "    ON participants.healthCode = demographics.healthCode AND participants.participantVersion = demographics.participantVersion";
     static final String WORKER_NAME_EXPORTER_3 = "Exporter3Worker";
 
     static final List<ColumnModel> PARTICIPANT_VERSION_COLUMN_MODELS;
@@ -165,6 +207,52 @@ public class Exporter3Service {
 
         PARTICIPANT_VERSION_COLUMN_MODELS = listBuilder.build();
     }
+    static final List<ColumnModel> PARTICIPANT_VERSION_DEMOGRAPHICS_COLUMN_MODELS;
+    static {
+        ImmutableList.Builder<ColumnModel> listBuilder = ImmutableList.builder();
+
+        ColumnModel healthCodeColumn = new ColumnModel();
+        healthCodeColumn.setName("healthCode");
+        healthCodeColumn.setColumnType(ColumnType.STRING);
+        healthCodeColumn.setMaximumSize(36L);
+        listBuilder.add(healthCodeColumn);
+
+        ColumnModel participantVersionColumn = new ColumnModel();
+        participantVersionColumn.setName("participantVersion");
+        participantVersionColumn.setColumnType(ColumnType.INTEGER);
+        listBuilder.add(participantVersionColumn);
+
+        ColumnModel studyIdColumn = new ColumnModel();
+        studyIdColumn.setName("studyId");
+        studyIdColumn.setColumnType(ColumnType.STRING);
+        healthCodeColumn.setMaximumSize(255L);
+        listBuilder.add(studyIdColumn);
+
+        ColumnModel categoryNameColumn = new ColumnModel();
+        categoryNameColumn.setName("demographicCategoryName");
+        categoryNameColumn.setColumnType(ColumnType.STRING);
+        healthCodeColumn.setMaximumSize(255L);
+        listBuilder.add(categoryNameColumn);
+
+        ColumnModel demographicValueColumn = new ColumnModel();
+        demographicValueColumn.setName("demographicValue");
+        demographicValueColumn.setColumnType(ColumnType.LARGETEXT);
+        listBuilder.add(demographicValueColumn);
+
+        ColumnModel demographicUnitsColumn = new ColumnModel();
+        demographicUnitsColumn.setName("demographicUnits");
+        demographicUnitsColumn.setColumnType(ColumnType.STRING);
+        healthCodeColumn.setMaximumSize(512L);
+        listBuilder.add(demographicUnitsColumn);
+
+        ColumnModel demographicInvalidityColumn = new ColumnModel();
+        demographicInvalidityColumn.setName("demographicInvalidity");
+        demographicInvalidityColumn.setColumnType(ColumnType.STRING);
+        healthCodeColumn.setMaximumSize(512L);
+        listBuilder.add(demographicInvalidityColumn);
+
+        PARTICIPANT_VERSION_DEMOGRAPHICS_COLUMN_MODELS = listBuilder.build();
+    }
 
     // Config attributes.
     private Long bridgeAdminTeamId;
@@ -174,14 +262,17 @@ public class Exporter3Service {
     private Long exporterSynapseId;
     private String exporterSynapseUser;
     private String rawHealthDataBucket;
+    private String snsTopicSuffix;
     private String synapseTrackingViewId;
-    private String workerQueueUrl;
 
     private AccountService accountService;
     private AppService appService;
+    private BridgeConfig config;
     private HealthDataEx3Service healthDataEx3Service;
     private ParticipantVersionService participantVersionService;
+    private RequestInfoService requestInfoService;
     private S3Helper s3Helper;
+    private AmazonSNS snsClient;
     private AmazonSQS sqsClient;
     private StudyService studyService;
     private SynapseHelper synapseHelper;
@@ -191,13 +282,17 @@ public class Exporter3Service {
 
     @Autowired
     public final void setConfig(BridgeConfig config) {
+        this.config = config;
+
         bridgeAdminTeamId = (long) config.getInt(CONFIG_KEY_TEAM_BRIDGE_ADMIN);
         bridgeStaffTeamId = (long) config.getInt(CONFIG_KEY_TEAM_BRIDGE_STAFF);
         exporterSynapseId = (long) config.getInt(CONFIG_KEY_EXPORTER_SYNAPSE_ID);
         exporterSynapseUser = config.getProperty(CONFIG_KEY_EXPORTER_SYNAPSE_USER);
         rawHealthDataBucket = config.getProperty(CONFIG_KEY_RAW_HEALTH_DATA_BUCKET);
         synapseTrackingViewId = config.getProperty(CONFIG_KEY_SYNAPSE_TRACKING_VIEW);
-        workerQueueUrl = config.getProperty(BridgeConstants.CONFIG_KEY_WORKER_SQS_URL);
+
+        // It's called the bucket suffix in config, but it can be used as a general suffix for any resource.
+        snsTopicSuffix = config.getProperty(CONFIG_KEY_BUCKET_SUFFIX);
 
         String adminSynapseIdStr = config.get(CONFIG_KEY_ADMIN_SYNAPSE_ID);
         if (StringUtils.isNotBlank(adminSynapseIdStr)) {
@@ -234,9 +329,19 @@ public class Exporter3Service {
         this.participantVersionService = participantVersionService;
     }
 
+    @Autowired
+    public final void setRequestInfoService(RequestInfoService requestInfoService) {
+        this.requestInfoService = requestInfoService;
+    }
+
     @Resource(name = "s3Helper")
     public final void setS3Helper(S3Helper s3Helper) {
         this.s3Helper = s3Helper;
+    }
+
+    @Autowired
+    public final void setSnsClient(AmazonSNS snsClient) {
+        this.snsClient = snsClient;
     }
 
     @Autowired
@@ -289,7 +394,7 @@ public class Exporter3Service {
             isAppModified = true;
         }
 
-        boolean isConfigModified = initExporter3Internal(app.getName(), appId, ex3Config);
+        boolean isConfigModified = initExporter3Internal(app.getName(), appId, Optional.empty(), ex3Config);
         if (isConfigModified) {
             isAppModified = true;
         }
@@ -315,6 +420,7 @@ public class Exporter3Service {
      */
     public Exporter3Configuration initExporter3ForStudy(String appId, String studyId) throws BridgeSynapseException,
             IOException, SynapseException {
+        boolean isFirstInitialization = false;
         boolean isStudyModified = false;
         Study study = studyService.getStudy(appId, studyId, true);
 
@@ -323,10 +429,11 @@ public class Exporter3Service {
         if (ex3Config == null) {
             ex3Config = new Exporter3Configuration();
             study.setExporter3Configuration(ex3Config);
+            isFirstInitialization = true;
             isStudyModified = true;
         }
 
-        boolean isConfigModified = initExporter3Internal(study.getName(), appId + '/' + studyId, ex3Config);
+        boolean isConfigModified = initExporter3Internal(study.getName(), appId, Optional.of(studyId), ex3Config);
         if (isConfigModified) {
             isStudyModified = true;
         }
@@ -343,15 +450,31 @@ public class Exporter3Service {
             studyService.updateStudy(appId, study);
         }
 
+        if (isFirstInitialization) {
+            // Send notification if the study was freshly initialized.
+            App app = appService.getApp(appId);
+            Exporter3Configuration appEx3Config = app.getExporter3Configuration();
+            if (appEx3Config != null && appEx3Config.getCreateStudyNotificationTopicArn() != null) {
+                String createStudyNotificationTopicArn = appEx3Config.getCreateStudyNotificationTopicArn();
+
+                // Create notification.
+                ExporterCreateStudyNotification notification = new ExporterCreateStudyNotification();
+                notification.setAppId(appId);
+                notification.setParentProjectId(ex3Config.getProjectId());
+                notification.setRawFolderId(ex3Config.getRawDataFolderId());
+                notification.setStudyId(studyId);
+
+                sendNotification(appId, studyId, "create study", createStudyNotificationTopicArn, notification);
+            }
+        }
+
         return ex3Config;
     }
 
     // Package-scoped for unit tests.
     // Parent name is the name of the app or study this is being initialized for.
-    // Base key is the base S3 key for all files in S3. This is either [appID] or [appId]/[studyId] if this is for a
-    // study.
     // This modifies the passed in Exporter3Config. Returns true if ex3Config was modified.
-    boolean initExporter3Internal(String parentName, String baseKey, Exporter3Configuration ex3Config)
+    boolean initExporter3Internal(String parentName, String appId, Optional<String> studyId, Exporter3Configuration ex3Config)
             throws BridgeSynapseException, IOException, SynapseException {
         boolean isModified = false;
 
@@ -431,6 +554,16 @@ public class Exporter3Service {
                             ": " + ex.getMessage(), ex);
                 }
             }
+
+            // Add study and app id annotations.
+            Map<String, AnnotationsValue> annotations = new HashMap<>();
+            annotations.put("appId",
+                    new AnnotationsValue().setType(AnnotationsValueType.STRING).setValue(ImmutableList.of(appId)));
+            if (studyId.isPresent()) {
+                annotations.put("studyId", new AnnotationsValue().setType(AnnotationsValueType.STRING)
+                        .setValue(ImmutableList.of(studyId.get())));
+            }
+            synapseHelper.addAnnotationsToEntity(projectId, annotations);
         }
 
         // Create Participant Version Table.
@@ -438,9 +571,35 @@ public class Exporter3Service {
         if (participantVersionTableId == null) {
             participantVersionTableId = synapseHelper.createTableWithColumnsAndAcls(PARTICIPANT_VERSION_COLUMN_MODELS,
                     dataReadOnlyIds, dataAdminIds, projectId, TABLE_NAME_PARTICIPANT_VERSIONS);
-            LOG.info("Created Synapse table " + participantVersionTableId);
+            LOG.info("Created Synapse participant versions table " + participantVersionTableId);
 
             ex3Config.setParticipantVersionTableId(participantVersionTableId);
+            isModified = true;
+        }
+        // Create Participant Version Demographics Table.
+        String participantVersionDemographicsTableId = ex3Config.getParticipantVersionDemographicsTableId();
+        if (participantVersionDemographicsTableId == null) {
+            participantVersionDemographicsTableId = synapseHelper.createTableWithColumnsAndAcls(
+                    PARTICIPANT_VERSION_DEMOGRAPHICS_COLUMN_MODELS, dataReadOnlyIds, dataAdminIds, projectId,
+                    TABLE_NAME_PARTICIPANT_VERSIONS_DEMOGRAPHICS);
+            LOG.info(
+                    "Created Synapse participant versions demographics table " + participantVersionDemographicsTableId);
+
+            ex3Config.setParticipantVersionDemographicsTableId(participantVersionDemographicsTableId);
+            isModified = true;
+        }
+
+        // Create joined materialized view with participant versions and demographics
+        String participantVersionDemographicsViewId = ex3Config.getParticipantVersionDemographicsViewId();
+        if (participantVersionDemographicsViewId == null) {
+            String sql = String.format(VIEW_DEFINING_SQL, participantVersionTableId, participantVersionDemographicsTableId);
+            MaterializedView view = new MaterializedView().setName(VIEW_NAME_PARTICIPANT_VERSIONS_DEMOGRAPHICS)
+                    .setParentId(projectId).setDefiningSQL(sql);
+            MaterializedView createdView = synapseHelper.createEntityWithRetry(view);
+            synapseHelper.createAclWithRetry(createdView.getId(), dataAdminIds, dataReadOnlyIds);
+            LOG.info("Created Synapse participant versions demographics materialized view " + createdView.getId());
+
+            ex3Config.setParticipantVersionDemographicsViewId(createdView.getId());
             isModified = true;
         }
 
@@ -465,6 +624,10 @@ public class Exporter3Service {
         // Create storage location.
         Long storageLocationId = ex3Config.getStorageLocationId();
         if (storageLocationId == null) {
+            String baseKey = appId;
+            if (studyId.isPresent()) {
+                baseKey += "/" + studyId.get();
+            }
             // Create owner.txt so that we can create the storage location.
             s3Helper.writeLinesToS3(rawHealthDataBucket, baseKey + "/owner.txt",
                     ImmutableList.of(exporterSynapseUser));
@@ -490,6 +653,212 @@ public class Exporter3Service {
         return SecureTokenGenerator.NAME_SCOPE_INSTANCE.nextToken();
     }
 
+    /**
+     * This is called by the Worker when a health data record is exported to Synapse. This sends notifications to all
+     * subscribers for both the app-wide Synapse project and all study-specific Synapse projects that the record was
+     * exported to.
+     */
+    public void sendExportNotifications(ExportToAppNotification exportToAppNotification) {
+        Validate.entityThrowingException(ExportToAppNotificationValidator.INSTANCE, exportToAppNotification);
+        String appId = exportToAppNotification.getAppId();
+        String recordId = exportToAppNotification.getRecordId();
+        final String type = "export record " + recordId;
+
+        App app = appService.getApp(appId);
+        if (!app.isExporter3Enabled()) {
+            throw new BadRequestException("App does not have Exporter 3.0 enabled");
+        }
+
+        // Send app-wide notification.
+        Exporter3Configuration ex3Config = app.getExporter3Configuration();
+        if (ex3Config != null && ex3Config.getExportNotificationTopicArn() != null) {
+            String appNotificationTopicArn = ex3Config.getExportNotificationTopicArn();
+            try {
+                sendNotification(appId, null, type, appNotificationTopicArn, exportToAppNotification);
+            } catch (RuntimeException ex) {
+                LOG.error("Error notifying export for app-wide project, app=" + appId + ", record=" + recordId, ex);
+            }
+        } else {
+            // This could happen if the study is configured for export, but not the app. Log at info level, so we can
+            // trace with our logs.
+            LOG.info("Export not enabled for app-wide project, app=" + appId + ", record=" + recordId);
+        }
+
+        // Send study-specific notifications. Note that getStudyRecords() is never null.
+        Map<String, ExportedRecordInfo> studyRecordMap = exportToAppNotification.getStudyRecords();
+        for (Map.Entry<String, ExportedRecordInfo> entry : studyRecordMap.entrySet()) {
+            String studyId = entry.getKey();
+
+            try {
+                Study study = studyService.getStudy(appId, studyId, false);
+                if (study == null || !study.isExporter3Enabled() || study.getExporter3Configuration() == null) {
+                    // This is very unusual. Log and move on.
+                    LOG.error("Export for non-existent or non-configured study, app=" + appId + ", study=" +
+                            studyId + ", record=" + recordId);
+                    continue;
+                }
+                String studyNotificationTopicArn = study.getExporter3Configuration()
+                        .getExportNotificationTopicArn();
+                if (studyNotificationTopicArn == null) {
+                    // This is normal. Skip.
+                    continue;
+                }
+
+                ExportedRecordInfo recordInfo = entry.getValue();
+                ExportToStudyNotification exportToStudyNotification = new ExportToStudyNotification();
+                exportToStudyNotification.setAppId(appId);
+                exportToStudyNotification.setStudyId(studyId);
+                exportToStudyNotification.setRecordId(recordId);
+                exportToStudyNotification.setParentProjectId(recordInfo.getParentProjectId());
+                exportToStudyNotification.setRawFolderId(recordInfo.getRawFolderId());
+                exportToStudyNotification.setFileEntityId(recordInfo.getFileEntityId());
+                exportToStudyNotification.setS3Bucket(recordInfo.getS3Bucket());
+                exportToStudyNotification.setS3Key(recordInfo.getS3Key());
+
+                sendNotification(appId, studyId, type, studyNotificationTopicArn, exportToStudyNotification);
+            } catch (RuntimeException ex) {
+                LOG.error("Error notifying export for study-specific project, app=" + appId + ", study=" +
+                        studyId + ", record=" + recordId, ex);
+            }
+        }
+    }
+
+    // Helper method for sending SNS notifications. appId, studyId, and type are used for logging. topicArn is the SNS
+    // topic to send the notification to. Object is the notification to send, which will be converted to JSON and sent
+    // in JSON format.
+    private void sendNotification(String appId, String studyId, String type, String topicArn, Object notification) {
+        // Convert notification to JSON and publish.
+        String notificationJson;
+        try {
+            notificationJson = BridgeObjectMapper.get().writeValueAsString(notification);
+            PublishResult publishResult = snsClient.publish(topicArn, notificationJson);
+            LOG.info("Sent notification for app=" + appId + ", study=" + studyId + ", type=" + type + ", message ID " +
+                    publishResult.getMessageId());
+        } catch (JsonProcessingException ex) {
+            // This should never happen, but catch it and log.
+            LOG.error("Error creating notification for app=" + appId + ", study=" + studyId + ", type=" + type, ex);
+        }
+    }
+
+    /** Subscribe to be notified when a study is initialized for Exporter 3.0 in the given app. */
+    public ExporterSubscriptionResult subscribeToCreateStudyNotifications(String appId,
+            ExporterSubscriptionRequest subscriptionRequest) {
+        return subscribeToNotificationsForApp(appId, TOPIC_PREFIX_CREATE_STUDY, subscriptionRequest,
+                Exporter3Configuration::getCreateStudyNotificationTopicArn,
+                Exporter3Configuration::setCreateStudyNotificationTopicArn);
+    }
+
+    /** Subscribe to be notified when health data is exported to any Synapse projects in the app. */
+    public ExporterSubscriptionResult subscribeToExportNotificationsForApp(String appId,
+            ExporterSubscriptionRequest subscriptionRequest) {
+        return subscribeToNotificationsForApp(appId, TOPIC_PREFIX_EXPORT, subscriptionRequest,
+                Exporter3Configuration::getExportNotificationTopicArn,
+                Exporter3Configuration::setExportNotificationTopicArn);
+    }
+
+    private ExporterSubscriptionResult subscribeToNotificationsForApp(String appId, String topicPrefix,
+            ExporterSubscriptionRequest subscriptionRequest, Function<Exporter3Configuration, String> getter,
+            BiConsumer<Exporter3Configuration, String> setter) {
+        Validate.entityThrowingException(ExporterSubscriptionRequestValidator.INSTANCE, subscriptionRequest);
+
+        boolean isAppModified = false;
+        App app = appService.getApp(appId);
+
+        // Init the Exporter3Config object.
+        Exporter3Configuration ex3Config = app.getExporter3Configuration();
+        if (ex3Config == null) {
+            ex3Config = new Exporter3Configuration();
+            app.setExporter3Configuration(ex3Config);
+            isAppModified = true;
+        }
+
+        // Has the SNS topic been created for this app?
+        String topicArn = getter.apply(ex3Config);
+        if (topicArn == null) {
+            String topicName = topicPrefix + '-' + appId + '-' + snsTopicSuffix;
+            CreateTopicResult createTopicResult = snsClient.createTopic(topicName);
+            topicArn = createTopicResult.getTopicArn();
+            LOG.info("Created SNS topic name=" + topicName + ", arn=" + topicArn);
+
+            setter.accept(ex3Config, topicArn);
+            isAppModified = true;
+        }
+
+        // Update app if necessary. We mark this as an admin update, because the only field that changed is
+        // exporter3config.
+        if (isAppModified) {
+            appService.updateApp(app, true);
+        }
+
+        // Subscribe to the topic.
+        SubscribeRequest snsSubscribeRequest = new SubscribeRequest();
+        snsSubscribeRequest.setAttributes(subscriptionRequest.getAttributes());
+        snsSubscribeRequest.setEndpoint(subscriptionRequest.getEndpoint());
+        snsSubscribeRequest.setProtocol(subscriptionRequest.getProtocol());
+        snsSubscribeRequest.setReturnSubscriptionArn(true);
+        snsSubscribeRequest.setTopicArn(topicArn);
+        SubscribeResult snsSubscribeResult = snsClient.subscribe(snsSubscribeRequest);
+
+        ExporterSubscriptionResult subscriptionResult = new ExporterSubscriptionResult();
+        subscriptionResult.setSubscriptionArn(snsSubscribeResult.getSubscriptionArn());
+        return subscriptionResult;
+    }
+
+    /** Subscribe to be notified when health data is exported to the study-specific Synapse project. */
+    public ExporterSubscriptionResult subscribeToExportNotificationsForStudy(String appId, String studyId,
+            ExporterSubscriptionRequest subscriptionRequest) {
+        return subscribeToNotificationsForStudy(appId, studyId, TOPIC_PREFIX_EXPORT, subscriptionRequest,
+                Exporter3Configuration::getExportNotificationTopicArn,
+                Exporter3Configuration::setExportNotificationTopicArn);
+    }
+
+    @SuppressWarnings("SameParameterValue")
+    private ExporterSubscriptionResult subscribeToNotificationsForStudy(String appId, String studyId,
+            String topicPrefix, ExporterSubscriptionRequest subscriptionRequest,
+            Function<Exporter3Configuration, String> getter, BiConsumer<Exporter3Configuration, String> setter) {
+        Validate.entityThrowingException(ExporterSubscriptionRequestValidator.INSTANCE, subscriptionRequest);
+
+        boolean isStudyModified = false;
+        Study study = studyService.getStudy(appId, studyId, true);
+        Exporter3Configuration ex3Config = study.getExporter3Configuration();
+        if (ex3Config == null) {
+            ex3Config = new Exporter3Configuration();
+            study.setExporter3Configuration(ex3Config);
+            isStudyModified = true;
+        }
+
+        // Has the SNS topic been created for this app?
+        String topicArn = getter.apply(ex3Config);
+        if (topicArn == null) {
+            String topicName = topicPrefix + '-' + appId + '-' + studyId + '-' + snsTopicSuffix;
+            CreateTopicResult createTopicResult = snsClient.createTopic(topicName);
+            topicArn = createTopicResult.getTopicArn();
+            LOG.info("Created SNS topic name=" + topicName + ", arn=" + topicArn);
+
+            setter.accept(ex3Config, topicArn);
+            isStudyModified = true;
+        }
+
+        // Update app if necessary. We mark this as an admin update, because the only field that changed is
+        // exporter3config.
+        if (isStudyModified) {
+            studyService.updateStudy(appId, study);
+        }
+
+        // Subscribe to the topic.
+        SubscribeRequest snsSubscribeRequest = new SubscribeRequest();
+        snsSubscribeRequest.setAttributes(subscriptionRequest.getAttributes());
+        snsSubscribeRequest.setEndpoint(subscriptionRequest.getEndpoint());
+        snsSubscribeRequest.setProtocol(subscriptionRequest.getProtocol());
+        snsSubscribeRequest.setReturnSubscriptionArn(true);
+        snsSubscribeRequest.setTopicArn(topicArn);
+        SubscribeResult snsSubscribeResult = snsClient.subscribe(snsSubscribeRequest);
+
+        ExporterSubscriptionResult subscriptionResult = new ExporterSubscriptionResult();
+        subscriptionResult.setSubscriptionArn(snsSubscribeResult.getSubscriptionArn());
+        return subscriptionResult;
+    }
+
     /** Complete an upload for Exporter 3.0, and also export that upload. */
     public void completeUpload(App app, Upload upload) throws JsonProcessingException {
         String appId = app.getIdentifier();
@@ -508,6 +877,39 @@ public class Exporter3Service {
         });
         SharingScope sharingScope = account.getSharingScope();
         record.setSharingScope(sharingScope);
+
+        // Handle Client Info and User Agent.
+        String clientInfoJsonText;
+        String userAgent;
+        if (upload.getUserAgent() != null) {
+            clientInfoJsonText = upload.getClientInfo();
+            userAgent = upload.getUserAgent();
+        } else {
+            ClientInfo clientInfo;
+            RequestContext requestContext = RequestContext.get();
+            String calledUserId = requestContext.getCallerUserId();
+            String uploaderUserId = account.getId();
+            if (Objects.equals(calledUserId, uploaderUserId)) {
+                // The caller is the uploader. Get the Client Info from the RequestContext.
+                clientInfo = requestContext.getCallerClientInfo();
+                userAgent = requestContext.getUserAgent();
+            } else {
+                // The caller is _not_ the uploader. Get the Client Info from the RequestInfoService.
+                RequestInfo requestInfo = requestInfoService.getRequestInfo(uploaderUserId);
+                if (requestInfo != null && requestInfo.getClientInfo() != null) {
+                    clientInfo = requestInfo.getClientInfo();
+                    userAgent = requestInfo.getUserAgent();
+                } else {
+                    clientInfo = ClientInfo.UNKNOWN_CLIENT;
+                    userAgent = null;
+                }
+            }
+
+            clientInfoJsonText = BridgeObjectMapper.get().writerWithDefaultPrettyPrinter()
+                    .writeValueAsString(clientInfo);
+        }
+        record.setClientInfo(clientInfoJsonText);
+        record.setUserAgent(userAgent);
 
         // Also mark with the latest participant version.
         Optional<ParticipantVersion> participantVersion = participantVersionService
@@ -552,6 +954,9 @@ public class Exporter3Service {
             throw new BridgeServiceException("Error creating export request for app " + appId + " record " + recordId,
                     ex);
         }
+
+        // Note: SqsInitializer runs after Spring, so we need to grab the queue URL dynamically.
+        String workerQueueUrl = config.getProperty(BridgeConstants.CONFIG_KEY_WORKER_SQS_URL);
 
         // Sent to SQS.
         SendMessageResult sqsResult = sqsClient.sendMessage(workerQueueUrl, requestJson);

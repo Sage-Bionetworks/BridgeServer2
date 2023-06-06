@@ -10,7 +10,7 @@
 
     <properties>
         <apache.http.version>4.5.13</apache.http.version>
-        <aws.version>1.11.944</aws.version>
+        <aws.version>1.12.261</aws.version>
         <hibernate.version>5.4.27.Final</hibernate.version>
         <jackson.version>2.12.6</jackson.version>
         <java.version>1.8</java.version>
@@ -178,7 +178,7 @@
         <dependency>
             <groupId>joda-time</groupId>
             <artifactId>joda-time</artifactId>
-            <version>2.8.2</version><!--$NO-MVN-MAN-VER$-->
+            <version>2.12.5</version><!--$NO-MVN-MAN-VER$-->
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
@@ -198,7 +198,7 @@
         <dependency>
             <groupId>org.jsoup</groupId>
             <artifactId>jsoup</artifactId>
-            <version>1.14.2</version>
+            <version>1.15.3</version>
         </dependency>
         <dependency>
             <groupId>org.quartz-scheduler</groupId>

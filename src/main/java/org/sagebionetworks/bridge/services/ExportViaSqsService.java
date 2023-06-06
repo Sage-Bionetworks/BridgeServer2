@@ -31,12 +31,12 @@ public class ExportViaSqsService implements ExportService {
     static final String REQUEST_KEY_USE_LAST_EXPORT_TIME = "useLastExportTime";
 
     private AmazonSQS sqsClient;
-    private String sqsQueueUrl;
+    private BridgeConfig config;
 
     /** Bridge config, used to get the SQS queue URL. */
     @Autowired
     public final void setBridgeConfig(BridgeConfig bridgeConfig) {
-        this.sqsQueueUrl = bridgeConfig.getProperty(CONFIG_KEY_EXPORTER_SQS_QUEUE_URL);
+        this.config = bridgeConfig;
     }
 
     /** SQS client. */
@@ -67,6 +67,9 @@ public class ExportViaSqsService implements ExportService {
         requestNode.put(REQUEST_KEY_USE_LAST_EXPORT_TIME, true);
 
         String requestJsonText = JSON_OBJECT_MAPPER.writeValueAsString(requestNode);
+
+        // Note: SqsInitializer runs after Spring, so we need to grab the queue URL dynamically.
+        String sqsQueueUrl = config.getProperty(CONFIG_KEY_EXPORTER_SQS_QUEUE_URL);
 
         // send to SQS
         SendMessageResult sqsResult = sqsClient.sendMessage(sqsQueueUrl, requestJsonText);

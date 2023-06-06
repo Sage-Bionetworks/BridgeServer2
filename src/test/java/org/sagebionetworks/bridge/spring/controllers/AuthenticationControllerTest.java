@@ -77,7 +77,6 @@ import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.exceptions.UnsupportedVersionException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.Metrics;
 import org.sagebionetworks.bridge.models.OperatingSystem;
@@ -213,9 +212,7 @@ public class AuthenticationControllerTest extends Mockito {
         doReturn(mockRequest).when(controller).request();
         doReturn(mockResponse).when(controller).response();
         
-        ClientInfo clientInfo = ClientInfo.fromUserAgentCache(USER_AGENT_STRING);
-        RequestContext.set(new RequestContext.Builder()
-                .withCallerClientInfo(clientInfo).build());
+        RequestContext.set(new RequestContext.Builder().withUserAgent(USER_AGENT_STRING).build());
     }
     
     @AfterMethod

@@ -6,4 +6,10 @@
     <!-- This generates a false positive on Oracles java compiler, and they cannot be easily 
         eliminated. -->
     <Bug pattern="DLS_DEAD_LOCAL_STORE" />
+
+    <!-- This is a false alarm. -->
+    <Match>
+        <Class name="org.sagebionetworks.bridge.S3Initializer" />
+        <Bug pattern="IC_INIT_CIRCULARITY" />
+    </Match>
 </FindBugsFilter>

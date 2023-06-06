@@ -139,12 +139,10 @@ public class AuthUtils {
     public static final AuthEvaluator CAN_DOWNLOAD_PARTICIPANT_ROSTER = new AuthEvaluator()
             .canAccessStudy().hasAnyRole(STUDY_COORDINATOR).or()
             .hasAnyRole(RESEARCHER, ADMIN);
-    
-    /**
-     * Can the caller read participant reports? 
-     */
+
+    /** Can the caller read/write/delete participant reports? */
     public static final AuthEvaluator CAN_READ_PARTICIPANT_REPORTS = new AuthEvaluator().isSelf().or()
-            .canAccessStudy().hasAnyRole(STUDY_DESIGNER, STUDY_COORDINATOR).or()
+            .canAccessStudy().hasAnyRole(STUDY_DESIGNER, STUDY_COORDINATOR, ORG_ADMIN).or()
             .hasAnyRole(DEVELOPER, RESEARCHER, WORKER, ADMIN);
     
     /**
@@ -173,11 +171,12 @@ public class AuthUtils {
 
     public static final AuthEvaluator CAN_DELETE_PARTICIPANTS = new AuthEvaluator()
             .canAccessStudy().hasAnyRole(STUDY_COORDINATOR).or()
-            .hasAnyRole(RESEARCHER, ADMIN); 
-    
+            .hasAnyRole(RESEARCHER, ADMIN);
+
     public static final AuthEvaluator CAN_EXPORT_PARTICIPANTS = new AuthEvaluator()
-            .canAccessStudy().hasAnyRole(STUDY_COORDINATOR);        
-    
+            .canAccessStudy().hasAnyRole(STUDY_COORDINATOR).or()
+            .hasAnyRole(ADMIN);
+
     /**
      * Can the caller view external IDs? Must be a study coordinator, developer, or researcher
      * (external IDs are pretty lax because in theory, they are not identifying).
@@ -267,7 +266,16 @@ public class AuthUtils {
             .isSelf().isEnrolledInStudy().or()
             .canAccessStudy().hasAnyRole(STUDY_DESIGNER, STUDY_COORDINATOR).or()
             .hasAnyRole(DEVELOPER, RESEARCHER, WORKER, ADMIN);
-    
+
+    /**
+     * Can the caller read uploads? Users can read their own uploads. Study designers and study coordinators can read
+     * any upload in their study. Developers, researchers, workers, and admins can read any upload in the app.
+     */
+    public static final AuthEvaluator CAN_READ_UPLOADS = new AuthEvaluator()
+            .isSelf().or()
+            .canAccessStudy().hasAnyRole(STUDY_DESIGNER, STUDY_COORDINATOR).or()
+            .hasAnyRole(DEVELOPER, RESEARCHER, WORKER, ADMIN);
+
     /**
      * Does the caller have the required role? Note that a few roles pass for other roles.
      */

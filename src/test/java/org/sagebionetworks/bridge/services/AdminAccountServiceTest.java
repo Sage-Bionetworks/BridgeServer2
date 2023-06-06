@@ -84,10 +84,16 @@ public class AdminAccountServiceTest extends Mockito {
     CacheProvider mockCacheProvider;
     
     @Mock
+    PermissionService mockPermissionService;
+    
+    @Mock
     RequestInfoService mockRequestInfoService;
     
     @Captor
     ArgumentCaptor<AccountId> accountIdCaptor;
+    
+    @Captor
+    ArgumentCaptor<Account> accountCaptor;
 
     @InjectMocks
     @Spy
@@ -271,6 +277,44 @@ public class AdminAccountServiceTest extends Mockito {
         verify(mockAccountWorkflowService).sendEmailVerificationToken(app, GUID, EMAIL);
         verify(mockSmsService).optInPhoneNumber(GUID, PHONE);
         verify(mockAccountWorkflowService).sendPhoneVerificationToken(app, GUID, PHONE);
+    }
+    
+    @Test
+    public void createAccount_updatesPermissionsFromRoles() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(ADMIN)).build());
+        
+        App app = App.create();
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
+        
+        Account account = Account.create();
+        account.setEmail(EMAIL);
+        account.setRoles(ImmutableSet.of(DEVELOPER));
+        
+        service.createAccount(TEST_APP_ID, account);
+        
+        verify(mockPermissionService).updatePermissionsFromRoles(accountCaptor.capture(), accountCaptor.capture());
+        
+        List<Account> capturedAccounts = accountCaptor.getAllValues();
+        assertEquals(capturedAccounts.get(0).getRoles(), ImmutableSet.of(DEVELOPER));
+        assertNull(capturedAccounts.get(1));
+    }
+    
+    @Test
+    public void createAccount_permissionsDoNotUpdateWithNoRoles() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(ADMIN)).build());
+        
+        App app = App.create();
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
+        
+        Account account = Account.create();
+        account.setEmail(EMAIL);
+        account.setRoles(ImmutableSet.of());
+        
+        service.createAccount(TEST_APP_ID, account);
+        
+        verifyZeroInteractions(mockPermissionService);
     }
     
     @Test
@@ -682,6 +726,110 @@ public class AdminAccountServiceTest extends Mockito {
         verify(mockAccountWorkflowService).sendEmailVerificationToken(app, TEST_USER_ID, "changed-email@email.com");
         verify(mockSmsService).optInPhoneNumber(TEST_USER_ID, changedPhone);
         verify(mockAccountWorkflowService).sendPhoneVerificationToken(app, TEST_USER_ID, changedPhone);
+    }
+    
+    @Test
+    public void updateAccount_changeRoleCausesPermissionUpdate() {
+        RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
+        App app = App.create();
+        app.setUserProfileAttributes(ImmutableSet.of("a"));
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
+        
+        Account persistedAccount = Account.create();
+        persistedAccount.setAdmin(TRUE);
+        persistedAccount.setEmail(EMAIL);
+        persistedAccount.setEmailVerified(TRUE);
+        persistedAccount.setRoles(ImmutableSet.of(RESEARCHER));
+        
+        when(mockAccountDao.getAccount(any())).thenReturn(Optional.of(persistedAccount));
+        
+        Account account = Account.create();
+        account.setId(TEST_USER_ID);
+        account.setEmail(EMAIL);
+        account.setEmailVerified(TRUE);
+        account.setRoles(ImmutableSet.of(DEVELOPER));
+        
+        service.updateAccount(TEST_APP_ID, account);
+        
+        verify(mockPermissionService).updatePermissionsFromRoles(eq(account), eq(persistedAccount));
+    }
+    
+    @Test
+    public void updateAccount_roleAdditionCausesPermissionUpdate() {
+        RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
+        App app = App.create();
+        app.setUserProfileAttributes(ImmutableSet.of("a"));
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
+        
+        Account persistedAccount = Account.create();
+        persistedAccount.setAdmin(TRUE);
+        persistedAccount.setEmail(EMAIL);
+        persistedAccount.setEmailVerified(TRUE);
+        persistedAccount.setRoles(ImmutableSet.of(RESEARCHER));
+        
+        when(mockAccountDao.getAccount(any())).thenReturn(Optional.of(persistedAccount));
+        
+        Account account = Account.create();
+        account.setId(TEST_USER_ID);
+        account.setEmail(EMAIL);
+        account.setEmailVerified(TRUE);
+        account.setRoles(ImmutableSet.of(DEVELOPER, RESEARCHER));
+        
+        service.updateAccount(TEST_APP_ID, account);
+        
+        verify(mockPermissionService).updatePermissionsFromRoles(eq(account), eq(persistedAccount));
+    }
+    
+    @Test
+    public void updateAccount_roleRemovalCausesPermissionUpdate() {
+        RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
+        App app = App.create();
+        app.setUserProfileAttributes(ImmutableSet.of("a"));
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
+        
+        Account persistedAccount = Account.create();
+        persistedAccount.setAdmin(TRUE);
+        persistedAccount.setEmail(EMAIL);
+        persistedAccount.setEmailVerified(TRUE);
+        persistedAccount.setRoles(ImmutableSet.of(RESEARCHER, DEVELOPER));
+        
+        when(mockAccountDao.getAccount(any())).thenReturn(Optional.of(persistedAccount));
+        
+        Account account = Account.create();
+        account.setId(TEST_USER_ID);
+        account.setEmail(EMAIL);
+        account.setEmailVerified(TRUE);
+        account.setRoles(ImmutableSet.of(DEVELOPER));
+        
+        service.updateAccount(TEST_APP_ID, account);
+        
+        verify(mockPermissionService).updatePermissionsFromRoles(eq(account), eq(persistedAccount));
+    }
+    
+    @Test
+    public void updateAccount_noRoleUpdateDoesNotCausePermissionUpdate() {
+        RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
+        App app = App.create();
+        app.setUserProfileAttributes(ImmutableSet.of("a"));
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
+        
+        Account persistedAccount = Account.create();
+        persistedAccount.setAdmin(TRUE);
+        persistedAccount.setEmail(EMAIL);
+        persistedAccount.setEmailVerified(TRUE);
+        persistedAccount.setRoles(ImmutableSet.of(RESEARCHER, DEVELOPER));
+        
+        when(mockAccountDao.getAccount(any())).thenReturn(Optional.of(persistedAccount));
+        
+        Account account = Account.create();
+        account.setId(TEST_USER_ID);
+        account.setEmail(EMAIL);
+        account.setEmailVerified(TRUE);
+        account.setRoles(ImmutableSet.of(DEVELOPER, RESEARCHER));
+        
+        service.updateAccount(TEST_APP_ID, account);
+        
+        verifyZeroInteractions(mockPermissionService);
     }
     
     @Test

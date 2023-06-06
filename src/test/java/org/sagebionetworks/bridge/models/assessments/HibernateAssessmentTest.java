@@ -4,6 +4,7 @@ import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.CUSTOMIZATION_FIELDS;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.IDENTIFIER;
+import static org.sagebionetworks.bridge.TestConstants.LABELS;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_OWNER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TAGS;
@@ -11,9 +12,19 @@ import static org.sagebionetworks.bridge.models.OperatingSystem.ANDROID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.testng.annotations.Test;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
 public class HibernateAssessmentTest {
+    private static final String FRAMEWORK_IDENTIFIER = "framework-identifier";
+    private static final String JSON_SCHEMA_URL = "json schema url";
+    private static final String CATEGORY = "cognition";
+    private static final Integer MIN_AGE = 10;
+    private static final Integer MAX_AGE = 17;
+    private static final JsonNode ADDITIONAL_METADATA = BridgeObjectMapper.get().createObjectNode()
+            .put("key1", "value1").put("key2", "value2");
 
     @Test
     public void revisionDefaultsToOne() {
@@ -54,6 +65,17 @@ public class HibernateAssessmentTest {
         assessment.setDeleted(true);
         assessment.setRevision(5);
         assessment.setVersion(8L);
+        ImageResource imageResource = new ImageResource();
+        imageResource.setName("default");
+        imageResource.setModule("sage_survey");
+        imageResource.setLabels(LABELS);
+        assessment.setImageResource(imageResource);
+        assessment.setFrameworkIdentifier(FRAMEWORK_IDENTIFIER);
+        assessment.setJsonSchemaUrl(JSON_SCHEMA_URL);
+        assessment.setCategory(CATEGORY);
+        assessment.setMinAge(MIN_AGE);
+        assessment.setMaxAge(MAX_AGE);
+        assessment.setAdditionalMetadata(ADDITIONAL_METADATA);
         return assessment;
     }
     
@@ -76,5 +98,17 @@ public class HibernateAssessmentTest {
         assertTrue(assessment.isDeleted());
         assertEquals(assessment.getRevision(), 5);
         assertEquals(assessment.getVersion(), 8);
+        assertEquals(assessment.getImageResource().getName(), "default");
+        assertEquals(assessment.getImageResource().getModule(), "sage_survey");
+        assertEquals(assessment.getImageResource().getLabels().get(0).getLang(), LABELS.get(0).getLang());
+        assertEquals(assessment.getImageResource().getLabels().get(0).getValue(), LABELS.get(0).getValue());
+        assertEquals(assessment.getImageResource().getLabels().get(1).getLang(), LABELS.get(1).getLang());
+        assertEquals(assessment.getImageResource().getLabels().get(1).getValue(), LABELS.get(1).getValue());
+        assertEquals(assessment.getFrameworkIdentifier(), FRAMEWORK_IDENTIFIER);
+        assertEquals(assessment.getJsonSchemaUrl(), JSON_SCHEMA_URL);
+        assertEquals(assessment.getCategory(), CATEGORY);
+        assertEquals(assessment.getMinAge(), MIN_AGE);
+        assertEquals(assessment.getMaxAge(), MAX_AGE);
+        assertEquals(assessment.getAdditionalMetadata(), ADDITIONAL_METADATA);
     }
 }

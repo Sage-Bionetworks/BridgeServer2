@@ -20,6 +20,10 @@ public interface Upload {
      */
     boolean canBeValidated();
 
+    /** Uploader's client info, in JSON format. */
+    String getClientInfo();
+    void setClientInfo(String clientInfo);
+
     /** Upload content length in bytes. */
     long getContentLength();
     void setContentLength(long contentLength);
@@ -115,6 +119,10 @@ public interface Upload {
 
     /** @see #getUploadId */
     void setUploadId(String uploadId);
+
+    /** Participant's User-Agent header. */
+    String getUserAgent();
+    void setUserAgent(String userAgent);
 
     /** True if the upload is zipped. False if it is a single file. */
     boolean isZipped();

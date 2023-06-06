@@ -988,3 +988,106 @@ MODIFY COLUMN `uploadURL` VARCHAR(1536) DEFAULT NULL;
 
 ALTER TABLE `FileRevisions`
 MODIFY COLUMN `uploadURL` VARCHAR(2048) DEFAULT NULL;
+
+-- changeset bridge:72
+
+CREATE TABLE IF NOT EXISTS `DemographicsUsers` (
+    `id` varchar(60) NOT NULL,
+    `studyId` varchar(60) NULL,
+    `appId` varchar(60) NOT NULL,
+    `userId` varchar(255) NOT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY (`studyId`, `appId`, `userId`),
+    CONSTRAINT `DemographicUser-Account-Constraint` FOREIGN KEY (`userId`) REFERENCES `Accounts` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `DemographicUser-Study-Constraint` FOREIGN KEY (`studyId`, `appId`) REFERENCES `Substudies` (`id`, `studyId`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `Demographics` (
+    `id` varchar(60) NOT NULL,
+    `demographicUserId` varchar(60) NOT NULL,
+    `categoryName` varchar(255) NOT NULL,
+    `multipleSelect` boolean NOT NULL,
+    `units` varchar(512) NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY (`demographicUserId`, `categoryName`),
+    CONSTRAINT `Demographic-DemographicUser-Constraint` FOREIGN KEY (`demographicUserId`) REFERENCES `DemographicsUsers` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `DemographicsValues` (
+    `demographicId` varchar(60) NOT NULL,
+    `value` varchar(1024) NOT NULL,
+    CONSTRAINT `DemographicValue-Demographic-Constraint` FOREIGN KEY (`demographicId`) REFERENCES `Demographics` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+-- changeset bridge:73
+
+ALTER TABLE `Assessments`
+ADD COLUMN `imageResourceName` varchar(255) DEFAULT NULL,
+ADD COLUMN `imageResourceModule` varchar(255) DEFAULT NULL,
+ADD COLUMN `imageResourceLabels` text DEFAULT NULL;
+
+ALTER TABLE `SessionAssessments`
+ADD COLUMN `imageResourceName` varchar(255) DEFAULT NULL,
+ADD COLUMN `imageResourceModule` varchar(255) DEFAULT NULL,
+ADD COLUMN `imageResourceLabels` text DEFAULT NULL;
+
+-- changeset bridge:74
+
+ALTER TABLE `TimelineMetadata`
+ADD INDEX `TimelineMetadata-SessionInstanceGuid` (sessionInstanceGuid);
+
+-- changeset bridge:75
+
+ALTER TABLE `DemographicsValues`
+ADD COLUMN `invalidity` varchar(512) DEFAULT NULL;
+
+-- changeset bridge:76
+
+CREATE TABLE IF NOT EXISTS `Alerts` (
+    `id` varchar(60) NOT NULL,
+    `createdOn` bigint(20) NOT NULL,
+    `studyId` varchar(60) NOT NULL,
+    `appId` varchar(60) NOT NULL,
+    `userId` varchar(255) NOT NULL,
+    `category` varchar(255) NOT NULL,
+    `data` varchar(2048) NOT NULL,
+    `isRead` boolean NOT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY (`appId`, `studyId`, `userId`, `category`),
+    INDEX (`appId`, `studyId`),
+    INDEX (`appId`, `studyId`, `userId`),
+    INDEX (`appId`, `studyId`, `category`),
+    INDEX (`appId`, `userId`),
+    CONSTRAINT `Alert-Account-Constraint` FOREIGN KEY (`userId`) REFERENCES `Accounts` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `Alert-Study-Constraint` FOREIGN KEY (`studyId`, `appId`) REFERENCES `Substudies` (`id`, `studyId`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+-- changeset bridge:77
+
+ALTER TABLE `Assessments`
+ADD `frameworkIdentifier` varchar(255) DEFAULT NULL,
+ADD `jsonSchemaUrl` varchar(500) DEFAULT NULL,
+ADD `category` varchar(255) DEFAULT NULL,
+ADD `minAge` int DEFAULT NULL,
+ADD `maxAge` int DEFAULT NULL,
+ADD `additionalMetadata` text DEFAULT NULL;
+
+-- changeset bridge:78
+
+CREATE TABLE IF NOT EXISTS `AdherenceUploads` (
+    `userId` varchar(255) NOT NULL,
+    `studyId` varchar(60) NOT NULL,
+    `instanceGuid` varchar(128) NOT NULL,
+    `eventTimestamp` bigint(20) unsigned,
+    `instanceTimestamp` bigint(20) unsigned,
+    `uploadId` varchar(256) NOT NULL,
+    UNIQUE KEY (`userId`, `studyId`, `instanceGuid`, `eventTimestamp`, `instanceTimestamp`, `uploadId`),
+    CONSTRAINT `AdherenceUpload-AdherenceRecord-Constraint` FOREIGN KEY (`userId`, `studyId`, `instanceGuid`, `eventTimestamp`, `instanceTimestamp`) REFERENCES `AdherenceRecords` (`userId`, `studyId`, `instanceGuid`, `eventTimestamp`, `instanceTimestamp`) ON DELETE CASCADE,
+    INDEX (`uploadId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+-- changeset bridge:79
+
+ALTER TABLE `AdherenceRecords`
+ADD INDEX `AdherenceRecords-AppId-StudyId-EventTimestamp` (appId, studyId, eventTimestamp),
+ADD INDEX `AdherenceRecords-AppId-StudyId-UserId-EventTimestamp` (appId, studyId, userId, eventTimestamp);

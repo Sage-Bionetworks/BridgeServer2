@@ -33,6 +33,7 @@ import com.google.common.collect.ImmutableList;
  */
 @DynamoDBTable(tableName = "Upload2")
 public class DynamoUpload2 implements Upload {
+    private String clientInfo;
     private long contentLength;
     private String contentMd5;
     private String contentType;
@@ -49,6 +50,7 @@ public class DynamoUpload2 implements Upload {
     private UploadCompletionClient completedBy;
     private LocalDate uploadDate;
     private String uploadId;
+    private String userAgent;
     private final List<String> validationMessageList = new ArrayList<>();
     private Long version;
     private Boolean zipped;
@@ -78,6 +80,16 @@ public class DynamoUpload2 implements Upload {
         // The only status that can be validated is REQUESTED. Once validation happens, the status moves to
         // VALIDATION_IN_PROGRESS, and the user can no longer call uploadComplete() to kick off validation.
         return status == UploadStatus.REQUESTED;
+    }
+
+    @Override
+    public String getClientInfo() {
+        return clientInfo;
+    }
+
+    @Override
+    public void setClientInfo(String clientInfo) {
+        this.clientInfo = clientInfo;
     }
 
     /** Upload content length in bytes. */
@@ -296,6 +308,16 @@ public class DynamoUpload2 implements Upload {
     @Override
     public void setUploadId(String uploadId) {
         this.uploadId = uploadId;
+    }
+
+    @Override
+    public String getUserAgent() {
+        return userAgent;
+    }
+
+    @Override
+    public void setUserAgent(String userAgent) {
+        this.userAgent = userAgent;
     }
 
     /**

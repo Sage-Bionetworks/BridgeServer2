@@ -19,6 +19,7 @@ import org.sagebionetworks.bridge.json.DateTimeToLongDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
 import org.sagebionetworks.bridge.models.accounts.ParticipantVersion;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
+import org.sagebionetworks.bridge.models.demographics.Demographic;
 
 @DynamoDBTable(tableName = "ParticipantVersion")
 public class DynamoParticipantVersion implements ParticipantVersion {
@@ -32,6 +33,8 @@ public class DynamoParticipantVersion implements ParticipantVersion {
     private SharingScope sharingScope;
     private Map<String, String> studyMemberships;
     private String timeZone;
+    private Map<String, Demographic> appDemographics;
+    private Map<String, Map<String, Demographic>> studyDemographics;
     private Long version;
 
     /**
@@ -175,6 +178,36 @@ public class DynamoParticipantVersion implements ParticipantVersion {
     @Override
     public void setTimeZone(String timeZone) {
         this.timeZone = timeZone;
+    }
+
+    @Override
+    @DynamoDBTypeConverted(converter = AppDemographicsMapMarshaller.class)
+    public Map<String, Demographic> getAppDemographics() {
+        return appDemographics;
+    }
+
+    @Override
+    public void setAppDemographics(Map<String, Demographic> appDemographics) {
+        this.appDemographics = appDemographics;
+        if (appDemographics == null || appDemographics.isEmpty()) {
+            // DDB doesn't support empty collections, use null for empty collections.
+            this.appDemographics = null;
+        }
+    }
+
+    @Override
+    @DynamoDBTypeConverted(converter = StudyDemographicsMapMarshaller.class)
+    public Map<String, Map<String, Demographic>> getStudyDemographics() {
+        return studyDemographics;
+    }
+
+    @Override
+    public void setStudyDemographics(Map<String, Map<String, Demographic>> studyDemographics) {
+        this.studyDemographics = studyDemographics;
+        if (studyDemographics == null || studyDemographics.isEmpty()) {
+            // DDB doesn't support empty collections, use null for empty collections.
+            this.studyDemographics = null;
+        }
     }
 
     /**

@@ -7,12 +7,14 @@ import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.ACCOUNT_ID;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestUtils.createJson;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertSame;
 import static org.testng.Assert.fail;
 
 import java.net.URL;
@@ -54,6 +56,7 @@ import org.sagebionetworks.bridge.models.upload.UploadSession;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStatus;
 import org.sagebionetworks.bridge.models.upload.UploadView;
+import org.sagebionetworks.bridge.models.upload.UploadViewEx3;
 import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.HealthDataService;
 import org.sagebionetworks.bridge.services.RequestInfoService;
@@ -495,5 +498,89 @@ public class UploadControllerTest extends Mockito {
 
         // Health code is filtered out of the record.
         assertNull(recordNode.get("healthCode"));
+    }
+
+    @Test
+    public void getUploadViewForExporter3() {
+        // Mock session.
+        doReturn(mockResearcherSession).when(controller).getAuthenticatedSession();
+        when(mockResearcherSession.getAppId()).thenReturn(TEST_APP_ID);
+
+        // Mock service.
+        UploadViewEx3 uploadView = new UploadViewEx3();
+        when(mockUploadService.getUploadViewForExporter3(any(), any(), any(), anyBoolean(), anyBoolean()))
+                .thenReturn(uploadView);
+
+        // Execute and validate.
+        UploadViewEx3 result = controller.getUploadViewForExporter3(Optional.empty(), UPLOAD_ID,
+                true, true);
+        assertSame(uploadView, result);
+
+        // Verify service call.
+        verify(mockUploadService).getUploadViewForExporter3(TEST_APP_ID, null, UPLOAD_ID, true,
+                true);
+    }
+
+    @Test
+    public void getUploadViewForExporter3_WithStudyId() {
+        // Mock session.
+        doReturn(mockResearcherSession).when(controller).getAuthenticatedSession();
+        when(mockResearcherSession.getAppId()).thenReturn(TEST_APP_ID);
+
+        // Mock service.
+        UploadViewEx3 uploadView = new UploadViewEx3();
+        when(mockUploadService.getUploadViewForExporter3(any(), any(), any(), anyBoolean(), anyBoolean()))
+                .thenReturn(uploadView);
+
+        // Execute and validate.
+        UploadViewEx3 result = controller.getUploadViewForExporter3(Optional.of(TEST_STUDY_ID), UPLOAD_ID,
+                false, false);
+        assertSame(uploadView, result);
+
+        // Verify service call.
+        verify(mockUploadService).getUploadViewForExporter3(TEST_APP_ID, TEST_STUDY_ID, UPLOAD_ID, false,
+                false);
+    }
+
+    @Test
+    public void getUploadEx3ForWorker() {
+        // Mock session.
+        doReturn(mockWorkerSession).when(controller).getAuthenticatedSession(WORKER);
+        when(mockWorkerSession.getAppId()).thenReturn("other-app-id");
+
+        // Mock service.
+        UploadViewEx3 uploadView = new UploadViewEx3();
+        when(mockUploadService.getUploadViewForExporter3(any(), any(), any(), anyBoolean(), anyBoolean()))
+                .thenReturn(uploadView);
+
+        // Execute and validate.
+        UploadViewEx3 result = controller.getUploadEx3ForWorker(TEST_APP_ID, Optional.empty(), UPLOAD_ID,
+                true, true);
+        assertSame(uploadView, result);
+
+        // Verify service call.
+        verify(mockUploadService).getUploadViewForExporter3(TEST_APP_ID, null, UPLOAD_ID, true,
+                true);
+    }
+
+    @Test
+    public void getUploadEx3ForWorker_WithStudyId() {
+        // Mock session.
+        doReturn(mockWorkerSession).when(controller).getAuthenticatedSession(WORKER);
+        when(mockWorkerSession.getAppId()).thenReturn("other-app-id");
+
+        // Mock service.
+        UploadViewEx3 uploadView = new UploadViewEx3();
+        when(mockUploadService.getUploadViewForExporter3(any(), any(), any(), anyBoolean(), anyBoolean()))
+                .thenReturn(uploadView);
+
+        // Execute and validate.
+        UploadViewEx3 result = controller.getUploadEx3ForWorker(TEST_APP_ID, Optional.of(TEST_STUDY_ID), UPLOAD_ID,
+                false, false);
+        assertSame(uploadView, result);
+
+        // Verify service call.
+        verify(mockUploadService).getUploadViewForExporter3(TEST_APP_ID, TEST_STUDY_ID, UPLOAD_ID, false,
+                false);
     }
 }

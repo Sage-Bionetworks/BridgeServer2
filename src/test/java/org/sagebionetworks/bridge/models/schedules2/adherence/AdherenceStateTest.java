@@ -6,6 +6,7 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
+import static org.testng.Assert.fail;
 
 import java.util.List;
 
@@ -214,5 +215,47 @@ public class AdherenceStateTest extends Mockito {
         assertSame(copy.getEvents(), state.getEvents());
         assertSame(copy.getAdherenceRecords(), state.getAdherenceRecords());
         assertSame(copy.getStudyStartEventId(), "event1");
+    }
+    
+    // BRIDGE-3331 testing bug where persistent windows led to a duplicate key error
+    // when collecting adherence records with duplicate instance GUIDs into guid into a map.
+    // Persistent time windows are ignored in adherence, so we can safely bypass the exception.
+    @Test
+    public void persistentWindowDuplicateKey() {
+        StudyActivityEvent e1 = new StudyActivityEvent.Builder()
+                .withEventId("event1")
+                .withTimestamp(EVENT_TS1)
+                .build();
+
+        StudyActivityEvent e2 = new StudyActivityEvent.Builder()
+                .withEventId("event2")
+                .withTimestamp(EVENT_TS2)
+                .build();
+    
+        List<StudyActivityEvent> events = ImmutableList.of(e1, e2);
+    
+        AdherenceRecord record1 = new AdherenceRecord();
+        record1.setInstanceGuid("ar1");
+        record1.setEventTimestamp(EVENT_TS1);
+    
+        AdherenceRecord record2 = new AdherenceRecord();
+        record2.setInstanceGuid("ar1");
+        record2.setEventTimestamp(EVENT_TS2);
+    
+        List<AdherenceRecord> adherenceRecords = ImmutableList.of(record1, record2);
+    
+        // If there bug is present, there will be an exception thrown during the state build.
+        try {
+            AdherenceState adherenceState = new AdherenceState.Builder()
+                    .withMetadata(metadata)
+                    .withEvents(events)
+                    .withAdherenceRecords(adherenceRecords)
+                    .withNow(NOW)
+                    .withClientTimeZone(TEST_CLIENT_TIME_ZONE)
+                    .withStudyStartEventId("event1")
+                    .build();
+        } catch (IllegalStateException e) {
+            fail("AdherenceState failed to build due to duplicate adherence record instanceGuids.");
+        }
     }
 }

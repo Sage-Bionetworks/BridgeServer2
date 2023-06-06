@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.sagebionetworks.bridge.dynamodb.DynamoParticipantVersion;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
+import org.sagebionetworks.bridge.models.demographics.Demographic;
 
 /**
  * Represents a de-identified snapshot of a study participant at a moment in time. This is used by Exporter 3.0 to
@@ -76,4 +77,22 @@ public interface ParticipantVersion extends BridgeEntity {
      */
     String getTimeZone();
     void setTimeZone(String timeZone);
+
+    /**
+     * Participant's app-level demographic information. Maps appId to map of
+     * categoryName to one of the participant's Demographics for that app. Each
+     * Demographic contains the participant's demographic information for a specific
+     * category.
+     */
+    Map<String, Demographic> getAppDemographics();
+    void setAppDemographics(Map<String, Demographic> appDemographics);
+
+    /**
+     * Participant's study-level demographic information. Maps studyId to map of
+     * categoryName to one of the participant's Demographics for that study. Each
+     * Demographic contains the participant's demographic information for a specific
+     * category.
+     */
+    Map<String, Map<String, Demographic>> getStudyDemographics();
+    void setStudyDemographics(Map<String, Map<String, Demographic>> studyDemographics);
 }

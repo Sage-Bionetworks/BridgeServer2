@@ -1,7 +1,5 @@
 package org.sagebionetworks.bridge;
 
-import static org.sagebionetworks.bridge.models.ClientInfo.UNKNOWN_CLIENT;
-
 import java.util.List;
 import java.util.Set;
 
@@ -23,7 +21,8 @@ public class RequestContext {
     private static final ThreadLocal<RequestContext> REQUEST_CONTEXT_THREAD_LOCAL = ThreadLocal.withInitial(() -> null);
     
     public static final RequestContext NULL_INSTANCE = new RequestContext(null, null, null, null, ImmutableSet.of(),
-            ImmutableSet.of(), ImmutableSet.of(), null, UNKNOWN_CLIENT, ImmutableList.of(), null);
+            ImmutableSet.of(), ImmutableSet.of(), null, ImmutableList.of(), null,
+            null);
     
     /** Gets the request context for the current thread. See also RequestInterceptor. */
     public static RequestContext get() {
@@ -71,10 +70,11 @@ public class RequestContext {
     private final List<String> callerLanguages;    
     private final Metrics metrics;
     private final String callerIpAddress;
+    private final String userAgent;
     
     private RequestContext(Metrics metrics, String requestId, String callerAppId, String callerOrgMembership,
             Set<String> callerEnrolledStudies, Set<String> orgSponsoredStudies, Set<Roles> callerRoles,
-            String callerUserId, ClientInfo callerClientInfo, List<String> callerLanguages, String callerIpAddress) {
+            String callerUserId, List<String> callerLanguages, String callerIpAddress, String userAgent) {
         this.requestId = requestId;
         this.callerAppId = callerAppId;
         this.callerOrgMembership = callerOrgMembership;
@@ -82,10 +82,11 @@ public class RequestContext {
         this.orgSponsoredStudies = orgSponsoredStudies;
         this.callerRoles = callerRoles;
         this.callerUserId = callerUserId;
-        this.callerClientInfo = callerClientInfo;
+        this.callerClientInfo = ClientInfo.fromUserAgentCache(userAgent);
         this.callerLanguages = callerLanguages;
         this.metrics = metrics;
         this.callerIpAddress = callerIpAddress;
+        this.userAgent = userAgent;
     }
     
     public Metrics getMetrics() {
@@ -132,19 +133,25 @@ public class RequestContext {
     public String getCallerIpAddress() {
         return callerIpAddress;
     }
+
+    /** The user's User-Agent header. */
+    public String getUserAgent() {
+        return userAgent;
+    }
+
     public RequestContext.Builder toBuilder() {
         return new RequestContext.Builder()
-            .withRequestId(requestId)
-            .withCallerClientInfo(callerClientInfo)
-            .withCallerAppId(callerAppId)
-            .withCallerOrgMembership(callerOrgMembership)
-            .withCallerLanguages(callerLanguages)
-            .withCallerRoles(callerRoles)
-            .withCallerEnrolledStudies(callerEnrolledStudies)
-            .withOrgSponsoredStudies(orgSponsoredStudies)
-            .withCallerUserId(callerUserId)
-            .withMetrics(metrics)
-            .withCallerIpAddress(callerIpAddress);
+                .withRequestId(requestId)
+                .withCallerAppId(callerAppId)
+                .withCallerOrgMembership(callerOrgMembership)
+                .withCallerLanguages(callerLanguages)
+                .withCallerRoles(callerRoles)
+                .withCallerEnrolledStudies(callerEnrolledStudies)
+                .withOrgSponsoredStudies(orgSponsoredStudies)
+                .withCallerUserId(callerUserId)
+                .withMetrics(metrics)
+                .withCallerIpAddress(callerIpAddress)
+                .withUserAgent(userAgent);
     }
     
     public static class Builder {
@@ -156,9 +163,9 @@ public class RequestContext {
         private Set<Roles> callerRoles;
         private String requestId;
         private String callerUserId;
-        private ClientInfo callerClientInfo;
         private List<String> callerLanguages;
         private String callerIpAddress;
+        private String userAgent;
 
         public Builder withMetrics(Metrics metrics) {
             this.metrics = metrics;
@@ -194,16 +201,18 @@ public class RequestContext {
             this.callerUserId = callerUserId;
             return this;
         }
-        public Builder withCallerClientInfo(ClientInfo callerClientInfo) {
-            this.callerClientInfo = callerClientInfo;
-            return this;
-        }
         public Builder withCallerLanguages(List<String> callerLanguages) {
             this.callerLanguages = callerLanguages;
             return this;
         }
         public Builder withCallerIpAddress(String callerIpAddress) {
             this.callerIpAddress = callerIpAddress;
+            return this;
+        }
+
+        /** The user's User-Agent header. */
+        public Builder withUserAgent(String userAgent) {
+            this.userAgent = userAgent;
             return this;
         }
         
@@ -223,14 +232,12 @@ public class RequestContext {
             if (callerLanguages == null) {
                 callerLanguages = ImmutableList.of();
             }
-            if (callerClientInfo == null) {
-                callerClientInfo = ClientInfo.UNKNOWN_CLIENT;
-            }
             if (metrics == null) {
                 metrics = new Metrics(requestId);
             }
             return new RequestContext(metrics, requestId, callerAppId, callerOrgMembership, callerEnrolledStudies,
-                    orgSponsoredStudies, callerRoles, callerUserId, callerClientInfo, callerLanguages, callerIpAddress);
+                    orgSponsoredStudies, callerRoles, callerUserId, callerLanguages, callerIpAddress,
+                    userAgent);
         }
     }
 
@@ -239,7 +246,7 @@ public class RequestContext {
         return "RequestContext [requestId=" + requestId + ", callerAppId=" + callerAppId + ", callerOrgMembership="
                 + callerOrgMembership + ", callerEnrolledStudies=" + callerEnrolledStudies + ", orgSponsoredStudies="
                 + orgSponsoredStudies + ", callerRoles=" + callerRoles + ", callerUserId=" + callerUserId
-                + ", callerClientInfo=" + callerClientInfo + ", callerIpAddress=" + callerIpAddress
-                + ", callerLanguages=" + callerLanguages + ", metrics=" + metrics + "]";
+                + ", callerIpAddress=" + callerIpAddress + ", callerLanguages=" + callerLanguages + ", metrics="
+                + metrics + ", userAgent=" + userAgent + "]";
     }
 }

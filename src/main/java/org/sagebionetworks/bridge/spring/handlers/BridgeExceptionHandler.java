@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableSet;
 
+import org.apache.catalina.connector.ClientAbortException;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,6 +68,13 @@ public class BridgeExceptionHandler {
                 log.warn(msg, throwable);
                 return;
             }
+        }
+
+        // BRIDGE-3321 - ClientAbortException aka "broken pipe" is not a problem, it's just the client. Log a warning
+        // instead of an error.
+        if (throwable instanceof ClientAbortException) {
+            log.warn(msg, throwable);
+            return;
         }
 
         log.error(msg, throwable);

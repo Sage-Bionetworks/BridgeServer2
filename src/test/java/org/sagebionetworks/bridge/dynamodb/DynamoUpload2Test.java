@@ -19,12 +19,14 @@ import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.upload.UploadCompletionClient;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
 
 public class DynamoUpload2Test {
-    
+    private static final String CLIENT_INFO = "dummy client info";
+
     /**
      * We will be returning this object through the API in a later update to the server. For now, 
      * we just want to know we are persisting an object that can return the correct JSON. We 
@@ -37,6 +39,7 @@ public class DynamoUpload2Test {
         ObjectNode metadata = (ObjectNode) BridgeObjectMapper.get().readTree("{\"key\":\"value\"}");
         
         DynamoUpload2 upload = new DynamoUpload2();
+        upload.setClientInfo(CLIENT_INFO);
         upload.setCompletedBy(UploadCompletionClient.S3_WORKER);
         upload.setRequestedOn(requestedOn.getMillis());
         upload.setCompletedOn(completedOn.getMillis());
@@ -53,11 +56,13 @@ public class DynamoUpload2Test {
         upload.setAppId(TEST_APP_ID);
         upload.setUploadDate(LocalDate.parse("2016-10-10"));
         upload.setUploadId("DEF");
+        upload.setUserAgent(TestConstants.UA);
         upload.setValidationMessageList(Lists.newArrayList("message 1", "message 2"));
         upload.setVersion(2L);
         upload.setZipped(false);
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(upload);
+        assertEquals(node.get("clientInfo").textValue(), CLIENT_INFO);
         assertEquals(node.get("completedBy").textValue(), "s3_worker");
         assertEquals(node.get("requestedOn").textValue(), requestedOn.toString());
         assertEquals(node.get("completedOn").textValue(), completedOn.toString());
@@ -74,6 +79,7 @@ public class DynamoUpload2Test {
         assertEquals(node.get("filename").textValue(), "filename.zip");
         assertEquals(node.get("appId").textValue(), TEST_APP_ID);
         assertEquals(node.get("studyId").textValue(), TEST_APP_ID);
+        assertEquals(node.get("userAgent").textValue(), TestConstants.UA);
         assertEquals(node.get("version").longValue(), 2L);
         assertEquals(node.get("healthCode").textValue(), "healthCode");
         assertFalse(node.get("zipped").booleanValue());

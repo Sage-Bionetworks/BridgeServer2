@@ -3,6 +3,9 @@ package org.sagebionetworks.bridge.models.schedules2.adherence.eventstream;
 import static java.util.stream.Collectors.toList;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
+import static org.sagebionetworks.bridge.TestConstants.SCHEDULE_GUID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.models.schedules2.PerformanceOrder.SEQUENTIAL;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.ABANDONED;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.COMPLETED;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.DECLINED;
@@ -14,6 +17,7 @@ import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionComp
 import static org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamAdherenceReportGenerator.INSTANCE;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 import java.util.ArrayList;
@@ -21,7 +25,13 @@ import java.util.List;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.joda.time.LocalDate;
+import org.joda.time.LocalTime;
+import org.joda.time.Period;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
+import org.sagebionetworks.bridge.models.schedules2.Schedule2;
+import org.sagebionetworks.bridge.models.schedules2.Session;
+import org.sagebionetworks.bridge.models.schedules2.TimeWindow;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceState;
 import org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantStudyProgress;
@@ -48,6 +58,7 @@ public class EventStreamAdherenceReportGeneratorTest {
     private static final TimelineMetadata META2_B = createMeta("gnescr0HRz5T2JEjc0Ad6Q", "gnescr0HRz5T2JEjc0Ad6Q",
             "u90_okqrmPgKptcc9E8lORwC", "ksuWqp17x3i9zjQBh0FHSDS2", 2, 2, "study_burst:Main Sequence:01",
             "Main Sequence", 1, "*", "Session #1", false);
+    private static final Schedule2 SCHEDULE = createSchedule();
     
     @Test
     public void calculatesReport() throws Exception {
@@ -55,8 +66,7 @@ public class EventStreamAdherenceReportGeneratorTest {
         StudyActivityEvent event = createEvent("sessionStartEventId", NOW.minusDays(14));
 
         AdherenceState state = createState(NOW, META1, event, adherenceRecord);
-
-        EventStreamAdherenceReport report = INSTANCE.generate(state);
+        EventStreamAdherenceReport report = INSTANCE.generate(state, SCHEDULE);
 
         assertEquals(report.getTimestamp(), NOW.withZone(DateTimeZone.forID("America/Chicago")));
         assertEquals(report.getAdherencePercent(), 100);
@@ -75,7 +85,7 @@ public class EventStreamAdherenceReportGeneratorTest {
         // verify the metadata is being copied over into the report.
         AdherenceState state = createState(NOW, META1, null, null);
 
-        EventStreamAdherenceReport report = INSTANCE.generate(state);
+        EventStreamAdherenceReport report = INSTANCE.generate(state, SCHEDULE);
         
         assertEquals(report.getTimestamp(), NOW.withZone(DateTimeZone.forID("America/Chicago")));
         assertEquals(report.getAdherencePercent(), 100);
@@ -90,12 +100,19 @@ public class EventStreamAdherenceReportGeneratorTest {
         
         EventStreamDay day = stream.getByDayEntries().get(Integer.valueOf(13)).get(0);
         assertEquals(day.getSessionGuid(), "sessionGuid");
-        assertEquals(day.getSessionGuid(), "sessionGuid");
+        assertEquals(day.getSessionName(), "sessionName");
         assertEquals(day.getStartDay(), (Integer)13);
-        assertEquals(day.getTimeWindows().get(0).getSessionInstanceGuid(), "sessionInstanceGuid");
-        assertEquals(day.getTimeWindows().get(0).getTimeWindowGuid(), "timeWindowGuid");
-        assertEquals(day.getTimeWindows().get(0).getEndDay(), (Integer)15);
-        assertEquals(day.getTimeWindows().get(0).getState(), NOT_APPLICABLE);
+        
+        EventStreamWindow window = day.getTimeWindows().get(0);
+        assertEquals(window.getSessionInstanceGuid(), "sessionInstanceGuid");
+        assertEquals(window.getTimeWindowGuid(), "timeWindowGuid");
+        assertEquals(window.getEndDay(), (Integer)15);
+        // Start and end dates are not set without the starting event
+        assertNull(window.getStartDate());
+        assertNull(window.getEndDate());
+        assertEquals(window.getStartTime(), LocalTime.parse("01:00"));
+        assertEquals(window.getEndTime(), LocalTime.parse("02:00"));
+        assertEquals(window.getState(), NOT_APPLICABLE);
     }
     
     @Test
@@ -137,7 +154,7 @@ public class EventStreamAdherenceReportGeneratorTest {
         // verify the metadata is being copied over into the report.
         AdherenceState state = createState(NOW, META1, null, null);
 
-        EventStreamAdherenceReport report = INSTANCE.generate(state);
+        EventStreamAdherenceReport report = INSTANCE.generate(state, SCHEDULE);
         assertEquals(getReportStates(report), ImmutableList.of(NOT_APPLICABLE));
     }
     
@@ -149,7 +166,7 @@ public class EventStreamAdherenceReportGeneratorTest {
         
         AdherenceState state = createState(NOW, META1, null, adherenceRecord);
 
-        EventStreamAdherenceReport report = INSTANCE.generate(state);
+        EventStreamAdherenceReport report = INSTANCE.generate(state, SCHEDULE);
         assertEquals(getReportStates(report), ImmutableList.of(NOT_APPLICABLE));
     }
     
@@ -159,7 +176,7 @@ public class EventStreamAdherenceReportGeneratorTest {
 
         AdherenceState state = createState(NOW.minusDays(10), META1, event, null);
 
-        EventStreamAdherenceReport report = INSTANCE.generate(state);
+        EventStreamAdherenceReport report = INSTANCE.generate(state, SCHEDULE);
         assertEquals(getReportStates(report), ImmutableList.of(NOT_YET_AVAILABLE));
     }
     
@@ -170,7 +187,7 @@ public class EventStreamAdherenceReportGeneratorTest {
 
         AdherenceState state = createState(NOW.minusDays(10), META1, event, adherenceRecord);
 
-        EventStreamAdherenceReport report = INSTANCE.generate(state);
+        EventStreamAdherenceReport report = INSTANCE.generate(state, SCHEDULE);
         assertEquals(getReportStates(report), ImmutableList.of(NOT_YET_AVAILABLE));
     }
     
@@ -181,7 +198,7 @@ public class EventStreamAdherenceReportGeneratorTest {
 
         AdherenceState state = createState(NOW, META1, event, adherenceRecord);
 
-        EventStreamAdherenceReport report = INSTANCE.generate(state);
+        EventStreamAdherenceReport report = INSTANCE.generate(state, SCHEDULE);
         assertEquals(getReportStates(report), ImmutableList.of(UNSTARTED));
     }
     
@@ -192,7 +209,7 @@ public class EventStreamAdherenceReportGeneratorTest {
 
         AdherenceState state = createState(NOW, META1, event, adherenceRecord);
 
-        EventStreamAdherenceReport report = INSTANCE.generate(state);
+        EventStreamAdherenceReport report = INSTANCE.generate(state, SCHEDULE);
         assertEquals(getReportStates(report), ImmutableList.of(STARTED));
     }
     
@@ -203,7 +220,7 @@ public class EventStreamAdherenceReportGeneratorTest {
         
         AdherenceState state = createState(NOW, META1, event, adherenceRecord);
 
-        EventStreamAdherenceReport report = INSTANCE.generate(state);
+        EventStreamAdherenceReport report = INSTANCE.generate(state, SCHEDULE);
         assertEquals(getReportStates(report), ImmutableList.of(COMPLETED));
     }
     
@@ -214,7 +231,7 @@ public class EventStreamAdherenceReportGeneratorTest {
 
         AdherenceState state = createState(NOW.plusDays(2), META1, event, adherenceRecord);
 
-        EventStreamAdherenceReport report = INSTANCE.generate(state);
+        EventStreamAdherenceReport report = INSTANCE.generate(state, SCHEDULE);
         assertEquals(getReportStates(report), ImmutableList.of(ABANDONED));
     }
     
@@ -225,7 +242,7 @@ public class EventStreamAdherenceReportGeneratorTest {
 
         AdherenceState state = createState(NOW.plusDays(2), META1, event, adherenceRecord);
 
-        EventStreamAdherenceReport report = INSTANCE.generate(state);
+        EventStreamAdherenceReport report = INSTANCE.generate(state, SCHEDULE);
         assertEquals(getReportStates(report), ImmutableList.of(EXPIRED));
     }
 
@@ -235,7 +252,7 @@ public class EventStreamAdherenceReportGeneratorTest {
 
         AdherenceState state = createState(NOW.plusDays(2), META1, event, null);
 
-        EventStreamAdherenceReport report = INSTANCE.generate(state);
+        EventStreamAdherenceReport report = INSTANCE.generate(state, SCHEDULE);
         assertEquals(getReportStates(report), ImmutableList.of(EXPIRED));
     }
     
@@ -246,7 +263,7 @@ public class EventStreamAdherenceReportGeneratorTest {
 
         AdherenceState state = createState(NOW.plusDays(2), META1, event, adherenceRecord);
 
-        EventStreamAdherenceReport report = INSTANCE.generate(state);
+        EventStreamAdherenceReport report = INSTANCE.generate(state, SCHEDULE);
         assertEquals(getReportStates(report), ImmutableList.of(DECLINED));
     }
     
@@ -257,7 +274,7 @@ public class EventStreamAdherenceReportGeneratorTest {
 
         AdherenceState state = createState(NOW, META1, event, adherenceRecord);
 
-        EventStreamAdherenceReport report = INSTANCE.generate(state);
+        EventStreamAdherenceReport report = INSTANCE.generate(state, SCHEDULE);
         assertEquals(getReportStates(report), ImmutableList.of(UNSTARTED));
     }
     
@@ -268,7 +285,7 @@ public class EventStreamAdherenceReportGeneratorTest {
 
         AdherenceState state = createState(NOW, META1, event, adherenceRecord);
 
-        EventStreamAdherenceReport report = INSTANCE.generate(state);
+        EventStreamAdherenceReport report = INSTANCE.generate(state, SCHEDULE);
         assertEquals(getReportStates(report), ImmutableList.of(NOT_APPLICABLE));
     }
     
@@ -279,7 +296,7 @@ public class EventStreamAdherenceReportGeneratorTest {
 
         AdherenceState state = createState(NOW.minusDays(21), META1, event, adherenceRecord);
 
-        EventStreamAdherenceReport report = INSTANCE.generate(state);
+        EventStreamAdherenceReport report = INSTANCE.generate(state, SCHEDULE);
         assertEquals(getReportStates(report), ImmutableList.of(NOT_YET_AVAILABLE));
     }
 
@@ -290,7 +307,7 @@ public class EventStreamAdherenceReportGeneratorTest {
 
         AdherenceState state = createState(NOW.plusDays(28), META1, event, adherenceRecord);
 
-        EventStreamAdherenceReport report = INSTANCE.generate(state);
+        EventStreamAdherenceReport report = INSTANCE.generate(state, SCHEDULE);
         assertEquals(getReportStates(report), ImmutableList.of(EXPIRED));
     }
     
@@ -300,7 +317,7 @@ public class EventStreamAdherenceReportGeneratorTest {
         StudyActivityEvent event = createEvent("created_on", NOW);
 
         AdherenceState state = createState(NOW, META_PERSISTENT, event, adherenceRecord);
-        assertTrue(INSTANCE.generate(state).getStreams().isEmpty());
+        assertTrue(INSTANCE.generate(state, SCHEDULE).getStreams().isEmpty());
     }
     
     @Test
@@ -310,7 +327,7 @@ public class EventStreamAdherenceReportGeneratorTest {
 
         AdherenceState state = createState(NOW, META2_A, META2_B, event, adherenceRecord, false);
 
-        EventStreamAdherenceReport report = INSTANCE.generate(state);
+        EventStreamAdherenceReport report = INSTANCE.generate(state, SCHEDULE);
         assertNotNull(report.getStreams().get(0).getByDayEntries().get(2));
         assertNotNull(report.getStreams().get(0).getByDayEntries().get(4));
         assertEquals(getReportStates(report), ImmutableList.of(COMPLETED, NOT_YET_AVAILABLE));
@@ -320,7 +337,7 @@ public class EventStreamAdherenceReportGeneratorTest {
     public void progression_noSchedule() { 
         AdherenceState state = new AdherenceState.Builder().withNow(NOW).build();
         
-        EventStreamAdherenceReport report = INSTANCE.generate(state);
+        EventStreamAdherenceReport report = INSTANCE.generate(state, SCHEDULE);
         assertEquals(report.getAdherencePercent(), 100);
         assertEquals(report.getProgression(), ParticipantStudyProgress.UNSTARTED);
         assertTrue(report.getStreams().isEmpty());
@@ -332,7 +349,7 @@ public class EventStreamAdherenceReportGeneratorTest {
         StudyActivityEvent event = createEvent("sessionStartEventId", NOW.minusDays(14));
         AdherenceState state = createState(NOW, META1, event, adherenceRecord, true);
         
-        EventStreamAdherenceReport report = INSTANCE.generate(state);
+        EventStreamAdherenceReport report = INSTANCE.generate(state, SCHEDULE);
         assertEquals(report.getProgression(), ParticipantStudyProgress.DONE);        
     }
     
@@ -341,7 +358,7 @@ public class EventStreamAdherenceReportGeneratorTest {
         AdherenceRecord adherenceRecord = createRecord(null, null, "sessionInstanceGuid", false);
         AdherenceState state = createState(NOW, META1, null, adherenceRecord, true);
         
-        EventStreamAdherenceReport report = INSTANCE.generate(state);
+        EventStreamAdherenceReport report = INSTANCE.generate(state, SCHEDULE);
         assertEquals(report.getProgression(), ParticipantStudyProgress.UNSTARTED);
     }
     
@@ -351,8 +368,130 @@ public class EventStreamAdherenceReportGeneratorTest {
         StudyActivityEvent event = createEvent("sessionStartEventId", NOW.minusDays(14));
         AdherenceState state = createState(NOW, META1, event, adherenceRecord, true);
         
-        EventStreamAdherenceReport report = INSTANCE.generate(state);
+        EventStreamAdherenceReport report = INSTANCE.generate(state, SCHEDULE);
         assertEquals(report.getProgression(), ParticipantStudyProgress.IN_PROGRESS);
+    }
+    
+    @Test
+    public void populatesWindowTimes() throws Exception {
+        StudyActivityEvent event = createEvent("sessionStartEventId", NOW.minusDays(14));
+        
+        AdherenceState state = createState(NOW, META1, event, null);
+        EventStreamAdherenceReport report = INSTANCE.generate(state, SCHEDULE);
+        
+        assertEquals(report.getTimestamp(), NOW.withZone(DateTimeZone.forID("America/Chicago")));
+        assertEquals(report.getAdherencePercent(), 0);
+        assertEquals(report.getStreams().size(), 1);
+    
+        EventStream stream = report.getStreams().get(0);
+        assertEquals(stream.getStartEventId(), "sessionStartEventId");
+        assertEquals(stream.getByDayEntries().size(), 1);
+        assertEquals(stream.getByDayEntries().get(13).size(), 1);
+    
+        EventStreamDay day = stream.getByDayEntries().get(13).get(0);
+        assertEquals(day.getStartDay(), (Integer)13);
+    
+        EventStreamWindow window = day.getTimeWindows().get(0);
+        assertEquals(window.getSessionInstanceGuid(), "sessionInstanceGuid");
+        assertEquals(window.getTimeWindowGuid(), "timeWindowGuid");
+        assertEquals(window.getEndDay(), (Integer)15);
+        assertEquals(window.getStartDate(), LocalDate.parse("2021-10-14"));
+        assertEquals(window.getEndDate(), LocalDate.parse("2021-10-16"));
+        assertEquals(window.getStartTime(), LocalTime.parse("01:00"));
+        assertEquals(window.getEndTime(), LocalTime.parse("02:00"));
+        assertEquals(window.getState(), UNSTARTED);
+    }
+    
+    @Test
+    public void windowTimesHandleVaryingDurations_sameDayLaterEndTime() throws Exception {
+        StudyActivityEvent event = createEvent("sessionStartEventId", NOW.minusDays(14));
+        TimelineMetadata metadata = createMeta("sessionInstanceGuid", "sessionInstanceGuid",
+                "sessionGuid", "timeWindowGuid", 14, 14, "sessionStartEventId", "studyBurstId", 1, "sessionSymbol",
+                "sessionName", false);
+        Schedule2 schedule = createSchedule("PT12H");
+    
+        AdherenceState state = createState(NOW, metadata, event, null);
+        EventStreamAdherenceReport report = INSTANCE.generate(state, schedule);
+    
+        assertEquals(report.getTimestamp(), NOW.withZone(DateTimeZone.forID("America/Chicago")));
+        assertEquals(report.getAdherencePercent(), 0);
+        assertEquals(report.getStreams().size(), 1);
+    
+        EventStream stream = report.getStreams().get(0);
+        assertEquals(stream.getStartEventId(), "sessionStartEventId");
+        assertEquals(stream.getByDayEntries().size(), 1);
+        assertEquals(stream.getByDayEntries().get(14).size(), 1);
+    
+        EventStreamDay day = stream.getByDayEntries().get(14).get(0);
+        assertEquals(day.getStartDay(), (Integer)14);
+    
+        EventStreamWindow window = day.getTimeWindows().get(0);
+        assertEquals(window.getSessionInstanceGuid(), "sessionInstanceGuid");
+        assertEquals(window.getTimeWindowGuid(), "timeWindowGuid");
+        assertEquals(window.getEndDay(), (Integer)14);
+        assertEquals(window.getStartDate(), LocalDate.parse("2021-10-15"));
+        assertEquals(window.getEndDate(), LocalDate.parse("2021-10-15"));
+        assertEquals(window.getStartTime(), LocalTime.parse("01:00"));
+        assertEquals(window.getEndTime(), LocalTime.parse("13:00"));
+        assertEquals(window.getState(), UNSTARTED);
+    }
+    
+    @Test
+    public void windowTimesHandleVaryingDurations_nextDayEarlierEndTime() throws Exception {
+        StudyActivityEvent event = createEvent("sessionStartEventId", NOW.minusDays(14));
+        TimelineMetadata metadata = createMeta("sessionInstanceGuid", "sessionInstanceGuid",
+                "sessionGuid", "timeWindowGuid", 13, 14, "sessionStartEventId", "studyBurstId", 1, "sessionSymbol",
+                "sessionName", false);
+        Schedule2 schedule = createSchedule("PT23H");
+        
+        AdherenceState state = createState(NOW, metadata, event, null);
+        EventStreamAdherenceReport report = INSTANCE.generate(state, schedule);
+        
+        assertEquals(report.getTimestamp(), NOW.withZone(DateTimeZone.forID("America/Chicago")));
+        assertEquals(report.getAdherencePercent(), 0);
+        assertEquals(report.getStreams().size(), 1);
+        
+        EventStream stream = report.getStreams().get(0);
+        assertEquals(stream.getStartEventId(), "sessionStartEventId");
+        assertEquals(stream.getByDayEntries().size(), 1);
+        assertEquals(stream.getByDayEntries().get(13).size(), 1);
+        
+        EventStreamDay day = stream.getByDayEntries().get(13).get(0);
+        assertEquals(day.getStartDay(), (Integer)13);
+        
+        EventStreamWindow window = day.getTimeWindows().get(0);
+        assertEquals(window.getSessionInstanceGuid(), "sessionInstanceGuid");
+        assertEquals(window.getTimeWindowGuid(), "timeWindowGuid");
+        assertEquals(window.getEndDay(), (Integer)14);
+        assertEquals(window.getStartDate(), LocalDate.parse("2021-10-14"));
+        assertEquals(window.getEndDate(), LocalDate.parse("2021-10-15"));
+        assertEquals(window.getStartTime(), LocalTime.parse("01:00"));
+        assertEquals(window.getEndTime(), LocalTime.parse("00:00"));
+        assertEquals(window.getState(), UNSTARTED);
+    }
+    
+    @Test
+    public void endTimeNullWithoutDuration() throws Exception {
+        StudyActivityEvent event = createEvent("sessionStartEventId", NOW.minusDays(14));
+        
+        Schedule2 schedule = createSchedule();
+        schedule.getSessions().get(0).getTimeWindows().get(0).setExpiration(null);
+        
+        AdherenceState state = createState(NOW, META1, event, null);
+        EventStreamAdherenceReport report = INSTANCE.generate(state, schedule);
+        
+        EventStream stream = report.getStreams().get(0);
+        EventStreamDay day = stream.getByDayEntries().get(Integer.valueOf(13)).get(0);
+        
+        EventStreamWindow window = day.getTimeWindows().get(0);
+        assertEquals(window.getSessionInstanceGuid(), "sessionInstanceGuid");
+        assertEquals(window.getTimeWindowGuid(), "timeWindowGuid");
+        assertEquals(window.getEndDay(), (Integer)15);
+        assertEquals(window.getStartDate(), LocalDate.parse("2021-10-14"));
+        assertEquals(window.getEndDate(), LocalDate.parse("2021-10-16"));
+        assertEquals(window.getStartTime(), LocalTime.parse("01:00"));
+        assertNull(window.getEndTime());
+        assertEquals(window.getState(), UNSTARTED);
     }
     
     private AdherenceState createState(DateTime now, TimelineMetadata meta,
@@ -427,5 +566,54 @@ public class EventStreamAdherenceReportGeneratorTest {
             .flatMap(day -> day.getTimeWindows().stream())
             .map(EventStreamWindow::getState)
             .collect(toList());
+    }
+    
+    private static Schedule2 createSchedule() {
+        return createSchedule("P2DT1H");
+    }
+    
+    private static Schedule2 createSchedule(String expiration) {
+        // TimeWindow 1A
+        TimeWindow win1 = new TimeWindow();
+        win1.setGuid("timeWindowGuid");
+        win1.setStartTime(LocalTime.parse("01:00"));
+        win1.setExpiration(Period.parse(expiration));
+    
+        // Session 1
+        Session s1 = new Session();
+        s1.setDelay(Period.parse("P14D"));
+        s1.setStartEventIds(ImmutableList.of("sessionStartEventId"));
+        s1.setTimeWindows(ImmutableList.of(win1));
+        s1.setGuid("sessionGuid");
+        s1.setName("sessionName");
+        s1.setPerformanceOrder(SEQUENTIAL);
+    
+        // TimeWindow 2A
+        TimeWindow win2 = new TimeWindow();
+        win2.setGuid("ksuWqp17x3i9zjQBh0FHSDS2");
+        win2.setStartTime(LocalTime.parse("00:00"));
+        win2.setExpiration(Period.parse("P2D"));
+    
+        // Session 2
+        Session s2 = new Session();
+        s2.setDelay(Period.parse("P14D"));
+        s2.setStartEventIds(ImmutableList.of("study_burst:Main Sequence:01"));
+        s2.setTimeWindows(ImmutableList.of(win2));
+        s2.setGuid("u90_okqrmPgKptcc9E8lORwC");
+        s2.setName("Session #1");
+        s2.setPerformanceOrder(SEQUENTIAL);
+    
+        // Schedule
+        Schedule2 schedule = new Schedule2();
+        schedule.setSessions(ImmutableList.of(s1, s2));
+        schedule.setAppId(TEST_APP_ID);
+        schedule.setGuid(SCHEDULE_GUID);
+        schedule.setName("Test Schedule");
+        schedule.setOwnerId("sage-bionetworks");
+        schedule.setDuration(Period.parse("P4W"));
+        schedule.setCreatedOn(CREATED_ON);
+        schedule.setModifiedOn(MODIFIED_ON);
+    
+        return schedule;
     }
 }

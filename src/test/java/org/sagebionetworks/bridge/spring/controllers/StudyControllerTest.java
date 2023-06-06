@@ -8,6 +8,7 @@ import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
+import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
@@ -153,6 +154,7 @@ public class StudyControllerTest extends Mockito {
         assertPost(StudyController.class, "analysis");
         assertPost(StudyController.class, "completed");
         assertPost(StudyController.class, "withdrawn");
+        assertPost(StudyController.class, "revertToDesign");
     }
 
     @Test
@@ -529,6 +531,20 @@ public class StudyControllerTest extends Mockito {
         controller.withdrawn(TEST_STUDY_ID);
         
         verify(mockStudyService).transitionToWithdrawn(TEST_APP_ID, TEST_STUDY_ID);
+    }
+    
+    @Test
+    public void revertToDesign_superadmin() {
+        UserSession superSession = new UserSession();
+        superSession.setAppId(TEST_APP_ID);
+        superSession.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(SUPERADMIN)).build());
+        
+        doReturn(superSession).when(controller).getAuthenticatedSession(SUPERADMIN);
+        
+        controller.revertToDesign(TEST_STUDY_ID);
+        
+        verify(controller).getAuthenticatedSession(SUPERADMIN);
+        verify(mockStudyService).revertToDesign(TEST_APP_ID, TEST_STUDY_ID);
     }
     
     @Test

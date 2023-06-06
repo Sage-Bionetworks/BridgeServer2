@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.dao;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.files.ParticipantFile;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface ParticipantFileDao {
@@ -16,6 +17,9 @@ public interface ParticipantFileDao {
      * @return a ForwardCursorPagedResourceList of ParticipantFiles
      */
     ForwardCursorPagedResourceList<ParticipantFile> getParticipantFiles(String userId, String offsetKey, int pageSize);
+
+    /** Internal API to get all files for a user. */
+    List<ParticipantFile> getAllFilesForParticipant(String userId);
 
     /**
      * Returns the ParticipantFile from the given criteria. If no such file exists, returns Optional.empty.
@@ -40,4 +44,7 @@ public interface ParticipantFileDao {
      * @param fileId the id of the file
      */
     void deleteParticipantFile(String userId, String fileId);
+
+    /** Internal API to delete a list of files. */
+    void batchDeleteParticipantFiles(List<ParticipantFile> fileIdList);
 }

@@ -33,6 +33,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Sets;
 
 import org.joda.time.DateTime;
+
+import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.ParticipantRosterRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -87,9 +89,9 @@ import org.sagebionetworks.bridge.services.EnrollmentService;
 @CrossOrigin
 @RestController
 public class ParticipantController extends BaseController {
-    
     static final String CANNOT_DELETE_ACCOUNT_ERROR = "Account is not a test account, it is already in use, or it is enrolled in a study that is not managed by the caller’s organization.";
     static final String NOTIFY_SUCCESS_MESSAGE = "Message has been sent to external notification service.";
+    static final StatusMessage UPDATED_REQUEST_INFO_MESSAGE = new StatusMessage("Updated request info");
 
     private ParticipantService participantService;
     
@@ -111,7 +113,20 @@ public class ParticipantController extends BaseController {
     final void setAccountWorkflowService(AccountWorkflowService accountWorkflowService) {
         this.accountWorkflowService = accountWorkflowService; 
     }
-    
+
+    /**
+     * Backfills the participant version for a user in a given app. Note that if the participant version already
+     * exists, participantVersionService will do nothing.
+     */
+    @PostMapping("/v1/apps/{appId}/participants/{userId}/exporter3/versions/backfill")
+    @ResponseStatus(HttpStatus.CREATED)
+    public StatusMessage backfillParticipantVersion(@PathVariable String appId, @PathVariable String userId) {
+        getAuthenticatedSession(WORKER);
+        App app = appService.getApp(appId);
+        participantService.backfillParticipantVersion(app, userId);
+        return new StatusMessage("Participant version backfilled");
+    }
+
     /** Researcher API to allow backfill of SMS notification registrations. */
     @PostMapping("/v3/participants/{userId}/notifications/sms")
     @ResponseStatus(HttpStatus.CREATED)
@@ -412,7 +427,30 @@ public class ParticipantController extends BaseController {
         }
         return REQUEST_INFO_WRITER.writeValueAsString(requestInfo);
     }
-    
+
+    /** Superadmin API to update a participant's request info. */
+    @PostMapping(path = "/v3/participants/{userIdToken}/requestInfo")
+    @ResponseStatus(HttpStatus.OK)
+    public StatusMessage updateRequestInfo(@PathVariable String userIdToken) throws JsonProcessingException {
+        UserSession session = getAuthenticatedSession(SUPERADMIN);
+        String appId = session.getAppId();
+        App app = appService.getApp(appId);
+        StudyParticipant participant = participantService.getParticipant(app, userIdToken, false);
+        RequestInfo inputRequestInfo = parseJson(RequestInfo.class);
+
+        // BRIDGE-3349 - Re-generate the ClientInfo from the User-Agent string.
+        String userAgent = inputRequestInfo.getUserAgent();
+        ClientInfo clientInfo = ClientInfo.fromUserAgentCache(userAgent);
+
+        // Also, ensure request info has the correct app ID and user ID.
+        RequestInfo requestInfoToUpdate = new RequestInfo.Builder().copyOf(inputRequestInfo).withAppId(appId)
+                .withUserId(participant.getId()).withClientInfo(clientInfo).build();
+
+        // Update.
+        requestInfoService.updateRequestInfo(requestInfoToUpdate);
+        return UPDATED_REQUEST_INFO_MESSAGE;
+    }
+
     @PostMapping("/v3/participants/{userId}")
     public StatusMessage updateParticipant(@PathVariable String userId) {
         UserSession session = getAdministrativeSession();

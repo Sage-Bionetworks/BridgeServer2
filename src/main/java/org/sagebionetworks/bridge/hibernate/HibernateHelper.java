@@ -4,9 +4,11 @@ import java.io.Serializable;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 
 import javax.persistence.PersistenceException;
+import javax.persistence.RollbackException;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -122,6 +124,27 @@ public class HibernateHelper {
         });
     }
 
+    /**
+     * Executes the query and returns a single result. Returns null if there is no
+     * result.
+     * 
+     * The documentation for uniqueResult isn't clear but I checked the source code and it
+     * will throw a NonUniqueResultException when it doesn't exist, which will be converted to
+     * a BridgeServiceException.
+     */
+    public <T> Optional<T> queryGetOne(String queryString, Map<String, Object> parameters, Class<T> clazz)
+            throws BridgeServiceException {
+        return executeWithExceptionHandling(null, session -> {
+            Query<T> query = session.createQuery(queryString, clazz);
+            if (parameters != null) {
+                for (Map.Entry<String, Object> entry : parameters.entrySet()) {
+                    query.setParameter(entry.getKey(), entry.getValue());
+                }
+            }
+            return query.uniqueResultOptional();
+        });
+    }
+
     public <T> List<T> nativeQueryGet(String queryString, Map<String,Object> parameters, Integer offset, Integer limit, Class<T> clazz) {
         return executeWithExceptionHandling(null, session -> {
             Query<T> query = session.createNativeQuery(queryString, clazz);
@@ -182,7 +205,7 @@ public class HibernateHelper {
     }
     
     /**
-     * Execute SQL query with no return value, like a batch delete. 
+     * Execute HQL query with no return value, like a batch delete. 
      */
     public void query(String queryString, Map<String,Object> parameters) {
         executeWithExceptionHandling(null, session -> { 
@@ -231,8 +254,13 @@ public class HibernateHelper {
         T retval;
         try (Session session = hibernateSessionFactory.openSession()) {
             Transaction transaction = session.beginTransaction();
-            retval = function.apply(session);
-            transaction.commit();
+            try {
+                retval = function.apply(session);
+                transaction.commit();
+            } catch (RollbackException e) {
+                transaction.rollback();
+                throw e;
+            }
         }
         return retval;
     }

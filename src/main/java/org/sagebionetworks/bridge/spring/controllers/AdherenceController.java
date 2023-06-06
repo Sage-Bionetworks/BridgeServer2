@@ -1,7 +1,9 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
+import static org.sagebionetworks.bridge.AuthEvaluatorField.USER_ID;
 import static org.sagebionetworks.bridge.AuthUtils.CANNOT_ACCESS_PARTICIPANTS;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_ACCESS_ADHERENCE_DATA;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_PARTICIPANT_REPORTS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_STUDIES;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
@@ -12,6 +14,7 @@ import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.models.AccountTestFilter.TEST;
 
 import org.joda.time.DateTime;
+import org.sagebionetworks.bridge.models.schedules2.adherence.detailed.DetailedAdherenceReport;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -117,7 +120,7 @@ public class AdherenceController extends BaseController {
         Account account = accountService.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
 
-        return service.getWeeklyAdherenceReport(appId, studyId, account);
+        return service.getWeeklyAdherenceReportForWorker(appId, studyId, account);
     }
     
     @PostMapping("/v5/studies/{studyId}/adherence/weekly")    
@@ -155,6 +158,7 @@ public class AdherenceController extends BaseController {
         
         AdherenceRecordsSearch payload = parseJson(AdherenceRecordsSearch.class);
         AdherenceRecordsSearch search = payload.toBuilder()
+                .withAppId(session.getAppId())
                 .withUserId(null)
                 .withStudyId(studyId).build();
 
@@ -244,4 +248,19 @@ public class AdherenceController extends BaseController {
         service.deleteAdherenceRecord(record);
         return DELETED_MSG;
     }
+    
+    @GetMapping("/v5/studies/{studyId}/participants/{userId}/adherence/detail")
+    public DetailedAdherenceReport getDetailedParticipantAdherenceReport(@PathVariable String studyId,
+                                                                         @PathVariable String userId) {
+        UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_DESIGNER, STUDY_COORDINATOR);
+        
+        CAN_ACCESS_ADHERENCE_DATA.checkAndThrow(STUDY_ID, studyId, USER_ID, userId);
+        
+        AccountId accountId = AccountId.forId(session.getAppId(), userId);
+        Account account = accountService.getAccount(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+        
+        return service.getDetailedAdherenceReportForParticipant(session.getAppId(), studyId, account);
+    }
+    
 }

@@ -5,6 +5,7 @@ import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
+import static org.sagebionetworks.bridge.TestConstants.ENROLLMENT;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.SCHEDULE_GUID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
@@ -32,8 +33,10 @@ import static org.sagebionetworks.bridge.models.ResourceList.TIME_WINDOW_GUIDS;
 import static org.sagebionetworks.bridge.models.SearchTermPredicate.AND;
 import static org.sagebionetworks.bridge.models.StringSearchPosition.INFIX;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.IMMUTABLE;
+import static org.sagebionetworks.bridge.models.schedules2.Schedule2Test.createValidSchedule;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordType.ASSESSMENT;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantStudyProgress.UNSTARTED;
+import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.COMPLETED;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.SortOrder.ASC;
 import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.DEFAULT_PAGE_SIZE;
 import static org.testng.Assert.assertEquals;
@@ -64,6 +67,17 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
+import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
+import org.sagebionetworks.bridge.models.schedules2.AssessmentReference;
+import org.sagebionetworks.bridge.models.schedules2.TimeWindow;
+import org.sagebionetworks.bridge.models.schedules2.adherence.AssessmentCompletionState;
+import org.sagebionetworks.bridge.models.schedules2.adherence.detailed.DetailedAdherenceReport;
+import org.sagebionetworks.bridge.models.schedules2.adherence.detailed.DetailedAdherenceReportAssessmentRecord;
+import org.sagebionetworks.bridge.models.schedules2.adherence.detailed.DetailedAdherenceReportSessionRecord;
+import org.sagebionetworks.bridge.models.schedules2.timelines.AssessmentInfo;
+import org.sagebionetworks.bridge.models.schedules2.timelines.ScheduledAssessment;
+import org.sagebionetworks.bridge.models.schedules2.timelines.ScheduledSession;
+import org.sagebionetworks.bridge.models.schedules2.timelines.SessionInfo;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -84,7 +98,6 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEventIdsMap;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
-import org.sagebionetworks.bridge.models.schedules2.Schedule2Test;
 import org.sagebionetworks.bridge.models.schedules2.Session;
 import org.sagebionetworks.bridge.models.schedules2.StudyBurst;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
@@ -102,15 +115,19 @@ import org.sagebionetworks.bridge.models.schedules2.timelines.MetadataContainer;
 import org.sagebionetworks.bridge.models.schedules2.timelines.Scheduler;
 import org.sagebionetworks.bridge.models.schedules2.timelines.Timeline;
 import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
+import org.sagebionetworks.bridge.models.studies.Alert;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyCustomEvent;
+import org.sagebionetworks.bridge.models.studies.Alert.AlertCategory;
 
 public class AdherenceServiceTest extends Mockito {
     
     private static final DateTime STARTED_ON = CREATED_ON;
     private static final DateTime FINISHED_ON = MODIFIED_ON;
     private static final DateTime EVENT_TS = CREATED_ON.minusWeeks(1);
+    private static final DateTime UPLOADED_ON = MODIFIED_ON.plusHours(1);
+    private static final String NON_LOCAL_TIME_ZONE = "America/New_York";
 
     @Mock
     AdherenceRecordDao mockRecordDao;
@@ -129,6 +146,9 @@ public class AdherenceServiceTest extends Mockito {
     
     @Mock
     RequestInfoService mockRequestInfoService;
+
+    @Mock
+    AlertService alertService;
     
     @Captor
     ArgumentCaptor<AdherenceRecordsSearch> searchCaptor;
@@ -141,6 +161,9 @@ public class AdherenceServiceTest extends Mockito {
     
     @Captor
     ArgumentCaptor<WeeklyAdherenceReport> weeklyReportCaptor;
+
+    @Captor
+    ArgumentCaptor<Alert> alertCaptor;
 
     @InjectMocks
     @Spy
@@ -179,7 +202,7 @@ public class AdherenceServiceTest extends Mockito {
         // Nothing is finished, nothing is published.
         verify(mockStudyActivityEventService, never()).publishEvent(any(), eq(false), eq(true));
     }
-    
+
     @Test(expectedExceptions = BadRequestException.class)
     public void updateAdherenceRecords_noRecords() {
         service.updateAdherenceRecords(TEST_APP_ID, new AdherenceRecordList(ImmutableList.of()));
@@ -827,7 +850,9 @@ public class AdherenceServiceTest extends Mockito {
         when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
         when(mockStudyService.getZoneId(TEST_APP_ID, TEST_STUDY_ID, TEST_CLIENT_TIME_ZONE)).thenReturn(TEST_CLIENT_TIME_ZONE);
         
-        Schedule2 schedule = Schedule2Test.createValidSchedule();
+        Schedule2 schedule = createValidSchedule();
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(Optional.of(schedule));
+        
         List<TimelineMetadata> metadata = Scheduler.INSTANCE.calculateTimeline(schedule).getMetadata();
         when(mockScheduleService.getScheduleMetadata(SCHEDULE_GUID)).thenReturn(metadata);
         
@@ -879,9 +904,10 @@ public class AdherenceServiceTest extends Mockito {
         PagedResourceList<AdherenceRecord> page2 = new PagedResourceList<>(ImmutableList.of(), 0);
         when(mockRecordDao.getAdherenceRecords(any())).thenReturn(page2);
 
-        Schedule2 schedule = Schedule2Test.createValidSchedule();
+        Schedule2 schedule = createValidSchedule();
         when(mockScheduleService.getScheduleMetadata(SCHEDULE_GUID))
             .thenReturn(Scheduler.INSTANCE.calculateTimeline(schedule).getMetadata());
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(Optional.of(schedule));
         
         WeeklyAdherenceReport retValue = service.getWeeklyAdherenceReport(
                 TEST_APP_ID, TEST_STUDY_ID, account);
@@ -920,9 +946,10 @@ public class AdherenceServiceTest extends Mockito {
         when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
         when(mockStudyService.getZoneId(TEST_APP_ID, TEST_STUDY_ID, null)).thenReturn(TEST_CLIENT_TIME_ZONE);
         
-        Schedule2 schedule = Schedule2Test.createValidSchedule();
+        Schedule2 schedule = createValidSchedule();
         when(mockScheduleService.getScheduleMetadata(SCHEDULE_GUID))
             .thenReturn(Scheduler.INSTANCE.calculateTimeline(schedule).getMetadata());
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(Optional.of(schedule));
         
         List<StudyActivityEvent> events = ImmutableList.of();
         ResourceList<StudyActivityEvent> page = new ResourceList<>(events, true);
@@ -997,9 +1024,10 @@ public class AdherenceServiceTest extends Mockito {
         when(mockRequestInfoService.getRequestInfo(TEST_USER_ID)).thenReturn(null);
         
         // Add a schedule so we can see "UNSTARTED" as the state of this report
-        Schedule2 schedule = Schedule2Test.createValidSchedule();
+        Schedule2 schedule = createValidSchedule();
         Timeline timeline = Scheduler.INSTANCE.calculateTimeline(schedule);
         when(mockScheduleService.getScheduleMetadata(SCHEDULE_GUID)).thenReturn(timeline.getMetadata());
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(Optional.of(schedule));
         
         WeeklyAdherenceReport retValue = service.getWeeklyAdherenceReport(
                 TEST_APP_ID, TEST_STUDY_ID, account);
@@ -1037,6 +1065,7 @@ public class AdherenceServiceTest extends Mockito {
         
         when(mockScheduleService.getScheduleMetadata(SCHEDULE_GUID))
             .thenReturn(timeline.getMetadata());
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(Optional.of(schedule));
         
         RequestInfo info = new RequestInfo.Builder().withSignedInOn(CREATED_ON).build();
         when(mockRequestInfoService.getRequestInfo(TEST_USER_ID)).thenReturn(info);
@@ -1089,7 +1118,112 @@ public class AdherenceServiceTest extends Mockito {
         
         service.getWeeklyAdherenceReport(TEST_APP_ID, TEST_STUDY_ID, account);
     }
-    
+
+    @Test
+    public void getWeeklyAdherenceReportForWorker_lowAdherence() {
+        Account account = Account.create();
+        account.setId(TEST_USER_ID);
+
+        Study study = Study.create();
+        study.setAdherenceThresholdPercentage(60);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+
+        StudyAdherenceReport report = new StudyAdherenceReport();
+        doReturn(report).when(service).generateReport(any(), any(), any(), any(), any(), any());
+        WeeklyAdherenceReport weeklyReport = new WeeklyAdherenceReport();
+        weeklyReport.setWeeklyAdherencePercent(60);
+        doReturn(weeklyReport).when(service).deriveWeeklyAdherenceFromStudyReportWeek(any(), any(), any());
+
+        service.getWeeklyAdherenceReportForWorker(TEST_APP_ID, TEST_STUDY_ID, account);
+
+        verify(alertService).createAlert(alertCaptor.capture());
+        Alert alert = alertCaptor.getValue();
+        assertEquals(alert.getAppId(), TEST_APP_ID);
+        assertEquals(alert.getStudyId(), TEST_STUDY_ID);
+        assertEquals(alert.getUserId(), TEST_USER_ID);
+        assertEquals(alert.getCategory(), AlertCategory.LOW_ADHERENCE);
+        assertEquals(alert.getData().toString(), "{\"adherenceThreshold\":60.0,\"type\":\"LowAdherenceAlertData\"}");
+    }
+
+    @Test
+    public void getWeeklyAdherenceReportForWorker_sufficientAdherence() {
+        Account account = Account.create();
+        account.setId(TEST_USER_ID);
+
+        Study study = Study.create();
+        study.setAdherenceThresholdPercentage(60);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+
+        StudyAdherenceReport report = new StudyAdherenceReport();
+        doReturn(report).when(service).generateReport(any(), any(), any(), any(), any(), any());
+        WeeklyAdherenceReport weeklyReport = new WeeklyAdherenceReport();
+        weeklyReport.setWeeklyAdherencePercent(61);
+        doReturn(weeklyReport).when(service).deriveWeeklyAdherenceFromStudyReportWeek(any(), any(), any());
+
+        service.getWeeklyAdherenceReportForWorker(TEST_APP_ID, TEST_STUDY_ID, account);
+
+        verifyZeroInteractions(alertService);
+    }
+
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void getWeeklyAdherenceReportForWorker_studyDoesNotExist() {
+        Account account = Account.create();
+        account.setId(TEST_USER_ID);
+
+        Study study = Study.create();
+        study.setAdherenceThresholdPercentage(60);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true))
+                .thenThrow(new EntityNotFoundException(Study.class));
+
+        StudyAdherenceReport report = new StudyAdherenceReport();
+        doReturn(report).when(service).generateReport(any(), any(), any(), any(), any(), any());
+        WeeklyAdherenceReport weeklyReport = new WeeklyAdherenceReport();
+        weeklyReport.setWeeklyAdherencePercent(60);
+        doReturn(weeklyReport).when(service).deriveWeeklyAdherenceFromStudyReportWeek(any(), any(), any());
+
+        service.getWeeklyAdherenceReportForWorker(TEST_APP_ID, TEST_STUDY_ID, account);
+    }
+
+    @Test
+    public void getWeeklyAdherenceReportForWorker_noWeeklyAdherencePercent() {
+        Account account = Account.create();
+        account.setId(TEST_USER_ID);
+
+        Study study = Study.create();
+        study.setAdherenceThresholdPercentage(60);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+
+        StudyAdherenceReport report = new StudyAdherenceReport();
+        doReturn(report).when(service).generateReport(any(), any(), any(), any(), any(), any());
+        WeeklyAdherenceReport weeklyReport = new WeeklyAdherenceReport();
+        weeklyReport.setWeeklyAdherencePercent(null);
+        doReturn(weeklyReport).when(service).deriveWeeklyAdherenceFromStudyReportWeek(any(), any(), any());
+
+        service.getWeeklyAdherenceReportForWorker(TEST_APP_ID, TEST_STUDY_ID, account);
+
+        verifyZeroInteractions(alertService);
+    }
+
+    @Test
+    public void getWeeklyAdherenceReportForWorker_noAdherenceThresholdPercentage() {
+        Account account = Account.create();
+        account.setId(TEST_USER_ID);
+
+        Study study = Study.create();
+        study.setAdherenceThresholdPercentage(null);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+
+        StudyAdherenceReport report = new StudyAdherenceReport();
+        doReturn(report).when(service).generateReport(any(), any(), any(), any(), any(), any());
+        WeeklyAdherenceReport weeklyReport = new WeeklyAdherenceReport();
+        weeklyReport.setWeeklyAdherencePercent(60);
+        doReturn(weeklyReport).when(service).deriveWeeklyAdherenceFromStudyReportWeek(any(), any(), any());
+
+        service.getWeeklyAdherenceReportForWorker(TEST_APP_ID, TEST_STUDY_ID, account);
+
+        verifyZeroInteractions(alertService);
+    }
+
     @Test
     public void getWeeklyAdherenceReports() {
         AdherenceReportSearch search = new AdherenceReportSearch();
@@ -1153,6 +1287,9 @@ public class AdherenceServiceTest extends Mockito {
         
         PagedResourceList<AdherenceRecord> records = new PagedResourceList<>(StudyAdherenceReportGeneratorTest.createAdherenceRecords(), 10);
         when(mockRecordDao.getAdherenceRecords(any())).thenReturn(records);
+        
+        Schedule2 schedule = createValidSchedule();
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(Optional.of(schedule));
         
         StudyAdherenceReport report = service.getStudyAdherenceReport(TEST_APP_ID, TEST_STUDY_ID, account);
         assertEquals(report.getParticipant().getIdentifier(), TEST_USER_ID);
@@ -1228,7 +1365,7 @@ public class AdherenceServiceTest extends Mockito {
         study.setScheduleGuid(SCHEDULE_GUID);
         when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
         
-        Schedule2 schedule = Schedule2Test.createValidSchedule();
+        Schedule2 schedule = createValidSchedule();
         when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(Optional.of(schedule));
         
         AdherenceStatistics stats = new AdherenceStatistics();
@@ -1261,7 +1398,371 @@ public class AdherenceServiceTest extends Mockito {
         service.getAdherenceStatistics(TEST_APP_ID, TEST_STUDY_ID, 200);
     }
     
+    @Test
+    public void getDetailedAdherenceReportForParticipant() {
+        AdherenceRecord assessmentRecord1 = ar(STARTED_ON, FINISHED_ON, "assessment-instance-guid-1", false);
+        assessmentRecord1.setUploadedOn(UPLOADED_ON);
+        AdherenceRecord sessionRecord1 = sar(STARTED_ON, FINISHED_ON, "session-instance-guid-1", false);
+
+        AdherenceRecord assessmentRecord2 = ar(STARTED_ON, FINISHED_ON, "assessment-instance-guid-2", false);
+        AdherenceRecord assessmentRecord3 = ar(STARTED_ON.minusHours(1), FINISHED_ON.minusHours(1), 
+                "assessment-instance-guid-3", false);
+        AdherenceRecord studyBurstRecord1 = sar(STARTED_ON, FINISHED_ON, "study-burst-session-guid-2", false);
+        
+        Account account = mockDetailedAdherenceTimeline(ImmutableList.of(assessmentRecord1, sessionRecord1, 
+                assessmentRecord2, assessmentRecord3, studyBurstRecord1));
+        
+        
+        DetailedAdherenceReport report = service.getDetailedAdherenceReportForParticipant(
+                TEST_APP_ID, TEST_STUDY_ID, account);
+        
+        assertEquals(report.getParticipant().getIdentifier(), TEST_USER_ID);
+        assertEquals(report.getParticipant().getExternalId(), TEST_EXTERNAL_ID);
+        assertTrue(report.isTestAccount());
+        assertEquals(report.getJoinedDate().toString(), 
+                ENROLLMENT.withZone(DateTimeZone.forID(NON_LOCAL_TIME_ZONE)).toString());
+        
+        List<DetailedAdherenceReportSessionRecord> sessionRecords = report.getSessionRecords();
+        assertEquals(sessionRecords.size(), 2);
+        
+        DetailedAdherenceReportSessionRecord sessionRecord = sessionRecords.get(0);
+        assertNull(sessionRecord.getBurstName());
+        assertNull(sessionRecord.getBurstId());
+        assertEquals(sessionRecord.getSessionName(), "session-name");
+        assertEquals(sessionRecord.getSessionGuid(), "session-guid");
+        assertEquals(sessionRecord.getSessionInstanceGuid(), "session-instance-guid-1");
+        assertEquals(sessionRecord.getSessionStatus(), COMPLETED);
+        assertEquals(sessionRecord.getSessionStart().toString(), STARTED_ON.withZone(DateTimeZone.forID(
+                NON_LOCAL_TIME_ZONE)).toString());
+        assertEquals(sessionRecord.getSessionCompleted().toString(), FINISHED_ON.withZone(DateTimeZone.forID(
+                NON_LOCAL_TIME_ZONE)).toString());
+        assertEquals(sessionRecord.getSessionExpiration(), STARTED_ON.plusDays(2).withZone(DateTimeZone.forID(
+                NON_LOCAL_TIME_ZONE)));
+        
+        List<DetailedAdherenceReportAssessmentRecord> assessmentRecords = sessionRecord.getAssessmentRecords();
+        assertEquals(assessmentRecords.size(), 1);
+        
+        DetailedAdherenceReportAssessmentRecord assessmentRecord = assessmentRecords.get(0);
+        assertEquals(assessmentRecord.getAssessmentName(), "assessment-name-1");
+        assertEquals(assessmentRecord.getAssessmentId(), "assessment-id-1");
+        assertEquals(assessmentRecord.getAssessmentGuid(), "assessment-guid-1");
+        assertEquals(assessmentRecord.getAssessmentInstanceGuid(), "assessment-instance-guid-1");
+        assertEquals(assessmentRecord.getAssessmentStatus(), AssessmentCompletionState.COMPLETED);
+        assertEquals(assessmentRecord.getAssessmentStart().toString(), STARTED_ON.withZone(DateTimeZone.forID(
+                NON_LOCAL_TIME_ZONE)).toString());
+        assertEquals(assessmentRecord.getAssessmentCompleted().toString(), FINISHED_ON.withZone(DateTimeZone.forID(
+                NON_LOCAL_TIME_ZONE)).toString());
+        assertEquals(assessmentRecord.getAssessmentUploadedOn().toString(), UPLOADED_ON.withZone(DateTimeZone.forID(
+                NON_LOCAL_TIME_ZONE)).toString());
+    
+        DetailedAdherenceReportSessionRecord studyBurstRecord = sessionRecords.get(1);
+        assertEquals(studyBurstRecord.getBurstName(), "Week 2/Burst 1");
+        assertEquals(studyBurstRecord.getBurstId(), "study-burst-start");
+        assertEquals(studyBurstRecord.getSessionName(), "study-burst-session-name");
+        assertEquals(studyBurstRecord.getSessionGuid(), "study-burst-session-guid-2");
+        assertEquals(studyBurstRecord.getSessionInstanceGuid(), "study-burst-session-guid-2");
+        assertEquals(studyBurstRecord.getSessionStatus(), COMPLETED);
+        assertEquals(studyBurstRecord.getSessionStart().toString(), STARTED_ON.withZone(DateTimeZone.forID(
+                NON_LOCAL_TIME_ZONE)).toString());
+        assertEquals(studyBurstRecord.getSessionCompleted().toString(), FINISHED_ON.withZone(DateTimeZone.forID(
+                NON_LOCAL_TIME_ZONE)).toString());
+        assertEquals(studyBurstRecord.getSessionExpiration(), STARTED_ON.plusDays(2).withZone(DateTimeZone.forID(
+                NON_LOCAL_TIME_ZONE)));
+    
+        List<DetailedAdherenceReportAssessmentRecord> studyBurstAssessmentRecords = studyBurstRecord.getAssessmentRecords();
+        assertEquals(studyBurstAssessmentRecords.size(), 2);
+        
+        DetailedAdherenceReportAssessmentRecord studyBurstAssessmentRecord = studyBurstAssessmentRecords.get(0);
+        assertEquals(studyBurstAssessmentRecord.getAssessmentName(), "assessment-name-2");
+        assertEquals(studyBurstAssessmentRecord.getAssessmentId(), "assessment-id-2");
+        assertEquals(studyBurstAssessmentRecord.getAssessmentGuid(), "assessment-guid-2");
+        assertEquals(studyBurstAssessmentRecord.getAssessmentInstanceGuid(), "assessment-instance-guid-2");
+        assertEquals(studyBurstAssessmentRecord.getAssessmentStatus(), AssessmentCompletionState.COMPLETED);
+        assertEquals(studyBurstAssessmentRecord.getAssessmentStart().toString(), STARTED_ON.withZone(DateTimeZone.forID(
+                NON_LOCAL_TIME_ZONE)).toString());
+        assertEquals(studyBurstAssessmentRecord.getAssessmentCompleted().toString(), FINISHED_ON.withZone(DateTimeZone.forID(
+                NON_LOCAL_TIME_ZONE)).toString());
+        assertNull(studyBurstAssessmentRecord.getAssessmentUploadedOn());
+    
+        DetailedAdherenceReportAssessmentRecord studyBurstAssessmentRecord2 = studyBurstAssessmentRecords.get(1);
+        assertEquals(studyBurstAssessmentRecord2.getAssessmentName(), "assessment-name-1");
+        assertEquals(studyBurstAssessmentRecord2.getAssessmentId(), "assessment-id-1");
+        assertEquals(studyBurstAssessmentRecord2.getAssessmentGuid(), "assessment-guid-1");
+        assertEquals(studyBurstAssessmentRecord2.getAssessmentInstanceGuid(), "assessment-instance-guid-3");
+        assertEquals(studyBurstAssessmentRecord2.getAssessmentStatus(), AssessmentCompletionState.COMPLETED);
+        assertEquals(studyBurstAssessmentRecord2.getAssessmentStart().toString(), STARTED_ON.minusHours(1)
+                .withZone(DateTimeZone.forID(NON_LOCAL_TIME_ZONE)).toString());
+        assertEquals(studyBurstAssessmentRecord2.getAssessmentCompleted().toString(), FINISHED_ON.minusHours(1)
+                .withZone(DateTimeZone.forID(NON_LOCAL_TIME_ZONE)).toString());
+        assertNull(studyBurstAssessmentRecord2.getAssessmentUploadedOn());
+    }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void getDetailedAdherenceReportForParticipant_missingSchedule() {
+        when(mockStudyService.getZoneId(TEST_APP_ID, TEST_STUDY_ID, TEST_CLIENT_TIME_ZONE))
+                .thenReturn(TEST_CLIENT_TIME_ZONE);
+        
+        Study study = Study.create();
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+        
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID))
+                .thenThrow(new EntityNotFoundException(Schedule2.class));
+    
+        DetailedAdherenceReport report = service.getDetailedAdherenceReportForParticipant(
+                TEST_APP_ID, TEST_STUDY_ID, Account.create());
+    }
+    
+    @Test
+    public void getDetailedAdherenceReportForParticipant_persistentWindowsIgnored() {
+        // This test includes one persistent session and one not. Only the non-persistent session and its
+        // child assessment should be included in the report.
+        when(mockStudyService.getZoneId(TEST_APP_ID, TEST_STUDY_ID, NON_LOCAL_TIME_ZONE))
+                .thenReturn(NON_LOCAL_TIME_ZONE);
+    
+        Study study = Study.create();
+        study.setScheduleGuid(SCHEDULE_GUID);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+    
+        Schedule2 schedule = new Schedule2();
+        schedule.setGuid(SCHEDULE_GUID);
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(Optional.of(schedule));
+    
+        AssessmentReference assessmentReference1 = new AssessmentReference();
+        assessmentReference1.setTitle("assessment-name-1");
+        assessmentReference1.setGuid("assessment-guid-1");
+        assessmentReference1.setIdentifier("assessment-id-1");
+    
+        AssessmentReference assessmentReference2 = new AssessmentReference();
+        assessmentReference2.setTitle("assessment-name-2");
+        assessmentReference2.setGuid("assessment-guid-2");
+        assessmentReference2.setIdentifier("assessment-id-2");
+    
+        AssessmentInfo assessmentInfo1 = AssessmentInfo.create(assessmentReference1);
+        AssessmentInfo assessmentInfo2 = AssessmentInfo.create(assessmentReference2);
+    
+        ScheduledAssessment scheduledAssessment1 = new ScheduledAssessment.Builder()
+                .withInstanceGuid("assessment-instance-guid-1")
+                .withRefKey(assessmentInfo1.getKey())
+                .withReference(assessmentReference1)
+                .build();
+    
+        ScheduledAssessment scheduledAssessment2 = new ScheduledAssessment.Builder()
+                .withInstanceGuid("assessment-instance-guid-2")
+                .withRefKey(assessmentInfo2.getKey())
+                .withReference(assessmentReference2)
+                .build();
+    
+        Session session = new Session();
+        session.setName("session-name");
+        session.setGuid("session-guid");
+        session.setAssessments(ImmutableList.of(assessmentReference1));
+    
+        Session studyBurst = new Session();
+        studyBurst.setName("study-burst-session-name");
+        studyBurst.setGuid("study-burst-session-guid-2");
+        studyBurst.setAssessments(ImmutableList.of(assessmentReference1, assessmentReference2));
+    
+        ScheduledSession scheduledSession = new ScheduledSession.Builder()
+                .withInstanceGuid("session-instance-guid-1")
+                .withStartEventId("timeline_retrieved")
+                .withSession(session)
+                .withTimeWindow(new TimeWindow())
+                .withStartDay(7)
+                .withEndDay(9)
+                .withScheduledAssessment(scheduledAssessment1)
+                .withPersistent(true)
+                .build();
+    
+        SessionInfo sessionInfo = SessionInfo.createTimelineEntry(session);
+    
+        ScheduledSession scheduledStudyBurst = new ScheduledSession.Builder()
+                .withInstanceGuid("study-burst-session-guid-2")
+                .withStartEventId("study_burst:study-burst-start:1")
+                .withSession(studyBurst)
+                .withTimeWindow(new TimeWindow())
+                .withStartDay(8)
+                .withEndDay(9)
+                .withScheduledAssessment(scheduledAssessment2)
+                .build();
+    
+        SessionInfo studyBurstInfo = SessionInfo.createTimelineEntry(studyBurst);
+    
+        Timeline timeline = new Timeline.Builder()
+                .withSchedule(schedule)
+                .withSessionInfo(sessionInfo)
+                .withSessionInfo(studyBurstInfo)
+                .withScheduledSession(scheduledSession)
+                .withScheduledSession(scheduledStudyBurst)
+                .withAssessmentInfo(assessmentInfo1)
+                .withAssessmentInfo(assessmentInfo2)
+                .build();
+    
+    
+        when(mockScheduleService.getTimelineForSchedule(TEST_APP_ID, SCHEDULE_GUID)).thenReturn(timeline);
+    
+        StudyActivityEvent event1 = new StudyActivityEvent.Builder()
+                .withEventId("timeline_retrieved")
+                .withTimestamp(EVENT_TS)
+                .withObjectType(ActivityEventObjectType.TIMELINE_RETRIEVED)
+                .build();
+    
+        StudyActivityEvent event2 = new StudyActivityEvent.Builder()
+                .withEventId("study_burst:study-burst-start:1")
+                .withTimestamp(EVENT_TS)
+                .withObjectType(ActivityEventObjectType.STUDY_BURST)
+                .build();
+    
+        when(mockStudyActivityEventService.getRecentStudyActivityEvents(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID))
+                .thenReturn(new ResourceList<StudyActivityEvent>(ImmutableList.of(event1, event2)));
+
+        AdherenceRecord assessmentRecord1 = ar(STARTED_ON, FINISHED_ON, "assessment-instance-guid-1", false);
+        assessmentRecord1.setUploadedOn(UPLOADED_ON);
+        AdherenceRecord sessionRecord1 = sar(STARTED_ON, FINISHED_ON, "session-instance-guid-1", false);
+
+        AdherenceRecord assessmentRecord2 = ar(STARTED_ON, FINISHED_ON, "assessment-instance-guid-2", false);
+        AdherenceRecord studyBurstRecord1 = sar(STARTED_ON, FINISHED_ON, "study-burst-session-guid-2", false);
+    
+        PagedResourceList<AdherenceRecord> recordList = new PagedResourceList<>(ImmutableList.of(assessmentRecord1, 
+                sessionRecord1, assessmentRecord2, studyBurstRecord1), 4);
+        doReturn(recordList).when(service).getAdherenceRecords(any(), any());
+    
+        AdherenceRecordList list = mockRecordUpdate(
+                ar(STARTED_ON, FINISHED_ON, "AAA", false),
+                ar(STARTED_ON, FINISHED_ON, "BBB", false),
+                sar(STARTED_ON, null, false));
+    
+        Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, TEST_EXTERNAL_ID);
+        enrollment.setEnrolledOn(ENROLLMENT);
+    
+        Account account = Account.create();
+        account.setId(TEST_USER_ID);
+        account.setDataGroups(ImmutableSet.of("test_user"));
+        account.setEnrollments(ImmutableSet.of(enrollment));
+        account.setClientTimeZone(NON_LOCAL_TIME_ZONE);
+        
+    
+        DetailedAdherenceReport report = service.getDetailedAdherenceReportForParticipant(
+                TEST_APP_ID, TEST_STUDY_ID, account);
+    
+        assertEquals(report.getParticipant().getIdentifier(), TEST_USER_ID);
+        assertEquals(report.getParticipant().getExternalId(), TEST_EXTERNAL_ID);
+        assertTrue(report.isTestAccount());
+        assertEquals(report.getJoinedDate().toString(),
+                ENROLLMENT.withZone(DateTimeZone.forID(NON_LOCAL_TIME_ZONE)).toString());
+        
+        List<DetailedAdherenceReportSessionRecord> sessionRecords = report.getSessionRecords();
+        assertEquals(sessionRecords.size(), 1);
+    
+        DetailedAdherenceReportSessionRecord studyBurstRecord = sessionRecords.get(0);
+        assertEquals(studyBurstRecord.getBurstName(), "Week 2/Burst 1");
+        assertEquals(studyBurstRecord.getBurstId(), "study-burst-start");
+        assertEquals(studyBurstRecord.getSessionName(), "study-burst-session-name");
+        assertEquals(studyBurstRecord.getSessionGuid(), "study-burst-session-guid-2");
+        assertEquals(studyBurstRecord.getSessionInstanceGuid(), "study-burst-session-guid-2");
+        assertEquals(studyBurstRecord.getSessionStatus(), COMPLETED);
+        assertEquals(studyBurstRecord.getSessionStart().toString(), STARTED_ON.withZone(DateTimeZone.forID(
+                NON_LOCAL_TIME_ZONE)).toString());
+        assertEquals(studyBurstRecord.getSessionCompleted().toString(), FINISHED_ON.withZone(DateTimeZone.forID(
+                NON_LOCAL_TIME_ZONE)).toString());
+        assertEquals(studyBurstRecord.getSessionExpiration(), STARTED_ON.plusDays(2).withZone(DateTimeZone.forID(
+                NON_LOCAL_TIME_ZONE)));
+    
+        List<DetailedAdherenceReportAssessmentRecord> studyBurstAssessmentRecords = studyBurstRecord.getAssessmentRecords();
+        assertEquals(studyBurstAssessmentRecords.size(), 1);
+    
+        DetailedAdherenceReportAssessmentRecord studyBurstAssessmentRecord = studyBurstAssessmentRecords.get(0);
+        assertEquals(studyBurstAssessmentRecord.getAssessmentName(), "assessment-name-2");
+        assertEquals(studyBurstAssessmentRecord.getAssessmentId(), "assessment-id-2");
+        assertEquals(studyBurstAssessmentRecord.getAssessmentGuid(), "assessment-guid-2");
+        assertEquals(studyBurstAssessmentRecord.getAssessmentInstanceGuid(), "assessment-instance-guid-2");
+        assertEquals(studyBurstAssessmentRecord.getAssessmentStatus(), AssessmentCompletionState.COMPLETED);
+        assertEquals(studyBurstAssessmentRecord.getAssessmentStart().toString(), STARTED_ON.withZone(DateTimeZone.forID(
+                NON_LOCAL_TIME_ZONE)).toString());
+        assertEquals(studyBurstAssessmentRecord.getAssessmentCompleted().toString(), FINISHED_ON.withZone(DateTimeZone.forID(
+                NON_LOCAL_TIME_ZONE)).toString());
+        assertNull(studyBurstAssessmentRecord.getAssessmentUploadedOn());
+    }
+    
+    @Test
+    public void getDetailedAdherenceReportForParticipant_assessmentCompleted() {
+        AdherenceRecord assessmentRecord1 = ar(STARTED_ON, FINISHED_ON, "assessment-instance-guid-1", false);
+    
+        Account account = mockDetailedAdherenceTimeline(ImmutableList.of(assessmentRecord1));
+    
+        DetailedAdherenceReport report = service.getDetailedAdherenceReportForParticipant(
+                TEST_APP_ID, TEST_STUDY_ID, account);
+    
+        List<DetailedAdherenceReportSessionRecord> sessionRecords = report.getSessionRecords();
+        DetailedAdherenceReportSessionRecord sessionRecord = sessionRecords.get(0);
+        List<DetailedAdherenceReportAssessmentRecord> assessmentRecords = sessionRecord.getAssessmentRecords();
+    
+        DetailedAdherenceReportAssessmentRecord assessmentRecord = assessmentRecords.get(0);
+        assertEquals(assessmentRecord.getAssessmentInstanceGuid(), "assessment-instance-guid-1");
+        assertEquals(assessmentRecord.getAssessmentStatus(), AssessmentCompletionState.COMPLETED);
+        assertEquals(assessmentRecord.getAssessmentStart().toString(), STARTED_ON.withZone(DateTimeZone.forID(
+                NON_LOCAL_TIME_ZONE)).toString());
+        assertEquals(assessmentRecord.getAssessmentCompleted().toString(), FINISHED_ON.withZone(DateTimeZone.forID(
+                NON_LOCAL_TIME_ZONE)).toString());
+    }
+    
+    @Test
+    public void getDetailedAdherenceReportForParticipant_assessmentNotCompleted() {
+        AdherenceRecord assessmentRecord1 = ar(STARTED_ON, null, "assessment-instance-guid-1", false);
+    
+        Account account = mockDetailedAdherenceTimeline(ImmutableList.of(assessmentRecord1));
+    
+        DetailedAdherenceReport report = service.getDetailedAdherenceReportForParticipant(
+                TEST_APP_ID, TEST_STUDY_ID, account);
+    
+        List<DetailedAdherenceReportSessionRecord> sessionRecords = report.getSessionRecords();
+        DetailedAdherenceReportSessionRecord sessionRecord = sessionRecords.get(0);
+        List<DetailedAdherenceReportAssessmentRecord> assessmentRecords = sessionRecord.getAssessmentRecords();
+    
+        DetailedAdherenceReportAssessmentRecord assessmentRecord = assessmentRecords.get(0);
+        assertEquals(assessmentRecord.getAssessmentInstanceGuid(), "assessment-instance-guid-1");
+        assertEquals(assessmentRecord.getAssessmentStatus(), AssessmentCompletionState.NOT_COMPLETED);
+        assertEquals(assessmentRecord.getAssessmentStart().toString(), STARTED_ON.withZone(DateTimeZone.forID(
+                NON_LOCAL_TIME_ZONE)).toString());
+        assertNull(assessmentRecord.getAssessmentCompleted());
+    }
+    
+    @Test
+    public void getDetailedAdherenceReportForParticipant_assessmentDeclined() {
+        AdherenceRecord assessmentRecord1 = ar(STARTED_ON, null, "assessment-instance-guid-1", true);
+    
+        Account account = mockDetailedAdherenceTimeline(ImmutableList.of(assessmentRecord1));
+    
+        DetailedAdherenceReport report = service.getDetailedAdherenceReportForParticipant(
+                TEST_APP_ID, TEST_STUDY_ID, account);
+    
+        List<DetailedAdherenceReportSessionRecord> sessionRecords = report.getSessionRecords();
+        DetailedAdherenceReportSessionRecord sessionRecord = sessionRecords.get(0);
+        List<DetailedAdherenceReportAssessmentRecord> assessmentRecords = sessionRecord.getAssessmentRecords();
+    
+        DetailedAdherenceReportAssessmentRecord assessmentRecord = assessmentRecords.get(0);
+        assertEquals(assessmentRecord.getAssessmentInstanceGuid(), "assessment-instance-guid-1");
+        assertEquals(assessmentRecord.getAssessmentStatus(), AssessmentCompletionState.DECLINED);
+        assertEquals(assessmentRecord.getAssessmentStart().toString(), STARTED_ON.withZone(DateTimeZone.forID(
+                NON_LOCAL_TIME_ZONE)).toString());
+        assertNull(assessmentRecord.getAssessmentCompleted());
+    }
+    
+    
+    
     private AdherenceRecord ar(DateTime startedOn, DateTime finishedOn, String guid, boolean declined) {
+        AdherenceRecord sess = new AdherenceRecord();
+        sess.setAppId(TEST_APP_ID);
+        sess.setUserId(TEST_USER_ID);
+        sess.setStudyId(TEST_STUDY_ID);
+        sess.setInstanceGuid(guid);
+        sess.setStartedOn(startedOn);
+        sess.setFinishedOn(finishedOn);
+        sess.setDeclined(TRUE.equals(declined));
+        sess.setEventTimestamp(EVENT_TS);
+        return sess;
+    }
+    
+    private AdherenceRecord sar(DateTime startedOn, DateTime finishedOn, String guid, boolean declined) {
         AdherenceRecord sess = new AdherenceRecord();
         sess.setAppId(TEST_APP_ID);
         sess.setUserId(TEST_USER_ID);
@@ -1275,16 +1776,7 @@ public class AdherenceServiceTest extends Mockito {
     }
 
     private AdherenceRecord sar(DateTime startedOn, DateTime finishedOn, boolean declined) {
-        AdherenceRecord sess = new AdherenceRecord();
-        sess.setAppId(TEST_APP_ID);
-        sess.setUserId(TEST_USER_ID);
-        sess.setStudyId(TEST_STUDY_ID);
-        sess.setInstanceGuid("sessionInstanceGuid");
-        sess.setStartedOn(startedOn);
-        sess.setFinishedOn(finishedOn);
-        sess.setDeclined(TRUE.equals(declined));
-        sess.setEventTimestamp(EVENT_TS);
-        return sess;
+        return sar(startedOn, finishedOn, "sessionInstanceGuid", declined);
     }
     
     private AdherenceRecordList mockRecordUpdate(AdherenceRecord rec1, AdherenceRecord rec2, 
@@ -1338,5 +1830,129 @@ public class AdherenceServiceTest extends Mockito {
         when(mockRecordDao.getAdherenceRecords(any())).thenReturn(page);
         
         return new AdherenceRecordList(records);
+    }
+    
+    private Account mockDetailedAdherenceTimeline(List<AdherenceRecord> testAdherenceRecords) {
+        when(mockStudyService.getZoneId(TEST_APP_ID, TEST_STUDY_ID, NON_LOCAL_TIME_ZONE))
+                .thenReturn(NON_LOCAL_TIME_ZONE);
+        
+        Study study = Study.create();
+        study.setScheduleGuid(SCHEDULE_GUID);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+    
+        Schedule2 schedule = new Schedule2();
+        schedule.setGuid(SCHEDULE_GUID);
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(Optional.of(schedule));
+    
+        AssessmentReference assessmentReference1 = new AssessmentReference();
+        assessmentReference1.setTitle("assessment-name-1");
+        assessmentReference1.setGuid("assessment-guid-1");
+        assessmentReference1.setIdentifier("assessment-id-1");
+    
+        AssessmentReference assessmentReference2 = new AssessmentReference();
+        assessmentReference2.setTitle("assessment-name-2");
+        assessmentReference2.setGuid("assessment-guid-2");
+        assessmentReference2.setIdentifier("assessment-id-2");
+    
+        AssessmentInfo assessmentInfo1 = AssessmentInfo.create(assessmentReference1);
+        AssessmentInfo assessmentInfo2 = AssessmentInfo.create(assessmentReference2);
+    
+        ScheduledAssessment scheduledAssessment1 = new ScheduledAssessment.Builder()
+                .withInstanceGuid("assessment-instance-guid-1")
+                .withRefKey(assessmentInfo1.getKey())
+                .withReference(assessmentReference1)
+                .build();
+    
+        ScheduledAssessment scheduledAssessment2 = new ScheduledAssessment.Builder()
+                .withInstanceGuid("assessment-instance-guid-2")
+                .withRefKey(assessmentInfo2.getKey())
+                .withReference(assessmentReference2)
+                .build();
+    
+        ScheduledAssessment scheduledAssessment3 = new ScheduledAssessment.Builder()
+                .withInstanceGuid("assessment-instance-guid-3")
+                .withRefKey(assessmentInfo1.getKey())
+                .withReference(assessmentReference1)
+                .build();
+    
+        TimeWindow timeWindow = new TimeWindow();
+    
+        Session session = new Session();
+        session.setName("session-name");
+        session.setGuid("session-guid");
+        session.setAssessments(ImmutableList.of(assessmentReference1));
+    
+        Session studyBurst = new Session();
+        studyBurst.setName("study-burst-session-name");
+        studyBurst.setGuid("study-burst-session-guid-2");
+        studyBurst.setAssessments(ImmutableList.of(assessmentReference1, assessmentReference2));
+    
+        ScheduledSession scheduledSession = new ScheduledSession.Builder()
+                .withInstanceGuid("session-instance-guid-1")
+                .withStartEventId("timeline_retrieved")
+                .withSession(session)
+                .withTimeWindow(timeWindow)
+                .withStartDay(7)
+                .withEndDay(9)
+                .withScheduledAssessment(scheduledAssessment1)
+                .build();
+    
+        SessionInfo sessionInfo = SessionInfo.createTimelineEntry(session);
+    
+        ScheduledSession scheduledStudyBurst = new ScheduledSession.Builder()
+                .withInstanceGuid("study-burst-session-guid-2")
+                .withStartEventId("study_burst:study-burst-start:1")
+                .withSession(studyBurst)
+                .withTimeWindow(new TimeWindow())
+                .withStartDay(8)
+                .withEndDay(9)
+                .withScheduledAssessment(scheduledAssessment2)
+                .withScheduledAssessment(scheduledAssessment3)
+                .build();
+    
+        SessionInfo studyBurstInfo = SessionInfo.createTimelineEntry(studyBurst);
+    
+        Timeline timeline = new Timeline.Builder()
+                .withSchedule(schedule)
+                .withSessionInfo(sessionInfo)
+                .withSessionInfo(studyBurstInfo)
+                .withScheduledSession(scheduledSession)
+                .withScheduledSession(scheduledStudyBurst)
+                .withAssessmentInfo(assessmentInfo1)
+                .withAssessmentInfo(assessmentInfo2)
+                .build();
+    
+    
+        when(mockScheduleService.getTimelineForSchedule(TEST_APP_ID, SCHEDULE_GUID)).thenReturn(timeline);
+    
+        StudyActivityEvent event1 = new StudyActivityEvent.Builder()
+                .withEventId("timeline_retrieved")
+                .withTimestamp(EVENT_TS)
+                .withObjectType(ActivityEventObjectType.TIMELINE_RETRIEVED)
+                .build();
+    
+        StudyActivityEvent event2 = new StudyActivityEvent.Builder()
+                .withEventId("study_burst:study-burst-start:1")
+                .withTimestamp(EVENT_TS)
+                .withObjectType(ActivityEventObjectType.STUDY_BURST)
+                .build();
+    
+        when(mockStudyActivityEventService.getRecentStudyActivityEvents(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID))
+                .thenReturn(new ResourceList<StudyActivityEvent>(ImmutableList.of(event1, event2)));
+    
+        PagedResourceList<AdherenceRecord> recordList = new PagedResourceList<>(testAdherenceRecords, 
+                testAdherenceRecords.size());
+        doReturn(recordList).when(service).getAdherenceRecords(any(), any());
+    
+        Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, TEST_EXTERNAL_ID);
+        enrollment.setEnrolledOn(ENROLLMENT);
+    
+        Account account = Account.create();
+        account.setId(TEST_USER_ID);
+        account.setDataGroups(ImmutableSet.of("test_user"));
+        account.setEnrollments(ImmutableSet.of(enrollment));
+        account.setClientTimeZone(NON_LOCAL_TIME_ZONE);
+        
+        return account;
     }
 }

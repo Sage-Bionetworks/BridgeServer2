@@ -15,6 +15,7 @@ import static org.sagebionetworks.bridge.BridgeUtils.collectStudyIds;
 import static org.sagebionetworks.bridge.dao.AccountDao.MIGRATION_VERSION;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ENROLLMENT;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -43,6 +44,9 @@ import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.apps.App;
+import org.sagebionetworks.bridge.models.reports.ReportIndex;
+import org.sagebionetworks.bridge.models.reports.ReportType;
+import org.sagebionetworks.bridge.models.studies.Alert;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.time.DateUtils;
 
@@ -55,9 +59,17 @@ public class AccountService {
     @Autowired
     private ActivityEventService activityEventService;
     @Autowired
+    private ParticipantDataService participantDataService;
+    @Autowired
+    private ParticipantFileService participantFileService;
+    @Autowired
     private ParticipantVersionService participantVersionService;
     @Autowired
+    private ReportService reportService;
+    @Autowired
     private StudyActivityEventService studyActivityEventService;
+    @Autowired
+    private AlertService alertService;
     @Autowired
     private CacheProvider cacheProvider;
     
@@ -107,6 +119,12 @@ public class AccountService {
         if (!account.getEnrollments().isEmpty()) {
             activityEventService.publishEnrollmentEvent(
                     app, account.getHealthCode(), account.getCreatedOn());
+
+            // trigger alerts for new enrollment
+            for (Enrollment newEnrollment : account.getEnrollments()) {
+                alertService.createAlert(
+                        Alert.newEnrollment(newEnrollment.getStudyId(), newEnrollment.getAppId(), account.getId()));
+            }
         }
         StudyActivityEvent.Builder builder = new StudyActivityEvent.Builder()
                 .withAppId(app.getIdentifier())
@@ -120,7 +138,7 @@ public class AccountService {
         cacheProvider.setObject(cacheKey, account.getCreatedOn());
 
         // Create the corresponding Participant Version.
-        participantVersionService.createParticipantVersionFromAccount(account);
+        participantVersionService.createParticipantVersionFromAccount(app, account);
     }
     
     /**
@@ -168,12 +186,18 @@ public class AccountService {
         // reflect the enrollments.
         Set<String> newStudies = Sets.newHashSet(collectStudyIds(account));
         newStudies.removeAll(collectStudyIds(persistedAccount));
-        
+
+        App app = appService.getApp(account.getAppId());
         if (!newStudies.isEmpty()) {
-            App app = appService.getApp(account.getAppId());
-            activityEventService.publishEnrollmentEvent(app, 
+            activityEventService.publishEnrollmentEvent(app,
                     account.getHealthCode(), account.getModifiedOn());
-            
+
+            // trigger alerts for new enrollment
+            for (String studyId : newStudies) {
+                alertService.createAlert(
+                        Alert.newEnrollment(studyId, account.getAppId(), account.getId()));
+            }
+
             StudyActivityEvent.Builder builder = new StudyActivityEvent.Builder()
                     .withAppId(app.getIdentifier())
                     .withUserId(account.getId())
@@ -190,7 +214,7 @@ public class AccountService {
             cacheProvider.setObject(cacheKey, account.getModifiedOn());
         }
         // Create the corresponding Participant Version.
-        participantVersionService.createParticipantVersionFromAccount(account);
+        participantVersionService.createParticipantVersionFromAccount(app, account);
     }
     
     /**
@@ -271,14 +295,25 @@ public class AccountService {
             // up accurate information about the state of the account (as we can recover it)
             cacheProvider.removeSessionByUserId(account.getId());
             requestInfoService.removeRequestInfo(account.getId());
-            
+
+            String appId = account.getAppId();
+            String userId = account.getId();
             String healthCode = account.getHealthCode();
             healthDataService.deleteRecordsForHealthCode(healthCode);
             healthDataEx3Service.deleteRecordsForHealthCode(healthCode);
             notificationsService.deleteAllRegistrations(account.getAppId(), healthCode);
+            participantDataService.deleteAllParticipantData(userId);
+            participantFileService.deleteAllFilesForParticipant(userId);
             uploadService.deleteUploadsForHealthCode(healthCode);
             scheduledActivityService.deleteActivitiesForUser(healthCode);
             activityEventService.deleteActivityEvents(account.getAppId(), healthCode);
+
+            List<? extends ReportIndex> reportIndexList = reportService.getReportIndices(appId, ReportType.PARTICIPANT)
+                    .getItems();
+            for (ReportIndex reportIndex : reportIndexList) {
+                reportService.deleteParticipantReport(appId, userId, reportIndex.getIdentifier(), healthCode);
+            }
+
             // AccountSecret records and Enrollment records are are deleted on a 
             // cascading delete from Account
             accountDao.deleteAccount(account.getId());

@@ -8,6 +8,7 @@ import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
+import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.SCHEDULE_GUID;
@@ -30,6 +31,7 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.fail;
 
 import java.util.List;
 import java.util.Optional;
@@ -44,6 +46,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.models.schedules2.Session;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -91,7 +94,13 @@ public class StudyServiceTest extends Mockito {
     
     @Mock
     private AccountService mockAccountService;
-    
+
+    @Mock
+    private DemographicService mockDemographicService;
+
+    @Mock
+    private AlertService alertService;
+
     @Captor
     private ArgumentCaptor<Study> studyCaptor;
     
@@ -626,6 +635,9 @@ public class StudyServiceTest extends Mockito {
         
         CacheKey cacheKey = CacheKey.etag(Study.class, TEST_APP_ID, TEST_STUDY_ID);
         verify(mockCacheProvider).removeObject(cacheKey);
+
+        // verify alerts for this study are deleted
+        verify(alertService).deleteAlertsForStudy(TEST_APP_ID, TEST_STUDY_ID);
     }
     
     @Test(expectedExceptions = BadRequestException.class,
@@ -651,6 +663,9 @@ public class StudyServiceTest extends Mockito {
         
         verify(mockStudyDao).updateStudy(study);
         verify(mockCacheProvider).removeObject(CACHE_KEY);
+
+        // verify alerts for this study are deleted
+        verify(alertService).deleteAlertsForStudy(TEST_APP_ID, TEST_STUDY_ID);
     }
 
     
@@ -668,12 +683,13 @@ public class StudyServiceTest extends Mockito {
         service.deleteStudyPermanently(TEST_APP_ID, TEST_STUDY_ID);
         
         verify(mockScheduleService, never()).deleteSchedulePermanently(any(), any());
+        verify(mockDemographicService).deleteAllValidationConfigs(TEST_APP_ID, TEST_STUDY_ID);
         verify(mockStudyDao).deleteStudyPermanently(TEST_APP_ID, TEST_STUDY_ID);
         verify(mockCacheProvider).removeObject(CACHE_KEY);
         
         CacheKey cacheKey = CacheKey.etag(Study.class, TEST_APP_ID, TEST_STUDY_ID);
         verify(mockCacheProvider).removeObject(cacheKey);
-    }    
+    }
 
     @Test
     public void deleteStudyPermanently_deletesScheduleFirst() {
@@ -739,6 +755,9 @@ public class StudyServiceTest extends Mockito {
         verify(mockStudyDao).updateStudy(study);
         assertEquals(study.getPhase(), DESIGN);     
         assertEquals(study.getModifiedOn(), MODIFIED_ON);
+
+        // verify no alerts deleted
+        verifyZeroInteractions(alertService);
     }
     
     @Test
@@ -761,6 +780,9 @@ public class StudyServiceTest extends Mockito {
         assertEquals(study.getModifiedOn(), MODIFIED_ON);
         
         verify(mockScheduleService).publishSchedule(TEST_APP_ID, SCHEDULE_GUID);
+
+        // verify no alerts deleted
+        verifyZeroInteractions(alertService);
     }
     
     @Test
@@ -785,6 +807,9 @@ public class StudyServiceTest extends Mockito {
         assertEquals(study.getModifiedOn(), MODIFIED_ON);
         
         verify(mockScheduleService, never()).publishSchedule(any(), any());
+
+        // verify no alerts deleted
+        verifyZeroInteractions(alertService);
     }
     
     @Test
@@ -807,6 +832,9 @@ public class StudyServiceTest extends Mockito {
         assertNull(study.getScheduleGuid());
 
         verifyZeroInteractions(mockScheduleService);
+
+        // verify no alerts deleted
+        verifyZeroInteractions(alertService);
     }
     
     @Test
@@ -824,6 +852,9 @@ public class StudyServiceTest extends Mockito {
         verify(mockStudyDao).updateStudy(study);
         assertEquals(study.getPhase(), IN_FLIGHT);    
         assertEquals(study.getModifiedOn(), MODIFIED_ON);   
+
+        // verify no alerts deleted
+        verifyZeroInteractions(alertService);
     }
     
     @Test
@@ -841,6 +872,9 @@ public class StudyServiceTest extends Mockito {
         verify(mockStudyDao).updateStudy(study);
         assertEquals(study.getPhase(), ANALYSIS);
         assertEquals(study.getModifiedOn(), MODIFIED_ON);
+
+        // verify no alerts deleted
+        verifyZeroInteractions(alertService);
     }
     
     @Test
@@ -858,6 +892,9 @@ public class StudyServiceTest extends Mockito {
         verify(mockStudyDao).updateStudy(study);
         assertEquals(study.getPhase(), COMPLETED);
         assertEquals(study.getModifiedOn(), MODIFIED_ON);
+
+        // verify alerts deleted for this study
+        verify(alertService).deleteAlertsForStudy(TEST_APP_ID, TEST_STUDY_ID);
     }
     
     @Test
@@ -1041,5 +1078,60 @@ public class StudyServiceTest extends Mockito {
     
         Set<String> expectedSet = Sets.newHashSet();
         assertEquals(eventIds, expectedSet);
+    }
+    
+    @Test
+    public void revertToDesign() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(SUPERADMIN)).build());
+        Study study = Study.create();
+        study.setPhase(RECRUITMENT);
+        study.setIdentifier(TEST_STUDY_ID);
+        when(mockStudyDao.getStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(study);
+    
+        service.revertToDesign(TEST_APP_ID, TEST_STUDY_ID);
+    
+        verify(mockStudyDao).updateStudy(study);
+        assertEquals(study.getPhase(), DESIGN);
+        assertEquals(study.getModifiedOn(), MODIFIED_ON);
+    
+        verify(mockCacheProvider).removeObject(CACHE_KEY);
+    
+        CacheKey cacheKey = CacheKey.etag(Study.class, TEST_APP_ID, TEST_STUDY_ID);
+        verify(mockCacheProvider).setObject(cacheKey, MODIFIED_ON);
+    }
+    
+    @Test 
+    public void revertToDesign_notSuperadmin() {
+        // This study mock is unnecessary if the exceptions are thrown as expected,
+        // but useful for reaching the message in the fail condition if they are not thrown.
+        Study study = Study.create();
+        when(mockStudyDao.getStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(study);
+        
+        for (Roles role : Roles.values()) {
+            if (role.equals(SUPERADMIN)) {
+                continue;
+            }
+            
+            RequestContext.set(new RequestContext.Builder()
+                    .withCallerRoles(ImmutableSet.of(role)).build());
+            
+            try {
+                service.revertToDesign(TEST_APP_ID, TEST_STUDY_ID);
+                fail("Should have thrown UnauthorizedException for role: " + role.toString());
+            } catch (UnauthorizedException e) {
+                assertEquals(e.getMessage(), "Only superadmins can revert studies to design");
+            }
+        }
+    }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class,
+            expectedExceptionsMessageRegExp = "Study not found.")
+    public void revertToDesign_studyDoesNotExist() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(SUPERADMIN)).build());
+        when(mockStudyDao.getStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(null);
+    
+        service.revertToDesign(TEST_APP_ID, TEST_STUDY_ID);
     }
 }

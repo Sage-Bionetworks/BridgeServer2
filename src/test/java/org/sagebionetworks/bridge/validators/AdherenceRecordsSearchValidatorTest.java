@@ -2,16 +2,27 @@ package org.sagebionetworks.bridge.validators;
 
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
+import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.APP_AND_USER_CANT_BOTH_BE_SPECIFIED_ERROR;
+import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.APP_OR_USER_REQUIRED_ERROR;
 import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.ASSESSMENT_IDS_FIELD;
 import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.END_TIME_BEFORE_START_TIME;
 import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.END_TIME_FIELD;
 import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.EVENT_TIMESTAMPS_FIELD;
+import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.EVENT_TIMESTAMP_END_FIELD;
+import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.EVENT_TIMESTAMP_END_MISSING;
+import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.EVENT_TIMESTAMP_END_MUST_BE_AFTER_START;
+import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.EVENT_TIMESTAMP_END_MUST_BE_WITHIN_RANGE;
+import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.EVENT_TIMESTAMP_START_FIELD;
+import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.EVENT_TIMESTAMP_START_MISSING;
+import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.HAS_NO_HAS_MULTIPLE_UPLOAD_IDS_ERROR;
 import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.INSTANCE;
 import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.INSTANCE_GUIDS_FIELD;
+import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.MAX_DATE_RANGE_IN_DAYS;
 import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.MAX_MAP_SIZE;
 import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.MAX_MAP_SIZE_ERROR;
 import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.MAX_PAGE_SIZE;
@@ -45,6 +56,8 @@ import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSe
 import org.sagebionetworks.bridge.models.schedules2.adherence.SortOrder;
 
 public class AdherenceRecordsSearchValidatorTest extends Mockito {
+    private static final DateTime TIMESTAMP1 = DateTime.parse("2023-04-11T14:36:47.529Z");
+    private static final DateTime TIMESTAMP2 = DateTime.parse("2023-04-11T14:36:58.871Z");
 
     @Test
     public void valid() {
@@ -138,7 +151,62 @@ public class AdherenceRecordsSearchValidatorTest extends Mockito {
                 .withEndTime(CREATED_ON).build();
         assertValidatorMessage(INSTANCE, search, END_TIME_FIELD, END_TIME_BEFORE_START_TIME);
     }
-    
+
+    @Test
+    public void eventTimestampStartWithoutEventTimestampEnd() {
+        AdherenceRecordsSearch search = search().withEventTimestampStart(TIMESTAMP1).withEventTimestampEnd(null)
+                .build();
+        assertValidatorMessage(INSTANCE, search, EVENT_TIMESTAMP_END_FIELD, EVENT_TIMESTAMP_END_MISSING);
+    }
+
+    @Test
+    public void eventTimestampEndWithoutEventTimestampStart() {
+        AdherenceRecordsSearch search = search().withEventTimestampStart(null).withEventTimestampEnd(TIMESTAMP1)
+                .build();
+        assertValidatorMessage(INSTANCE, search, EVENT_TIMESTAMP_START_FIELD, EVENT_TIMESTAMP_START_MISSING);
+    }
+
+    @Test
+    public void eventTimestampEndBeforeEventTimestampStart() {
+        AdherenceRecordsSearch search = search().withEventTimestampStart(TIMESTAMP2).withEventTimestampEnd(TIMESTAMP1)
+                .build();
+        assertValidatorMessage(INSTANCE, search, EVENT_TIMESTAMP_END_FIELD, EVENT_TIMESTAMP_END_MUST_BE_AFTER_START);
+    }
+
+    @Test
+    public void eventTimestampStartSameAsEventTimestampEnd() {
+        AdherenceRecordsSearch search = search().withEventTimestampStart(TIMESTAMP1).withEventTimestampEnd(TIMESTAMP1)
+                .build();
+        assertValidatorMessage(INSTANCE, search, EVENT_TIMESTAMP_END_FIELD, EVENT_TIMESTAMP_END_MUST_BE_AFTER_START);
+    }
+
+    @Test
+    public void eventTimestampStartTooFarInPast() {
+        AdherenceRecordsSearch search = search()
+                .withEventTimestampStart(TIMESTAMP1.minusDays(MAX_DATE_RANGE_IN_DAYS+1))
+                .withEventTimestampEnd(TIMESTAMP1).build();
+        assertValidatorMessage(INSTANCE, search, EVENT_TIMESTAMP_END_FIELD, EVENT_TIMESTAMP_END_MUST_BE_WITHIN_RANGE);
+    }
+
+    @Test
+    public void appIdWithoutUserId() {
+        // This is valid. Note that user ID without app ID is already tested in valid().
+        AdherenceRecordsSearch search = search().withAppId(TEST_APP_ID).withUserId(null).build();
+        Validate.entityThrowingException(INSTANCE, search);
+    }
+
+    @Test
+    public void neitherAppIdNorUserId() {
+        AdherenceRecordsSearch search = search().withAppId(null).withUserId(null).build();
+        assertValidatorMessage(INSTANCE, search, APP_OR_USER_REQUIRED_ERROR);
+    }
+
+    @Test
+    public void bothAppIdAndUserId() {
+        AdherenceRecordsSearch search = search().withAppId(TEST_APP_ID).withUserId(TEST_USER_ID).build();
+        assertValidatorMessage(INSTANCE, search, APP_AND_USER_CANT_BOTH_BE_SPECIFIED_ERROR);
+    }
+
     @Test
     public void offsetNegative() {
         AdherenceRecordsSearch search = search()
@@ -159,7 +227,45 @@ public class AdherenceRecordsSearchValidatorTest extends Mockito {
                 .withPageSize(MAX_PAGE_SIZE+1).build();
         assertValidatorMessage(INSTANCE, search, PAGE_SIZE_FIELD, PAGE_SIZE_ERROR);
     }
-    
+
+    @Test
+    public void bothHasMultipleUploadIdsAndHasNoUploadIds() {
+        AdherenceRecordsSearch search = search().withHasMultipleUploadIds(true).withHasNoUploadIds(true).build();
+        assertValidatorMessage(INSTANCE, search, HAS_NO_HAS_MULTIPLE_UPLOAD_IDS_ERROR);
+    }
+
+    @Test
+    public void hasMultipleUploadIdsWithNoTimestamps() {
+        AdherenceRecordsSearch search = search().withHasMultipleUploadIds(true).withEventTimestampStart(null)
+                .withEventTimestampEnd(null).build();
+        assertValidatorMessage(INSTANCE, search, EVENT_TIMESTAMP_START_FIELD, EVENT_TIMESTAMP_START_MISSING);
+        assertValidatorMessage(INSTANCE, search, EVENT_TIMESTAMP_END_FIELD, EVENT_TIMESTAMP_END_MISSING);
+    }
+
+    @Test
+    public void hasMultipleUploadIdsWithBothTimestamps() {
+        // This is valid.
+        AdherenceRecordsSearch search = search().withHasMultipleUploadIds(true).withEventTimestampStart(TIMESTAMP1)
+                .withEventTimestampEnd(TIMESTAMP2).build();
+        Validate.entityThrowingException(INSTANCE, search);
+    }
+
+    @Test
+    public void hasNoUploadIdsWithNoTimestamps() {
+        AdherenceRecordsSearch search = search().withHasNoUploadIds(true).withEventTimestampStart(null)
+                .withEventTimestampEnd(null).build();
+        assertValidatorMessage(INSTANCE, search, EVENT_TIMESTAMP_START_FIELD, EVENT_TIMESTAMP_START_MISSING);
+        assertValidatorMessage(INSTANCE, search, EVENT_TIMESTAMP_END_FIELD, EVENT_TIMESTAMP_END_MISSING);
+    }
+
+    @Test
+    public void hasNoUploadIdsWithBothTimestamps() {
+        // This is valid.
+        AdherenceRecordsSearch search = search().withHasNoUploadIds(true).withEventTimestampStart(TIMESTAMP1)
+                .withEventTimestampEnd(TIMESTAMP2).build();
+        Validate.entityThrowingException(INSTANCE, search);
+    }
+
     private Set<String> makeLargeSet() {
         Set<String> set = Sets.newHashSetWithExpectedSize(MAX_SET_SIZE+1);
         for (int i=0; i < (MAX_SET_SIZE+1); i++) {

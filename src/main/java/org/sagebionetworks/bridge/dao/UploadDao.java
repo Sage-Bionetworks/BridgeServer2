@@ -37,7 +37,10 @@ public interface UploadDao {
      * @return upload metadata
      */
     Upload getUpload(@Nonnull String uploadId);
-    
+
+    /** Get upload. Returns null if the upload doesn't exist. */
+    Upload getUploadNoThrow(String uploadId);
+
     /**
      * Get the uploads for an indicated time range.
      */
@@ -81,7 +84,11 @@ public interface UploadDao {
      * Delete all the upload records for a given health code. This is used to clean up records when a user is deleted, 
      * typically as part of testing. 
      * @param healthCode
-     *      the health code of the user being deleted.  
+     *      the health code of the user being deleted.
+     * @return a list of upload IDs to be deleted
      */
-    void deleteUploadsForHealthCode(@Nonnull String healthCode);
+    List<String> deleteUploadsForHealthCode(@Nonnull String healthCode);
+
+    /** Update an upload record. */
+    void updateUpload(Upload upload);
 }
