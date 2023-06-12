@@ -1091,3 +1091,10 @@ CREATE TABLE IF NOT EXISTS `AdherenceUploads` (
 ALTER TABLE `AdherenceRecords`
 ADD INDEX `AdherenceRecords-AppId-StudyId-EventTimestamp` (appId, studyId, eventTimestamp),
 ADD INDEX `AdherenceRecords-AppId-StudyId-UserId-EventTimestamp` (appId, studyId, userId, eventTimestamp);
+
+-- changeset bridge:80
+
+ALTER TABLE `AdherenceRecords`
+ADD COLUMN `postProcessingAttributes` text COLLATE utf8_unicode_ci DEFAULT NULL,
+ADD COLUMN `postProcessingCompletedOn` bigint(20) unsigned DEFAULT NULL,
+ADD COLUMN `postProcessingStatus` varchar(255) DEFAULT NULL;

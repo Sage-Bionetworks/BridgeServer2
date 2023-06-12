@@ -51,6 +51,8 @@ import java.util.Map;
 import java.util.Optional;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -67,9 +69,12 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
+
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.schedules2.AssessmentReference;
 import org.sagebionetworks.bridge.models.schedules2.TimeWindow;
+import org.sagebionetworks.bridge.models.schedules2.adherence.AdherencePostProcessingAttributes;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AssessmentCompletionState;
 import org.sagebionetworks.bridge.models.schedules2.adherence.detailed.DetailedAdherenceReport;
 import org.sagebionetworks.bridge.models.schedules2.adherence.detailed.DetailedAdherenceReportAssessmentRecord;
@@ -121,11 +126,16 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyCustomEvent;
 import org.sagebionetworks.bridge.models.studies.Alert.AlertCategory;
 
+@SuppressWarnings("DataFlowIssue")
 public class AdherenceServiceTest extends Mockito {
     
     private static final DateTime STARTED_ON = CREATED_ON;
     private static final DateTime FINISHED_ON = MODIFIED_ON;
+    private static final DateTime MOCK_NOW = MODIFIED_ON;
+    private static final DateTime POST_PROCESSING_COMPLETED_ON = CREATED_ON.plusDays(1);
+    private static final String POST_PROCESSING_STATUS = "TestingCommenced";
     private static final DateTime EVENT_TS = CREATED_ON.minusWeeks(1);
+    private static final String INSTANCE_GUID = "test-instance-guid";
     private static final DateTime UPLOADED_ON = MODIFIED_ON.plusHours(1);
     private static final String NON_LOCAL_TIME_ZONE = "America/New_York";
 
@@ -173,7 +183,7 @@ public class AdherenceServiceTest extends Mockito {
     public void beforeMethod() {
         MockitoAnnotations.initMocks(this);
         
-        when(service.getDateTime()).thenReturn(MODIFIED_ON);
+        when(service.getDateTime()).thenReturn(MOCK_NOW);
     }
     
     @AfterMethod
@@ -828,7 +838,206 @@ public class AdherenceServiceTest extends Mockito {
 
         service.deleteAdherenceRecord(record);
     }
-    
+
+    @Test
+    public void updateAdherencePostProcessingAttributes_newRecord_WithStartedOn() {
+        // Set up request context.
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
+
+        // Set up mocks.
+        when(mockRecordDao.getAdherenceRecords(any())).thenReturn(new PagedResourceList<>(ImmutableList.of(), 0));
+        doNothing().when(service).updateAdherenceRecords(any(), any());
+
+        // Execute and validate.
+        AdherencePostProcessingAttributes attributes = makeAdherencePostProcessingAttributes();
+        attributes.setStartedOn(STARTED_ON);
+        service.updateAdherencePostProcessingAttributes(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, INSTANCE_GUID,
+                EVENT_TS, attributes);
+
+        // Verify dependencies.
+        verifySearchForUpdateAdherencePostProcessingAttributes();
+
+        ArgumentCaptor<AdherenceRecordList> recordListCaptor = ArgumentCaptor.forClass(AdherenceRecordList.class);
+        verify(service).updateAdherenceRecords(eq(TEST_APP_ID), recordListCaptor.capture());
+
+        AdherenceRecord record = recordListCaptor.getValue().getRecords().get(0);
+        verifyAdherencePostProcessingAttributes(record);
+        assertEquals(record.getAppId(), TEST_APP_ID);
+        assertEquals(record.getStudyId(), TEST_STUDY_ID);
+        assertEquals(record.getUserId(), TEST_USER_ID);
+        assertEquals(record.getInstanceGuid(), INSTANCE_GUID);
+        assertEquals(record.getEventTimestamp(), EVENT_TS);
+        assertEquals(record.getStartedOn(), STARTED_ON);
+    }
+
+    @Test
+    public void updateAdherencePostProcessingAttributes_newRecord_NoStartedOn() {
+        // Set up request context.
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
+
+        // Set up mocks.
+        when(mockRecordDao.getAdherenceRecords(any())).thenReturn(new PagedResourceList<>(ImmutableList.of(), 0));
+        doNothing().when(service).updateAdherenceRecords(any(), any());
+
+        // Execute and validate.
+        AdherencePostProcessingAttributes attributes = makeAdherencePostProcessingAttributes();
+        attributes.setStartedOn(null);
+        service.updateAdherencePostProcessingAttributes(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, INSTANCE_GUID,
+                EVENT_TS, attributes);
+
+        // Verify dependencies.
+        verifySearchForUpdateAdherencePostProcessingAttributes();
+
+        ArgumentCaptor<AdherenceRecordList> recordListCaptor = ArgumentCaptor.forClass(AdherenceRecordList.class);
+        verify(service).updateAdherenceRecords(eq(TEST_APP_ID), recordListCaptor.capture());
+
+        AdherenceRecord record = recordListCaptor.getValue().getRecords().get(0);
+        verifyAdherencePostProcessingAttributes(record);
+        assertEquals(record.getAppId(), TEST_APP_ID);
+        assertEquals(record.getStudyId(), TEST_STUDY_ID);
+        assertEquals(record.getUserId(), TEST_USER_ID);
+        assertEquals(record.getInstanceGuid(), INSTANCE_GUID);
+        assertEquals(record.getEventTimestamp(), EVENT_TS);
+        assertEquals(record.getStartedOn(), MOCK_NOW);
+    }
+
+    @Test
+    public void updateAdherencePostProcessingAttributes_existingRecord_OverwritesStartedOn() {
+        // Set up request context.
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
+
+        // Set up mocks.
+        // Add an uploadedOn to the existing record, just to verify that it gets passed through.
+        // Also, set the startedOn to something different, just to verify that it gets overwritten.
+        AdherenceRecord existingRecord = new AdherenceRecord();
+        existingRecord.setUploadedOn(UPLOADED_ON);
+        existingRecord.setStartedOn(UPLOADED_ON);
+        when(mockRecordDao.getAdherenceRecords(any())).thenReturn(new PagedResourceList<>(
+                ImmutableList.of(existingRecord), 1));
+
+        doNothing().when(service).updateAdherenceRecords(any(), any());
+
+        // Execute and validate.
+        AdherencePostProcessingAttributes attributes = makeAdherencePostProcessingAttributes();
+        attributes.setStartedOn(STARTED_ON);
+        service.updateAdherencePostProcessingAttributes(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, INSTANCE_GUID,
+                EVENT_TS, attributes);
+
+        // Verify dependencies.
+        verifySearchForUpdateAdherencePostProcessingAttributes();
+
+        ArgumentCaptor<AdherenceRecordList> recordListCaptor = ArgumentCaptor.forClass(AdherenceRecordList.class);
+        verify(service).updateAdherenceRecords(eq(TEST_APP_ID), recordListCaptor.capture());
+
+        AdherenceRecord record = recordListCaptor.getValue().getRecords().get(0);
+        verifyAdherencePostProcessingAttributes(record);
+        assertEquals(record.getUploadedOn(), UPLOADED_ON);
+        assertEquals(record.getStartedOn(), STARTED_ON);
+    }
+
+    @Test
+    public void updateAdherencePostProcessingAttributes_existingRecord_ExistingStartedOn() {
+        // Set up request context.
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
+
+        // Set up mocks.
+        // uploadedOn and startedOn will both be passed through to the updated record.
+        AdherenceRecord existingRecord = new AdherenceRecord();
+        existingRecord.setUploadedOn(UPLOADED_ON);
+        existingRecord.setStartedOn(UPLOADED_ON);
+        when(mockRecordDao.getAdherenceRecords(any())).thenReturn(new PagedResourceList<>(
+                ImmutableList.of(existingRecord), 1));
+
+        doNothing().when(service).updateAdherenceRecords(any(), any());
+
+        // Execute and validate.
+        AdherencePostProcessingAttributes attributes = makeAdherencePostProcessingAttributes();
+        attributes.setStartedOn(null);
+        service.updateAdherencePostProcessingAttributes(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, INSTANCE_GUID,
+                EVENT_TS, attributes);
+
+        // Verify dependencies.
+        verifySearchForUpdateAdherencePostProcessingAttributes();
+
+        ArgumentCaptor<AdherenceRecordList> recordListCaptor = ArgumentCaptor.forClass(AdherenceRecordList.class);
+        verify(service).updateAdherenceRecords(eq(TEST_APP_ID), recordListCaptor.capture());
+
+        AdherenceRecord record = recordListCaptor.getValue().getRecords().get(0);
+        verifyAdherencePostProcessingAttributes(record);
+        assertEquals(record.getUploadedOn(), UPLOADED_ON);
+        assertEquals(record.getStartedOn(), UPLOADED_ON);
+    }
+
+    @Test
+    public void updateAdherencePostProcessingAttributes_existingRecord_NoStartedOn() {
+        // Set up request context.
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
+
+        // Set up mocks.
+        // uploadedOn and startedOn will both be passed through to the updated record.
+        AdherenceRecord existingRecord = new AdherenceRecord();
+        existingRecord.setUploadedOn(UPLOADED_ON);
+        existingRecord.setStartedOn(null);
+        when(mockRecordDao.getAdherenceRecords(any())).thenReturn(new PagedResourceList<>(
+                ImmutableList.of(existingRecord), 1));
+
+        doNothing().when(service).updateAdherenceRecords(any(), any());
+
+        // Execute and validate.
+        AdherencePostProcessingAttributes attributes = makeAdherencePostProcessingAttributes();
+        attributes.setStartedOn(null);
+        service.updateAdherencePostProcessingAttributes(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, INSTANCE_GUID,
+                EVENT_TS, attributes);
+
+        // Verify dependencies.
+        verifySearchForUpdateAdherencePostProcessingAttributes();
+
+        ArgumentCaptor<AdherenceRecordList> recordListCaptor = ArgumentCaptor.forClass(AdherenceRecordList.class);
+        verify(service).updateAdherenceRecords(eq(TEST_APP_ID), recordListCaptor.capture());
+
+        AdherenceRecord record = recordListCaptor.getValue().getRecords().get(0);
+        verifyAdherencePostProcessingAttributes(record);
+        assertEquals(record.getUploadedOn(), UPLOADED_ON);
+        assertEquals(record.getStartedOn(), MOCK_NOW);
+    }
+
+    private static AdherencePostProcessingAttributes makeAdherencePostProcessingAttributes() {
+        ObjectNode attrsNode = BridgeObjectMapper.get().createObjectNode();
+        attrsNode.put("foo", "bar");
+
+        AdherencePostProcessingAttributes attributes = new AdherencePostProcessingAttributes();
+        attributes.setPostProcessingAttributes(attrsNode);
+        attributes.setPostProcessingCompletedOn(POST_PROCESSING_COMPLETED_ON);
+        attributes.setPostProcessingStatus(POST_PROCESSING_STATUS);
+        return attributes;
+    }
+
+    private static void verifyAdherencePostProcessingAttributes(AdherenceRecord record) {
+        assertEquals(record.getPostProcessingCompletedOn(), POST_PROCESSING_COMPLETED_ON);
+        assertEquals(record.getPostProcessingStatus(), POST_PROCESSING_STATUS);
+
+        JsonNode attrsNode = record.getPostProcessingAttributes();
+        assertEquals(attrsNode.size(), 1);
+        assertEquals(attrsNode.get("foo").textValue(), "bar");
+    }
+
+    private void verifySearchForUpdateAdherencePostProcessingAttributes() {
+        ArgumentCaptor<AdherenceRecordsSearch> searchCaptor = ArgumentCaptor.forClass(AdherenceRecordsSearch.class);
+        verify(mockRecordDao).getAdherenceRecords(searchCaptor.capture());
+        AdherenceRecordsSearch search = searchCaptor.getValue();
+        assertEquals(search.getStudyId(), TEST_STUDY_ID);
+        assertEquals(search.getUserId(), TEST_USER_ID);
+        assertEquals(search.getInstanceGuids(), ImmutableSet.of(INSTANCE_GUID));
+        assertEquals(search.getEventTimestampStart(), EVENT_TS);
+        assertEquals(search.getEventTimestampEnd(), EVENT_TS.plusMillis(1));
+        assertEquals(search.getPageSize().intValue(), 1);
+    }
+
     @Test(expectedExceptions = EntityNotFoundException.class, 
             expectedExceptionsMessageRegExp = "Schedule not found.")
     public void getEventStreamAdherenceReport_studyHasNoSchedule() throws JsonProcessingException { 
