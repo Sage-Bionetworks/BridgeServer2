@@ -396,7 +396,7 @@ public class AdherenceService {
         );
 
         // Get the adherence record that we need to update.
-        AdherenceRecordsSearch search = new AdherenceRecordsSearch.Builder()
+        AdherenceRecordsSearch.Builder searchBuilder = new AdherenceRecordsSearch.Builder()
                 .withStudyId(studyId)
                 .withUserId(userId)
                 .withInstanceGuids(ImmutableSet.of(instanceGuid))
@@ -407,8 +407,15 @@ public class AdherenceService {
                 .withEventTimestampEnd(eventTimestamp.plusMillis(1))
 
                 // Page size is required, but we're only looking for one record, so this is fine.
-                .withPageSize(1)
-                .build();
+                .withPageSize(1);
+
+        // If startedOn is specified, we need to search for that as well.
+        if (attributes.getStartedOn() != null) {
+            // For legacy reasons, endTime is inclusive, not exclusive.
+            searchBuilder.withStartTime(attributes.getStartedOn()).withEndTime(attributes.getStartedOn());
+        }
+
+        AdherenceRecordsSearch search = searchBuilder.build();
         List<AdherenceRecord> adherenceRecordList = recordDao.getAdherenceRecords(search).getItems();
 
         AdherenceRecord record;

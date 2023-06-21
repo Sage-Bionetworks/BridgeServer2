@@ -856,7 +856,7 @@ public class AdherenceServiceTest extends Mockito {
                 EVENT_TS, attributes);
 
         // Verify dependencies.
-        verifySearchForUpdateAdherencePostProcessingAttributes();
+        verifySearchForUpdateAdherencePostProcessingAttributes(STARTED_ON);
 
         ArgumentCaptor<AdherenceRecordList> recordListCaptor = ArgumentCaptor.forClass(AdherenceRecordList.class);
         verify(service).updateAdherenceRecords(eq(TEST_APP_ID), recordListCaptor.capture());
@@ -888,7 +888,7 @@ public class AdherenceServiceTest extends Mockito {
                 EVENT_TS, attributes);
 
         // Verify dependencies.
-        verifySearchForUpdateAdherencePostProcessingAttributes();
+        verifySearchForUpdateAdherencePostProcessingAttributes(null);
 
         ArgumentCaptor<AdherenceRecordList> recordListCaptor = ArgumentCaptor.forClass(AdherenceRecordList.class);
         verify(service).updateAdherenceRecords(eq(TEST_APP_ID), recordListCaptor.capture());
@@ -927,7 +927,7 @@ public class AdherenceServiceTest extends Mockito {
                 EVENT_TS, attributes);
 
         // Verify dependencies.
-        verifySearchForUpdateAdherencePostProcessingAttributes();
+        verifySearchForUpdateAdherencePostProcessingAttributes(STARTED_ON);
 
         ArgumentCaptor<AdherenceRecordList> recordListCaptor = ArgumentCaptor.forClass(AdherenceRecordList.class);
         verify(service).updateAdherenceRecords(eq(TEST_APP_ID), recordListCaptor.capture());
@@ -961,7 +961,7 @@ public class AdherenceServiceTest extends Mockito {
                 EVENT_TS, attributes);
 
         // Verify dependencies.
-        verifySearchForUpdateAdherencePostProcessingAttributes();
+        verifySearchForUpdateAdherencePostProcessingAttributes(null);
 
         ArgumentCaptor<AdherenceRecordList> recordListCaptor = ArgumentCaptor.forClass(AdherenceRecordList.class);
         verify(service).updateAdherenceRecords(eq(TEST_APP_ID), recordListCaptor.capture());
@@ -995,7 +995,7 @@ public class AdherenceServiceTest extends Mockito {
                 EVENT_TS, attributes);
 
         // Verify dependencies.
-        verifySearchForUpdateAdherencePostProcessingAttributes();
+        verifySearchForUpdateAdherencePostProcessingAttributes(null);
 
         ArgumentCaptor<AdherenceRecordList> recordListCaptor = ArgumentCaptor.forClass(AdherenceRecordList.class);
         verify(service).updateAdherenceRecords(eq(TEST_APP_ID), recordListCaptor.capture());
@@ -1026,7 +1026,7 @@ public class AdherenceServiceTest extends Mockito {
         assertEquals(attrsNode.get("foo").textValue(), "bar");
     }
 
-    private void verifySearchForUpdateAdherencePostProcessingAttributes() {
+    private void verifySearchForUpdateAdherencePostProcessingAttributes(DateTime expectedStartedOn) {
         ArgumentCaptor<AdherenceRecordsSearch> searchCaptor = ArgumentCaptor.forClass(AdherenceRecordsSearch.class);
         verify(mockRecordDao).getAdherenceRecords(searchCaptor.capture());
         AdherenceRecordsSearch search = searchCaptor.getValue();
@@ -1036,6 +1036,11 @@ public class AdherenceServiceTest extends Mockito {
         assertEquals(search.getEventTimestampStart(), EVENT_TS);
         assertEquals(search.getEventTimestampEnd(), EVENT_TS.plusMillis(1));
         assertEquals(search.getPageSize().intValue(), 1);
+
+        if (expectedStartedOn != null) {
+            assertEquals(search.getStartTime(), expectedStartedOn);
+            assertEquals(search.getEndTime(), expectedStartedOn);
+        }
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class, 

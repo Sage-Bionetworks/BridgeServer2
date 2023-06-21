@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
@@ -40,6 +41,7 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
@@ -60,6 +62,8 @@ public class HibernateAdherenceRecordDaoTest extends Mockito {
     private static final long EVENT_TIMESTAMP_START_MILLIS = EVENT_TIMESTAMP_START.getMillis();
     private static final DateTime EVENT_TIMESTAMP_END = DateTime.parse("2023-04-11T14:36:58.871Z");
     private static final long EVENT_TIMESTAMP_END_MILLIS = EVENT_TIMESTAMP_END.getMillis();
+    private static final DateTime POST_PROCESSING_COMPLETED_ON = CREATED_ON.plusDays(1);
+    private static final String POST_PROCESSING_STATUS = "TestingCommenced";
     private static final String UPLOAD_ID = "test-upload-id";
 
     // It doesn't matter what these strings are, we're just verifying they are passed
@@ -514,6 +518,66 @@ public class HibernateAdherenceRecordDaoTest extends Mockito {
         assertEquals(captured.getInstanceTimestamp(), MODIFIED_ON.plusHours(1));
         assertEquals(captured.getStartedOn(), MODIFIED_ON.plusHours(2));
         assertEquals(captured.getUploadIds(), ImmutableSet.of("upload-id-1", "upload-id-2", "upload-id-3"));
+    }
+
+    @Test
+    public void updateAdherenceRecord_retainPostProcessingAttributes() {
+        // New record has attributes with keys bar and baz.
+        JsonNode newAttributes = BridgeObjectMapper.get().createObjectNode()
+                .put("bar", "bar-value")
+                .put("baz", "baz-value");
+
+        AdherenceRecord record = new AdherenceRecord();
+        record.setPostProcessingAttributes(newAttributes);
+        record.setStartedOn(MODIFIED_ON);
+
+        // Old record has attributes with keys foo and bar.
+        JsonNode oldAttributes = BridgeObjectMapper.get().createObjectNode()
+                .put("foo", "old-foo-value")
+                .put("bar", "old-bar-value");
+
+        AdherenceRecord persisted = new AdherenceRecord();
+        persisted.setPostProcessingAttributes(oldAttributes);
+        persisted.setPostProcessingCompletedOn(POST_PROCESSING_COMPLETED_ON);
+        persisted.setPostProcessingStatus(POST_PROCESSING_STATUS);
+        when(mockHelper.getById(eq(AdherenceRecord.class), any())).thenReturn(persisted);
+
+        // Execute and validate.
+        dao.updateAdherenceRecord(record);
+
+        verify(mockHelper).saveOrUpdate(recordCaptor.capture());
+        AdherenceRecord captured = recordCaptor.getValue();
+        assertEquals(captured.getPostProcessingCompletedOn(), POST_PROCESSING_COMPLETED_ON);
+        assertEquals(captured.getPostProcessingStatus(), POST_PROCESSING_STATUS);
+
+        JsonNode savedAttributes = captured.getPostProcessingAttributes();
+        assertEquals(savedAttributes.size(), 3);
+        assertEquals(savedAttributes.get("foo").textValue(), "old-foo-value");
+        assertEquals(savedAttributes.get("bar").textValue(), "bar-value");
+        assertEquals(savedAttributes.get("baz").textValue(), "baz-value");
+    }
+
+    @Test
+    public void updateAdherenceRecord_overwritePostProcessingAttributes() {
+        // Old record.
+        AdherenceRecord record = new AdherenceRecord();
+        record.setPostProcessingCompletedOn(POST_PROCESSING_COMPLETED_ON);
+        record.setPostProcessingStatus(POST_PROCESSING_STATUS);
+        record.setStartedOn(MODIFIED_ON);
+
+        // Old record has attributes with keys foo and bar.
+        AdherenceRecord persisted = new AdherenceRecord();
+        persisted.setPostProcessingCompletedOn(POST_PROCESSING_COMPLETED_ON.minusHours(1));
+        persisted.setPostProcessingStatus("old-status");
+        when(mockHelper.getById(eq(AdherenceRecord.class), any())).thenReturn(persisted);
+
+        // Execute and validate.
+        dao.updateAdherenceRecord(record);
+
+        verify(mockHelper).saveOrUpdate(recordCaptor.capture());
+        AdherenceRecord captured = recordCaptor.getValue();
+        assertEquals(captured.getPostProcessingCompletedOn(), POST_PROCESSING_COMPLETED_ON);
+        assertEquals(captured.getPostProcessingStatus(), POST_PROCESSING_STATUS);
     }
 
     @Test
