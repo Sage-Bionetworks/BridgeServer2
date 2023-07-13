@@ -14,6 +14,8 @@ import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.models.AccountTestFilter.TEST;
 
 import org.joda.time.DateTime;
+
+import org.sagebionetworks.bridge.models.schedules2.adherence.AdherencePostProcessingAttributes;
 import org.sagebionetworks.bridge.models.schedules2.adherence.detailed.DetailedAdherenceReport;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -248,7 +250,23 @@ public class AdherenceController extends BaseController {
         service.deleteAdherenceRecord(record);
         return DELETED_MSG;
     }
-    
+
+    /** Update just the specific post-processing attributes on the adherence record. */
+    @PostMapping("/v5/studies/{studyId}/participants/{userIdToken}/adherence/{instanceGuid}/{eventTimestamp}/postprocessing")
+    public StatusMessage updateAdherencePostProcessingAttributes(@PathVariable String studyId,
+            @PathVariable String userIdToken, @PathVariable String instanceGuid, @PathVariable String eventTimestamp) {
+        UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_DESIGNER, STUDY_COORDINATOR);
+
+        // Get the user ID from the token. As a side effect, this verifies that user exists for the specified app.
+        String userId = accountService.getAccountId(session.getAppId(), userIdToken)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+
+        AdherencePostProcessingAttributes attributes = parseJson(AdherencePostProcessingAttributes.class);
+        service.updateAdherencePostProcessingAttributes(session.getAppId(), studyId, userId, instanceGuid,
+                BridgeUtils.getDateTimeOrDefault(eventTimestamp, null), attributes);
+        return SAVED_MSG;
+    }
+
     @GetMapping("/v5/studies/{studyId}/participants/{userId}/adherence/detail")
     public DetailedAdherenceReport getDetailedParticipantAdherenceReport(@PathVariable String studyId,
                                                                          @PathVariable String userId) {

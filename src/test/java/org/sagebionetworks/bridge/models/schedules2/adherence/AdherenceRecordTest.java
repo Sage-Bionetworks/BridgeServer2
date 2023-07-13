@@ -13,6 +13,7 @@ import static org.testng.Assert.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableSet;
 import org.mockito.Mockito;
 import org.testng.annotations.Test;
@@ -24,8 +25,6 @@ import java.util.HashSet;
 
 public class AdherenceRecordTest extends Mockito {
 
-    AdherenceRecord record;
-    
     @Test
     public void canSerialize() throws Exception { 
         AdherenceRecord record = new AdherenceRecord();
@@ -40,13 +39,19 @@ public class AdherenceRecordTest extends Mockito {
         record.setClientData(TestUtils.getClientData());
         record.setClientTimeZone("America/Los_Angeles");
         record.setDeclined(true);
+        record.setPostProcessingCompletedOn(CREATED_ON.plusHours(3));
+        record.setPostProcessingStatus("status");
         record.setInstanceGuid(GUID);
         record.setAssessmentGuid("assessmentGuid");
         record.setSessionGuid("sessionGuid"); // in reality, both of these won't be set
         record.setUploadIds(ImmutableSet.of("instanceGuid"));
+
+        ObjectNode postProcessingAttributes = BridgeObjectMapper.get().createObjectNode();
+        postProcessingAttributes.put("foo", "bar");
+        record.setPostProcessingAttributes(postProcessingAttributes);
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(record);
-        assertEquals(node.size(), 13);
+        assertEquals(node.size(), 16);
         assertEquals(node.get("startedOn").textValue(), CREATED_ON.toString());
         assertEquals(node.get("finishedOn").textValue(), MODIFIED_ON.toString());
         assertEquals(node.get("uploadedOn").textValue(), MODIFIED_ON.plusHours(1).toString());
@@ -57,9 +62,15 @@ public class AdherenceRecordTest extends Mockito {
         assertEquals(node.get("assessmentGuid").textValue(), "assessmentGuid");
         assertEquals(node.get("sessionGuid").textValue(), "sessionGuid");
         assertTrue(node.get("declined").booleanValue());
+        assertEquals(node.get("postProcessingCompletedOn").textValue(), CREATED_ON.plusHours(3).toString());
+        assertEquals(node.get("postProcessingStatus").textValue(), "status");
         assertEquals(node.get("userId").textValue(), TEST_USER_ID);
         assertEquals(node.get("uploadIds").get(0).textValue(), "instanceGuid");
         assertEquals(node.get("type").textValue(), "AdherenceRecord");
+
+        JsonNode attributes = node.get("postProcessingAttributes");
+        assertEquals(attributes.size(), 1);
+        assertEquals(attributes.get("foo").textValue(), "bar");
         
         AdherenceRecord deser = BridgeObjectMapper.get()
                 .readValue(node.toString(), AdherenceRecord.class);
@@ -76,6 +87,9 @@ public class AdherenceRecordTest extends Mockito {
         assertEquals(deser.getSessionGuid(), "sessionGuid");
         assertEquals(deser.getUploadIds(), ImmutableSet.of("instanceGuid"));
         assertTrue(deser.isDeclined());
+        assertEquals(deser.getPostProcessingAttributes().get("foo").textValue(), "bar");
+        assertEquals(deser.getPostProcessingCompletedOn(), CREATED_ON.plusHours(3));
+        assertEquals(deser.getPostProcessingStatus(), "status");
     }
     
     @Test
