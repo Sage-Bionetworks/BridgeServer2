@@ -377,6 +377,12 @@ public class ParticipantService {
     public IdentifierHolder createParticipant(App app, StudyParticipant participant, boolean shouldSendVerification) {
         checkNotNull(app);
         checkNotNull(participant);
+
+        // https://sagebionetworks.jira.com/browse/DHP-979
+        // Temporarily disable creating participants for mobile-toolbox.
+        if (app.getIdentifier().equals("mobile-toolbox")) {
+            throw new LimitExceededException("You are creating accounts too quickly. Please wait a while and try again later.");
+        }
         
         if (app.getAccountLimit() > 0) {
             throwExceptionIfLimitMetOrExceeded(app);
