@@ -33,6 +33,7 @@ import java.security.spec.InvalidKeySpecException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.model.SendMessageResult;
@@ -48,6 +49,7 @@ import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ParticipantRosterRequest;
+import org.sagebionetworks.bridge.util.ByteRateLimiter;
 import org.sagebionetworks.bridge.validators.ParticipantRosterRequestValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -113,6 +115,17 @@ public class ParticipantService {
     static final String NO_INSTALL_LINKS_ERROR = "No install links configured for app.";
     static final String ACCOUNT_UNABLE_TO_BE_CONTACTED_ERROR = "Account unable to be contacted via phone or email";
     static final String CONFIG_KEY_DOWNLOAD_ROSTER_SQS_URL = "workerPlatform.request.sqs.queue.url";
+    static final String CONFIG_KEY_CREATE_PARTICIPANT_RATE_LIMIT_INITIAL_COUNT =
+            "create-participant.rate-limiter.initial-count";
+    static final String CONFIG_KEY_CREATE_PARTICIPANT_RATE_LIMIT_MAXIMUM_COUNT =
+            "create-participant.rate-limiter.maximum-count";
+    static final String CONFIG_KEY_CREATE_PARTICIPANT_RATE_LIMIT_REFILL_INTERVAL =
+            "create-participant.rate-limiter.refill-interval-seconds";
+    static final String CONFIG_KEY_CREATE_PARTICIPANT_RATE_LIMIT_REFILL_COUNT =
+            "create-participant.rate-limiter.refill-count";
+
+    private static final String CREATE_PARTICIPANT_RATE_LIMIT_ERROR =
+            "You cannot create more than 3 accounts per 5 minutes";
     static final String REQUEST_KEY_BODY = "body";
     static final String REQUEST_KEY_SERVICE = "service";
     static final String REQUEST_KEY_APP_ID = "appId";
@@ -158,6 +171,9 @@ public class ParticipantService {
     private TemplateService templateService;
     @Autowired
     private SendMailService sendMailService;
+
+    // These are byte rate limiters, but we can use them as count limiters. Key is the user ID of the caller.
+    private final Map<String, ByteRateLimiter> createParticipantRateLimiters = new ConcurrentHashMap<>();
 
     // Accessor so we can mock the value
     protected DateTime getInstallDateTime() {
@@ -378,12 +394,18 @@ public class ParticipantService {
         checkNotNull(app);
         checkNotNull(participant);
 
-        // https://sagebionetworks.jira.com/browse/DHP-979
-        // Temporarily disable creating participants for mobile-toolbox.
-        if (app.getIdentifier().equals("mobile-toolbox")) {
-            throw new LimitExceededException("You are creating accounts too quickly. Please wait a while and try again later.");
+        // https://sagebionetworks.jira.com/browse/DHP-968 - Rate limiting.
+        // Note that it's possible for the RequestContext to not have a User ID. This is common for sign-up calls.
+        // In that case, we don't rate limit.
+        String userId = RequestContext.get().getCallerUserId();
+        if (userId != null) {
+            ByteRateLimiter rateLimiter = createParticipantRateLimiters.computeIfAbsent(userId,
+                    (u) -> createParticipantRateLimiter());
+            if (!rateLimiter.tryConsumeBytes(1)) {
+                throw new LimitExceededException(CREATE_PARTICIPANT_RATE_LIMIT_ERROR);
+            }
         }
-        
+
         if (app.getAccountLimit() > 0) {
             throwExceptionIfLimitMetOrExceeded(app);
         }
@@ -461,6 +483,14 @@ public class ParticipantService {
             accountWorkflowService.sendPhoneVerificationToken(app, account.getId(), phone);
         }
         return new IdentifierHolder(account.getId());
+    }
+
+    // Creates and returns a RateLimiter with different settings depending on the environment.
+    private ByteRateLimiter createParticipantRateLimiter() {
+        return new ByteRateLimiter(bridgeConfig.getInt(CONFIG_KEY_CREATE_PARTICIPANT_RATE_LIMIT_INITIAL_COUNT),
+                bridgeConfig.getInt(CONFIG_KEY_CREATE_PARTICIPANT_RATE_LIMIT_MAXIMUM_COUNT),
+                bridgeConfig.getInt(CONFIG_KEY_CREATE_PARTICIPANT_RATE_LIMIT_REFILL_INTERVAL),
+                bridgeConfig.getInt(CONFIG_KEY_CREATE_PARTICIPANT_RATE_LIMIT_REFILL_COUNT));
     }
 
     // Provided to override in tests
