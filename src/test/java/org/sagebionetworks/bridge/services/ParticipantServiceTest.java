@@ -430,6 +430,15 @@ public class ParticipantServiceTest extends Mockito {
             // expected exception
         }
 
+        // Use a superadmin account with a different User ID. This should not be rate limited.
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("superadmin-user").withCallerAppId(TEST_APP_ID)
+                .withCallerRoles(ImmutableSet.of(Roles.SUPERADMIN)).build());
+
+        // Can create multiple participants without rate limiting.
+        participantService.createParticipant(APP, participant, false);
+        participantService.createParticipant(APP, participant, false);
+
         // Don't need to test restocking the Rate Limiter. This is tested in ByteRateLimiterTest.
     }
 
