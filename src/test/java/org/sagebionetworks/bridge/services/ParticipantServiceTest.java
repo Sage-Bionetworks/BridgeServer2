@@ -59,6 +59,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.models.ParticipantRosterRequest;
 import org.testng.annotations.AfterMethod;
@@ -430,16 +432,37 @@ public class ParticipantServiceTest extends Mockito {
             // expected exception
         }
 
-        // Use a superadmin account with a different User ID. This should not be rate limited.
+        // Don't need to test restocking the Rate Limiter. This is tested in ByteRateLimiterTest.
+    }
+
+    @Test
+    public void createParticipant_RateLimiting_ExemptAppId() {
+        // Set rate limit to 1 request for all time.
+        when(bridgeConfig.getInt(CONFIG_KEY_CREATE_PARTICIPANT_RATE_LIMIT_INITIAL_COUNT)).thenReturn(1);
+        when(bridgeConfig.getInt(CONFIG_KEY_CREATE_PARTICIPANT_RATE_LIMIT_MAXIMUM_COUNT)).thenReturn(1);
+        when(bridgeConfig.getInt(CONFIG_KEY_CREATE_PARTICIPANT_RATE_LIMIT_REFILL_INTERVAL)).thenReturn(1000);
+        when(bridgeConfig.getInt(CONFIG_KEY_CREATE_PARTICIPANT_RATE_LIMIT_REFILL_COUNT)).thenReturn(1);
+
+        // Set a unique caller ID, so we don't conflict with other tests.
         RequestContext.set(new RequestContext.Builder()
-                .withCallerUserId("superadmin-user").withCallerAppId(TEST_APP_ID)
-                .withCallerRoles(ImmutableSet.of(Roles.SUPERADMIN)).build());
+                .withCallerUserId("api-2-user").withCallerAppId(BridgeConstants.API_2_APP_ID)
+                .withCallerRoles(ImmutableSet.of(Roles.RESEARCHER)).build());
+
+        // Mock dependencies.
+        when(studyService.getStudy(BridgeConstants.API_2_APP_ID, STUDY_ID, false)).thenReturn(
+                Study.create());
+
+        // Make an app in api-2.
+        App app = App.create();
+        app.setIdentifier(BridgeConstants.API_2_APP_ID);
+        app.setDataGroups(APP_DATA_GROUPS);
+        app.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
+        app.getUserProfileAttributes().add("can_be_recontacted");
 
         // Can create multiple participants without rate limiting.
-        participantService.createParticipant(APP, participant, false);
-        participantService.createParticipant(APP, participant, false);
-
-        // Don't need to test restocking the Rate Limiter. This is tested in ByteRateLimiterTest.
+        StudyParticipant participant = withParticipant().build();
+        participantService.createParticipant(app, participant, false);
+        participantService.createParticipant(app, participant, false);
     }
 
     @Test(expectedExceptions = InvalidEntityException.class)

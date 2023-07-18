@@ -40,6 +40,7 @@ import com.amazonaws.services.sqs.model.SendMessageResult;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -126,6 +127,8 @@ public class ParticipantService {
 
     private static final String CREATE_PARTICIPANT_RATE_LIMIT_ERROR =
             "You cannot create more than 3 accounts per 5 minutes";
+    private static final Set<String> CREATE_PARTICIPANT_RATE_LIMIT_EXEMPT_APP_IDS = ImmutableSet.of(
+            BridgeConstants.API_APP_ID, BridgeConstants.API_2_APP_ID, BridgeConstants.SHARED_APP_ID);
     static final String REQUEST_KEY_BODY = "body";
     static final String REQUEST_KEY_SERVICE = "service";
     static final String REQUEST_KEY_APP_ID = "appId";
@@ -397,10 +400,9 @@ public class ParticipantService {
         // https://sagebionetworks.jira.com/browse/DHP-968 - Rate limiting.
         // Note that it's possible for the RequestContext to not have a User ID. This is common for sign-up calls.
         // In that case, we don't rate limit.
-        // Note: Don't rate limit for superadmin accounts.
         RequestContext requestContext = RequestContext.get();
         String userId = requestContext.getCallerUserId();
-        if (!requestContext.isInRole(Roles.SUPERADMIN) && userId != null) {
+        if (!CREATE_PARTICIPANT_RATE_LIMIT_EXEMPT_APP_IDS.contains(app.getIdentifier()) && userId != null) {
             ByteRateLimiter rateLimiter = createParticipantRateLimiters.computeIfAbsent(userId,
                     (u) -> createParticipantRateLimiter());
             if (!rateLimiter.tryConsumeBytes(1)) {
