@@ -397,8 +397,10 @@ public class ParticipantService {
         // https://sagebionetworks.jira.com/browse/DHP-968 - Rate limiting.
         // Note that it's possible for the RequestContext to not have a User ID. This is common for sign-up calls.
         // In that case, we don't rate limit.
-        String userId = RequestContext.get().getCallerUserId();
-        if (userId != null) {
+        // Note: Don't rate limit for superadmin accounts.
+        RequestContext requestContext = RequestContext.get();
+        String userId = requestContext.getCallerUserId();
+        if (!requestContext.isInRole(Roles.SUPERADMIN) && userId != null) {
             ByteRateLimiter rateLimiter = createParticipantRateLimiters.computeIfAbsent(userId,
                     (u) -> createParticipantRateLimiter());
             if (!rateLimiter.tryConsumeBytes(1)) {
