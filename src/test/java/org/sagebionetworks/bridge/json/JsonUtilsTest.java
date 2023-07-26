@@ -273,6 +273,18 @@ public class JsonUtilsTest {
     }
 
     @Test
+    public void mergeObjectNodes_laterNodesTakePriority() throws Exception {
+        JsonNode input1 = mapper.readTree("{\"a\":1,\"b\":2}");
+        JsonNode input2 = mapper.readTree("{\"b\":3,\"c\":4}");
+
+        ObjectNode result = JsonUtils.mergeObjectNodes(input1, input2);
+        assertEquals(result.size(), 3);
+        assertEquals(result.get("a").intValue(), 1);
+        assertEquals(result.get("b").intValue(), 3);
+        assertEquals(result.get("c").intValue(), 4);
+    }
+
+    @Test
     public void mergeObjectNodes_threeNodes() throws Exception {
         JsonNode input1 = mapper.readTree("{\"a\":1}");
         JsonNode input2 = mapper.readTree("{\"b\":2}");

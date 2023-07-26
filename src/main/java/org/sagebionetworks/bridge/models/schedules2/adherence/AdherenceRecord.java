@@ -55,6 +55,15 @@ public class AdherenceRecord implements BridgeEntity {
     private JsonNode clientData;
     private String clientTimeZone;
     private boolean declined;
+
+    @Convert(converter = JsonNodeAttributeConverter.class)
+    private JsonNode postProcessingAttributes;
+
+    @Convert(converter = DateTimeToLongAttributeConverter.class)
+    private DateTime postProcessingCompletedOn;
+
+    private String postProcessingStatus;
+
     private String sessionGuid;
     private String assessmentGuid;
     @CollectionTable(name = "AdherenceUploads",
@@ -154,6 +163,38 @@ public class AdherenceRecord implements BridgeEntity {
     public void setDeclined(boolean declined) {
         this.declined = declined;
     }
+
+    /** Key-value pairs related to upload post-processing (maximum size 65k). */
+    public JsonNode getPostProcessingAttributes() {
+        return postProcessingAttributes;
+    }
+
+    public void setPostProcessingAttributes(JsonNode postProcessingAttributes) {
+        this.postProcessingAttributes = postProcessingAttributes;
+    }
+
+    /** When the post-processing step was completed. */
+    public DateTime getPostProcessingCompletedOn() {
+        return postProcessingCompletedOn;
+    }
+
+    public void setPostProcessingCompletedOn(DateTime postProcessingCompletedOn) {
+        this.postProcessingCompletedOn = postProcessingCompletedOn;
+    }
+
+    /**
+     * Short string that represents the current status of the upload in the post-processing pipeline. This may be app
+     * or study specific. Examples include: "Pending", "SchemaVerified", "SchemaVerificationFailed", "DataInParquet",
+     * "DataScored". Must be 255 characters or less.
+     */
+    public String getPostProcessingStatus() {
+        return postProcessingStatus;
+    }
+
+    public void setPostProcessingStatus(String postProcessingStatus) {
+        this.postProcessingStatus = postProcessingStatus;
+    }
+
     public String getSessionGuid() {
         return sessionGuid;
     }

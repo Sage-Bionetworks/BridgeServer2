@@ -27,6 +27,10 @@ import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_APP
 import static org.sagebionetworks.bridge.models.templates.TemplateType.SMS_APP_INSTALL_LINK;
 import static org.sagebionetworks.bridge.services.ParticipantService.ACCOUNT_UNABLE_TO_BE_CONTACTED_ERROR;
 import static org.sagebionetworks.bridge.services.ParticipantService.APP_INSTALL_URL_KEY;
+import static org.sagebionetworks.bridge.services.ParticipantService.CONFIG_KEY_CREATE_PARTICIPANT_RATE_LIMIT_INITIAL_COUNT;
+import static org.sagebionetworks.bridge.services.ParticipantService.CONFIG_KEY_CREATE_PARTICIPANT_RATE_LIMIT_MAXIMUM_COUNT;
+import static org.sagebionetworks.bridge.services.ParticipantService.CONFIG_KEY_CREATE_PARTICIPANT_RATE_LIMIT_REFILL_COUNT;
+import static org.sagebionetworks.bridge.services.ParticipantService.CONFIG_KEY_CREATE_PARTICIPANT_RATE_LIMIT_REFILL_INTERVAL;
 import static org.sagebionetworks.bridge.services.ParticipantService.NO_INSTALL_LINKS_ERROR;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -55,6 +59,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.models.ParticipantRosterRequest;
 import org.testng.annotations.AfterMethod;
@@ -121,6 +127,7 @@ import com.google.common.collect.Maps;
 
 public class ParticipantServiceTest extends Mockito {
     private static final DateTime ACTIVITIES_RETRIEVED_DATETIME = DateTime.parse("2019-08-01T18:32:36.487-0700");
+    private static final String ADMIN_USER_ID = "admin-user-id";
     private static final ClientInfo CLIENT_INFO = new ClientInfo.Builder().withAppName("unit test")
             .withAppVersion(4).build();
     private static final DateTime CREATED_ON_DATETIME = DateTime.parse("2019-07-30T12:09:28.184-0700");
@@ -296,9 +303,15 @@ public class ParticipantServiceTest extends Mockito {
         account = Account.create();
         account.setAppId(TEST_APP_ID);
         account.setHealthCode(HEALTH_CODE);
-        
+
+        // Set rate limiting to something that won't impact tests.
+        when(bridgeConfig.getInt(CONFIG_KEY_CREATE_PARTICIPANT_RATE_LIMIT_INITIAL_COUNT)).thenReturn(100);
+        when(bridgeConfig.getInt(CONFIG_KEY_CREATE_PARTICIPANT_RATE_LIMIT_MAXIMUM_COUNT)).thenReturn(100);
+        when(bridgeConfig.getInt(CONFIG_KEY_CREATE_PARTICIPANT_RATE_LIMIT_REFILL_INTERVAL)).thenReturn(1);
+        when(bridgeConfig.getInt(CONFIG_KEY_CREATE_PARTICIPANT_RATE_LIMIT_REFILL_COUNT)).thenReturn(100);
+
         RequestContext.set(new RequestContext.Builder()
-                .withCallerUserId("id").withCallerAppId(TEST_APP_ID)
+                .withCallerUserId(ADMIN_USER_ID).withCallerAppId(TEST_APP_ID)
                 .withCallerRoles(ImmutableSet.of(Roles.RESEARCHER))
                 .withOrgSponsoredStudies(CALLER_SUBS).build());
     }
@@ -390,7 +403,68 @@ public class ParticipantServiceTest extends Mockito {
         // don't update cache
         Mockito.verifyNoMoreInteractions(cacheProvider);
     }
-    
+
+    @Test
+    public void createParticipant_RateLimiting() {
+        // Set rate limit to 1 request for all time.
+        when(bridgeConfig.getInt(CONFIG_KEY_CREATE_PARTICIPANT_RATE_LIMIT_INITIAL_COUNT)).thenReturn(1);
+        when(bridgeConfig.getInt(CONFIG_KEY_CREATE_PARTICIPANT_RATE_LIMIT_MAXIMUM_COUNT)).thenReturn(1);
+        when(bridgeConfig.getInt(CONFIG_KEY_CREATE_PARTICIPANT_RATE_LIMIT_REFILL_INTERVAL)).thenReturn(1000);
+        when(bridgeConfig.getInt(CONFIG_KEY_CREATE_PARTICIPANT_RATE_LIMIT_REFILL_COUNT)).thenReturn(1);
+
+        // Set a unique caller ID, so we don't conflict with other tests.
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("rate-limiting-user").withCallerAppId(TEST_APP_ID)
+                .withCallerRoles(ImmutableSet.of(Roles.RESEARCHER)).build());
+
+        // Mock dependencies.
+        when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
+
+        // First call succeeds.
+        StudyParticipant participant = withParticipant().build();
+        participantService.createParticipant(APP, participant, false);
+
+        // Second call throws.
+        try {
+            participantService.createParticipant(APP, participant, false);
+            fail("expected exception");
+        } catch (LimitExceededException ex) {
+            // expected exception
+        }
+
+        // Don't need to test restocking the Rate Limiter. This is tested in ByteRateLimiterTest.
+    }
+
+    @Test
+    public void createParticipant_RateLimiting_ExemptAppId() {
+        // Set rate limit to 1 request for all time.
+        when(bridgeConfig.getInt(CONFIG_KEY_CREATE_PARTICIPANT_RATE_LIMIT_INITIAL_COUNT)).thenReturn(1);
+        when(bridgeConfig.getInt(CONFIG_KEY_CREATE_PARTICIPANT_RATE_LIMIT_MAXIMUM_COUNT)).thenReturn(1);
+        when(bridgeConfig.getInt(CONFIG_KEY_CREATE_PARTICIPANT_RATE_LIMIT_REFILL_INTERVAL)).thenReturn(1000);
+        when(bridgeConfig.getInt(CONFIG_KEY_CREATE_PARTICIPANT_RATE_LIMIT_REFILL_COUNT)).thenReturn(1);
+
+        // Set a unique caller ID, so we don't conflict with other tests.
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("api-2-user").withCallerAppId(BridgeConstants.API_2_APP_ID)
+                .withCallerRoles(ImmutableSet.of(Roles.RESEARCHER)).build());
+
+        // Mock dependencies.
+        when(studyService.getStudy(BridgeConstants.API_2_APP_ID, STUDY_ID, false)).thenReturn(
+                Study.create());
+
+        // Make an app in api-2.
+        App app = App.create();
+        app.setIdentifier(BridgeConstants.API_2_APP_ID);
+        app.setDataGroups(APP_DATA_GROUPS);
+        app.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
+        app.getUserProfileAttributes().add("can_be_recontacted");
+
+        // Can create multiple participants without rate limiting.
+        StudyParticipant participant = withParticipant().build();
+        participantService.createParticipant(app, participant, false);
+        participantService.createParticipant(app, participant, false);
+    }
+
     @Test(expectedExceptions = InvalidEntityException.class)
     public void createParticipantDoesNotAlreadyExistThrowsInvalidEntity() {
         mockHealthCodeAndAccountRetrieval();
