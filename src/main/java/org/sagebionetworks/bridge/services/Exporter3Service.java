@@ -1,9 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -25,8 +23,12 @@ import com.amazonaws.services.sqs.model.SendMessageResult;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.io.CharSink;
+import com.google.common.io.FileWriteMode;
+import com.google.common.io.Files;
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.client.SynapseClient;
 import org.sagebionetworks.client.exceptions.SynapseException;
@@ -76,6 +78,7 @@ import org.sagebionetworks.bridge.models.exporter.ExporterCreateStudyNotificatio
 import org.sagebionetworks.bridge.models.exporter.ExporterSubscriptionRequest;
 import org.sagebionetworks.bridge.models.exporter.ExporterSubscriptionResult;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordEx3;
+import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.schedules2.timelines.Timeline;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.upload.Upload;
@@ -968,65 +971,59 @@ public class Exporter3Service {
     // so they need access to the Timeline information.).
     public Exporter3Configuration exportTimelineForStudy(String appId, String studyId) throws BridgeSynapseException,
             SynapseException, IOException{
+        boolean isConfigModified = false;
 
         // Get Timeline to export for the study.
+        Study study = studyService.getStudy(appId, studyId, true);
+        if (study.getScheduleGuid() == null) {
+            throw new EntityNotFoundException(Schedule2.class);
+        }
         Timeline timeline = schedule2Service.getTimelineForSchedule(appId,
-                studyService.getStudy(appId, studyId, true).getScheduleGuid());
+                study.getScheduleGuid());
 
         // Check Synapse
         synapseHelper.checkSynapseWritableOrThrow();
 
-        // Initiate Exporter3 for Study.
-        Exporter3Configuration exporter3Config = initExporter3ForStudy(appId, studyId);
+        // If Exporter3 is not enabled for study, initiate Exporter3 for Study;
+        // If enabled, get exporter3Config for study.
+        Exporter3Configuration exporter3Config;
+        if (!study.isExporter3Enabled()) {
+            exporter3Config = initExporter3ForStudy(appId, studyId);
+        } else {
+            exporter3Config = study.getExporter3Configuration();
+        }
 
         // Export the study's Timeline to Synapse as a wiki page in JSON format.
         JsonNode node = BridgeObjectMapper.get().valueToTree(timeline);
-
-//        File file = File.createTempFile("timelinefor" + studyId, ".txt");
-//        FileWriter fileWriter = new FileWriter(file);
-//        PrintWriter printWriter = new PrintWriter(fileWriter);
-//        printWriter.print(node.toString());
-//        printWriter.close();
-        PrintWriter pw = null;
-        File file = File.createTempFile("timelinefor" + studyId, ".txt");
+        File outputFile = File.createTempFile("timelineFor" + studyId, ".txt");
+        CharSink charSink = Files.asCharSink(outputFile, Charsets.UTF_8, FileWriteMode.APPEND);
         try {
-            FileOutputStream fos = new FileOutputStream(file);
-            pw = new PrintWriter(fos);
-            pw.print(node.toString());
-            pw.close();
-            pw = null;
-        } finally {
-            if (pw != null) {
-                pw.close();
-            }
+            charSink.write(node.toString());
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-        CloudProviderFileHandleInterface markdown = synapseClient.multipartUpload(file,
-                null, false, false);
-        System.out.println(markdown);
+        CloudProviderFileHandleInterface markdown = synapseClient.multipartUpload(outputFile,
+                exporter3Config.getStorageLocationId(), false, false);
 
-//        markdown.setStorageLocationId(exporter3Config.getStorageLocationId());
-//        markdown.setBucketName(rawHealthDataBucket);
-//        markdown.setKey(appId + '/' + studyId + '/' + "timeline");
-//        byte[] md5 = Base64.getUrlDecoder().decode(node.toString());
-//        String hexMd5 = Hex.encodeHexString(md5);
-//        markdown.setContentMd5(hexMd5);
-//        markdown = synapseHelper.createS3FileHandleWithRetry(markdown);
-
-        // If first time exporting the timeline for the study:
+        // If first time exporting the timeline for the study, create a new wiki page in Synapse;
+        // If wiki page already exists, update the existing wiki page.
         if (exporter3Config.getWikiPageId() == null) {
             V2WikiPage wiki = new V2WikiPage();
-//            wiki.setId("wikiFor" + studyId);
             wiki.setTitle("Exported Timeline for " + studyId);
-            exporter3Config.setWikiPageId(wiki.getId());
             wiki.setMarkdownFileHandleId(markdown.getId());
-
             wiki = synapseClient.createV2WikiPage(exporter3Config.getProjectId(), ObjectType.ENTITY, wiki);
+            exporter3Config.setWikiPageId(wiki.getId());
+            isConfigModified = true;
         } else {
-            // If the wiki page for the timeline to export already exists:
             WikiPageKey key = WikiPageKeyHelper.createWikiPageKey(exporter3Config.getProjectId(), ObjectType.ENTITY, exporter3Config.getWikiPageId());
             V2WikiPage getWiki = synapseClient.getV2WikiPage(key);
             getWiki.setMarkdownFileHandleId(markdown.getId());
             synapseClient.updateV2WikiPage(exporter3Config.getProjectId(), ObjectType.ENTITY, getWiki);
+        }
+
+        // If exporter3 config is modified, update study.
+        if (isConfigModified) {
+            studyService.updateStudy(appId, study);
         }
         return exporter3Config;
     }

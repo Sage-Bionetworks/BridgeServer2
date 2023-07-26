@@ -96,7 +96,7 @@ public class Exporter3Controller extends BaseController {
         return exporter3Service.initExporter3ForStudy(session.getAppId(), studyId);
     }
 
-    @PostMapping("v5/studies/{studyId}/timeline/export")
+    @PostMapping("/v5/studies/{studyId}/timeline/export")
     @ResponseStatus(HttpStatus.CREATED)
     public Exporter3Configuration exportTimelineForStudy(@PathVariable String studyId)
             throws BridgeSynapseException, SynapseException, IOException {

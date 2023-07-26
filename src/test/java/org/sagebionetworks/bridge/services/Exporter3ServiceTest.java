@@ -23,6 +23,7 @@ import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,10 +39,14 @@ import com.amazonaws.services.sns.model.SubscribeResult;
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.model.SendMessageResult;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
+import com.google.common.io.CharSource;
+import com.google.common.io.Files;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -177,6 +182,7 @@ public class Exporter3ServiceTest {
 
     private App app;
     private Study study;
+    private Schedule2 schedule;
 
     @Mock
     private AccountService mockAccountService;
@@ -242,7 +248,7 @@ public class Exporter3ServiceTest {
                 .thenReturn(study);
 
         // Mock Schedule
-        Schedule2 schedule = new Schedule2();
+        schedule = new Schedule2();
         schedule.setAppId(TEST_APP_ID);
         schedule.setGuid(TestConstants.SCHEDULE_GUID);
     }
@@ -574,8 +580,7 @@ public class Exporter3ServiceTest {
 
         EntityView trackingView = new EntityView();
         trackingView.setScopeIds(new ArrayList<>());
-        when(mockSynapseHelper.getEntityWithRetry(SYNAPSE_TRACKING_VIEW_ID, EntityView.class))
-                .thenReturn(trackingView);
+        when(mockSynapseHelper.getEntityWithRetry(SYNAPSE_TRACKING_VIEW_ID, EntityView.class)).thenReturn(trackingView);
 
         TableEntity createdParticipantVersionsTable = new TableEntity();
         createdParticipantVersionsTable.setId(PARTICIPANT_VERSION_TABLE_ID);
@@ -1571,97 +1576,162 @@ public class Exporter3ServiceTest {
 
     @Test
     public void exportTimelineForStudy_1stTime() throws Exception {
-        // Mock Study.
+        // Setup Study.
         study.setScheduleGuid(TestConstants.SCHEDULE_GUID);
 
         // Study has no exporter3config.
         study.setExporter3Configuration(null);
         study.setExporter3Enabled(false);
 
+        // Mock Synapse resource creation.
         mockSynapseResourceCreation();
 
         // Mock Timeline
         Timeline.Builder builder = new Timeline.Builder();
-        Timeline timeline = builder.withSchedule(mockSchedule2Service.getSchedule(TEST_APP_ID, TestConstants.SCHEDULE_GUID)).build();
-
+        Timeline timeline = builder.withSchedule(schedule).build();
         when(mockSchedule2Service.getTimelineForSchedule(eq(TEST_APP_ID), eq(TestConstants.SCHEDULE_GUID)))
                 .thenReturn(timeline);
-        // Mock File
 
-        //Mock FileHandle
+        // Mock FileHandle
         CloudProviderFileHandleInterface markdown = new S3FileHandle();
         markdown.setStorageLocationId(STORAGE_LOCATION_ID);
-        markdown.setId("exportedTimelinefor" + TestConstants.TEST_STUDY_ID);
-        // How to test file is created correctly? Should be file, not any()
-        when(mockSynapseClient.multipartUpload(any(), eq(STORAGE_LOCATION_ID), eq(false), eq(false)))
+        markdown.setId("exportedTimelineFor" + TestConstants.TEST_STUDY_ID);
+        markdown.setFileName("timelineFor" + TestConstants.TEST_STUDY_ID + ".txt");
+        ArgumentCaptor<File> fileToUploadCaptor = ArgumentCaptor.forClass(File.class);
+        when(mockSynapseClient.multipartUpload(fileToUploadCaptor.capture(),any(), eq(false), eq(false)))
                 .thenReturn(markdown);
-        // Mock Wiki
+
+        // Setup Wiki
         V2WikiPage wiki = new V2WikiPage();
         wiki.setId("wikiFor"  + TestConstants.TEST_STUDY_ID);
         wiki.setTitle("Exported Timeline for " + TestConstants.TEST_STUDY_ID);
-        wiki.setMarkdownFileHandleId(markdown.getId());
+        wiki.setMarkdownFileHandleId("exportedTimelineFor" + TestConstants.TEST_STUDY_ID);
+        ArgumentCaptor<V2WikiPage> wikiToCreateCaptor = ArgumentCaptor.forClass(V2WikiPage.class);
+        when(mockSynapseClient.createV2WikiPage(any(), eq(ObjectType.ENTITY), wikiToCreateCaptor.capture())).thenReturn(wiki);
 
         // Execute and verify output.
         Exporter3Configuration ex3Config = exporter3Service.exportTimelineForStudy(TEST_APP_ID,
                 TestConstants.TEST_STUDY_ID);
-        assertEquals(ex3Config.getWikiPageId(), "wikiFor" +  TestConstants.TEST_STUDY_ID);
-        assertEquals(ex3Config, study.getExporter3Configuration());
 
+        assertEquals(ex3Config, study.getExporter3Configuration());
         verifyEx3ConfigAndSynapse(ex3Config, TestConstants.TEST_APP_ID + '/' +
                 TestConstants.TEST_STUDY_ID);
 
+        // Verify call to studyService twice: one in initExporter3ForStudy & one in exportTimelineForStudy.
+        verify(mockStudyService, times(2)).getStudy(TEST_APP_ID, TEST_STUDY_ID, true);
+        verify(mockStudyService, times(2)).updateStudy(TEST_APP_ID, study);
+
         // Verify call to schedule2Service.
         verify(mockSchedule2Service).getTimelineForSchedule(TEST_APP_ID, TestConstants.SCHEDULE_GUID);
+
         // Verify call to SynapseHelper.
         verify(mockSynapseHelper).checkSynapseWritableOrThrow();
         // Verify call to SynapseClient.
-        ArgumentCaptor<V2WikiPage> wikiToCreateCaptor = ArgumentCaptor.forClass(V2WikiPage.class);
+
         verify(mockSynapseClient).createV2WikiPage(eq(study.getExporter3Configuration().getProjectId()), eq(ObjectType.ENTITY), wikiToCreateCaptor.capture());
-        System.out.println("********* Project Id: "+ study.getExporter3Configuration().getProjectId());
+
+        // Verify file content
+        JsonNode node = BridgeObjectMapper.get().valueToTree(timeline);
+        String expectedFileContent = node.toString();
+        File capturedFile = fileToUploadCaptor.getValue();
+        CharSource charSource = Files.asCharSource(capturedFile, Charsets.UTF_8);
+        try {
+            String content = charSource.read();
+            assertEquals(content, expectedFileContent);
+        } catch (IOException e) {
+            System.out.println("An error occurred while reading the file: " + e.getMessage());
+        }
+
+        // Verify WikiPage
+        V2WikiPage capturedWikiPage = wikiToCreateCaptor.getValue();
+        assertEquals(capturedWikiPage.getTitle(), wiki.getTitle());
+        assertEquals(capturedWikiPage.getMarkdownFileHandleId(), wiki.getMarkdownFileHandleId());
+
+        // Verify markdown
+        assertTrue((capturedFile.getName().replace(".txt", "")
+                 .contains(markdown.getFileName().replace(".txt", ""))));
     }
 
     @Test
     public void exportTimelineForStudy_2ndTime() throws Exception {
-        // Mock Timeline
-        Timeline.Builder builder = new Timeline.Builder();
-        Timeline timeline = builder.withSchedule(mockSchedule2Service.getSchedule(TEST_APP_ID, TestConstants.SCHEDULE_GUID)).build();
-        when(mockSchedule2Service.getTimelineForSchedule(eq(TEST_APP_ID), eq(TestConstants.SCHEDULE_GUID)))
-                .thenReturn(timeline);
-        // Mock File
-        //Mock S3FileHandle
-        CloudProviderFileHandleInterface markdown = new S3FileHandle();
-        markdown.setStorageLocationId(STORAGE_LOCATION_ID);
-        when(mockSynapseClient.multipartUpload(any(), eq(STORAGE_LOCATION_ID), eq(false), eq(false))).thenReturn(markdown);
-        // Mock Wiki
+        // Setup Study.
+        study.setScheduleGuid(TestConstants.SCHEDULE_GUID);
+
+        // Study has no exporter3config.
+        study.setExporter3Configuration(null);
+        study.setExporter3Enabled(false);
+
+        // Setup existing S3FileHandle
+        CloudProviderFileHandleInterface existingMarkdown = new S3FileHandle();
+        existingMarkdown.setStorageLocationId(STORAGE_LOCATION_ID);
+        existingMarkdown.setId("1stExportedTimelineFor" + TestConstants.TEST_STUDY_ID);
+
+        // Setup Wiki
         V2WikiPage wiki = new V2WikiPage();
         wiki.setId("wikiFor" + TestConstants.TEST_STUDY_ID);
         wiki.setTitle("Exported Timeline for " + TestConstants.TEST_STUDY_ID);
-        wiki.setMarkdownFileHandleId(markdown.getId());
+        wiki.setMarkdownFileHandleId(existingMarkdown.getId());
 
-        // Execute 1st time export for timeline.
-        exportTimelineForStudy_1stTime();
+        // Setup Exporter3Config
+        Exporter3Configuration exporter3Config = new Exporter3Configuration();
+        exporter3Config.setWikiPageId(wiki.getId());
+        exporter3Config.setStorageLocationId(STORAGE_LOCATION_ID);
+        exporter3Config.setProjectId(PROJECT_ID);
+
+        // Setup exporter3config for study.
+        study.setExporter3Enabled(true);
+        study.setExporter3Configuration(exporter3Config);
+
+        // Mock Synapse resource creation.
+        mockSynapseResourceCreation();
+
+        // Mock Timeline
+        Timeline.Builder builder = new Timeline.Builder();
+        Timeline timeline = builder.withSchedule(schedule).build();
+        when(mockSchedule2Service.getTimelineForSchedule(eq(TEST_APP_ID), eq(TestConstants.SCHEDULE_GUID)))
+                .thenReturn(timeline);
+
+        // Mock S3FileHandle
+        CloudProviderFileHandleInterface markdown = new S3FileHandle();
+        markdown.setStorageLocationId(8888L);
+        markdown.setId("2ndExportedTimelineFor" + TestConstants.TEST_STUDY_ID);
+        when(mockSynapseClient.multipartUpload(any(File.class), eq(STORAGE_LOCATION_ID), eq(false), eq(false))).thenReturn(markdown);
+
         // Mock WikiPageKey
         WikiPageKey key = new WikiPageKey();
         key.setOwnerObjectId(PROJECT_ID);
         key.setOwnerObjectType(ObjectType.ENTITY);
         key.setWikiPageId("wikiFor" + TestConstants.TEST_STUDY_ID);
-        when(mockSynapseClient.getV2WikiPage(key)).thenReturn(wiki);
+        when(mockSynapseClient.getV2WikiPage(any(WikiPageKey.class))).thenReturn(wiki);
+
         // Execute and verify output.
         Exporter3Configuration returnedEx3Config = exporter3Service.exportTimelineForStudy(TEST_APP_ID,
                 TestConstants.TEST_STUDY_ID);
+
         assertEquals(returnedEx3Config.getWikiPageId(), "wikiFor" + TestConstants.TEST_STUDY_ID);
         assertEquals(returnedEx3Config, study.getExporter3Configuration());
-        verifyEx3ConfigAndSynapse(returnedEx3Config, TestConstants.TEST_APP_ID + '/' +
-                TestConstants.TEST_STUDY_ID);
+
         // Verify call to schedule2Service.
-        verify(mockSchedule2Service, times(2)).getTimelineForSchedule(TEST_APP_ID, TestConstants.SCHEDULE_GUID);
+        verify(mockSchedule2Service, times(1)).getTimelineForSchedule(TEST_APP_ID, TestConstants.SCHEDULE_GUID);
+
         // Verify call to SynapseHelper.
-        verify(mockSynapseHelper, times(2)).checkSynapseWritableOrThrow();
+        verify(mockSynapseHelper, times(1)).checkSynapseWritableOrThrow();
+
         // Verify call to SynapseClient.
         ArgumentCaptor<WikiPageKey> WikiPageKeyCaptor = ArgumentCaptor.forClass(WikiPageKey.class);
         verify(mockSynapseClient).getV2WikiPage(WikiPageKeyCaptor.capture());
         ArgumentCaptor<V2WikiPage> wikiToCreateCaptor = ArgumentCaptor.forClass(V2WikiPage.class);
         verify(mockSynapseClient).updateV2WikiPage(eq(study.getExporter3Configuration().getProjectId()), eq(ObjectType.ENTITY), wikiToCreateCaptor.capture());
+
+        // Verify WikiPageKey
+        WikiPageKey capturedWikiPageKey = WikiPageKeyCaptor.getValue();
+        assertEquals(capturedWikiPageKey.getOwnerObjectId(), key.getOwnerObjectId());
+        assertEquals(capturedWikiPageKey.getOwnerObjectType(), key.getOwnerObjectType());
+        assertEquals(capturedWikiPageKey.getWikiPageId(), key.getWikiPageId());
+
+        // Verify updated WikiPage
+        V2WikiPage capturedWikiPage = wikiToCreateCaptor.getValue();
+        assertEquals(capturedWikiPage.getMarkdownFileHandleId(), markdown.getId());
     }
 
     // checks study and app id annotations are not added when the project exists
