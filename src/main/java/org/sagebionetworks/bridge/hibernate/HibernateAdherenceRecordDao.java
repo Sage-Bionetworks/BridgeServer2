@@ -8,12 +8,14 @@ import java.util.List;
 
 import javax.annotation.Resource;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import org.joda.time.DateTime;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.dao.AdherenceRecordDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.hibernate.QueryBuilder.WhereClauseBuilder;
+import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordId;
@@ -78,6 +80,21 @@ public class HibernateAdherenceRecordDao implements AdherenceRecordDao {
             // Keep uploadIds from both the previous and new record.
             for (String uploadId : previousRecord.getUploadIds()) {
                 record.addUploadId(uploadId);
+            }
+
+            // Merge old post-processing attributes. Note that in the call to JsonUtils.mergeNode, later nodes take
+            // priority over earlier nodes in the list, so the new record will overwrite the old record for the keys
+            // that they share, but won't erase keys that are only in the old record. This is the behavior we want.
+            JsonNode mergedAttrNode = JsonUtils.mergeObjectNodes(previousRecord.getPostProcessingAttributes(),
+                    record.getPostProcessingAttributes());
+            record.setPostProcessingAttributes(mergedAttrNode);
+
+            // If the new record doesn't have post-processing completed on or status, retain the old ones.
+            if (record.getPostProcessingCompletedOn() == null) {
+                record.setPostProcessingCompletedOn(previousRecord.getPostProcessingCompletedOn());
+            }
+            if (record.getPostProcessingStatus() == null) {
+                record.setPostProcessingStatus(previousRecord.getPostProcessingStatus());
             }
         }
     

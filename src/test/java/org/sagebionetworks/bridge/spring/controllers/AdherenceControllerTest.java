@@ -8,6 +8,7 @@ import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
+import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
@@ -44,6 +45,7 @@ import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
+import org.sagebionetworks.bridge.models.schedules2.adherence.AdherencePostProcessingAttributes;
 import org.sagebionetworks.bridge.models.schedules2.adherence.detailed.DetailedAdherenceReport;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -70,6 +72,11 @@ import org.sagebionetworks.bridge.services.AdherenceService;
 public class AdherenceControllerTest extends Mockito {
     
     private static final String CLIENT_TIME_ZONE = "America/Chicago";
+    private static final String EVENT_TIMESTAMP_STR = "2029-02-28T17:16:27.529Z";
+    private static final DateTime EVENT_TIMESTAMP = DateTime.parse(EVENT_TIMESTAMP_STR);
+    private static final String HEALTH_CODE_TOKEN = "healthcode:" + HEALTH_CODE;
+    private static final String INSTANCE_GUID = "test-instance-guid";
+    private static final String POST_PROCESSING_STATUS = "TestingCommenced";
     private static final DateTime SYSTEM_NOW = MODIFIED_ON;
     private static final DateTime NOW = CREATED_ON;
 
@@ -132,6 +139,7 @@ public class AdherenceControllerTest extends Mockito {
         assertPost(AdherenceController.class, "searchForAdherenceRecordsForSelf");
         assertPost(AdherenceController.class, "searchForAdherenceRecords");
         assertDelete(AdherenceController.class, "deleteAdherenceRecord");
+        assertPost(AdherenceController.class, "updateAdherencePostProcessingAttributes");
         assertGet(AdherenceController.class, "getDetailedParticipantAdherenceReport");
     }
     
@@ -502,6 +510,42 @@ public class AdherenceControllerTest extends Mockito {
                 "2021-07-06T18:03:23.009Z",
                 "2021-07-06T18:03:23.009Z"
         );
+    }
+
+    @Test
+    public void updateAdherencePostProcessingAttributes() throws Exception {
+        // Set up mocks.
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_DESIGNER,
+                STUDY_COORDINATOR);
+
+        when(mockAccountService.getAccountId(TEST_APP_ID, HEALTH_CODE_TOKEN)).thenReturn(Optional.of(TEST_USER_ID));
+
+        // Add some dummy values, so that we can test.
+        AdherencePostProcessingAttributes attributes = new AdherencePostProcessingAttributes();
+        attributes.setPostProcessingStatus(POST_PROCESSING_STATUS);
+        TestUtils.mockRequestBody(mockRequest, attributes);
+
+        // Execute and validate.
+        StatusMessage result = controller.updateAdherencePostProcessingAttributes(TEST_STUDY_ID, HEALTH_CODE_TOKEN,
+                INSTANCE_GUID, EVENT_TIMESTAMP_STR);
+        assertEquals(result, AdherenceController.SAVED_MSG);
+
+        // Verify service call.
+        ArgumentCaptor<AdherencePostProcessingAttributes> savedAttributesCaptor = ArgumentCaptor.forClass(
+                AdherencePostProcessingAttributes.class);
+        verify(mockService).updateAdherencePostProcessingAttributes(eq(TEST_APP_ID), eq(TEST_STUDY_ID),
+                eq(TEST_USER_ID), eq(INSTANCE_GUID), eq(EVENT_TIMESTAMP), savedAttributesCaptor.capture());
+        AdherencePostProcessingAttributes savedAttributes = savedAttributesCaptor.getValue();
+        assertEquals(savedAttributes.getPostProcessingStatus(), POST_PROCESSING_STATUS);
+    }
+
+    @Test(expectedExceptions = EntityNotFoundException.class, expectedExceptionsMessageRegExp = "Account not found.")
+    public void updateAdherencePostProcessingAttributes_invalidUser() {
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_DESIGNER,
+                STUDY_COORDINATOR);
+        when(mockAccountService.getAccountId(TEST_APP_ID, HEALTH_CODE_TOKEN)).thenReturn(Optional.empty());
+        controller.updateAdherencePostProcessingAttributes(TEST_STUDY_ID, HEALTH_CODE_TOKEN, INSTANCE_GUID,
+                EVENT_TIMESTAMP_STR);
     }
 
     @Test

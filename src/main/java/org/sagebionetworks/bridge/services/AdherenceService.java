@@ -42,11 +42,13 @@ import java.util.function.BiFunction;
 import java.util.Optional;
 
 import com.google.common.base.Stopwatch;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.models.schedules2.AssessmentReference;
+import org.sagebionetworks.bridge.models.schedules2.adherence.AdherencePostProcessingAttributes;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AssessmentCompletionState;
 import org.sagebionetworks.bridge.models.schedules2.adherence.detailed.DetailedAdherenceReport;
 import org.sagebionetworks.bridge.models.schedules2.adherence.detailed.DetailedAdherenceReportAssessmentRecord;
@@ -376,7 +378,77 @@ public class AdherenceService {
             recordDao.deleteAdherenceRecordPermanently(record);
         }
     }
-    
+
+    /** Update just the specific post-processing attributes on the adherence record. */
+    public void updateAdherencePostProcessingAttributes(String appId, String studyId, String userId,
+            String instanceGuid, DateTime eventTimestamp, AdherencePostProcessingAttributes attributes) {
+        checkNotNull(appId);
+        checkNotNull(studyId);
+        checkNotNull(userId);
+        checkNotNull(instanceGuid);
+        checkNotNull(eventTimestamp);
+        checkNotNull(attributes);
+
+        // Check permissions.
+        CAN_ACCESS_ADHERENCE_DATA.checkAndThrow(
+                AuthEvaluatorField.STUDY_ID, studyId,
+                AuthEvaluatorField.USER_ID, userId
+        );
+
+        // Get the adherence record that we need to update.
+        AdherenceRecordsSearch.Builder searchBuilder = new AdherenceRecordsSearch.Builder()
+                .withStudyId(studyId)
+                .withUserId(userId)
+                .withInstanceGuids(ImmutableSet.of(instanceGuid))
+
+                // Event timestamp is a range of values. Start is inclusive, end is exclusive. Since we're looking for
+                // a specific singular timestamp, the end is start+1.
+                .withEventTimestampStart(eventTimestamp)
+                .withEventTimestampEnd(eventTimestamp.plusMillis(1))
+
+                // Page size is required, but we're only looking for one record, so this is fine.
+                .withPageSize(1);
+
+        // If startedOn is specified, we need to search for that as well.
+        if (attributes.getStartedOn() != null) {
+            // For legacy reasons, endTime is inclusive, not exclusive.
+            searchBuilder.withStartTime(attributes.getStartedOn()).withEndTime(attributes.getStartedOn());
+        }
+
+        AdherenceRecordsSearch search = searchBuilder.build();
+        List<AdherenceRecord> adherenceRecordList = recordDao.getAdherenceRecords(search).getItems();
+
+        AdherenceRecord record;
+        if (adherenceRecordList.isEmpty()) {
+            // If there's no record, create one.
+            record = new AdherenceRecord();
+            record.setAppId(appId);
+            record.setStudyId(studyId);
+            record.setUserId(userId);
+            record.setInstanceGuid(instanceGuid);
+            record.setEventTimestamp(eventTimestamp);
+        } else {
+            // Otherwise, update the existing record. There should only be one record.
+            record = adherenceRecordList.get(0);
+        }
+
+        // Update the record.
+        record.setPostProcessingAttributes(attributes.getPostProcessingAttributes());
+        record.setPostProcessingCompletedOn(attributes.getPostProcessingCompletedOn());
+        record.setPostProcessingStatus(attributes.getPostProcessingStatus());
+
+        if (attributes.getStartedOn() != null) {
+            // StartedOn was specified. Use that value.
+            record.setStartedOn(attributes.getStartedOn());
+        } else if (record.getStartedOn() == null) {
+            // StartedOn was not specified, but it's not set on the record, and we need a value. Use current time.
+            record.setStartedOn(getDateTime());
+        }
+
+        // We can't call the DAO directly, because updateAdherenceRecords() has some important logic in it.
+        updateAdherenceRecords(appId, new AdherenceRecordList(ImmutableList.of(record)));
+    }
+
     public EventStreamAdherenceReport getEventStreamAdherenceReport(String appId, String studyId, String userId,
             DateTime now, String clientTimeZone, boolean showActiveOnly) {
 
