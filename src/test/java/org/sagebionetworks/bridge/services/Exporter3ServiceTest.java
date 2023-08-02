@@ -1612,13 +1612,16 @@ public class Exporter3ServiceTest {
         // Execute and verify output.
         Exporter3Configuration ex3Config = exporter3Service.exportTimelineForStudy(TEST_APP_ID,
                 TestConstants.TEST_STUDY_ID);
-
         assertEquals(ex3Config, study.getExporter3Configuration());
+        assertEquals(ex3Config.getWikiPageId(), wiki.getId());
         verifyEx3ConfigAndSynapse(ex3Config, TestConstants.TEST_APP_ID + '/' +
                 TestConstants.TEST_STUDY_ID);
 
+        // Verify call to studyService three times: one in initExporter3ForStudy & two in exportTimelineForStudy
+        // (Need to get study again after call initExporter3ForStudy).
+        verify(mockStudyService, times(3)).getStudy(TEST_APP_ID, TEST_STUDY_ID, true);
+
         // Verify call to studyService twice: one in initExporter3ForStudy & one in exportTimelineForStudy.
-        verify(mockStudyService, times(2)).getStudy(TEST_APP_ID, TEST_STUDY_ID, true);
         verify(mockStudyService, times(2)).updateStudy(TEST_APP_ID, study);
 
         // Verify call to schedule2Service.
@@ -1626,21 +1629,18 @@ public class Exporter3ServiceTest {
 
         // Verify call to SynapseHelper.
         verify(mockSynapseHelper).checkSynapseWritableOrThrow();
-        // Verify call to SynapseClient.
 
+        // Verify call to SynapseClient.
         verify(mockSynapseClient).createV2WikiPage(eq(study.getExporter3Configuration().getProjectId()), eq(ObjectType.ENTITY), wikiToCreateCaptor.capture());
+        verify(mockSynapseClient).multipartUpload(fileToUploadCaptor.capture(),eq(study.getExporter3Configuration().getStorageLocationId()), eq(false), eq(false));
 
         // Verify file content
         JsonNode node = BridgeObjectMapper.get().valueToTree(timeline);
         String expectedFileContent = node.toString();
         File capturedFile = fileToUploadCaptor.getValue();
         CharSource charSource = Files.asCharSource(capturedFile, Charsets.UTF_8);
-        try {
-            String content = charSource.read();
-            assertEquals(content, expectedFileContent);
-        } catch (IOException e) {
-            System.out.println("An error occurred while reading the file: " + e.getMessage());
-        }
+        String content = charSource.read();
+        assertEquals(content, expectedFileContent);
 
         // Verify WikiPage
         V2WikiPage capturedWikiPage = wikiToCreateCaptor.getValue();
@@ -1656,10 +1656,6 @@ public class Exporter3ServiceTest {
     public void exportTimelineForStudy_2ndTime() throws Exception {
         // Setup Study.
         study.setScheduleGuid(TestConstants.SCHEDULE_GUID);
-
-        // Study has no exporter3config.
-        study.setExporter3Configuration(null);
-        study.setExporter3Enabled(false);
 
         // Setup existing S3FileHandle
         CloudProviderFileHandleInterface existingMarkdown = new S3FileHandle();

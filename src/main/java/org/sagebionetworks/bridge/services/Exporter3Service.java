@@ -470,7 +470,6 @@ public class Exporter3Service {
                 sendNotification(appId, studyId, "create study", createStudyNotificationTopicArn, notification);
             }
         }
-
         return ex3Config;
     }
 
@@ -971,8 +970,6 @@ public class Exporter3Service {
     // so they need access to the Timeline information.).
     public Exporter3Configuration exportTimelineForStudy(String appId, String studyId) throws BridgeSynapseException,
             SynapseException, IOException{
-        boolean isConfigModified = false;
-
         // Get Timeline to export for the study.
         Study study = studyService.getStudy(appId, studyId, true);
         if (study.getScheduleGuid() == null) {
@@ -985,23 +982,20 @@ public class Exporter3Service {
         synapseHelper.checkSynapseWritableOrThrow();
 
         // If Exporter3 is not enabled for study, initiate Exporter3 for Study;
-        // If enabled, get exporter3Config for study.
-        Exporter3Configuration exporter3Config;
         if (!study.isExporter3Enabled()) {
-            exporter3Config = initExporter3ForStudy(appId, studyId);
-        } else {
-            exporter3Config = study.getExporter3Configuration();
+            initExporter3ForStudy(appId, studyId);
+            study = studyService.getStudy(appId, studyId, true);
         }
+        Exporter3Configuration exporter3Config = study.getExporter3Configuration();
 
         // Export the study's Timeline to Synapse as a wiki page in JSON format.
+        // If we have an IOException, the wiki page will almost certainly fail to upload. Instead of catching the exception,
+        // we just let the exception get thrown.
         JsonNode node = BridgeObjectMapper.get().valueToTree(timeline);
         File outputFile = File.createTempFile("timelineFor" + studyId, ".txt");
         CharSink charSink = Files.asCharSink(outputFile, Charsets.UTF_8, FileWriteMode.APPEND);
-        try {
-            charSink.write(node.toString());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        charSink.write(node.toString());
+
         CloudProviderFileHandleInterface markdown = synapseClient.multipartUpload(outputFile,
                 exporter3Config.getStorageLocationId(), false, false);
 
@@ -1013,17 +1007,12 @@ public class Exporter3Service {
             wiki.setMarkdownFileHandleId(markdown.getId());
             wiki = synapseClient.createV2WikiPage(exporter3Config.getProjectId(), ObjectType.ENTITY, wiki);
             exporter3Config.setWikiPageId(wiki.getId());
-            isConfigModified = true;
+            studyService.updateStudy(appId, study);
         } else {
             WikiPageKey key = WikiPageKeyHelper.createWikiPageKey(exporter3Config.getProjectId(), ObjectType.ENTITY, exporter3Config.getWikiPageId());
             V2WikiPage getWiki = synapseClient.getV2WikiPage(key);
             getWiki.setMarkdownFileHandleId(markdown.getId());
             synapseClient.updateV2WikiPage(exporter3Config.getProjectId(), ObjectType.ENTITY, getWiki);
-        }
-
-        // If exporter3 config is modified, update study.
-        if (isConfigModified) {
-            studyService.updateStudy(appId, study);
         }
         return exporter3Config;
     }
