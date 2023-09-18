@@ -13,6 +13,7 @@ public final class Exporter3Configuration {
     private String projectId;
     private String rawDataFolderId;
     private Long storageLocationId;
+    private String wikiPageId;
 
     /** Helper method that returns true if all configuration attributes are specified. */
     public boolean isConfigured() {
@@ -112,11 +113,19 @@ public final class Exporter3Configuration {
         this.storageLocationId = storageLocationId;
     }
 
+    public String getWikiPageId() {
+        return wikiPageId;
+    }
+
+    public void setWikiPageId(String wikiPageId) {
+        this.wikiPageId = wikiPageId;
+    }
+
     @Override
     public int hashCode() {
         return Objects.hash(createStudyNotificationTopicArn, dataAccessTeamId, exportNotificationTopicArn, participantVersionDemographicsTableId,
                 participantVersionDemographicsViewId, participantVersionTableId, projectId, rawDataFolderId,
-                storageLocationId);
+                storageLocationId, wikiPageId);
     }
 
     @Override
@@ -135,7 +144,8 @@ public final class Exporter3Configuration {
                 && Objects.equals(participantVersionDemographicsViewId, other.participantVersionDemographicsViewId)
                 && Objects.equals(participantVersionTableId, other.participantVersionTableId)
                 && Objects.equals(projectId, other.projectId) && Objects.equals(rawDataFolderId, other.rawDataFolderId)
-                && Objects.equals(storageLocationId, other.storageLocationId);
+                && Objects.equals(storageLocationId, other.storageLocationId)
+                && Objects.equals(wikiPageId, other.wikiPageId);
     }
 
     @Override
@@ -145,6 +155,6 @@ public final class Exporter3Configuration {
                 + participantVersionDemographicsTableId + ", participantVersionDemographicsViewId="
                 + participantVersionDemographicsViewId + ", participantVersionTableId=" + participantVersionTableId
                 + ", projectId=" + projectId + ", rawDataFolderId=" + rawDataFolderId + ", storageLocationId="
-                + storageLocationId + "]";
+                + storageLocationId + ", wikiPageId=" + wikiPageId + "]";
     }
 }

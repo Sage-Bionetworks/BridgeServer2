@@ -202,6 +202,28 @@ public class Exporter3ControllerTest {
     }
 
     @Test
+    public void exportTimelineForStudy() throws Exception {
+        // Set up request context.
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER))
+                .build());
+
+        // Mock session.
+        UserSession mockSession = new UserSession();
+        mockSession.setAppId(TestConstants.TEST_APP_ID);
+        doReturn(mockSession).when(controller).getAuthenticatedSession(STUDY_DESIGNER, DEVELOPER);
+
+        // Mock service.
+        Exporter3Configuration ex3Config = new Exporter3Configuration();
+        when(mockSvc.exportTimelineForStudy(TestConstants.TEST_APP_ID, TestConstants.TEST_STUDY_ID))
+                .thenReturn(ex3Config);
+
+        // Execute.
+        Exporter3Configuration retVal = controller.exportTimelineForStudy(TestConstants.TEST_STUDY_ID);
+        assertSame(retVal, ex3Config);
+    }
+
     public void subscribeToExportNotificationsForStudy() throws Exception {
         // Set up request context.
         RequestContext.set(new RequestContext.Builder()

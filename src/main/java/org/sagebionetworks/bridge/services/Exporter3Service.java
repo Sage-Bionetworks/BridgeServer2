@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -20,20 +21,31 @@ import com.amazonaws.services.sns.model.SubscribeResult;
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.model.SendMessageResult;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.io.CharSink;
+import com.google.common.io.FileWriteMode;
+import com.google.common.io.Files;
 import org.apache.commons.lang3.StringUtils;
+import org.sagebionetworks.client.SynapseClient;
 import org.sagebionetworks.client.exceptions.SynapseException;
 import org.sagebionetworks.repo.model.Folder;
+import org.sagebionetworks.repo.model.ObjectType;
 import org.sagebionetworks.repo.model.Project;
 import org.sagebionetworks.repo.model.Team;
+import org.sagebionetworks.repo.model.dao.WikiPageKey;
+import org.sagebionetworks.repo.model.dao.WikiPageKeyHelper;
+import org.sagebionetworks.repo.model.file.CloudProviderFileHandleInterface;
 import org.sagebionetworks.repo.model.annotation.v2.AnnotationsValue;
 import org.sagebionetworks.repo.model.annotation.v2.AnnotationsValueType;
 import org.sagebionetworks.repo.model.project.ExternalS3StorageLocationSetting;
 import org.sagebionetworks.repo.model.table.ColumnModel;
 import org.sagebionetworks.repo.model.table.ColumnType;
 import org.sagebionetworks.repo.model.table.EntityView;
+import org.sagebionetworks.repo.model.v2.wiki.V2WikiPage;
 import org.sagebionetworks.repo.model.table.MaterializedView;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,6 +78,8 @@ import org.sagebionetworks.bridge.models.exporter.ExporterCreateStudyNotificatio
 import org.sagebionetworks.bridge.models.exporter.ExporterSubscriptionRequest;
 import org.sagebionetworks.bridge.models.exporter.ExporterSubscriptionResult;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordEx3;
+import org.sagebionetworks.bridge.models.schedules2.Schedule2;
+import org.sagebionetworks.bridge.models.schedules2.timelines.Timeline;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.worker.Exporter3Request;
@@ -265,6 +279,9 @@ public class Exporter3Service {
     private AmazonSQS sqsClient;
     private StudyService studyService;
     private SynapseHelper synapseHelper;
+    private Schedule2Service schedule2Service;
+    private SynapseClient synapseClient;
+    private FileService fileService;
 
     @Autowired
     public final void setConfig(BridgeConfig config) {
@@ -340,9 +357,24 @@ public class Exporter3Service {
         this.studyService = studyService;
     }
 
+    @Resource(name="exporterSynapseClient")
+    public final void setSynapseClient(SynapseClient synapseClient) {
+        this.synapseClient = synapseClient;
+    }
+
     @Resource(name="exporterSynapseHelper")
     public final void setSynapseHelper(SynapseHelper synapseHelper) {
         this.synapseHelper = synapseHelper;
+    }
+
+    @Autowired
+    final void setSchedule2Service(Schedule2Service schedule2Service) {
+        this.schedule2Service = schedule2Service;
+    }
+
+    @Autowired
+    public final void setFileService(FileService fileService) {
+        this.fileService = fileService;
     }
 
     /**
@@ -438,7 +470,6 @@ public class Exporter3Service {
                 sendNotification(appId, studyId, "create study", createStudyNotificationTopicArn, notification);
             }
         }
-
         return ex3Config;
     }
 
@@ -933,5 +964,56 @@ public class Exporter3Service {
         SendMessageResult sqsResult = sqsClient.sendMessage(workerQueueUrl, requestJson);
         LOG.info("Sent export request for app " + appId + " record " + recordId + "; received message ID=" +
                 sqsResult.getMessageId());
+    }
+
+    // Export timeline  from Bridge to Synapse (Some researchers only have access to Synapse, not Bridge,
+    // so they need access to the Timeline information.).
+    public Exporter3Configuration exportTimelineForStudy(String appId, String studyId) throws BridgeSynapseException,
+            SynapseException, IOException{
+        // Get Timeline to export for the study.
+        Study study = studyService.getStudy(appId, studyId, true);
+        if (study.getScheduleGuid() == null) {
+            throw new EntityNotFoundException(Schedule2.class);
+        }
+        Timeline timeline = schedule2Service.getTimelineForSchedule(appId,
+                study.getScheduleGuid());
+
+        // Check Synapse
+        synapseHelper.checkSynapseWritableOrThrow();
+
+        // If Exporter3 is not enabled for study, initiate Exporter3 for Study;
+        if (!study.isExporter3Enabled()) {
+            initExporter3ForStudy(appId, studyId);
+            study = studyService.getStudy(appId, studyId, true);
+        }
+        Exporter3Configuration exporter3Config = study.getExporter3Configuration();
+
+        // Export the study's Timeline to Synapse as a wiki page in JSON format.
+        // If we have an IOException, the wiki page will almost certainly fail to upload. Instead of catching the exception,
+        // we just let the exception get thrown.
+        JsonNode node = BridgeObjectMapper.get().valueToTree(timeline);
+        File outputFile = File.createTempFile("timelineFor" + studyId, ".txt");
+        CharSink charSink = Files.asCharSink(outputFile, Charsets.UTF_8, FileWriteMode.APPEND);
+        charSink.write(node.toString());
+
+        CloudProviderFileHandleInterface markdown = synapseClient.multipartUpload(outputFile,
+                exporter3Config.getStorageLocationId(), false, false);
+
+        // If first time exporting the timeline for the study, create a new wiki page in Synapse;
+        // If wiki page already exists, update the existing wiki page.
+        if (exporter3Config.getWikiPageId() == null) {
+            V2WikiPage wiki = new V2WikiPage();
+            wiki.setTitle("Exported Timeline for " + studyId);
+            wiki.setMarkdownFileHandleId(markdown.getId());
+            wiki = synapseClient.createV2WikiPage(exporter3Config.getProjectId(), ObjectType.ENTITY, wiki);
+            exporter3Config.setWikiPageId(wiki.getId());
+            studyService.updateStudy(appId, study);
+        } else {
+            WikiPageKey key = WikiPageKeyHelper.createWikiPageKey(exporter3Config.getProjectId(), ObjectType.ENTITY, exporter3Config.getWikiPageId());
+            V2WikiPage getWiki = synapseClient.getV2WikiPage(key);
+            getWiki.setMarkdownFileHandleId(markdown.getId());
+            synapseClient.updateV2WikiPage(exporter3Config.getProjectId(), ObjectType.ENTITY, getWiki);
+        }
+        return exporter3Config;
     }
 }
