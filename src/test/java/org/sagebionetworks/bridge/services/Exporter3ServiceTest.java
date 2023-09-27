@@ -25,12 +25,15 @@ import static org.testng.Assert.fail;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.model.CreateTopicResult;
 import com.amazonaws.services.sns.model.PublishResult;
@@ -47,6 +50,8 @@ import com.google.common.collect.ImmutableSet;
 
 import com.google.common.io.CharSource;
 import com.google.common.io.Files;
+import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.shiro.codec.Hex;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -61,7 +66,6 @@ import org.sagebionetworks.repo.model.ObjectType;
 import org.sagebionetworks.repo.model.Project;
 import org.sagebionetworks.repo.model.Team;
 import org.sagebionetworks.repo.model.dao.WikiPageKey;
-import org.sagebionetworks.repo.model.file.CloudProviderFileHandleInterface;
 import org.sagebionetworks.repo.model.file.S3FileHandle;
 import org.sagebionetworks.repo.model.annotation.v2.AnnotationsValue;
 import org.sagebionetworks.repo.model.annotation.v2.AnnotationsValueType;
@@ -179,6 +183,7 @@ public class Exporter3ServiceTest {
     private static final String STUDY_2_RAW_FOLDER_ID = "syn3333";
     private static final String STUDY_2_S3_BUCKET = "study2-bucket";
     private static final String STUDY_2_S3_KEY = "study2-record-key";
+    private static final byte[] DUMMY_MD5_BYTES = "dummy-md5".getBytes(StandardCharsets.UTF_8);
 
     private App app;
     private Study study;
@@ -219,6 +224,12 @@ public class Exporter3ServiceTest {
 
     @Mock
     private Schedule2Service mockSchedule2Service;
+
+    @Mock
+    private AmazonS3 mockS3Client;
+
+    @Mock
+    private DigestUtils mockMd5DigestUtils;
 
     @InjectMocks
     @Spy
@@ -1592,14 +1603,25 @@ public class Exporter3ServiceTest {
         when(mockSchedule2Service.getTimelineForSchedule(eq(TEST_APP_ID), eq(TestConstants.SCHEDULE_GUID)))
                 .thenReturn(timeline);
 
+        // Mock test data for S3 upload.
+        String mockS3Key = TEST_APP_ID + "/" + TEST_STUDY_ID;
+        String mockFilePath = "timelineFor" + TEST_STUDY_ID + ".txt";
+        ArgumentCaptor<PutObjectRequest> requestCaptor = ArgumentCaptor.forClass(PutObjectRequest.class);
+
         // Mock FileHandle
-        CloudProviderFileHandleInterface markdown = new S3FileHandle();
+        S3FileHandle markdown = new S3FileHandle();
         markdown.setStorageLocationId(STORAGE_LOCATION_ID);
         markdown.setId("exportedTimelineFor" + TestConstants.TEST_STUDY_ID);
         markdown.setFileName("timelineFor" + TestConstants.TEST_STUDY_ID + ".txt");
-        ArgumentCaptor<File> fileToUploadCaptor = ArgumentCaptor.forClass(File.class);
-        when(mockSynapseClient.multipartUpload(fileToUploadCaptor.capture(),any(), eq(false), eq(false)))
-                .thenReturn(markdown);
+        markdown.setKey(mockS3Key);
+        markdown.setContentType("text/plain");
+        markdown.setBucketName(RAW_HEALTH_DATA_BUCKET);
+        markdown.setContentMd5(Hex.encodeToString(DUMMY_MD5_BYTES));
+        ArgumentCaptor<S3FileHandle> s3FileHandleArgumentCaptor = ArgumentCaptor.forClass(S3FileHandle.class);
+        when(mockSynapseHelper.createS3FileHandleWithRetry(s3FileHandleArgumentCaptor.capture())).thenReturn(markdown);
+
+        // Mock hexadecimal MD5
+        when(mockMd5DigestUtils.digest((any(File.class)))).thenReturn(DUMMY_MD5_BYTES);
 
         // Setup Wiki
         V2WikiPage wiki = new V2WikiPage();
@@ -1632,15 +1654,32 @@ public class Exporter3ServiceTest {
 
         // Verify call to SynapseClient.
         verify(mockSynapseClient).createV2WikiPage(eq(study.getExporter3Configuration().getProjectId()), eq(ObjectType.ENTITY), wikiToCreateCaptor.capture());
-        verify(mockSynapseClient).multipartUpload(fileToUploadCaptor.capture(),eq(study.getExporter3Configuration().getStorageLocationId()), eq(false), eq(false));
+
+        // Verify call to S3 client and captured request value.
+        verify(mockS3Client, times(1)).putObject(requestCaptor.capture());
+        PutObjectRequest capturedRequest = requestCaptor.getValue();
+        assertEquals(RAW_HEALTH_DATA_BUCKET, capturedRequest.getBucketName());
+        assertEquals(mockS3Key, capturedRequest.getKey());
+        assertTrue(capturedRequest.getFile().getName().replace(".txt", "")
+                .contains(mockFilePath.replace(".txt", "")));
 
         // Verify file content
         JsonNode node = BridgeObjectMapper.get().valueToTree(timeline);
         String expectedFileContent = node.toString();
-        File capturedFile = fileToUploadCaptor.getValue();
+        File capturedFile = capturedRequest.getFile();
         CharSource charSource = Files.asCharSource(capturedFile, Charsets.UTF_8);
         String content = charSource.read();
         assertEquals(content, expectedFileContent);
+
+        // Verify call to SynapseHelper and captured file handle value.
+        verify(mockSynapseHelper).createS3FileHandleWithRetry(s3FileHandleArgumentCaptor.capture());
+        S3FileHandle capturedFileHandle = s3FileHandleArgumentCaptor.getValue();
+        assertEquals(RAW_HEALTH_DATA_BUCKET, capturedFileHandle.getBucketName());
+        assertEquals("text/plain", capturedFileHandle.getContentType());
+        assertEquals("timelineFor" + TestConstants.TEST_STUDY_ID + ".txt", capturedFileHandle.getFileName());
+        assertEquals(mockS3Key, capturedFileHandle.getKey());
+        assertEquals(STORAGE_LOCATION_ID, capturedFileHandle.getStorageLocationId().longValue());
+        assertEquals(Hex.encodeToString(DUMMY_MD5_BYTES), capturedFileHandle.getContentMd5());
 
         // Verify WikiPage
         V2WikiPage capturedWikiPage = wikiToCreateCaptor.getValue();
@@ -1658,7 +1697,7 @@ public class Exporter3ServiceTest {
         study.setScheduleGuid(TestConstants.SCHEDULE_GUID);
 
         // Setup existing S3FileHandle
-        CloudProviderFileHandleInterface existingMarkdown = new S3FileHandle();
+        S3FileHandle existingMarkdown = new S3FileHandle();
         existingMarkdown.setStorageLocationId(STORAGE_LOCATION_ID);
         existingMarkdown.setId("1stExportedTimelineFor" + TestConstants.TEST_STUDY_ID);
 
@@ -1687,11 +1726,14 @@ public class Exporter3ServiceTest {
         when(mockSchedule2Service.getTimelineForSchedule(eq(TEST_APP_ID), eq(TestConstants.SCHEDULE_GUID)))
                 .thenReturn(timeline);
 
+        // Mock hexadecimal MD5
+        when(mockMd5DigestUtils.digest((any(File.class)))).thenReturn(DUMMY_MD5_BYTES);
+
         // Mock S3FileHandle
-        CloudProviderFileHandleInterface markdown = new S3FileHandle();
+        S3FileHandle markdown = new S3FileHandle();
         markdown.setStorageLocationId(8888L);
         markdown.setId("2ndExportedTimelineFor" + TestConstants.TEST_STUDY_ID);
-        when(mockSynapseClient.multipartUpload(any(File.class), eq(STORAGE_LOCATION_ID), eq(false), eq(false))).thenReturn(markdown);
+        when(mockSynapseHelper.createS3FileHandleWithRetry(any(S3FileHandle.class))).thenReturn(markdown);
 
         // Mock WikiPageKey
         WikiPageKey key = new WikiPageKey();
