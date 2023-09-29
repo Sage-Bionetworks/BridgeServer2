@@ -561,6 +561,24 @@ public class AssessmentServiceTest extends Mockito {
         assertEquals(assessment.getPhase(), AssessmentPhase.DRAFT);
     }
 
+    public void updateAssessmentPhaseDraftToPublished() {
+        when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, TEST_OWNER_ID))
+                .thenReturn(Optional.of(mockOrganization));
+        Assessment assessment = AssessmentTest.createAssessment();
+        assessment.setDeleted(false);
+        assessment.setPhase(AssessmentPhase.PUBLISHED);
+
+        Assessment existing = AssessmentTest.createAssessment();
+        existing.setDeleted(false);
+        existing.setPhase(AssessmentPhase.DRAFT);
+
+        when(mockDao.getAssessment(TEST_APP_ID, TEST_OWNER_ID, assessment.getGuid()))
+                .thenReturn(Optional.of(existing));
+
+        service.updateAssessment(TEST_APP_ID, TEST_OWNER_ID, assessment);
+        assertEquals(assessment.getPhase(), AssessmentPhase.PUBLISHED);
+    }
+
     @Test
     public void updateAssessmentPhaseReviewToPublished() {
         when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, TEST_OWNER_ID))
@@ -581,7 +599,7 @@ public class AssessmentServiceTest extends Mockito {
     }
 
     @Test(expectedExceptions = BadRequestException.class)
-    public void updateAssessmentPhaseFromPublished() {
+    public void updateAssessmentPhaseFromPublishedToDraft() {
         when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, TEST_OWNER_ID))
                 .thenReturn(Optional.of(mockOrganization));
         Assessment assessment = AssessmentTest.createAssessment();
@@ -594,6 +612,24 @@ public class AssessmentServiceTest extends Mockito {
 
         when(mockDao.getAssessment(TEST_APP_ID, TEST_OWNER_ID, assessment.getGuid()))
             .thenReturn(Optional.of(existing));
+
+        service.updateAssessment(TEST_APP_ID, TEST_OWNER_ID, assessment);
+    }
+
+    @Test(expectedExceptions = BadRequestException.class)
+    public void updateAssessmentPhaseFromPublishedToReview() {
+        when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, TEST_OWNER_ID))
+                .thenReturn(Optional.of(mockOrganization));
+        Assessment assessment = AssessmentTest.createAssessment();
+        assessment.setDeleted(false);
+        assessment.setPhase(AssessmentPhase.REVIEW);
+
+        Assessment existing = AssessmentTest.createAssessment();
+        existing.setDeleted(false);
+        existing.setPhase(AssessmentPhase.PUBLISHED);
+
+        when(mockDao.getAssessment(TEST_APP_ID, TEST_OWNER_ID, assessment.getGuid()))
+                .thenReturn(Optional.of(existing));
 
         service.updateAssessment(TEST_APP_ID, TEST_OWNER_ID, assessment);
     }
