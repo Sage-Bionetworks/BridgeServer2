@@ -2,11 +2,7 @@ package org.sagebionetworks.bridge.validators;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
-import static org.sagebionetworks.bridge.validators.Validate.BRIDGE_EVENT_ID_ERROR;
-import static org.sagebionetworks.bridge.validators.Validate.BRIDGE_EVENT_ID_PATTERN;
-import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
-import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NEGATIVE;
-import static org.sagebionetworks.bridge.validators.Validate.INVALID_TYPE;
+import static org.sagebionetworks.bridge.validators.Validate.*;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateColorScheme;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateJsonLength;
@@ -50,6 +46,9 @@ public class AssessmentValidator implements Validator {
             errors.rejectValue("title", CANNOT_BE_BLANK);   
         }
         validateStringLength(errors, 255, assessment.getTitle(), "title");
+        if (assessment.getPhase() == null) {
+            errors.rejectValue("phase", CANNOT_BE_NULL);
+        }
         String osName = assessment.getOsName();
         if (isBlank(assessment.getOsName())) {
             errors.rejectValue("osName", CANNOT_BE_BLANK);   

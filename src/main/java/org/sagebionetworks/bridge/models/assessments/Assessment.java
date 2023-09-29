@@ -47,6 +47,7 @@ public class Assessment implements BridgeEntity {
         dto.setMinAge(assessment.getMinAge());
         dto.setMaxAge(assessment.getMaxAge());
         dto.setAdditionalMetadata(assessment.getAdditionalMetadata());
+        dto.setPhase(assessment.getPhase());
         return dto;
     }
     
@@ -81,6 +82,7 @@ public class Assessment implements BridgeEntity {
     private Integer minAge;
     private Integer maxAge;
     private JsonNode additionalMetadata;
+    private AssessmentPhase phase;
 
     public String getAppId() {
         return appId;
@@ -261,5 +263,13 @@ public class Assessment implements BridgeEntity {
 
     public void setAdditionalMetadata(JsonNode additionalMetadata) {
         this.additionalMetadata = additionalMetadata;
+    }
+
+    public AssessmentPhase getPhase() {
+        return phase;
+    }
+
+    public void setPhase(AssessmentPhase phase) {
+        this.phase = phase;
     }
 }

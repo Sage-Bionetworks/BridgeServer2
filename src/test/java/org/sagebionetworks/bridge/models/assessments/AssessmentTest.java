@@ -80,7 +80,7 @@ public class AssessmentTest {
         assessment.setMinAge(MIN_AGE);
         assessment.setMaxAge(MAX_AGE);
         assessment.setAdditionalMetadata(ADDITIONAL_METADATA);
-
+        assessment.setPhase(AssessmentPhase.DRAFT);
         Assessment dto = Assessment.create(assessment);
         assertAssessment(dto);
     }
@@ -101,7 +101,7 @@ public class AssessmentTest {
         Assessment dto = createAssessment();
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(dto);
-        assertEquals(node.size(), 27);
+        assertEquals(node.size(), 28);
         assertEquals(node.get("guid").textValue(), GUID);
         assertEquals(node.get("identifier").textValue(), IDENTIFIER);
         assertEquals(node.get("revision").intValue(), 5);
@@ -133,6 +133,7 @@ public class AssessmentTest {
         assertEquals(node.get("additionalMetadata").get("key1").textValue(), "value1");
         assertEquals(node.get("additionalMetadata").get("key2").textValue(), "value2");
         assertEquals(node.get("type").textValue(), "Assessment");
+        assertEquals(node.get("phase").textValue(), "draft");
         
         ArrayNode tags = (ArrayNode)node.get("tags");
         assertEquals(tags.size(), 2);
@@ -192,6 +193,7 @@ public class AssessmentTest {
         dto.setMinAge(MIN_AGE);
         dto.setMaxAge(MAX_AGE);
         dto.setAdditionalMetadata(ADDITIONAL_METADATA);
+        dto.setPhase(AssessmentPhase.DRAFT);
         return dto;
     }
     
@@ -232,5 +234,6 @@ public class AssessmentTest {
         assertEquals(assessment.getMinAge(), MIN_AGE);
         assertEquals(assessment.getMaxAge(), MAX_AGE);
         assertEquals(assessment.getAdditionalMetadata(), ADDITIONAL_METADATA);
+        assertEquals(assessment.getPhase(), AssessmentPhase.DRAFT);
     }
 }

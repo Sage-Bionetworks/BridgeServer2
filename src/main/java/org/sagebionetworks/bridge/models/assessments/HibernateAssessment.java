@@ -78,6 +78,7 @@ public class HibernateAssessment {
         assessment.setMinAge(dto.getMinAge());
         assessment.setMaxAge(dto.getMaxAge());
         assessment.setAdditionalMetadata(dto.getAdditionalMetadata());
+        assessment.setPhase(dto.getPhase());
         return assessment;
     }
 
@@ -147,6 +148,7 @@ public class HibernateAssessment {
     private Integer maxAge;
     @Convert(converter = JsonNodeAttributeConverter.class)
     private JsonNode additionalMetadata;
+    private AssessmentPhase phase;
 
     public String getGuid() {
         return guid;
@@ -312,6 +314,12 @@ public class HibernateAssessment {
     }
     public void setAdditionalMetadata(JsonNode additionalMetadata) {
         this.additionalMetadata = additionalMetadata;
+    }
+    public AssessmentPhase getPhase() {
+        return phase;
+    }
+    public void setPhase(AssessmentPhase phase) {
+        this.phase = phase;
     }
 }
 
