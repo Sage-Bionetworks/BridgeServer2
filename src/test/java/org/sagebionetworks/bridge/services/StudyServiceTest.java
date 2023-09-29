@@ -787,6 +787,7 @@ public class StudyServiceTest extends Mockito {
         service.transitionToRecruitment(TEST_APP_ID, TEST_STUDY_ID);
 
         verify(assessmentService).updateAssessment(TEST_APP_ID, null, assessment);
+        assertEquals(AssessmentPhase.PUBLISHED, assessment.getPhase());
         
         verify(mockAccountService).deleteAllPreviewAccounts(TEST_APP_ID, TEST_STUDY_ID);
         
@@ -821,6 +822,7 @@ public class StudyServiceTest extends Mockito {
         service.transitionToRecruitment(TEST_APP_ID, TEST_STUDY_ID);
 
         verify(assessmentService).updateAssessment(TEST_APP_ID, null, assessment);
+        assertEquals(AssessmentPhase.PUBLISHED, assessment.getPhase());
         
         verify(mockAccountService).deleteAllPreviewAccounts(TEST_APP_ID, TEST_STUDY_ID);
         
