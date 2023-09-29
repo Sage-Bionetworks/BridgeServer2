@@ -1084,6 +1084,7 @@ public class AssessmentServiceTest extends Mockito {
         // verify that a fuller copy also occurred
         assertEquals(assessmentToPublish.getTitle(), existing.getTitle());
         assertEquals(assessmentToPublish.getTags(), existing.getTags());
+        assertEquals(assessmentToPublish.getPhase(), AssessmentPhase.PUBLISHED);
     }
     
     @Test

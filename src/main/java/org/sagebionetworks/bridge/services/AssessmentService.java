@@ -28,6 +28,7 @@ import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
 import static org.sagebionetworks.bridge.models.ResourceList.TAGS;
 import static org.sagebionetworks.bridge.models.assessments.AssessmentPhase.ALLOWED_PHASE_TRANSITIONS;
+import static org.sagebionetworks.bridge.models.assessments.AssessmentPhase.PUBLISHED;
 import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableSet;
 
 import java.util.HashMap;
@@ -324,6 +325,7 @@ public class AssessmentService {
         assessmentToPublish.setOriginGuid(null);
         assessmentToPublish.setOwnerId(sharedOwnerId);
         assessmentToPublish.setVersion(0L);
+        assessmentToPublish.setPhase(PUBLISHED);
         
         original.setOriginGuid(assessmentToPublish.getGuid());
         
