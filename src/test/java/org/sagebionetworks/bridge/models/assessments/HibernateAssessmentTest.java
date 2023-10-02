@@ -76,6 +76,7 @@ public class HibernateAssessmentTest {
         assessment.setMinAge(MIN_AGE);
         assessment.setMaxAge(MAX_AGE);
         assessment.setAdditionalMetadata(ADDITIONAL_METADATA);
+        assessment.setPhase(AssessmentPhase.DRAFT);
         return assessment;
     }
     
@@ -110,5 +111,6 @@ public class HibernateAssessmentTest {
         assertEquals(assessment.getMinAge(), MIN_AGE);
         assertEquals(assessment.getMaxAge(), MAX_AGE);
         assertEquals(assessment.getAdditionalMetadata(), ADDITIONAL_METADATA);
+        assertEquals(assessment.getPhase(), AssessmentPhase.DRAFT);
     }
 }
