@@ -1101,4 +1101,4 @@ ADD COLUMN `postProcessingStatus` varchar(255) DEFAULT NULL;
 
 -- changeset bridge:81
 ALTER TABLE `Assessments`
-ADD COLUMN `phase` enum('DRAFT', 'REVIEW', 'PUBLISHED') DEFAULT 'DRAFT',
+ADD COLUMN `phase` enum('DRAFT', 'REVIEW', 'PUBLISHED') DEFAULT 'DRAFT';
