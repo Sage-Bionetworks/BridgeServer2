@@ -16,6 +16,8 @@ import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.Embedded;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
@@ -148,6 +150,7 @@ public class HibernateAssessment {
     private Integer maxAge;
     @Convert(converter = JsonNodeAttributeConverter.class)
     private JsonNode additionalMetadata;
+    @Enumerated(EnumType.STRING)
     private AssessmentPhase phase;
 
     public String getGuid() {
