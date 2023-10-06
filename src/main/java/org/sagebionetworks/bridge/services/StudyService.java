@@ -27,6 +27,7 @@ import static org.sagebionetworks.bridge.models.studies.StudyPhase.WITHDRAWN;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -44,7 +45,11 @@ import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEventIdsMap;
+import org.sagebionetworks.bridge.models.assessments.Assessment;
+import org.sagebionetworks.bridge.models.assessments.AssessmentPhase;
+import org.sagebionetworks.bridge.models.schedules2.AssessmentReference;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
+import org.sagebionetworks.bridge.models.schedules2.Session;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyPhase;
 import org.sagebionetworks.bridge.validators.StudyValidator;
@@ -71,6 +76,8 @@ public class StudyService {
     private DemographicService demographicService;
     @Autowired
     private AlertService alertService;
+    @Autowired
+    private AssessmentService assessmentService;
     
     protected String getDefaultTimeZoneId() { 
         return DateTimeZone.getDefault().getID();
@@ -456,7 +463,36 @@ public class StudyService {
             alertService.deleteAlertsForStudy(appId, studyId);
         }
 
+        // mark assessments as published when study moves into recruitment
+        if (targetPhase == RECRUITMENT && study.getScheduleGuid() != null) {
+            Set<AssessmentReference> assessmentRefs = getAssessmentGuidsFromSchedule(appId, studyId);
+            for (AssessmentReference assessmentRef : assessmentRefs) {
+                //Only update local assessments
+                if (appId.equals(assessmentRef.getAppId())) {
+                    Assessment assessment = assessmentService.getAssessmentByGuid(assessmentRef.getAppId(), null, assessmentRef.getGuid());
+                    if (assessment.getPhase() != AssessmentPhase.PUBLISHED) {
+                        assessment.setPhase(AssessmentPhase.PUBLISHED);
+                        assessmentService.updateAssessment(appId, null, assessment);
+                    }
+                }
+            }
+        }
+
         return study;
+    }
+
+    /**
+     * Get a Set of all Assessment GUIDs used by a study's schedule.
+     */
+    protected Set<AssessmentReference> getAssessmentGuidsFromSchedule(String appId, String studyId) {
+        Set<AssessmentReference> assessmentRefs = new HashSet<>();
+        Schedule2 schedule = scheduleService.getScheduleForStudy(appId, studyId).orElse(null);
+        if (schedule != null) {
+            for (Session session : schedule.getSessions()) {
+                assessmentRefs.addAll(session.getAssessments());
+            }
+        }
+        return assessmentRefs;
     }
     
     /**

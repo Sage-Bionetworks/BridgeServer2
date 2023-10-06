@@ -33,6 +33,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
+import org.sagebionetworks.bridge.models.assessments.AssessmentPhase;
 import org.springframework.validation.Errors;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -196,6 +197,61 @@ public class AssessmentConfigServiceTest extends Mockito {
         
         verify(mockCacheProvider).setObject(cacheKeyCaptor.capture(), eq(MODIFIED_ON));
         assertEquals(cacheKeyCaptor.getValue().toString(), "oneGuid:AssessmentConfig:Etag");
+    }
+
+    @Test(expectedExceptions = BadRequestException.class,
+            expectedExceptionsMessageRegExp = ".*Assessment config cannot be changed during assessment phase.*")
+    public void updateAssessmentConfigReview() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER))
+                .withCallerOrgMembership(TEST_OWNER_ID).build());
+
+        Assessment assessment = AssessmentTest.createAssessment();
+        assessment.setOwnerId(TEST_OWNER_ID);
+        assessment.setOriginGuid(GUID);
+        assessment.setPhase(AssessmentPhase.REVIEW);
+        when(mockAssessmentService.getAssessmentByGuid(TEST_APP_ID, TEST_OWNER_ID, GUID))
+                .thenReturn(assessment);
+
+        AssessmentConfig existing = new AssessmentConfig();
+        existing.setCreatedOn(CREATED_ON);
+        when(mockDao.getAssessmentConfig(GUID)).thenReturn(Optional.of(existing));
+
+        ObjectNode configNode = createValidConfig();
+
+        AssessmentConfig config = new AssessmentConfig();
+        config.setConfig(configNode);
+        config.setVersion(3L);
+
+        service.updateAssessmentConfig(TEST_APP_ID, TEST_OWNER_ID, GUID, config);
+
+    }
+
+    @Test(expectedExceptions = BadRequestException.class,
+            expectedExceptionsMessageRegExp = ".*Assessment config cannot be changed during assessment phase.*")
+    public void updateAssessmentConfigPublished() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER))
+                .withCallerOrgMembership(TEST_OWNER_ID).build());
+
+        Assessment assessment = AssessmentTest.createAssessment();
+        assessment.setOwnerId(TEST_OWNER_ID);
+        assessment.setOriginGuid(GUID);
+        assessment.setPhase(AssessmentPhase.PUBLISHED);
+        when(mockAssessmentService.getAssessmentByGuid(TEST_APP_ID, TEST_OWNER_ID, GUID))
+                .thenReturn(assessment);
+
+        AssessmentConfig existing = new AssessmentConfig();
+        existing.setCreatedOn(CREATED_ON);
+        when(mockDao.getAssessmentConfig(GUID)).thenReturn(Optional.of(existing));
+
+        ObjectNode configNode = createValidConfig();
+
+        AssessmentConfig config = new AssessmentConfig();
+        config.setConfig(configNode);
+        config.setVersion(3L);
+
+        service.updateAssessmentConfig(TEST_APP_ID, TEST_OWNER_ID, GUID, config);
     }
     
     @Test(expectedExceptions = InvalidEntityException.class, 

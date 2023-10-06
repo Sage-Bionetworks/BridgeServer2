@@ -12,6 +12,7 @@ import java.util.Set;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import org.joda.time.DateTime;
+import org.sagebionetworks.bridge.models.assessments.AssessmentPhase;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -86,6 +87,10 @@ public class AssessmentConfigService {
         
         Assessment assessment = assessmentService.getAssessmentByGuid(appId, ownerId, guid);
         CAN_EDIT_ASSESSMENTS.checkAndThrow(ORG_ID, assessment.getOwnerId());
+        if (!AssessmentPhase.CAN_EDIT_ASSESSMENT_CONFIG.contains(assessment.getPhase())) {
+            throw new BadRequestException("Assessment config cannot be changed during assessment phase "
+                    + assessment.getPhase().label() + ".");
+        }
         
         AssessmentConfig existing = dao.getAssessmentConfig(guid)
                 .orElseThrow(() -> new EntityNotFoundException(AssessmentConfig.class));

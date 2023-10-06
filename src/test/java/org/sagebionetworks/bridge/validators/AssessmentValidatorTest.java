@@ -5,12 +5,13 @@ import static org.sagebionetworks.bridge.TestConstants.IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_OWNER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
-import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.generateStringOfLength;
-import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.getInvalidStringLengthMessage;
 import static org.sagebionetworks.bridge.validators.Validate.BRIDGE_EVENT_ID_ERROR;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NEGATIVE;
+import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_TYPE;
+import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.generateStringOfLength;
+import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.getInvalidStringLengthMessage;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.DUPLICATE_LANG;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.INVALID_HEX_TRIPLET;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;
@@ -391,5 +392,11 @@ public class AssessmentValidatorTest extends Mockito {
         assessment.setAdditionalMetadata(
                 BridgeObjectMapper.get().createObjectNode().put("key", generateStringOfLength(TEXT_SIZE)));
         assertValidatorMessage(validator, assessment, "additionalMetadata", getInvalidStringLengthMessage(TEXT_SIZE));
+    }
+
+    @Test
+    public void phaseNull() {
+        assessment.setPhase(null);
+        assertValidatorMessage(validator, assessment, "phase", CANNOT_BE_NULL);
     }
 }
