@@ -9,13 +9,7 @@ import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
-import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
-import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
-import static org.sagebionetworks.bridge.TestConstants.SCHEDULE_GUID;
-import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
-import static org.sagebionetworks.bridge.TestConstants.TEST_CLIENT_TIME_ZONE;
-import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
+import static org.sagebionetworks.bridge.TestConstants.*;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.IMMUTABLE;
 import static org.sagebionetworks.bridge.models.studies.StudyPhase.ANALYSIS;
 import static org.sagebionetworks.bridge.models.studies.StudyPhase.COMPLETED;
@@ -47,6 +41,9 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
 import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.models.assessments.Assessment;
+import org.sagebionetworks.bridge.models.assessments.AssessmentPhase;
+import org.sagebionetworks.bridge.models.schedules2.AssessmentReference;
 import org.sagebionetworks.bridge.models.schedules2.Session;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -101,6 +98,9 @@ public class StudyServiceTest extends Mockito {
     @Mock
     private AlertService alertService;
 
+    @Mock
+    private AssessmentService assessmentService;
+
     @Captor
     private ArgumentCaptor<Study> studyCaptor;
     
@@ -118,8 +118,16 @@ public class StudyServiceTest extends Mockito {
         
         schedule = new Schedule2();
         schedule.setOwnerId(TEST_ORG_ID);
+        AssessmentReference assessmentReference = new AssessmentReference();
+        assessmentReference.setAppId(TEST_APP_ID);
+        assessmentReference.setGuid(ASSESSMENT_1_GUID);
+        Session session = new Session();
+        session.setGuid(SESSION_GUID_1);
+        session.setAssessments(ImmutableList.of(assessmentReference));
+        schedule.setSessions(ImmutableList.of(session));
         when(mockScheduleService.getScheduleForStudyValidator(any(), any())).thenReturn(Optional.of(schedule));
         when(mockScheduleService.getSchedule(TEST_APP_ID, SCHEDULE_GUID)).thenReturn(schedule);
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(Optional.of(schedule));
         when(mockSponsorService.isStudySponsoredBy(TEST_STUDY_ID, TEST_ORG_ID)).thenReturn(true);
         
         doReturn(MODIFIED_ON).when(service).getDateTime();
@@ -771,7 +779,15 @@ public class StudyServiceTest extends Mockito {
         study.setScheduleGuid(SCHEDULE_GUID);
         when(mockStudyDao.getStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(study);
 
+        Assessment assessment = new Assessment();
+        assessment.setGuid(ASSESSMENT_1_GUID);
+        assessment.setPhase(AssessmentPhase.REVIEW);
+        when(assessmentService.getAssessmentByGuid(TEST_APP_ID, null, ASSESSMENT_1_GUID)).thenReturn(assessment);
+
         service.transitionToRecruitment(TEST_APP_ID, TEST_STUDY_ID);
+
+        verify(assessmentService).updateAssessment(TEST_APP_ID, null, assessment);
+        assertEquals(AssessmentPhase.PUBLISHED, assessment.getPhase());
         
         verify(mockAccountService).deleteAllPreviewAccounts(TEST_APP_ID, TEST_STUDY_ID);
         
@@ -798,7 +814,15 @@ public class StudyServiceTest extends Mockito {
 
         schedule.setPublished(true);
 
+        Assessment assessment = new Assessment();
+        assessment.setGuid(ASSESSMENT_1_GUID);
+        assessment.setPhase(AssessmentPhase.REVIEW);
+        when(assessmentService.getAssessmentByGuid(TEST_APP_ID, null, ASSESSMENT_1_GUID)).thenReturn(assessment);
+
         service.transitionToRecruitment(TEST_APP_ID, TEST_STUDY_ID);
+
+        verify(assessmentService).updateAssessment(TEST_APP_ID, null, assessment);
+        assertEquals(AssessmentPhase.PUBLISHED, assessment.getPhase());
         
         verify(mockAccountService).deleteAllPreviewAccounts(TEST_APP_ID, TEST_STUDY_ID);
         

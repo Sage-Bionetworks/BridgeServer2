@@ -13,6 +13,8 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import javax.annotation.Resource;
 
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.model.CreateTopicResult;
 import com.amazonaws.services.sns.model.PublishResult;
@@ -29,7 +31,9 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.io.CharSink;
 import com.google.common.io.FileWriteMode;
 import com.google.common.io.Files;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.shiro.codec.Hex;
 import org.sagebionetworks.client.SynapseClient;
 import org.sagebionetworks.client.exceptions.SynapseException;
 import org.sagebionetworks.repo.model.Folder;
@@ -38,9 +42,9 @@ import org.sagebionetworks.repo.model.Project;
 import org.sagebionetworks.repo.model.Team;
 import org.sagebionetworks.repo.model.dao.WikiPageKey;
 import org.sagebionetworks.repo.model.dao.WikiPageKeyHelper;
-import org.sagebionetworks.repo.model.file.CloudProviderFileHandleInterface;
 import org.sagebionetworks.repo.model.annotation.v2.AnnotationsValue;
 import org.sagebionetworks.repo.model.annotation.v2.AnnotationsValueType;
+import org.sagebionetworks.repo.model.file.S3FileHandle;
 import org.sagebionetworks.repo.model.project.ExternalS3StorageLocationSetting;
 import org.sagebionetworks.repo.model.table.ColumnModel;
 import org.sagebionetworks.repo.model.table.ColumnType;
@@ -282,6 +286,8 @@ public class Exporter3Service {
     private Schedule2Service schedule2Service;
     private SynapseClient synapseClient;
     private FileService fileService;
+    private DigestUtils md5DigestUtils;
+    private AmazonS3 s3Client;
 
     @Autowired
     public final void setConfig(BridgeConfig config) {
@@ -375,6 +381,16 @@ public class Exporter3Service {
     @Autowired
     public final void setFileService(FileService fileService) {
         this.fileService = fileService;
+    }
+
+    @Resource(name = "s3Client")
+    public final void setS3Client(AmazonS3 s3Client) {
+        this.s3Client = s3Client;
+    }
+
+    @Resource(name = "md5DigestUtils")
+    public final void setMd5DigestUtils(DigestUtils md5DigestUtils) {
+        this.md5DigestUtils = md5DigestUtils;
     }
 
     /**
@@ -972,7 +988,7 @@ public class Exporter3Service {
                 sqsResult.getMessageId());
     }
 
-    // Export timeline  from Bridge to Synapse (Some researchers only have access to Synapse, not Bridge,
+    // Export timeline from Bridge to Synapse (Some researchers only have access to Synapse, not Bridge,
     // so they need access to the Timeline information.).
     public Exporter3Configuration exportTimelineForStudy(String appId, String studyId) throws BridgeSynapseException,
             SynapseException, IOException{
@@ -1002,8 +1018,25 @@ public class Exporter3Service {
         CharSink charSink = Files.asCharSink(outputFile, Charsets.UTF_8, FileWriteMode.APPEND);
         charSink.write(node.toString());
 
-        CloudProviderFileHandleInterface markdown = synapseClient.multipartUpload(outputFile,
-                exporter3Config.getStorageLocationId(), false, false);
+        // Create a PutObjectRequest with the source file and destination information
+        String s3Key = appId + "/" + studyId;
+        PutObjectRequest request = new PutObjectRequest(rawHealthDataBucket, s3Key, outputFile);
+
+        // Upload the file to Amazon S3
+        s3Client.putObject(request);
+        LOG.info("File uploaded successfully to S3.");
+
+        // Create Synapse S3 file handle.
+        S3FileHandle markdown = new S3FileHandle();
+        markdown.setBucketName(rawHealthDataBucket);
+        markdown.setContentType("text/plain");
+        markdown.setFileName("timelineFor" + studyId + ".txt");
+        markdown.setKey(s3Key);
+        markdown.setStorageLocationId(exporter3Config.getStorageLocationId());
+        // Synapse needs a hexadecimal MD5.
+        byte[] md5 = md5DigestUtils.digest(outputFile);
+        markdown.setContentMd5(Hex.encodeToString(md5));
+        markdown = synapseHelper.createS3FileHandleWithRetry(markdown);
 
         // If first time exporting the timeline for the study, create a new wiki page in Synapse;
         // If wiki page already exists, update the existing wiki page.

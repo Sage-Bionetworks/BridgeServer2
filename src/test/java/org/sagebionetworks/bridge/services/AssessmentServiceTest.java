@@ -45,6 +45,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
+import org.sagebionetworks.bridge.models.assessments.AssessmentPhase;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -390,6 +391,7 @@ public class AssessmentServiceTest extends Mockito {
         assessment.setGuid(GUID); // this always gets set in the controller
         assessment.setTitle("title");
         assessment.setOsName(ANDROID);
+        assessment.setPhase(AssessmentPhase.DRAFT);
         when(mockDao.updateAssessment(TEST_APP_ID, assessment)).thenReturn(assessment);
         
         Assessment existing = AssessmentTest.createAssessment();
@@ -520,7 +522,118 @@ public class AssessmentServiceTest extends Mockito {
         
         service.updateAssessment(TEST_APP_ID, TEST_OWNER_ID, assessment);
     }
-    
+
+    @Test
+    public void updateAssessmentPhaseDraftToReview() {
+        when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, TEST_OWNER_ID))
+                .thenReturn(Optional.of(mockOrganization));
+        Assessment assessment = AssessmentTest.createAssessment();
+        assessment.setDeleted(false);
+        assessment.setPhase(AssessmentPhase.REVIEW);
+
+        Assessment existing = AssessmentTest.createAssessment();
+        existing.setDeleted(false);
+        existing.setPhase(AssessmentPhase.DRAFT);
+
+        when(mockDao.getAssessment(TEST_APP_ID, TEST_OWNER_ID, assessment.getGuid()))
+                .thenReturn(Optional.of(existing));
+
+        service.updateAssessment(TEST_APP_ID, TEST_OWNER_ID, assessment);
+        assertEquals(assessment.getPhase(), AssessmentPhase.REVIEW);
+    }
+
+    @Test
+    public void updateAssessmentPhaseReviewToDraft() {
+        when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, TEST_OWNER_ID))
+                .thenReturn(Optional.of(mockOrganization));
+        Assessment assessment = AssessmentTest.createAssessment();
+        assessment.setDeleted(false);
+        assessment.setPhase(AssessmentPhase.DRAFT);
+
+        Assessment existing = AssessmentTest.createAssessment();
+        existing.setDeleted(false);
+        existing.setPhase(AssessmentPhase.REVIEW);
+
+        when(mockDao.getAssessment(TEST_APP_ID, TEST_OWNER_ID, assessment.getGuid()))
+                .thenReturn(Optional.of(existing));
+
+        service.updateAssessment(TEST_APP_ID, TEST_OWNER_ID, assessment);
+        assertEquals(assessment.getPhase(), AssessmentPhase.DRAFT);
+    }
+
+    public void updateAssessmentPhaseDraftToPublished() {
+        when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, TEST_OWNER_ID))
+                .thenReturn(Optional.of(mockOrganization));
+        Assessment assessment = AssessmentTest.createAssessment();
+        assessment.setDeleted(false);
+        assessment.setPhase(AssessmentPhase.PUBLISHED);
+
+        Assessment existing = AssessmentTest.createAssessment();
+        existing.setDeleted(false);
+        existing.setPhase(AssessmentPhase.DRAFT);
+
+        when(mockDao.getAssessment(TEST_APP_ID, TEST_OWNER_ID, assessment.getGuid()))
+                .thenReturn(Optional.of(existing));
+
+        service.updateAssessment(TEST_APP_ID, TEST_OWNER_ID, assessment);
+        assertEquals(assessment.getPhase(), AssessmentPhase.PUBLISHED);
+    }
+
+    @Test
+    public void updateAssessmentPhaseReviewToPublished() {
+        when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, TEST_OWNER_ID))
+                .thenReturn(Optional.of(mockOrganization));
+        Assessment assessment = AssessmentTest.createAssessment();
+        assessment.setDeleted(false);
+        assessment.setPhase(AssessmentPhase.PUBLISHED);
+
+        Assessment existing = AssessmentTest.createAssessment();
+        existing.setDeleted(false);
+        existing.setPhase(AssessmentPhase.REVIEW);
+
+        when(mockDao.getAssessment(TEST_APP_ID, TEST_OWNER_ID, assessment.getGuid()))
+                .thenReturn(Optional.of(existing));
+
+        service.updateAssessment(TEST_APP_ID, TEST_OWNER_ID, assessment);
+        assertEquals(assessment.getPhase(), AssessmentPhase.PUBLISHED);
+    }
+
+    @Test(expectedExceptions = BadRequestException.class)
+    public void updateAssessmentPhaseFromPublishedToDraft() {
+        when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, TEST_OWNER_ID))
+                .thenReturn(Optional.of(mockOrganization));
+        Assessment assessment = AssessmentTest.createAssessment();
+        assessment.setDeleted(false);
+        assessment.setPhase(AssessmentPhase.DRAFT);
+
+        Assessment existing = AssessmentTest.createAssessment();
+        existing.setDeleted(false);
+        existing.setPhase(AssessmentPhase.PUBLISHED);
+
+        when(mockDao.getAssessment(TEST_APP_ID, TEST_OWNER_ID, assessment.getGuid()))
+            .thenReturn(Optional.of(existing));
+
+        service.updateAssessment(TEST_APP_ID, TEST_OWNER_ID, assessment);
+    }
+
+    @Test(expectedExceptions = BadRequestException.class)
+    public void updateAssessmentPhaseFromPublishedToReview() {
+        when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, TEST_OWNER_ID))
+                .thenReturn(Optional.of(mockOrganization));
+        Assessment assessment = AssessmentTest.createAssessment();
+        assessment.setDeleted(false);
+        assessment.setPhase(AssessmentPhase.REVIEW);
+
+        Assessment existing = AssessmentTest.createAssessment();
+        existing.setDeleted(false);
+        existing.setPhase(AssessmentPhase.PUBLISHED);
+
+        when(mockDao.getAssessment(TEST_APP_ID, TEST_OWNER_ID, assessment.getGuid()))
+                .thenReturn(Optional.of(existing));
+
+        service.updateAssessment(TEST_APP_ID, TEST_OWNER_ID, assessment);
+    }
+
     @Test
     public void updateAssessmentScrubsMarkup() {
         when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, TEST_OWNER_ID))
@@ -971,6 +1084,7 @@ public class AssessmentServiceTest extends Mockito {
         // verify that a fuller copy also occurred
         assertEquals(assessmentToPublish.getTitle(), existing.getTitle());
         assertEquals(assessmentToPublish.getTags(), existing.getTags());
+        assertEquals(assessmentToPublish.getPhase(), AssessmentPhase.PUBLISHED);
     }
     
     @Test

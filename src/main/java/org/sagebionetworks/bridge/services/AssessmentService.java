@@ -27,6 +27,8 @@ import static org.sagebionetworks.bridge.models.ResourceList.INCLUDE_DELETED;
 import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
 import static org.sagebionetworks.bridge.models.ResourceList.TAGS;
+import static org.sagebionetworks.bridge.models.assessments.AssessmentPhase.ALLOWED_PHASE_TRANSITIONS;
+import static org.sagebionetworks.bridge.models.assessments.AssessmentPhase.PUBLISHED;
 import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableSet;
 
 import java.util.HashMap;
@@ -40,6 +42,8 @@ import com.google.common.collect.ImmutableSet;
 
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
+import org.sagebionetworks.bridge.models.assessments.AssessmentPhase;
+import org.sagebionetworks.bridge.models.studies.StudyPhase;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -198,6 +202,11 @@ public class AssessmentService {
         }
         AssessmentValidator validator = new AssessmentValidator(appId, organizationService);
         Validate.entityThrowingException(validator, assessment);
+        Set<AssessmentPhase> allowedTargetPhases = ALLOWED_PHASE_TRANSITIONS.get(existing.getPhase());
+        if (assessment.getPhase() != existing.getPhase() && !allowedTargetPhases.contains(assessment.getPhase())) {
+            throw new BadRequestException("Assessment cannot transition from " +
+                    existing.getPhase().label() + " to " + assessment.getPhase().label() + ".");
+        }
 
         return dao.updateAssessment(appId, assessment);        
     }
@@ -316,6 +325,7 @@ public class AssessmentService {
         assessmentToPublish.setOriginGuid(null);
         assessmentToPublish.setOwnerId(sharedOwnerId);
         assessmentToPublish.setVersion(0L);
+        assessmentToPublish.setPhase(PUBLISHED);
         
         original.setOriginGuid(assessmentToPublish.getGuid());
         
