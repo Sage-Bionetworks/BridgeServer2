@@ -412,6 +412,9 @@ public class AssessmentService {
         assessment.setModifiedOn(timestamp);
         assessment.setDeleted(false);
         assessment.setOriginGuid(null);
+        if (assessment.getPhase() == null) {
+            assessment.setPhase(AssessmentPhase.DRAFT);
+        }
         sanitizeAssessment(assessment);
 
         String osName = assessment.getOsName();
