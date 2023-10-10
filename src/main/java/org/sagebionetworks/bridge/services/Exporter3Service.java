@@ -647,6 +647,12 @@ public class Exporter3Service {
             isModified = true;
         }
 
+        // Enable upload tables (CSV generation) if it's disabled.
+        if (!ex3Config.isUploadTableEnabled()) {
+            ex3Config.setUploadTableEnabled(true);
+            isModified = true;
+        }
+
         return isModified;
     }
 
