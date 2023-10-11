@@ -179,6 +179,36 @@ public class AssessmentServiceTest extends Mockito {
         assertEquals(config.getModifiedOn(), CREATED_ON);
         assertNotNull(config.getConfig());
     }
+
+    @Test
+    public void createAssessmentNoPhase() {
+        when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, TEST_OWNER_ID))
+                .thenReturn(Optional.of(mockOrganization));
+        when(mockDao.getAssessmentRevisions(any(), any(), any(), anyInt(), anyInt(), anyBoolean()))
+                .thenReturn(EMPTY_LIST);
+
+        Assessment assessment = AssessmentTest.createAssessment();
+        assessment.setGuid(null);
+        assessment.setDeleted(true); // can't do this, it's reset
+        assessment.setPhase(null);
+
+        service.createAssessment(TEST_APP_ID, assessment);
+
+        verify(mockDao).createAssessment(eq(TEST_APP_ID), eq(assessment), configCaptor.capture());
+
+        assertEquals(assessment.getGuid(), GUID);
+        assertEquals(assessment.getOwnerId(), TEST_OWNER_ID);
+        // Same timestamp on create
+        assertEquals(assessment.getCreatedOn(), CREATED_ON);
+        assertEquals(assessment.getModifiedOn(), CREATED_ON);
+        assertFalse(assessment.isDeleted());
+        assertEquals(AssessmentPhase.DRAFT, assessment.getPhase());
+
+        AssessmentConfig config = configCaptor.getValue();
+        assertEquals(config.getCreatedOn(), CREATED_ON);
+        assertEquals(config.getModifiedOn(), CREATED_ON);
+        assertNotNull(config.getConfig());
+    }
     
     @Test
     public void createAssessmentAdjustsOsNameAlias() {
