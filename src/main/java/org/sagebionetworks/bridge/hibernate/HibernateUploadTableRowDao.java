@@ -55,22 +55,19 @@ public class HibernateUploadTableRowDao implements UploadTableRowDao {
         }
 
         // Filter by date range.
-        if (query.getStartDate() != null) {
+        if (query.getStartTime() != null) {
             builder.append("AND createdOn >= :startDate");
-            builder.getParameters().put("startDate", query.getStartDate().getMillis());
+            builder.getParameters().put("startDate", query.getStartTime());
         }
-        if (query.getEndDate() != null) {
+        if (query.getEndTime() != null) {
             builder.append("AND createdOn < :endDate");
-            builder.getParameters().put("endDate", query.getEndDate().getMillis());
+            builder.getParameters().put("endDate", query.getEndTime());
         }
 
         // Include test data?
         if (!query.getIncludeTestData()) {
             builder.append("AND testData = 0");
         }
-
-        // Order by createdOn.
-        builder.append("ORDER BY createdOn ASC");
 
         // Get total.
         int total = hibernateHelper.queryCount("SELECT COUNT(DISTINCT recordId) " + builder.getQuery(),
@@ -93,12 +90,10 @@ public class HibernateUploadTableRowDao implements UploadTableRowDao {
         // Because of Java generic typing issues, we need to convert this to a non-Hibernate UploadTableRow.
         List<UploadTableRow> list = new ArrayList<>(hibernateList);
         return new PagedResourceList<>(list, total)
-                .withRequestParam("appId", query.getAppId())
-                .withRequestParam("studyId", query.getStudyId())
                 .withRequestParam("assessmentId", query.getAssessmentId())
                 .withRequestParam("assessmentRevision", query.getAssessmentRevision())
-                .withRequestParam("startDate", query.getStartDate())
-                .withRequestParam("endDate", query.getEndDate())
+                .withRequestParam("startTime", query.getStartTime())
+                .withRequestParam("endTime", query.getEndTime())
                 .withRequestParam("includeTestData", query.getIncludeTestData())
                 .withRequestParam("start", start)
                 .withRequestParam("pageSize", pageSize);

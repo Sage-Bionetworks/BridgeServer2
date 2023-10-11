@@ -8,8 +8,8 @@ public class UploadTableRowQuery {
     private String studyId;
     private String assessmentId;
     private Integer assessmentRevision;
-    private DateTime startDate;
-    private DateTime endDate;
+    private DateTime startTime;
+    private DateTime endTime;
     private boolean includeTestData;
     private Integer start;
     private Integer pageSize;
@@ -56,22 +56,22 @@ public class UploadTableRowQuery {
         this.assessmentRevision = assessmentRevision;
     }
 
-    /** Earliest date for rows to query for, inclusive. */
-    public DateTime getStartDate() {
-        return startDate;
+    /** Earliest date-time for rows to query for, inclusive. */
+    public DateTime getStartTime() {
+        return startTime;
     }
 
-    public void setStartDate(DateTime startDate) {
-        this.startDate = startDate;
+    public void setStartTime(DateTime startTime) {
+        this.startTime = startTime;
     }
 
-    /** Latest date for rows to query for, exclusive. */
-    public DateTime getEndDate() {
-        return endDate;
+    /** Latest date-time for rows to query for, exclusive. */
+    public DateTime getEndTime() {
+        return endTime;
     }
 
-    public void setEndDate(DateTime endDate) {
-        this.endDate = endDate;
+    public void setEndTime(DateTime endTime) {
+        this.endTime = endTime;
     }
 
     /** Whether to include test data. If not specified, defaults to false. */

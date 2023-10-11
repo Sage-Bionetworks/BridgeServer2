@@ -2,13 +2,16 @@ package org.sagebionetworks.bridge.upload;
 
 import java.util.Map;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.joda.time.DateTime;
 
+import org.sagebionetworks.bridge.hibernate.HibernateUploadTableRow;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
 /** Represents the tabular format of an upload. This is the intermediate state before CSV generation. */
 @BridgeTypeName("UploadTableRow")
+@JsonDeserialize(as = HibernateUploadTableRow.class)
 public interface UploadTableRow extends BridgeEntity {
     /**
      * App ID that this table row is part of. This never needs to be specified as part of the request and is
@@ -64,7 +67,7 @@ public interface UploadTableRow extends BridgeEntity {
     /**
      * Metadata for this upload. This is a map of key-value pairs, where the key is the column name and the value is
      * the string representation of the column value. This includes common metadata such as clientInfo, startDate, and
-     * endDate.
+     * endDate. Cannot be larger than 64kb.
      *
      * This will never be null. If there is no metadata, this will be an empty map.
      */
@@ -74,7 +77,7 @@ public interface UploadTableRow extends BridgeEntity {
     /**
      * Data for this upload. This is a map of key-value pairs, where the key is the column name and the value is the
      * string representation of the column value. This includes data specific to the assessment, such as answers to
-     * survey questions and scores.
+     * survey questions and scores. Cannot be larger than 64kb.
      *
      * This will never be null. If there is no data, this will be an empty map.
      */
