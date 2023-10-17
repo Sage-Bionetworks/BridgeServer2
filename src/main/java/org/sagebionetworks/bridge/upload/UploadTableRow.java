@@ -13,6 +13,11 @@ import org.sagebionetworks.bridge.models.BridgeEntity;
 @BridgeTypeName("UploadTableRow")
 @JsonDeserialize(as = HibernateUploadTableRow.class)
 public interface UploadTableRow extends BridgeEntity {
+    /** Factory method for creating a new UploadTableRow. */
+    static UploadTableRow create() {
+        return new HibernateUploadTableRow();
+    }
+
     /**
      * App ID that this table row is part of. This never needs to be specified as part of the request and is
      * automatically determined by the server.
@@ -34,13 +39,9 @@ public interface UploadTableRow extends BridgeEntity {
     String getRecordId();
     void setRecordId(String recordId);
 
-    /** Assessment ID that this upload represents. This is required. */
-    String getAssessmentId();
-    void setAssessmentId(String assessmentId);
-
-    /** Assessment revision that this upload represents. This is required. */
-    int getAssessmentRevision();
-    void setAssessmentRevision(int assessmentRevision);
+    /** Assessment that this upload represents. This is required. */
+    String getAssessmentGuid();
+    void setAssessmentGuid(String assessmentGuid);
 
     /**
      * When this upload was created. This is determined by the assessment-specific "summarize" method in the Worker.

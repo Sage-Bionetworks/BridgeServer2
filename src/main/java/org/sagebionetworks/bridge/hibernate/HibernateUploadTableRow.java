@@ -22,8 +22,7 @@ public class HibernateUploadTableRow implements UploadTableRow {
     private String appId;
     private String studyId;
     private String recordId;
-    private String assessmentId;
-    private int assessmentRevision;
+    private String assessmentGuid;
     private DateTime createdOn;
     private boolean testData;
     private String healthCode;
@@ -65,23 +64,13 @@ public class HibernateUploadTableRow implements UploadTableRow {
     }
 
     @Override
-    public String getAssessmentId() {
-        return assessmentId;
+    public String getAssessmentGuid() {
+        return assessmentGuid;
     }
 
     @Override
-    public void setAssessmentId(String assessmentId) {
-        this.assessmentId = assessmentId;
-    }
-
-    @Override
-    public int getAssessmentRevision() {
-        return assessmentRevision;
-    }
-
-    @Override
-    public void setAssessmentRevision(int assessmentRevision) {
-        this.assessmentRevision = assessmentRevision;
+    public void setAssessmentGuid(String assessmentGuid) {
+        this.assessmentGuid = assessmentGuid;
     }
 
     @Convert(converter = DateTimeToLongAttributeConverter.class)

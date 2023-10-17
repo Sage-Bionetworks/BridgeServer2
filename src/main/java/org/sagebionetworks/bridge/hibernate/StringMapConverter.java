@@ -8,7 +8,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 /** Hibernate converter that serializes a string map to JSON for storage in SQL. */
 @Converter
 public class StringMapConverter extends BaseJsonAttributeConverter<Map<String, String>> {
-    private static final TypeReference<Map<String, String>> TYPE_REFERENCE = new TypeReference<Map<String, String>>() {};
+    static final TypeReference<Map<String, String>> TYPE_REFERENCE = new TypeReference<Map<String, String>>() {};
 
     @Override
     public String convertToDatabaseColumn(Map<String, String> map) {

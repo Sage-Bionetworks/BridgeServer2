@@ -11,10 +11,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
-import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.UploadTableService;
 import org.sagebionetworks.bridge.upload.UploadTableRow;
 import org.sagebionetworks.bridge.upload.UploadTableRowQuery;
@@ -23,16 +21,10 @@ import org.sagebionetworks.bridge.upload.UploadTableRowQuery;
 @CrossOrigin
 @RestController
 public class UploadTableController extends BaseController {
-    static final StatusMessage CREATED_MSG = new StatusMessage("Upload table row created.");
-    static final StatusMessage DELETED_MSG = new StatusMessage("Upload table row deleted.");
+    private static final StatusMessage CREATED_MSG = new StatusMessage("Upload table row created.");
+    private static final StatusMessage DELETED_MSG = new StatusMessage("Upload table row deleted.");
 
-    private StudyService studyService;
     private UploadTableService uploadTableService;
-
-    @Autowired
-    public final void setStudyService(StudyService studyService) {
-        this.studyService = studyService;
-    }
 
     @Autowired
     public final void setUploadTableService(UploadTableService uploadTableService) {
@@ -44,10 +36,6 @@ public class UploadTableController extends BaseController {
     public StatusMessage deleteUploadTableRowForSuperadmin(@PathVariable String appId, @PathVariable String studyId,
             @PathVariable String recordId) {
         getAuthenticatedSession(SUPERADMIN);
-
-        // Verify study exists.
-        studyService.getStudy(appId, studyId, true);
-
         uploadTableService.deleteUploadTableRow(appId, studyId, recordId);
         return DELETED_MSG;
     }
@@ -57,12 +45,7 @@ public class UploadTableController extends BaseController {
     public UploadTableRow getUploadTableRowForSuperadmin(@PathVariable String appId, @PathVariable String studyId,
             @PathVariable String recordId) {
         getAuthenticatedSession(SUPERADMIN);
-
-        // Verify study exists.
-        studyService.getStudy(appId, studyId, true);
-
-        return uploadTableService.getUploadTableRow(appId, studyId, recordId).orElseThrow(
-                () -> new EntityNotFoundException(UploadTableRow.class));
+        return uploadTableService.getUploadTableRow(appId, studyId, recordId);
     }
 
     /** Query for upload table rows. This is used by the worker to generate a CSV. */
@@ -70,10 +53,6 @@ public class UploadTableController extends BaseController {
     public PagedResourceList<UploadTableRow> queryUploadTableRowsForWorker(@PathVariable String appId,
             @PathVariable String studyId) {
         getAuthenticatedSession(WORKER);
-
-        // Verify study exists.
-        studyService.getStudy(appId, studyId, true);
-
         UploadTableRowQuery query = parseJson(UploadTableRowQuery.class);
         return uploadTableService.queryUploadTableRows(appId, studyId, query);
     }
@@ -85,10 +64,6 @@ public class UploadTableController extends BaseController {
     @PostMapping("/v1/apps/{appId}/studies/{studyId}/uploadtable")
     public StatusMessage saveUploadTableRowForWorker(@PathVariable String appId, @PathVariable String studyId) {
         getAuthenticatedSession(WORKER);
-
-        // Verify study exists.
-        studyService.getStudy(appId, studyId, true);
-
         UploadTableRow row = parseJson(UploadTableRow.class);
         uploadTableService.saveUploadTableRow(appId, studyId, row);
         return CREATED_MSG;

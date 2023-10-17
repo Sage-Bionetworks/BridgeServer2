@@ -2,12 +2,13 @@ package org.sagebionetworks.bridge.upload;
 
 import org.joda.time.DateTime;
 
+import org.sagebionetworks.bridge.models.BridgeEntity;
+
 /** Represents a query for upload table rows. */
-public class UploadTableRowQuery {
+public class UploadTableRowQuery implements BridgeEntity {
     private String appId;
     private String studyId;
-    private String assessmentId;
-    private Integer assessmentRevision;
+    private String assessmentGuid;
     private DateTime startTime;
     private DateTime endTime;
     private boolean includeTestData;
@@ -38,22 +39,13 @@ public class UploadTableRowQuery {
         this.studyId = studyId;
     }
 
-    /** Assessment ID to query for. If specified, so must assessment revision. */
-    public String getAssessmentId() {
-        return assessmentId;
+    /** Assessment to query for. */
+    public String getAssessmentGuid() {
+        return assessmentGuid;
     }
 
-    public void setAssessmentId(String assessmentId) {
-        this.assessmentId = assessmentId;
-    }
-
-    /** Assessment revision to query for. If specified, so must assessment ID. */
-    public Integer getAssessmentRevision() {
-        return assessmentRevision;
-    }
-
-    public void setAssessmentRevision(Integer assessmentRevision) {
-        this.assessmentRevision = assessmentRevision;
+    public void setAssessmentGuid(String assessmentGuid) {
+        this.assessmentGuid = assessmentGuid;
     }
 
     /** Earliest date-time for rows to query for, inclusive. */

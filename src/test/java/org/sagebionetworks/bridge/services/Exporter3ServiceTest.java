@@ -630,6 +630,7 @@ public class Exporter3ServiceTest {
         assertEquals(ex3Config.getProjectId(), PROJECT_ID);
         assertEquals(ex3Config.getRawDataFolderId(), RAW_FOLDER_ID);
         assertEquals(ex3Config.getStorageLocationId().longValue(), STORAGE_LOCATION_ID);
+        assertTrue(ex3Config.isUploadTableEnabled());
 
         // Verify created team.
         ArgumentCaptor<Team> teamToCreateCaptor = ArgumentCaptor.forClass(Team.class);
@@ -712,6 +713,7 @@ public class Exporter3ServiceTest {
         ex3Config.setProjectId(PROJECT_ID);
         ex3Config.setRawDataFolderId(RAW_FOLDER_ID);
         ex3Config.setStorageLocationId(STORAGE_LOCATION_ID);
+        ex3Config.setUploadTableEnabled(true);
         return ex3Config;
     }
 

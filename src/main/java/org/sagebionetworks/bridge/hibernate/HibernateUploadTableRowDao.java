@@ -39,19 +39,17 @@ public class HibernateUploadTableRowDao implements UploadTableRowDao {
     @Override
     public PagedResourceList<UploadTableRow> queryUploadTableRows(UploadTableRowQuery query) {
         QueryBuilder builder = new QueryBuilder();
-        builder.append("from HibernateUploadTableRow");
+        builder.append("FROM HibernateUploadTableRow");
 
         // appId and studyId are always required. (This is validated in the service.)
         builder.append("WHERE appId = :appId AND studyId = :studyId");
         builder.getParameters().put("appId", query.getAppId());
         builder.getParameters().put("studyId", query.getStudyId());
 
-        // Filter by assessment. If assessment ID is specified, so must assessment revision. (This is validated in the
-        // service.)
-        if (query.getAssessmentId() != null) {
-            builder.append("AND assessmentId = :assessmentId AND assessmentRevision = :assessmentRevision");
-            builder.getParameters().put("assessmentId", query.getAssessmentId());
-            builder.getParameters().put("assessmentRevision", query.getAssessmentRevision());
+        // Filter by assessment.
+        if (query.getAssessmentGuid() != null) {
+            builder.append("AND assessmentGuid = :assessmentGuid");
+            builder.getParameters().put("assessmentGuid", query.getAssessmentGuid());
         }
 
         // Filter by date range.
@@ -90,8 +88,7 @@ public class HibernateUploadTableRowDao implements UploadTableRowDao {
         // Because of Java generic typing issues, we need to convert this to a non-Hibernate UploadTableRow.
         List<UploadTableRow> list = new ArrayList<>(hibernateList);
         return new PagedResourceList<>(list, total)
-                .withRequestParam("assessmentId", query.getAssessmentId())
-                .withRequestParam("assessmentRevision", query.getAssessmentRevision())
+                .withRequestParam("assessmentGuid", query.getAssessmentGuid())
                 .withRequestParam("startTime", query.getStartTime())
                 .withRequestParam("endTime", query.getEndTime())
                 .withRequestParam("includeTestData", query.getIncludeTestData())

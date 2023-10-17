@@ -1109,8 +1109,7 @@ CREATE TABLE IF NOT EXISTS `UploadTableRows` (
     `appId` varchar(60) NOT NULL,
     `studyId` varchar(60) NOT NULL,
     `recordId` char(24) NOT NULL,
-    `assessmentId` varchar(255) NOT NULL,
-    `assessmentRevision` int(10) unsigned NOT NULL,
+    `assessmentGuid` char(24) NOT NULL,
     `createdOn` bigint(20) NOT NULL,
     `testData` boolean NOT NULL DEFAULT FALSE,
     `healthCode` char(24) NOT NULL,
@@ -1121,6 +1120,6 @@ CREATE TABLE IF NOT EXISTS `UploadTableRows` (
     CONSTRAINT `UploadTableRows-Study-Constraint` FOREIGN KEY (`studyId`, `appId`) REFERENCES `Substudies` (`id`, `studyId`) ON DELETE CASCADE ON UPDATE CASCADE,
     INDEX (`appId`, `studyId`),
     INDEX (`appId`, `studyId`, `createdOn`),
-    INDEX (`appId`, `studyId`, `assessmentId`, `assessmentRevision`),
-    INDEX (`appId`, `studyId`, `assessmentId`, `assessmentRevision`, `createdOn`)
+    INDEX (`appId`, `studyId`, `assessmentGuid`),
+    INDEX (`appId`, `studyId`, `assessmentGuid`, `createdOn`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
