@@ -1102,3 +1102,24 @@ ADD COLUMN `postProcessingStatus` varchar(255) DEFAULT NULL;
 -- changeset bridge:81
 ALTER TABLE `Assessments`
 ADD COLUMN `phase` enum('DRAFT', 'REVIEW', 'PUBLISHED') DEFAULT 'DRAFT';
+
+-- changeset bridge:82
+
+CREATE TABLE IF NOT EXISTS `UploadTableRows` (
+    `appId` varchar(60) NOT NULL,
+    `studyId` varchar(60) NOT NULL,
+    `recordId` char(24) NOT NULL,
+    `assessmentGuid` char(24) NOT NULL,
+    `createdOn` bigint(20) NOT NULL,
+    `testData` boolean NOT NULL DEFAULT FALSE,
+    `healthCode` char(24) NOT NULL,
+    `participantVersion` int(10) DEFAULT NULL,
+    `metadata` text NOT NULL,
+    `data` text NOT NULL,
+    PRIMARY KEY (`appId`, `studyId`, `recordId`),
+    CONSTRAINT `UploadTableRows-Study-Constraint` FOREIGN KEY (`studyId`, `appId`) REFERENCES `Substudies` (`id`, `studyId`) ON DELETE CASCADE ON UPDATE CASCADE,
+    INDEX (`appId`, `studyId`),
+    INDEX (`appId`, `studyId`, `createdOn`),
+    INDEX (`appId`, `studyId`, `assessmentGuid`),
+    INDEX (`appId`, `studyId`, `assessmentGuid`, `createdOn`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;

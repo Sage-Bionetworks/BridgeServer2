@@ -13,6 +13,7 @@ public final class Exporter3Configuration {
     private String projectId;
     private String rawDataFolderId;
     private Long storageLocationId;
+    private boolean uploadTableEnabled;
     private String wikiPageId;
 
     /** Helper method that returns true if all configuration attributes are specified. */
@@ -113,6 +114,18 @@ public final class Exporter3Configuration {
         this.storageLocationId = storageLocationId;
     }
 
+    /**
+     * Whether or not to enable the upload table, which involves converting raw JSON uploads to tabular format, and to
+     * generate CSVs from this table. Defaults to false. Calling initExporter3 automatically flips this to true.
+     */
+    public boolean isUploadTableEnabled() {
+        return uploadTableEnabled;
+    }
+
+    public void setUploadTableEnabled(boolean uploadTableEnabled) {
+        this.uploadTableEnabled = uploadTableEnabled;
+    }
+
     public String getWikiPageId() {
         return wikiPageId;
     }
@@ -125,7 +138,7 @@ public final class Exporter3Configuration {
     public int hashCode() {
         return Objects.hash(createStudyNotificationTopicArn, dataAccessTeamId, exportNotificationTopicArn, participantVersionDemographicsTableId,
                 participantVersionDemographicsViewId, participantVersionTableId, projectId, rawDataFolderId,
-                storageLocationId, wikiPageId);
+                storageLocationId, uploadTableEnabled, wikiPageId);
     }
 
     @Override
@@ -145,6 +158,7 @@ public final class Exporter3Configuration {
                 && Objects.equals(participantVersionTableId, other.participantVersionTableId)
                 && Objects.equals(projectId, other.projectId) && Objects.equals(rawDataFolderId, other.rawDataFolderId)
                 && Objects.equals(storageLocationId, other.storageLocationId)
+                && Objects.equals(uploadTableEnabled, other.uploadTableEnabled)
                 && Objects.equals(wikiPageId, other.wikiPageId);
     }
 
@@ -155,6 +169,6 @@ public final class Exporter3Configuration {
                 + participantVersionDemographicsTableId + ", participantVersionDemographicsViewId="
                 + participantVersionDemographicsViewId + ", participantVersionTableId=" + participantVersionTableId
                 + ", projectId=" + projectId + ", rawDataFolderId=" + rawDataFolderId + ", storageLocationId="
-                + storageLocationId + ", wikiPageId=" + wikiPageId + "]";
+                + storageLocationId + ", uploadTableEnabled=" + uploadTableEnabled + ", wikiPageId=" + wikiPageId + "]";
     }
 }

@@ -83,10 +83,11 @@ public class Exporter3ConfigurationTest {
         config.setProjectId("test-project-id");
         config.setRawDataFolderId("test-folder-id");
         config.setStorageLocationId(2L);
+        config.setUploadTableEnabled(true);
 
         // Convert to JsonNode.
         JsonNode jsonNode = BridgeObjectMapper.get().convertValue(config, JsonNode.class);
-        assertEquals(jsonNode.size(), 11);
+        assertEquals(jsonNode.size(), 12);
         assertTrue(jsonNode.get("configured").booleanValue());
         assertEquals(jsonNode.get("createStudyNotificationTopicArn").textValue(), "arn:1111:test-topic");
         assertEquals(jsonNode.get("dataAccessTeamId").intValue(), 1);
@@ -97,6 +98,7 @@ public class Exporter3ConfigurationTest {
         assertEquals(jsonNode.get("projectId").textValue(), "test-project-id");
         assertEquals(jsonNode.get("rawDataFolderId").textValue(), "test-folder-id");
         assertEquals(jsonNode.get("storageLocationId").intValue(), 2);
+        assertTrue(jsonNode.get("uploadTableEnabled").booleanValue());
         assertEquals(jsonNode.get("type").textValue(), "Exporter3Configuration");
 
         // Convert back to POJO.
