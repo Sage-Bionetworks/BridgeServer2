@@ -152,7 +152,11 @@ public class UploadArchiveService {
         try {
             return encryptor.decrypt(source);
         } catch (CertificateEncodingException | CMSException | IOException | WrongEncryptionKeyException ex) {
-            throw new BridgeServiceException(ex);
+            if (ex instanceof WrongEncryptionKeyException && appId.equals("inv-arc")) {
+                return decrypt("arc", source);
+            } else {
+                throw new BridgeServiceException(ex);
+            }
         }
     }
 
