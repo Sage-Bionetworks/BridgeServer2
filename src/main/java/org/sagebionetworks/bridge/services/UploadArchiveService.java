@@ -152,7 +152,12 @@ public class UploadArchiveService {
         try {
             return encryptor.decrypt(source);
         } catch (CertificateEncodingException | CMSException | IOException | WrongEncryptionKeyException ex) {
-            throw new BridgeServiceException(ex);
+            // This is a workaround for DIAN-749, Android inv-arc app had wrong public key for encryption -nbrown 10/25/23
+            if (ex instanceof WrongEncryptionKeyException && appId.equals("inv-arc")) {
+                return decrypt("arc", source);
+            } else {
+                throw new BridgeServiceException(ex);
+            }
         }
     }
 
