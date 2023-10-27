@@ -12,7 +12,6 @@ import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 import java.io.File;
-import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -231,8 +230,14 @@ public class UploadHandlersEndToEndTest {
 
         // set up DecryptHandler - For ease of tests, this will just return the input verbatim.
         UploadArchiveService mockUploadArchiveService = mock(UploadArchiveService.class);
-        when(mockUploadArchiveService.decrypt(eq(TEST_APP_ID), any(InputStream.class)))
-                .thenAnswer(invocation -> invocation.getArgument(1));
+        doAnswer(invocation -> {
+            File encryptedFile = invocation.getArgument(1);
+            byte[] content = inMemoryFileHelper.getBytes(encryptedFile);
+
+            File decryptedFile = invocation.getArgument(2);
+            inMemoryFileHelper.writeBytes(decryptedFile, content);
+            return null;
+        }).when(mockUploadArchiveService).decrypt(eq(TEST_APP_ID), any(File.class), any(File.class));
 
         DecryptHandler decryptHandler = new DecryptHandler();
         decryptHandler.setFileHelper(inMemoryFileHelper);

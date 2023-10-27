@@ -1,23 +1,19 @@
 package org.sagebionetworks.bridge.upload;
 
+import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.testng.Assert.assertEquals;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertSame;
 
-import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.InputStream;
 
 import com.google.common.base.Charsets;
 
-import com.google.common.io.ByteStreams;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -31,6 +27,8 @@ import org.sagebionetworks.bridge.services.UploadArchiveService;
 
 public class DecryptHandlerTest {
     private static final byte[] DATA_FILE_CONTENT = "encrypted test data".getBytes(Charsets.UTF_8);
+    private static final String DECRYPTED_DATA_FILE_STRING = "decrypted test data";
+    private static final byte[] DECRYPTED_DATA_FILE_BYTES = DECRYPTED_DATA_FILE_STRING.getBytes(Charsets.UTF_8);
 
     private UploadValidationContext ctx;
     private File dataFile;
@@ -66,11 +64,11 @@ public class DecryptHandlerTest {
         ctx.setDataFile(dataFile);
 
         // mock UploadArchiveService
-        when(mockSvc.decrypt(eq(TEST_APP_ID), any(InputStream.class))).thenReturn(new ByteArrayInputStream(
-                "decrypted test data".getBytes(Charsets.UTF_8)));
-
-        // Don't actually buffer the input stream, as this breaks the test.
-        doAnswer(invocation -> invocation.getArgument(0)).when(handler).getBufferedInputStream(any());
+        doAnswer(invocation -> {
+            File decryptedFile = invocation.getArgument(2);
+            fileHelper.writeBytes(decryptedFile, DECRYPTED_DATA_FILE_BYTES);
+            return null;
+        }).when(mockSvc).decrypt(eq(TEST_APP_ID), same(dataFile), any(File.class));
     }
 
     @Test
@@ -81,13 +79,10 @@ public class DecryptHandlerTest {
         // execute and validate
         handler.handle(ctx);
         byte[] decryptedContent = fileHelper.getBytes(ctx.getDecryptedDataFile());
-        assertEquals(new String(decryptedContent, Charsets.UTF_8), "decrypted test data");
+        assertEquals(new String(decryptedContent, Charsets.UTF_8), DECRYPTED_DATA_FILE_STRING);
 
         // Verify the correct file data was passed into the decryptor.
-        ArgumentCaptor<InputStream> encryptedInputStreamCaptor = ArgumentCaptor.forClass(InputStream.class);
-        verify(mockSvc).decrypt(eq(TEST_APP_ID), encryptedInputStreamCaptor.capture());
-        InputStream encryptedInputStream = encryptedInputStreamCaptor.getValue();
-        assertEquals(ByteStreams.toByteArray(encryptedInputStream), DATA_FILE_CONTENT);
+        verify(mockSvc).decrypt(eq(TEST_APP_ID), same(dataFile), any(File.class));
     }
 
     @Test

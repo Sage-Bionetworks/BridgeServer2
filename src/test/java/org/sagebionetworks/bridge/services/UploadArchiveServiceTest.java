@@ -140,7 +140,7 @@ public class UploadArchiveServiceTest {
     }
 
     @Test(expectedExceptions = NullPointerException.class)
-    public void decryptStreamNullBytes() {
+    public void decryptStreamNullBytes() throws Exception {
         archiveService.decrypt(TEST_APP_ID, (InputStream) null);
     }
 
