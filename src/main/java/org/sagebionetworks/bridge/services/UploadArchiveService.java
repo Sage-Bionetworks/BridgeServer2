@@ -3,7 +3,12 @@ package org.sagebionetworks.bridge.services;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -130,16 +135,42 @@ public class UploadArchiveService {
         try (ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes);
              InputStream decryptedStream = decrypt(appId, byteArrayInputStream)) {
             return ByteStreams.toByteArray(decryptedStream);
-        } catch (IOException ex) {
+        } catch (CertificateEncodingException | CMSException | IOException | WrongEncryptionKeyException ex) {
             throw new BridgeServiceException(ex);
+        }
+    }
+
+    /** Decrypts the specified file "from" to the file specified in "to". */
+    public void decrypt(String appId, File from, File to) {
+        // Validate inputs.
+        checkNotNull(appId);
+        checkArgument(StringUtils.isNotBlank(appId));
+        checkNotNull(from);
+        checkNotNull(to);
+
+        // Decrypt.
+        try (InputStream fromStream = new BufferedInputStream(new FileInputStream(from));
+                InputStream decryptedStream = decrypt(appId, fromStream);
+                OutputStream toStream = new BufferedOutputStream(new FileOutputStream(to))) {
+            ByteStreams.copy(decryptedStream, toStream);
+        } catch (CertificateEncodingException | CMSException | IOException | WrongEncryptionKeyException ex) {
+            // This is a workaround for DIAN-749, Android inv-arc app had wrong public key for encryption -nbrown 10/25/23
+            if (ex instanceof WrongEncryptionKeyException && appId.equals("inv-arc")) {
+                decrypt("arc", from, to);
+            } else {
+                throw new BridgeServiceException(ex);
+            }
         }
     }
 
     /**
      * Decrypts the specified data stream, using the encryption materials for the specified app, and returns the a
      * stream of decrypted data. The caller is responsible for closing both streams.
+     *
+     * Package-scoped because this should only be called directly by unit tests.
      */
-    public InputStream decrypt(String appId, InputStream source) {
+    InputStream decrypt(String appId, InputStream source) throws CertificateEncodingException, CMSException,
+            IOException, WrongEncryptionKeyException {
         // validate
         checkNotNull(appId);
         checkArgument(StringUtils.isNotBlank(appId));
@@ -149,16 +180,7 @@ public class UploadArchiveService {
         CmsEncryptor encryptor = getEncryptorForApp(appId);
 
         // decrypt
-        try {
-            return encryptor.decrypt(source);
-        } catch (CertificateEncodingException | CMSException | IOException | WrongEncryptionKeyException ex) {
-            // This is a workaround for DIAN-749, Android inv-arc app had wrong public key for encryption -nbrown 10/25/23
-            if (ex instanceof WrongEncryptionKeyException && appId.equals("inv-arc")) {
-                return decrypt("arc", source);
-            } else {
-                throw new BridgeServiceException(ex);
-            }
-        }
+        return encryptor.decrypt(source);
     }
 
     /**
