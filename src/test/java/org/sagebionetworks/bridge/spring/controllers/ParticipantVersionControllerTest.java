@@ -4,12 +4,14 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertDelete;
 import static org.sagebionetworks.bridge.TestUtils.assertGet;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertSame;
+import static org.testng.Assert.fail;
 
 import java.util.List;
 import java.util.Optional;
@@ -66,6 +68,7 @@ public class ParticipantVersionControllerTest {
         assertCrossOrigin(ParticipantVersionController.class);
         assertDelete(ParticipantVersionController.class, "deleteParticipantVersionsForUser");
         assertGet(ParticipantVersionController.class, "getAllParticipantVersionsForUser");
+        assertGet(ParticipantVersionController.class, "getLatestParticipantVersion");
         assertGet(ParticipantVersionController.class, "getParticipantVersion");
     }
 
@@ -134,6 +137,58 @@ public class ParticipantVersionControllerTest {
         when(mockAccountService.getAccountHealthCode(TestConstants.TEST_APP_ID, TestConstants.TEST_USER_ID))
                 .thenReturn(Optional.empty());
         controller.getAllParticipantVersionsForUser(TestConstants.TEST_APP_ID, TestConstants.TEST_USER_ID);
+    }
+
+    @Test
+    public void getLatestParticipantVersion() {
+        // Mock dependencies.
+        when(mockAccountService.getAccountHealthCode(TestConstants.TEST_APP_ID, TestConstants.TEST_USER_ID))
+                .thenReturn(Optional.of(TestConstants.HEALTH_CODE));
+
+        ParticipantVersion participantVersion = ParticipantVersion.create();
+        when(mockParticipantVersionService.getLatestParticipantVersionForHealthCode(TestConstants.TEST_APP_ID,
+                TestConstants.HEALTH_CODE)).thenReturn(Optional.of(participantVersion));
+
+        // Execute and validate.
+        ParticipantVersion result = controller.getLatestParticipantVersion(TestConstants.TEST_APP_ID,
+                TestConstants.TEST_USER_ID);
+        assertSame(result, participantVersion);
+
+        verify(controller).getAuthenticatedSession(WORKER);
+        verify(mockParticipantVersionService).getLatestParticipantVersionForHealthCode(TestConstants.TEST_APP_ID,
+                TestConstants.HEALTH_CODE);
+    }
+
+    @Test
+    public void getLatestParticipantVersion_AccountNotFound() {
+        // Mock dependencies.
+        when(mockAccountService.getAccountHealthCode(TestConstants.TEST_APP_ID, TestConstants.TEST_USER_ID))
+                .thenReturn(Optional.empty());
+
+        // Execute - This throws.
+        try {
+            controller.getLatestParticipantVersion(TestConstants.TEST_APP_ID, TestConstants.TEST_USER_ID);
+            fail("expected exception");
+        } catch (EntityNotFoundException ex) {
+            assertEquals(ex.getMessage(), "StudyParticipant not found.");
+        }
+    }
+
+    @Test
+    public void getLatestParticipantVersion_ParticipantVersionNotFound() {
+        // Mock dependencies.
+        when(mockAccountService.getAccountHealthCode(TestConstants.TEST_APP_ID, TestConstants.TEST_USER_ID))
+                .thenReturn(Optional.of(TestConstants.HEALTH_CODE));
+        when(mockParticipantVersionService.getLatestParticipantVersionForHealthCode(TestConstants.TEST_APP_ID,
+                TestConstants.HEALTH_CODE)).thenReturn(Optional.empty());
+
+        // Execute - This throws.
+        try {
+            controller.getLatestParticipantVersion(TestConstants.TEST_APP_ID, TestConstants.TEST_USER_ID);
+            fail("expected exception");
+        } catch (EntityNotFoundException ex) {
+            assertEquals(ex.getMessage(), "ParticipantVersion not found.");
+        }
     }
 
     @Test

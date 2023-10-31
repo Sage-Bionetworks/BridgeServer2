@@ -97,12 +97,17 @@ public class AssessmentController extends BaseController {
         return service.getAssessmentByGuid(appId, ownerId, guid);
     }
 
+    /** Worker API to get a local assessment from any app. */
     @GetMapping("/v1/apps/{appId}/assessments/{guid}")
     public Assessment getAssessmentByGuidForWorker(@PathVariable String appId, @PathVariable String guid) {
         getAuthenticatedSession(WORKER);
+
+        // To be consistent with other APIs, you can't get shared assessments from this API. However, the shared
+        // assessment API is a public API, so the worker can get that anyway.
         if (SHARED_APP_ID.equals(appId)) {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
         }
+
         return service.getAssessmentByGuid(appId, null, guid);
     }
 
