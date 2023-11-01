@@ -17,6 +17,7 @@ import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.fail;
 
+import java.io.IOException;
 import java.net.URL;
 import java.util.EnumSet;
 import java.util.Optional;
@@ -61,11 +62,14 @@ import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.HealthDataService;
 import org.sagebionetworks.bridge.services.RequestInfoService;
 import org.sagebionetworks.bridge.services.UploadService;
+import org.sagebionetworks.bridge.services.UploadServiceTest;
 
 public class UploadControllerTest extends Mockito {
     private static final String RECORD_ID = "record-id";
     private static final String UPLOAD_ID = "upload-id";
     private static final String VALIDATION_ERROR_MESSAGE = "There was a validation error";
+    private static final String UPLOAD_ID_1 = "upload1";
+    private static final String UPLOAD_ID_2 = "upload2";
 
     @Spy
     @InjectMocks
@@ -223,6 +227,28 @@ public class UploadControllerTest extends Mockito {
     }
 
     @Test
+    public void redriveUploadsEmptyFile() throws IOException {
+        // Mock empty upload file in fileBytes
+        byte[] mockEmptyUploadFile = "".getBytes();
+
+        // execute and validate
+        String result = controller.redriveUploads(mockEmptyUploadFile);
+        verify(mockUploadService, never()).redriveUpload(mockEmptyUploadFile);
+        assertEquals("Please provide a non-empty file for upload redrive.", result);
+    }
+
+    @Test
+    public void redriveUploadsNonEmptyFile() throws IOException {
+        // Mock upload file in fileBytes
+        byte[] mockUploadFile = (UPLOAD_ID_1 + "\n" + UPLOAD_ID_2 + "\n").getBytes();
+
+        // execute and validate
+        String result = controller.redriveUploads(mockUploadFile);
+        verify(mockUploadService).redriveUpload(mockUploadFile);
+        assertEquals("Redrive uploads attempted.", result);
+    }
+
+    @Test
     public void uploadCompleteAcceptsConsentedUser() throws Exception {
         // setup controller
         doReturn(mockConsentedUserSession).when(controller).getAuthenticatedSession();
@@ -241,7 +267,7 @@ public class UploadControllerTest extends Mockito {
         verify(mockUploadService).getUploadValidationStatus(UPLOAD_ID);
         verify(mockUploadService, never()).pollUploadValidationStatusUntilComplete(any());
     }
-    
+
     @Test
     public void differentUserInSameAppCannotCompleteUpload() throws Exception {
         // setup controller

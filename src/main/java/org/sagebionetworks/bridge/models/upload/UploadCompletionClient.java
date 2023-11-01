@@ -14,5 +14,6 @@ public enum UploadCompletionClient {
      * Upload has been completed by a worker process that listens for the addition 
      * of upload files to the file upload bucket on S3.
      */
-    S3_WORKER
+    S3_WORKER,
+    REDRIVE
 }

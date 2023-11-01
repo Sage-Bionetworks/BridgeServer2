@@ -7,6 +7,7 @@ import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
+import java.io.IOException;
 import java.util.EnumSet;
 import java.util.Optional;
 
@@ -18,8 +19,11 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.dao.HealthCodeDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -141,7 +145,7 @@ public class UploadController extends BaseController {
             if (appId == null) {
                 appId = healthCodeDao.getAppId(upload.getHealthCode());
             }
-            uploadCompletionClient = UploadCompletionClient.S3_WORKER;
+            uploadCompletionClient = redrive? UploadCompletionClient.REDRIVE : UploadCompletionClient.S3_WORKER;
         } else {
             // Or, the consented user that originally made the upload request. Check that health codes match.
             // Do not need to look up the app.
@@ -166,6 +170,15 @@ public class UploadController extends BaseController {
 
         // Upload validation status may contain the health data record. Use the filter to filter out health code.
         return HealthDataRecord.PUBLIC_RECORD_WRITER.writeValueAsString(validationStatus);
+    }
+
+    @PostMapping("/v3/uploads/redrive")
+    public String redriveUploads(@RequestBody byte[] fileBytes) throws IOException {
+        if (fileBytes != null && fileBytes.length != 0) {
+            uploadService.redriveUpload(fileBytes);
+            return "Redrive uploads attempted.";
+        }
+        return "Please provide a non-empty file for upload redrive.";
     }
     
     @GetMapping("/v3/uploads/{uploadId}")
