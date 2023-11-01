@@ -7,6 +7,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.SHARED_ASSESSMENTS_ERRO
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
+import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.CUSTOMIZATION_FIELDS;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
@@ -104,6 +105,7 @@ public class AssessmentControllerTest extends Mockito {
         assertGet(AssessmentController.class, "getAssessments");
         assertCreate(AssessmentController.class, "createAssessment");
         assertGet(AssessmentController.class, "getAssessmentByGuid");
+        assertGet(AssessmentController.class, "getAssessmentByGuidForWorker");
         assertPost(AssessmentController.class, "updateAssessmentByGuid");
         assertGet(AssessmentController.class, "getAssessmentRevisionsByGuid");
         assertCreate(AssessmentController.class, "createAssessmentRevision");
@@ -264,7 +266,29 @@ public class AssessmentControllerTest extends Mockito {
         
         controller.getAssessmentByGuid(GUID);
     }
-    
+
+    @Test
+    public void getAssessmentByGuidForWorker() {
+        // Set up mocks.
+        doReturn(session).when(controller).getAuthenticatedSession(WORKER);
+
+        Assessment assessment = AssessmentTest.createAssessment();
+        when(mockService.getAssessmentByGuid(TEST_APP_ID, null, GUID)).thenReturn(assessment);
+
+        // Execute and verify.
+        Assessment result = controller.getAssessmentByGuidForWorker(TEST_APP_ID, GUID);
+        assertSame(result, assessment);
+
+        verify(controller).getAuthenticatedSession(WORKER);
+        verify(mockService).getAssessmentByGuid(TEST_APP_ID, null, GUID);
+    }
+
+    @Test(expectedExceptions = UnauthorizedException.class, expectedExceptionsMessageRegExp = SHARED_ASSESSMENTS_ERROR)
+    public void getAssessmentByGuidForWorker_CantGetSharedAssessment() {
+        doReturn(session).when(controller).getAuthenticatedSession(WORKER);
+        controller.getAssessmentByGuidForWorker(SHARED_APP_ID, GUID);
+    }
+
     @Test
     public void getAssessmentById() {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);

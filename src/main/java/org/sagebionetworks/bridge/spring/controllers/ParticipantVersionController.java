@@ -67,6 +67,18 @@ public class ParticipantVersionController extends BaseController {
         return new ResourceList<>(participantVersionList);
     }
 
+    /** Retrieves the latest participant version. */
+    @GetMapping(path="/v1/apps/{appId}/participants/{userIdToken}/versions/latest")
+    public ParticipantVersion getLatestParticipantVersion(@PathVariable String appId,
+            @PathVariable String userIdToken) {
+        getAuthenticatedSession(WORKER);
+
+        String healthCode = accountService.getAccountHealthCode(appId, userIdToken).orElseThrow(
+                () -> new EntityNotFoundException(StudyParticipant.class));
+        return participantVersionService.getLatestParticipantVersionForHealthCode(appId, healthCode).orElseThrow(
+                () -> new EntityNotFoundException(ParticipantVersion.class));
+    }
+
     /** Retrieves the specified participant version. */
     @GetMapping(path="/v1/apps/{appId}/participants/{userIdToken}/versions/{version}")
     public ParticipantVersion getParticipantVersion(@PathVariable String appId, @PathVariable String userIdToken,

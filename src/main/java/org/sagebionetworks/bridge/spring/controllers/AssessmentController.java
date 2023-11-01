@@ -7,6 +7,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
+import static org.sagebionetworks.bridge.Roles.WORKER;
 
 import java.util.Set;
 
@@ -95,7 +96,21 @@ public class AssessmentController extends BaseController {
         }
         return service.getAssessmentByGuid(appId, ownerId, guid);
     }
-    
+
+    /** Worker API to get a local assessment from any app. */
+    @GetMapping("/v1/apps/{appId}/assessments/{guid}")
+    public Assessment getAssessmentByGuidForWorker(@PathVariable String appId, @PathVariable String guid) {
+        getAuthenticatedSession(WORKER);
+
+        // To be consistent with other APIs, you can't get shared assessments from this API. However, the shared
+        // assessment API is a public API, so the worker can get that anyway.
+        if (SHARED_APP_ID.equals(appId)) {
+            throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
+        }
+
+        return service.getAssessmentByGuid(appId, null, guid);
+    }
+
     @PostMapping("/v1/assessments/{guid}")
     public Assessment updateAssessmentByGuid(@PathVariable String guid) {
         UserSession session = getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
