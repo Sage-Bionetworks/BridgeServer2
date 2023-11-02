@@ -16,6 +16,8 @@ import static org.sagebionetworks.bridge.BridgeUtils.COMMA_SPACE_JOINER;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -617,11 +619,19 @@ public class UploadService {
         String s3Key = REDRIVE_UPLOAD_S3_KEY_PREFIX + currentYear + "-" + currentMonth;
 
         // Upload file to S3 bucket
-        InputStream inputStream = new ByteArrayInputStream(fileBytes);
-        ObjectMetadata metadata = new ObjectMetadata();
-        metadata.setContentType(URLConnection.guessContentTypeFromStream(inputStream));
+        File tempFile = File.createTempFile("temp", ".tmp");
+        try (FileOutputStream fos = new FileOutputStream(tempFile)) {
+            fos.write(fileBytes);
+        }
+        FileInputStream fis = new FileInputStream(tempFile);
+        fis.close();
+        tempFile.delete();
 
-        PutObjectRequest request = new PutObjectRequest(CONFIG_KEY_BACKFILL_BUCKET, s3Key, inputStream, metadata);
+        ObjectMetadata metadata = new ObjectMetadata();
+        metadata.setContentType(URLConnection.guessContentTypeFromStream(fis));
+        metadata.setContentLength(fis.available());
+
+        PutObjectRequest request = new PutObjectRequest(CONFIG_KEY_BACKFILL_BUCKET, s3Key, fis, metadata);
         s3Client.putObject(request);
         // write Json message to sqs
         // 1. Create request.
