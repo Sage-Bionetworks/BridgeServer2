@@ -7,8 +7,8 @@ import org.sagebionetworks.bridge.hibernate.HibernateUploadTableJob;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
-/** Represents a worker job to generate the CSV for uploads for a study. */
-@BridgeTypeName("UploadTableRow")
+/** Represents a worker job to generate a zip file with CSVs for uploads for a study. */
+@BridgeTypeName("UploadTableJob")
 @JsonDeserialize(as = HibernateUploadTableJob.class)
 public interface UploadTableJob extends BridgeEntity {
     /** Status of the CSV generation job. */
@@ -48,7 +48,7 @@ public interface UploadTableJob extends BridgeEntity {
     Status getStatus();
     void setStatus(Status status);
 
-    /** S3 filename for the generated CSV. May be null if the job is in progress or failed. */
+    /** S3 filename for the zip file with the CSVs. May be null if the job is in progress or failed. */
     String getS3Key();
     void setS3Key(String s3Key);
 }

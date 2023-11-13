@@ -276,11 +276,6 @@ public class AuthUtils {
             .canAccessStudy().hasAnyRole(STUDY_DESIGNER, STUDY_COORDINATOR).or()
             .hasAnyRole(DEVELOPER, RESEARCHER, WORKER, ADMIN);
 
-    /** Can the caller request and download upload tables? */
-    public static final AuthEvaluator CAN_ACCESS_UPLOAD_TABLES = new AuthEvaluator()
-            .canAccessStudy().hasAnyRole(STUDY_DESIGNER, STUDY_COORDINATOR).or()
-            .hasAnyRole(DEVELOPER, RESEARCHER);
-
     /**
      * Does the caller have the required role? Note that a few roles pass for other roles.
      */

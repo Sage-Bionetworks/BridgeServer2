@@ -59,7 +59,7 @@ public class UploadTableJobResult implements BridgeEntity {
         this.status = status;
     }
 
-    /** S3 pre-signed URL for the generated CSV. */
+    /** S3 pre-signed URL for the zip file with the generated CSVs. */
     public String getUrl() {
         return url;
     }

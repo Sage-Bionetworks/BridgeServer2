@@ -38,7 +38,7 @@ public class HibernateUploadTableJobDao implements UploadTableJobDao {
         builder.getParameters().put("studyId", studyId);
 
         // Get total.
-        int total = hibernateHelper.queryCount("SELECT COUNT(DISTINCT jobId) " + builder.getQuery(),
+        int total = hibernateHelper.queryCount("SELECT COUNT(DISTINCT jobGuid) " + builder.getQuery(),
                 builder.getParameters());
 
         // Query.

@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
-import static org.sagebionetworks.bridge.AuthUtils.CAN_ACCESS_UPLOAD_TABLES;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_UPLOADS;
 
 import java.util.List;
 
@@ -12,6 +12,7 @@ import com.amazonaws.services.sqs.model.SendMessageResult;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,10 +46,11 @@ import org.sagebionetworks.bridge.validators.Validate;
 public class UploadTableService {
     private static final Logger LOG = LoggerFactory.getLogger(Exporter3Service.class);
 
+    // Package-scoped for unit tests.
     static final String CONFIG_KEY_RAW_HEALTH_DATA_BUCKET = "health.data.bucket.raw";
-    private static final int DEDUPE_WINDOW_MINUTES = 5;
-    private static final int EXPIRATION_IN_DAYS = 7;
-    private static final String WORKER_NAME_UPLOAD_CSV = "UploadCsvWorker";
+    static final int DEDUPE_WINDOW_MINUTES = 5;
+    static final int EXPIRATION_IN_DAYS = 7;
+    static final String WORKER_NAME_UPLOAD_CSV = "UploadCsvWorker";
 
     private BridgeConfig config;
     private String rawHealthDataBucket;
@@ -62,7 +64,7 @@ public class UploadTableService {
     @Autowired
     public final void setConfig(BridgeConfig config) {
         this.config = config;
-        this.rawHealthDataBucket = config.get(CONFIG_KEY_RAW_HEALTH_DATA_BUCKET);
+        this.rawHealthDataBucket = config.getProperty(CONFIG_KEY_RAW_HEALTH_DATA_BUCKET);
     }
 
     @Autowired
@@ -95,26 +97,11 @@ public class UploadTableService {
         this.uploadTableRowDao = uploadTableRowDao;
     }
 
-    /** Worker API to get the upload table job. Does not include the downloadable S3 URL. */
-    public UploadTableJob getUploadTableJobForWorker(String appId, String studyId, String jobGuid) {
-        // The worker can access any app or study, so we don't need to check permissions. (Worker permissions are
-        // enforced by the controller.)
-
-        // Get the table job.
-        UploadTableJob tableJob = uploadTableJobDao.getUploadTableJob(jobGuid).orElseThrow(
-                () -> new EntityNotFoundException(UploadTableJob.class));
-        if (!tableJob.getAppId().equals(appId)) {
-            throw new EntityNotFoundException(UploadTableJob.class);
-        }
-        if (!tableJob.getStudyId().equals(studyId)) {
-            throw new EntityNotFoundException(UploadTableJob.class);
-        }
-
-        return tableJob;
-    }
-
     /** Get the upload table job result, with the downloadable S3 URL if it's ready. */
     public UploadTableJobResult getUploadTableJobResult(String appId, String studyId, String jobGuid) {
+        // Verify caller has access to app and study.
+        CAN_READ_UPLOADS.checkAndThrow(AuthEvaluatorField.STUDY_ID, studyId);
+
         // Get the table job.
         UploadTableJob tableJob = uploadTableJobDao.getUploadTableJob(jobGuid).orElseThrow(
                 () -> new EntityNotFoundException(UploadTableJob.class));
@@ -124,9 +111,6 @@ public class UploadTableService {
         if (!tableJob.getStudyId().equals(studyId)) {
             throw new EntityNotFoundException(UploadTableJob.class);
         }
-
-        // Verify caller has access to app and study.
-        CAN_ACCESS_UPLOAD_TABLES.checkAndThrow(AuthEvaluatorField.STUDY_ID, studyId);
 
         // Create a job result from the job.
         UploadTableJobResult result = UploadTableJobResult.fromJob(tableJob);
@@ -149,7 +133,7 @@ public class UploadTableService {
     public PagedResourceList<UploadTableJob> listUploadTableJobsForStudy(String appId, String studyId, int start,
             int pageSize) {
         // Verify caller has access to app and study.
-        CAN_ACCESS_UPLOAD_TABLES.checkAndThrow(AuthEvaluatorField.STUDY_ID, studyId);
+        CAN_READ_UPLOADS.checkAndThrow(AuthEvaluatorField.STUDY_ID, studyId);
 
         // Validate start and pageSize.
         if (start < 0) {
@@ -165,13 +149,13 @@ public class UploadTableService {
     }
 
     /**
-     * Request the CSV of all uploads in this app and study. This includes test uploads. This will dedupe requests
-     * within a 5-minute window. If no new uploads have been submitted to the app since the last CSV request, this will
-     * return the same job GUID as the last request.
+     * Request a zip file with CSVs of all uploads in this app and study. This includes test uploads. This will dedupe
+     * requests within a 5-minute window. If no new uploads have been submitted to the app since the last CSV request,
+     * this will return the same job GUID as the last request.
      */
     public UploadTableJobGuidHolder requestUploadTableForStudy(String appId, String studyId) {
         // Verify caller has access to app and study.
-        CAN_ACCESS_UPLOAD_TABLES.checkAndThrow(AuthEvaluatorField.STUDY_ID, studyId);
+        CAN_READ_UPLOADS.checkAndThrow(AuthEvaluatorField.STUDY_ID, studyId);
 
         // Get the most recent request for this study.
         List<UploadTableJob> jobList = uploadTableJobDao.listUploadTableJobsForStudy(appId, studyId, 0,
@@ -191,15 +175,24 @@ public class UploadTableService {
             // we might sometimes query the study when there are no new uploads in the study, but there are uploads in
             // the app. This is a very rare case, and it's better to be conservative and generate a new table job.
             List<UploadView> recentUploadList = uploadService.getAppUploads(appId, mostRecentJobRequestedOn,
-                    DateTime.now(), 1, null).getItems();
+                    DateTime.now(DateTimeZone.UTC), 1, null).getItems();
             if (recentUploadList.isEmpty()) {
                 return new UploadTableJobGuidHolder(mostRecentJob.getJobGuid());
             }
         }
 
-        // Send the request to the worker.
+        // Write the job to the database.
         String jobGuid = generateGuid();
 
+        UploadTableJob job = UploadTableJob.create();
+        job.setJobGuid(jobGuid);
+        job.setAppId(appId);
+        job.setStudyId(studyId);
+        job.setRequestedOn(DateTime.now());
+        job.setStatus(UploadTableJob.Status.IN_PROGRESS);
+        uploadTableJobDao.saveUploadTableJob(job);
+
+        // Send the request to the worker.
         UploadCsvRequest uploadCsvRequest = new UploadCsvRequest();
         uploadCsvRequest.setJobGuid(jobGuid);
         uploadCsvRequest.setAppId(appId);
@@ -228,16 +221,25 @@ public class UploadTableService {
         LOG.info("Sent CSV request for app " + appId + " study " + studyId + "; received message ID=" +
                 sqsResult.getMessageId());
 
-        // Write the job to the database.
-        UploadTableJob job = UploadTableJob.create();
-        job.setJobGuid(jobGuid);
-        job.setAppId(appId);
-        job.setStudyId(studyId);
-        job.setRequestedOn(DateTime.now());
-        job.setStatus(UploadTableJob.Status.IN_PROGRESS);
-        uploadTableJobDao.saveUploadTableJob(job);
-
         return new UploadTableJobGuidHolder(jobGuid);
+    }
+
+    /** Worker API to get the upload table job. Does not include the downloadable S3 URL. */
+    public UploadTableJob getUploadTableJobForWorker(String appId, String studyId, String jobGuid) {
+        // The worker can access any app or study, so we don't need to check permissions. (Worker permissions are
+        // enforced by the controller.)
+
+        // Get the table job.
+        UploadTableJob tableJob = uploadTableJobDao.getUploadTableJob(jobGuid).orElseThrow(
+                () -> new EntityNotFoundException(UploadTableJob.class));
+        if (!tableJob.getAppId().equals(appId)) {
+            throw new EntityNotFoundException(UploadTableJob.class);
+        }
+        if (!tableJob.getStudyId().equals(studyId)) {
+            throw new EntityNotFoundException(UploadTableJob.class);
+        }
+
+        return tableJob;
     }
 
     /** Worker API to update the upload table job. */

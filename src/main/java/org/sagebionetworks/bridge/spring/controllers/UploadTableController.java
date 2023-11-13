@@ -43,14 +43,6 @@ public class UploadTableController extends BaseController {
         this.uploadTableService = uploadTableService;
     }
 
-    /** Worker API to get the upload table job. Does not include the downloadable S3 URL. */
-    @GetMapping("/v1/apps/{appId}/studies/{studyId}/uploadtable/requests/{jobGuid}")
-    public UploadTableJob getUploadTableJobForWorker(@PathVariable String appId, @PathVariable String studyId,
-            @PathVariable String jobGuid) {
-        getAuthenticatedSession(WORKER);
-        return uploadTableService.getUploadTableJobForWorker(appId, studyId, jobGuid);
-    }
-
     /** Get the upload table job result, with the downloadable S3 URL if it's ready. */
     @GetMapping("/v5/studies/{studyId}/uploadtable/requests/{jobGuid}")
     public UploadTableJobResult getUploadTableJobResult(@PathVariable String studyId, @PathVariable String jobGuid) {
@@ -70,11 +62,19 @@ public class UploadTableController extends BaseController {
         return uploadTableService.listUploadTableJobsForStudy(session.getAppId(), studyId, startInt, pageSizeInt);
     }
 
-    /** Request the CSV of all uploads in this app and study. */
+    /** Request a zip file with CSVs of all uploads in this app and study. */
     @PostMapping("/v5/studies/{studyId}/uploadtable/requests")
     public UploadTableJobGuidHolder requestUploadTableForStudy(@PathVariable String studyId) {
         UserSession session = getAuthenticatedSession(STUDY_DESIGNER, STUDY_COORDINATOR, DEVELOPER, RESEARCHER);
         return uploadTableService.requestUploadTableForStudy(session.getAppId(), studyId);
+    }
+
+    /** Worker API to get the upload table job. Does not include the downloadable S3 URL. */
+    @GetMapping("/v1/apps/{appId}/studies/{studyId}/uploadtable/requests/{jobGuid}")
+    public UploadTableJob getUploadTableJobForWorker(@PathVariable String appId, @PathVariable String studyId,
+            @PathVariable String jobGuid) {
+        getAuthenticatedSession(WORKER);
+        return uploadTableService.getUploadTableJobForWorker(appId, studyId, jobGuid);
     }
 
     /** Worker API to update the upload table job. */

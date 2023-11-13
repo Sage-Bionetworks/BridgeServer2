@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.upload;
 
-/** Worker request to generate the CSVs of all uploads for a given study. */
+/** Worker request to generate a zip file with CSVs of all uploads for a given study. */
 public class UploadCsvRequest {
     // Note that this doesn't include some options available in the worker, because we're not using them for now.
     // Specifically, we're not using assessment filter, upload date range, or zip file suffix. We might add these in
