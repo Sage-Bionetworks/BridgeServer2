@@ -1123,3 +1123,17 @@ CREATE TABLE IF NOT EXISTS `UploadTableRows` (
     INDEX (`appId`, `studyId`, `assessmentGuid`),
     INDEX (`appId`, `studyId`, `assessmentGuid`, `createdOn`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+-- changeset bridge:83
+
+CREATE TABLE IF NOT EXISTS `UploadTableJobs` (
+    `jobGuid` char(24) NOT NULL,
+    `appId` varchar(60) NOT NULL,
+    `studyId` varchar(60) NOT NULL,
+    `requestedOn` bigint(20) NOT NULL,
+    `status` enum('IN_PROGRESS','SUCCEEDED','FAILED') NOT NULL DEFAULT 'IN_PROGRESS',
+    `s3Key` varchar(255) DEFAULT NULL,
+    PRIMARY KEY (`jobGuid`),
+    CONSTRAINT `UploadTableJobs-Study-Constraint` FOREIGN KEY (`studyId`, `appId`) REFERENCES `Substudies` (`id`, `studyId`) ON DELETE CASCADE ON UPDATE CASCADE,
+    INDEX (`appId`, `studyId`, `requestedOn`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
