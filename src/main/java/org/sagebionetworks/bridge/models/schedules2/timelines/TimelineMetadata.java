@@ -66,7 +66,8 @@ public class TimelineMetadata implements BridgeEntity {
         map.put("schedulePublished", schedulePublished ? "true" : null);    
         map.put("studyBurstId", studyBurstId);
         map.put("studyBurstNum", studyBurstNum == null ? null : studyBurstNum.toString());
-        // we don't need to export session name or symbol, they are for editing tools
+        map.put("sessionName", sessionName); // Session name is used by exporter 3
+        // we don't need to export symbol, it is for editing tools
         return map;
     }
     
