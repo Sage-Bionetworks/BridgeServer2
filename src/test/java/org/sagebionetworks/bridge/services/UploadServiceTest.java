@@ -18,7 +18,6 @@ import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
-import static org.sagebionetworks.bridge.BridgeUtils.COMMA_SPACE_JOINER;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
@@ -41,9 +40,7 @@ import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.Date;
@@ -57,7 +54,6 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.model.SendMessageResult;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -66,14 +62,12 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import org.apache.commons.io.IOUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
 
@@ -86,8 +80,6 @@ import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordLis
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSearch;
 import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -114,16 +106,16 @@ import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordEx3;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadCompletionClient;
+import org.sagebionetworks.bridge.models.upload.UploadRedriveList;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
 import org.sagebionetworks.bridge.models.upload.UploadSession;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStatus;
 import org.sagebionetworks.bridge.models.upload.UploadView;
 import org.sagebionetworks.bridge.models.upload.UploadViewEx3;
-import org.sagebionetworks.bridge.models.worker.Exporter3Request;
 import org.sagebionetworks.bridge.models.worker.UploadRedriveWorkerRequest;
 import org.sagebionetworks.bridge.models.worker.WorkerRequest;
-import org.sagebionetworks.bridge.time.DateUtils;
+import org.sagebionetworks.bridge.s3.S3Helper;
 import org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator;
 
 @SuppressWarnings("ConstantConditions")
@@ -206,10 +198,10 @@ public class UploadServiceTest {
     BridgeConfig mockConfig;
 
     @Mock
-    Logger logger;
+    private AmazonSQS mockSqsClient;
 
     @Mock
-    private AmazonSQS mockSqsClient;
+    private S3Helper mockS3Helper;
 
     @Captor
     ArgumentCaptor<AdherenceRecordList> adherenceRecordListCaptor;
@@ -219,6 +211,9 @@ public class UploadServiceTest {
     
     @Captor
     ArgumentCaptor<GeneratePresignedUrlRequest> requestCaptor;
+
+    @Captor
+    ArgumentCaptor<UploadRedriveList> uploadRedriveListArgumentCaptor;
     
     @InjectMocks
     @Spy
@@ -235,7 +230,7 @@ public class UploadServiceTest {
         when(mockConfig.getProperty(UploadService.CONFIG_KEY_BACKFILL_BUCKET)).thenReturn(BACKFILL_BUCKET_NAME);
         when(mockConfig.getProperty(BridgeConstants.CONFIG_KEY_WORKER_SQS_URL)).thenReturn(WORKER_QUEUE_URL);
         svc.setConfig(mockConfig);
-        svc.setLogger(logger);
+
     }
     
     @AfterMethod
@@ -783,7 +778,7 @@ public class UploadServiceTest {
         app.setExporter3Enabled(false);
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
 
-        // Mock upload that needs redrive
+        // Mock upload needs redrive
         DynamoUpload2 upload1 = new DynamoUpload2();
         upload1.setUploadId(UPLOAD_ID_1);
         upload1.setAppId(TEST_APP_ID);
@@ -805,11 +800,11 @@ public class UploadServiceTest {
         when(mockS3Client.getObjectMetadata(UPLOAD_BUCKET_NAME, UPLOAD_ID_1)).thenReturn(metadata);
         when(mockS3Client.getObjectMetadata(UPLOAD_BUCKET_NAME, UPLOAD_ID_2)).thenReturn(metadata);
 
-        // Mock upload files and convert to fileBytes
-        byte[] mockSmallUploadFile = (UPLOAD_ID_1 + "\n" + UPLOAD_ID_2 + "\n").getBytes();
-
         // Mock uploadIds list
         List<String> mockUploadIds = Arrays.asList(UPLOAD_ID_1, UPLOAD_ID_2);
+
+        // Mock UploadRedriveList
+        UploadRedriveList mockSmallRedriveList = new UploadRedriveList(mockUploadIds);
 
         // Mock UploadValidationStatus
         UploadValidationStatus mockValidationStatusForUploadId1 = makeValidationStatus(UPLOAD_ID_1, SUCCEEDED);
@@ -818,10 +813,19 @@ public class UploadServiceTest {
         doReturn(mockValidationStatusForUploadId2).when(svc).pollUploadValidationStatusUntilComplete(UPLOAD_ID_2);
 
         // Execute
-        svc.redriveUpload(mockSmallUploadFile);
+        svc.redriveUpload(mockSmallRedriveList);
 
-        // Verify call to redriveSmallAmountOfUploads()
-        verify(svc).redriveUpload(mockSmallUploadFile);
+        // Verify call to redriveSmallAmountOfUploads() and upload ids list is sent for redrive.
+        verify(svc).redriveUpload(uploadRedriveListArgumentCaptor.capture());
+
+        assertNotNull(uploadRedriveListArgumentCaptor);
+        assertNotNull(uploadRedriveListArgumentCaptor.getValue());
+        UploadRedriveList capturedRedriveList = uploadRedriveListArgumentCaptor.getValue();
+        assertNotNull(capturedRedriveList.getUploadIds());
+        List<String> capturedUploadIdList = capturedRedriveList.getUploadIds();
+        assertEquals(capturedUploadIdList.size(), 2);
+        assertEquals(capturedUploadIdList.get(0), UPLOAD_ID_1);
+        assertEquals(capturedUploadIdList.get(1), UPLOAD_ID_2);
 
         // Verify getUpload(): in redriveUpload() & in getUploadValidationStatus()
         verify(svc, times(2)).getUpload(UPLOAD_ID_1);
@@ -838,44 +842,42 @@ public class UploadServiceTest {
         verify(svc).pollUploadValidationStatusUntilComplete(UPLOAD_ID_1);
         verify(svc).pollUploadValidationStatusUntilComplete(UPLOAD_ID_2);
 
-        // Verify when UploadStatus is SUCCEEDED or not , what in Logger.error
-        verify(logger).error("Redrive failed for uploadId=" + UPLOAD_ID_2 + ": " + COMMA_SPACE_JOINER.join(
-               mockValidationStatusForUploadId2.getMessageList()));
+        // Verify logger
+        verify(svc).logErrorMessage(UPLOAD_ID_2, mockValidationStatusForUploadId2);
     }
 
     @Test
     public void redriveUpload_largeAmountOfUploads() throws IOException {
-        // Mock upload files and convert to fileBytes
-        byte[] mockLargeUploadFile = (UPLOAD_ID_1 + "\n" + UPLOAD_ID_2 + "\n"
-                + UPLOAD_ID_3 + "\n" + UPLOAD_ID_4 + "\n"
-                + UPLOAD_ID_5 + "\n" + UPLOAD_ID_6 + "\n"
-                + UPLOAD_ID_7 + "\n" + UPLOAD_ID_8 + "\n"
-                + UPLOAD_ID_9 + "\n" + UPLOAD_ID_10 + "\n"
-                + UPLOAD_ID_11 + "\n").getBytes();
-        InputStream expectedUploadFileContent = new ByteArrayInputStream(mockLargeUploadFile);
+        // Mock uploadIds list
+        List<String> mockLargeUploadIds = Arrays.asList(UPLOAD_ID_1, UPLOAD_ID_2, UPLOAD_ID_3, UPLOAD_ID_4, UPLOAD_ID_5,
+                UPLOAD_ID_6, UPLOAD_ID_7, UPLOAD_ID_8, UPLOAD_ID_9, UPLOAD_ID_10, UPLOAD_ID_11);
+
+        // Mock UploadRedriveList
+        UploadRedriveList mockRedriveList = new UploadRedriveList(mockLargeUploadIds);
 
         // Mock S3 Key
-        String mockCurrentYear = String.valueOf(DateUtils.getCurrentDateTime().getYear());
-        String mockCurrentMonth = String.valueOf(DateUtils.getCurrentDateTime().getMonthOfYear());
-        String mockS3Key = "redrive-upload-id-" + mockCurrentYear + "-" + mockCurrentMonth;
+        String mockCurrentTime = String.valueOf(TIMESTAMP.getMillis());
+        String mockS3Key = "redrive-upload-id-" + mockCurrentTime;
 
         // Mock SQS. Return type doesn't actually matter except for logs, but we don't want it to be null.
         when(mockSqsClient.sendMessage(any(), any())).thenReturn(new SendMessageResult());
 
         // Execute
-        svc.redriveUpload(mockLargeUploadFile);
+        svc.redriveUpload(mockRedriveList);
 
-        // Verify call to redriveLargeAmountOfUploads()
-        verify(svc).redriveUpload(mockLargeUploadFile);
+        // Verify call to redriveLargeAmountOfUploads() and upload ids list is sent for redrive.
+        verify(svc).redriveUpload(uploadRedriveListArgumentCaptor.capture());
 
-        // Verify call to S3 client and captured request value.
-        ArgumentCaptor<PutObjectRequest> requestCaptor = ArgumentCaptor.forClass(PutObjectRequest.class);
-        verify(mockS3Client, times(1)).putObject(requestCaptor.capture());
-        PutObjectRequest capturedRequest = requestCaptor.getValue();
-        assertEquals(BACKFILL_BUCKET_NAME, capturedRequest.getBucketName());
-        assertEquals(mockS3Key, capturedRequest.getKey());
-        boolean contentMatches = IOUtils.contentEquals(capturedRequest.getInputStream(), expectedUploadFileContent);
-        assertTrue(contentMatches);
+        assertNotNull(uploadRedriveListArgumentCaptor);
+        assertNotNull(uploadRedriveListArgumentCaptor.getValue());
+        UploadRedriveList capturedRedriveList = uploadRedriveListArgumentCaptor.getValue();
+        assertNotNull(capturedRedriveList.getUploadIds());
+        List<String> capturedUploadIdList = capturedRedriveList.getUploadIds();
+        assertEquals(capturedUploadIdList.size(), 11);
+
+        // Verify we write to S3 for the storage location.
+        verify(mockS3Helper).writeLinesToS3(BACKFILL_BUCKET_NAME, mockS3Key,
+                mockLargeUploadIds);
 
         // Verify call to SQS.
         ArgumentCaptor<String> requestJsonTextCaptor = ArgumentCaptor.forClass(String.class);

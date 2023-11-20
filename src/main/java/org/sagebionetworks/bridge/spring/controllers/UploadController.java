@@ -19,10 +19,8 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.multipart.MultipartFile;
 
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.dao.HealthCodeDao;
@@ -30,10 +28,12 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.Metrics;
 import org.sagebionetworks.bridge.models.RequestInfo;
+import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadCompletionClient;
+import org.sagebionetworks.bridge.models.upload.UploadRedriveList;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
 import org.sagebionetworks.bridge.models.upload.UploadSession;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStatus;
@@ -52,6 +52,8 @@ public class UploadController extends BaseController {
     private HealthDataService healthDataService;
     
     private HealthCodeDao healthCodeDao;
+
+    static final StatusMessage REDRIVE_COMPLETE_MSG = new StatusMessage("Upload redrive completed.");
 
     @Autowired
     final void setUploadService(UploadService uploadService) {
@@ -173,12 +175,13 @@ public class UploadController extends BaseController {
     }
 
     @PostMapping("/v3/uploads/redrive")
-    public String redriveUploads(@RequestBody byte[] fileBytes) throws IOException {
-        if (fileBytes != null && fileBytes.length != 0) {
-            uploadService.redriveUpload(fileBytes);
-            return "Redrive uploads attempted.";
-        }
-        return "Please provide a non-empty file for upload redrive.";
+    public StatusMessage redriveUploads() throws IOException {
+        getAuthenticatedSession(Roles.SUPERADMIN);
+
+        UploadRedriveList redriveList = parseJson(UploadRedriveList.class);
+        uploadService.redriveUpload(redriveList);
+
+        return REDRIVE_COMPLETE_MSG;
     }
     
     @GetMapping("/v3/uploads/{uploadId}")

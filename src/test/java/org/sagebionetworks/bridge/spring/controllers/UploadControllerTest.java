@@ -17,7 +17,6 @@ import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.fail;
 
-import java.io.IOException;
 import java.net.URL;
 import java.util.EnumSet;
 import java.util.Optional;
@@ -26,6 +25,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 import org.mockito.ArgumentCaptor;
@@ -47,12 +47,14 @@ import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.Metrics;
 import org.sagebionetworks.bridge.models.RequestInfo;
+import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadCompletionClient;
+import org.sagebionetworks.bridge.models.upload.UploadRedriveList;
 import org.sagebionetworks.bridge.models.upload.UploadSession;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStatus;
@@ -62,7 +64,6 @@ import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.HealthDataService;
 import org.sagebionetworks.bridge.services.RequestInfoService;
 import org.sagebionetworks.bridge.services.UploadService;
-import org.sagebionetworks.bridge.services.UploadServiceTest;
 
 public class UploadControllerTest extends Mockito {
     private static final String RECORD_ID = "record-id";
@@ -227,25 +228,23 @@ public class UploadControllerTest extends Mockito {
     }
 
     @Test
-    public void redriveUploadsEmptyFile() throws IOException {
-        // Mock empty upload file in fileBytes
-        byte[] mockEmptyUploadFile = "".getBytes();
+    public void redriveUploads() throws Exception {
+        // Mock session
+        doReturn(new UserSession()).when(controller).getAuthenticatedSession(SUPERADMIN);
 
-        // execute and validate
-        String result = controller.redriveUploads(mockEmptyUploadFile);
-        verify(mockUploadService, never()).redriveUpload(mockEmptyUploadFile);
-        assertEquals("Please provide a non-empty file for upload redrive.", result);
-    }
+        // Mock request body.
+        mockRequestBody(mockRequest, createJson(
+                "{'uploadIds': ['upload1', 'upload2']}"));
 
-    @Test
-    public void redriveUploadsNonEmptyFile() throws IOException {
-        // Mock upload file in fileBytes
-        byte[] mockUploadFile = (UPLOAD_ID_1 + "\n" + UPLOAD_ID_2 + "\n").getBytes();
+        // Execute and validate
+        StatusMessage message = controller.redriveUploads();
+        assertSame(message, UploadController.REDRIVE_COMPLETE_MSG);
 
-        // execute and validate
-        String result = controller.redriveUploads(mockUploadFile);
-        verify(mockUploadService).redriveUpload(mockUploadFile);
-        assertEquals("Redrive uploads attempted.", result);
+        // Verify service call.
+        ArgumentCaptor<UploadRedriveList> svcInputCaptor = ArgumentCaptor.forClass(UploadRedriveList.class);
+        verify(mockUploadService).redriveUpload(svcInputCaptor.capture());
+        UploadRedriveList svcInput = svcInputCaptor.getValue();
+        assertEquals(svcInput.getUploadIds(), ImmutableList.of(UPLOAD_ID_1, UPLOAD_ID_2));
     }
 
     @Test
