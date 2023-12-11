@@ -615,7 +615,7 @@ public class UploadService {
         String s3Key = REDRIVE_UPLOAD_S3_KEY_PREFIX + currentTime;
 
         // Upload file to S3 bucket
-        s3Helper.writeLinesToS3(CONFIG_KEY_BACKFILL_BUCKET, s3Key, uploadIds);
+        s3Helper.writeLinesToS3(redriveUploadBucket, s3Key, uploadIds);
 
         // write Json message to sqs
         // 1. Create request.
