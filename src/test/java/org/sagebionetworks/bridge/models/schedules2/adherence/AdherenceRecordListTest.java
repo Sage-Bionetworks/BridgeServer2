@@ -20,6 +20,7 @@ public class AdherenceRecordListTest {
         AdherenceRecordList list = new AdherenceRecordList(ImmutableList.of(rec1, rec2));
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(list);
+
         assertEquals(node.get("records").size(), 2);
         // just verify these are adherence records, which we test separately
         assertEquals(node.get("records").get(0).get("clientTimeZone").textValue(), "America/Los_Angeles");

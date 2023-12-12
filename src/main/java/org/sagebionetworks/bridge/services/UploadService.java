@@ -12,7 +12,9 @@ import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_UPLOADS;
 import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.CANNOT_BE_BLANK;
+import static org.sagebionetworks.bridge.BridgeUtils.COMMA_SPACE_JOINER;
 
+import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Date;
@@ -30,14 +32,20 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.sqs.AmazonSQS;
+import com.amazonaws.services.sqs.model.SendMessageResult;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+
+import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.dao.HealthCodeDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -63,7 +71,11 @@ import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordEx3;
 import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadataView;
+import org.sagebionetworks.bridge.models.upload.UploadRedriveList;
 import org.sagebionetworks.bridge.models.upload.UploadViewEx3;
+import org.sagebionetworks.bridge.models.worker.UploadRedriveWorkerRequest;
+import org.sagebionetworks.bridge.models.worker.WorkerRequest;
+import org.sagebionetworks.bridge.s3.S3Helper;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -88,9 +100,12 @@ public class UploadService {
     
     // package-scoped to be available in unit tests
     static final String CONFIG_KEY_UPLOAD_BUCKET = "upload.bucket";
+    static final String CONFIG_KEY_BACKFILL_BUCKET = "backfill.bucket";
+    static final String REDRIVE_UPLOAD_S3_KEY_PREFIX = "redrive-upload-id-";
     static final String METADATA_KEY_EVENT_TIMESTAMP = "eventTimestamp";
     static final String METADATA_KEY_INSTANCE_GUID = "instanceGuid";
     static final String METADATA_KEY_STARTED_ON = "startedOn";
+    static final String WORKER_NAME_UPLOAD_REDRIVE = "UploadRedriveWorker";
 
     private AccountService accountService;
     private AdherenceService adherenceService;
@@ -103,9 +118,15 @@ public class UploadService {
     private Schedule2Service schedule2Service;
     private StudyService studyService;
     private String uploadBucket;
+    private String redriveUploadBucket;
     private UploadDao uploadDao;
     private UploadDedupeDao uploadDedupeDao;
     private UploadValidationService uploadValidationService;
+    private HealthCodeDao healthCodeDao;
+    private String workerQueueUrl;
+    private AmazonSQS sqsClient;
+    private S3Helper s3Helper;
+    private BridgeConfig config;
 
     // These parameters can be overriden to facilitate testing.
     // By default, we sleep 5 seconds, including right at the start and end. This means on our 7th iteration,
@@ -136,7 +157,9 @@ public class UploadService {
     /** Sets parameters from the specified Bridge config. */
     @Autowired
     final void setConfig(BridgeConfig config) {
+        this.config = config;
         uploadBucket = config.getProperty(CONFIG_KEY_UPLOAD_BUCKET);
+        redriveUploadBucket = config.getProperty(CONFIG_KEY_BACKFILL_BUCKET);
     }
 
     /**
@@ -187,6 +210,21 @@ public class UploadService {
     @Autowired
     final void setUploadValidationService(UploadValidationService uploadValidationService) {
         this.uploadValidationService = uploadValidationService;
+    }
+
+    @Autowired
+    final void setHealthCodeDao(HealthCodeDao healthCodeDao) {
+        this.healthCodeDao = healthCodeDao;
+    }
+
+    @Autowired
+    final void setSqsClient(AmazonSQS sqsClient) {
+        this.sqsClient = sqsClient;
+    }
+
+    @Resource(name = "s3Helper")
+    public final void setS3Helper(S3Helper s3Helper) {
+        this.s3Helper = s3Helper;
     }
 
     /**
@@ -526,6 +564,88 @@ public class UploadService {
         
         // Save uploadedOn date and uploadId to related adherence records.
         updateAdherenceWithUploadInfo(appId, upload);
+    }
+
+    public void redriveUpload(UploadRedriveList redriveList) throws IOException {
+        checkNotNull(redriveList);
+
+        if (redriveList.getUploadIds().isEmpty()) {
+            throw new BadRequestException("No upload ids submitted for redrive");
+        }
+
+        int redriveSize = redriveList.getUploadIds().size();
+
+        logger.info("Redrive uploads" + " with " + redriveSize + " upload ids");
+
+        // Redrive upload.
+        if (redriveSize <= 10) {
+            redriveSmallAmountOfUploads(redriveList.getUploadIds());
+        } else {
+            redriveLargeAmountOfUploads(redriveList.getUploadIds());
+        }
+    }
+
+    private void redriveSmallAmountOfUploads(List<String> uploadIds) throws JsonProcessingException {
+        for (String uploadId : uploadIds) {
+            Upload upload = getUpload(uploadId);
+            String appId = upload.getAppId();
+            if (appId == null) {
+                appId = healthCodeDao.getAppId(upload.getHealthCode());
+            }
+            uploadComplete(appId, UploadCompletionClient.REDRIVE, upload, true);
+        }
+
+        for (String uploadId: uploadIds) {
+            UploadValidationStatus validationStatus = pollUploadValidationStatusUntilComplete(uploadId);
+            if (validationStatus.getStatus() != UploadStatus.SUCCEEDED) {
+                logErrorMessage(uploadId, validationStatus);
+            }
+        }
+    }
+
+    // For unit test.
+    protected void logErrorMessage(String uploadId, UploadValidationStatus validationStatus) {
+        logger.error("Redrive failed for uploadId=" + uploadId + ": " + COMMA_SPACE_JOINER.join(
+                validationStatus.getMessageList()));
+    }
+
+    private void redriveLargeAmountOfUploads(List<String> uploadIds) throws IOException {
+        // set up s3 Key.
+        String currentTime = String.valueOf(DateUtils.getCurrentDateTime().getMillis());
+        String s3Key = REDRIVE_UPLOAD_S3_KEY_PREFIX + currentTime;
+
+        // Upload file to S3 bucket
+        s3Helper.writeLinesToS3(redriveUploadBucket, s3Key, uploadIds);
+
+        // write Json message to sqs
+        // 1. Create request.
+        UploadRedriveWorkerRequest uploadRedriveWorkerRequest = new UploadRedriveWorkerRequest();
+        uploadRedriveWorkerRequest.setS3Key(s3Key);
+        uploadRedriveWorkerRequest.setS3Bucket(redriveUploadBucket);
+        uploadRedriveWorkerRequest.setRedriveTypeStr("upload_id");
+
+        WorkerRequest workerRequest = new WorkerRequest();
+        workerRequest.setService(WORKER_NAME_UPLOAD_REDRIVE);
+        workerRequest.setBody(uploadRedriveWorkerRequest);
+
+        // Convert request to JSON.
+        ObjectMapper objectMapper = BridgeObjectMapper.get();
+        String requestJson;
+        try {
+            requestJson = objectMapper.writeValueAsString(workerRequest);
+        } catch (JsonProcessingException ex) {
+            // This should never happen, but catch and re-throw for code hygiene.
+            throw new BridgeServiceException("Error creating upload redrive request for S3 file " + s3Key,
+                    ex);
+        }
+
+        // 2. Send to SQS.
+        // Note: SqsInitializer runs after Spring, so we need to grab the queue URL dynamically.
+        workerQueueUrl = config.getProperty(BridgeConstants.CONFIG_KEY_WORKER_SQS_URL);
+
+        SendMessageResult sqsResult = sqsClient.sendMessage(workerQueueUrl, requestJson);
+        logger.info("Sent redrive upload request for file " + s3Key +
+                sqsResult.getMessageId());
     }
     
     public void deleteUploadsForHealthCode(String healthCode) {

@@ -28,6 +28,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.models.upload.UploadCompletionClient.S3_WORKER;
 import static org.sagebionetworks.bridge.models.upload.UploadStatus.SUCCEEDED;
+import static org.sagebionetworks.bridge.models.upload.UploadStatus.VALIDATION_FAILED;
 import static org.sagebionetworks.bridge.models.upload.UploadStatus.VALIDATION_IN_PROGRESS;
 import static org.sagebionetworks.bridge.services.UploadService.METADATA_KEY_EVENT_TIMESTAMP;
 import static org.sagebionetworks.bridge.services.UploadService.METADATA_KEY_INSTANCE_GUID;
@@ -39,7 +40,9 @@ import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
+import java.io.IOException;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -51,6 +54,8 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.sqs.AmazonSQS;
+import com.amazonaws.services.sqs.model.SendMessageResult;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -65,6 +70,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
+
+import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.dao.HealthCodeDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
@@ -97,12 +105,17 @@ import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordEx3;
 import org.sagebionetworks.bridge.models.upload.Upload;
+import org.sagebionetworks.bridge.models.upload.UploadCompletionClient;
+import org.sagebionetworks.bridge.models.upload.UploadRedriveList;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
 import org.sagebionetworks.bridge.models.upload.UploadSession;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStatus;
 import org.sagebionetworks.bridge.models.upload.UploadView;
 import org.sagebionetworks.bridge.models.upload.UploadViewEx3;
+import org.sagebionetworks.bridge.models.worker.UploadRedriveWorkerRequest;
+import org.sagebionetworks.bridge.models.worker.WorkerRequest;
+import org.sagebionetworks.bridge.s3.S3Helper;
 import org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator;
 
 @SuppressWarnings("ConstantConditions")
@@ -114,13 +127,24 @@ public class UploadServiceTest {
     private static final String INSTANCE_GUID = "dummy-instance-guid";
     private static final String MOCK_OFFSET_KEY = "mock-offset-key";
     private static final String UPLOAD_BUCKET_NAME = "upload-bucket";
+    static final String BACKFILL_BUCKET_NAME = "backfill.bucket";
     final static DateTime TIMESTAMP = DateTime.now();
     final static String ORIGINAL_UPLOAD_ID = "anOriginalUploadId";
     final static String NEW_UPLOAD_ID = "aNewUploadId";
     private static final String UPLOAD_ID_1 = "upload1";
     private static final String UPLOAD_ID_2 = "upload2";
+    private static final String UPLOAD_ID_3 = "upload3";
+    private static final String UPLOAD_ID_4 = "upload4";
+    private static final String UPLOAD_ID_5 = "upload5";
+    private static final String UPLOAD_ID_6 = "upload6";
+    private static final String UPLOAD_ID_7 = "upload7";
+    private static final String UPLOAD_ID_8 = "upload8";
+    private static final String UPLOAD_ID_9 = "upload9";
+    private static final String UPLOAD_ID_10 = "upload10";
+    private static final String UPLOAD_ID_11 = "upload11";
     final static String RECORD_ID = "aRecordId";
     final static StudyParticipant PARTICIPANT = new StudyParticipant.Builder().withHealthCode(HEALTH_CODE).build();
+    private static final String WORKER_QUEUE_URL = "http://example.com/dummy-sqs-url";
 
     @Mock
     private AccountService mockAccountService;
@@ -166,10 +190,19 @@ public class UploadServiceTest {
     
     @Mock
     UploadDao mockUploadDao;
+
+    @Mock
+    HealthCodeDao mockHealthCodeDao;
     
     @Mock
     BridgeConfig mockConfig;
-    
+
+    @Mock
+    private AmazonSQS mockSqsClient;
+
+    @Mock
+    private S3Helper mockS3Helper;
+
     @Captor
     ArgumentCaptor<AdherenceRecordList> adherenceRecordListCaptor;
     
@@ -178,6 +211,9 @@ public class UploadServiceTest {
     
     @Captor
     ArgumentCaptor<GeneratePresignedUrlRequest> requestCaptor;
+
+    @Captor
+    ArgumentCaptor<UploadRedriveList> uploadRedriveListArgumentCaptor;
     
     @InjectMocks
     @Spy
@@ -191,7 +227,10 @@ public class UploadServiceTest {
         svc.setS3UploadClient(mockS3UploadClient);
         
         when(mockConfig.getProperty(UploadService.CONFIG_KEY_UPLOAD_BUCKET)).thenReturn(UPLOAD_BUCKET_NAME);
+        when(mockConfig.getProperty(UploadService.CONFIG_KEY_BACKFILL_BUCKET)).thenReturn(BACKFILL_BUCKET_NAME);
+        when(mockConfig.getProperty(BridgeConstants.CONFIG_KEY_WORKER_SQS_URL)).thenReturn(WORKER_QUEUE_URL);
         svc.setConfig(mockConfig);
+
     }
     
     @AfterMethod
@@ -730,6 +769,136 @@ public class UploadServiceTest {
         verify(mockUploadDao).uploadComplete(S3_WORKER, upload);
         verify(mockUploadValidationService, never()).validateUpload(TEST_APP_ID, upload);
         verify(svc, never()).updateAdherenceWithUploadInfo(any(), any());
+    }
+
+    @Test
+    public void redriveUpload_smallAmountOfUploads() throws IOException {
+        // Mock app
+        App app = App.create();
+        app.setExporter3Enabled(false);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
+
+        // Mock upload needs redrive
+        DynamoUpload2 upload1 = new DynamoUpload2();
+        upload1.setUploadId(UPLOAD_ID_1);
+        upload1.setAppId(TEST_APP_ID);
+        upload1.setHealthCode(HEALTH_CODE);
+        upload1.setStatus(VALIDATION_FAILED);
+        when(svc.getUpload((UPLOAD_ID_1))).thenReturn(upload1);
+
+        DynamoUpload2 upload2 = new DynamoUpload2();
+        upload2.setUploadId(UPLOAD_ID_2);
+        upload2.setHealthCode(HEALTH_CODE);
+        upload2.setValidationMessageList(ImmutableList.of("One validation error"));
+        upload2.setStatus(VALIDATION_FAILED);
+        when(svc.getUpload(UPLOAD_ID_2)).thenReturn(upload2);
+        when(mockHealthCodeDao.getAppId(upload2.getHealthCode())).thenReturn(TEST_APP_ID);
+
+        // Mock ObjectMetadata
+        ObjectMetadata metadata = new ObjectMetadata();
+        metadata.setSSEAlgorithm(AES_256_SERVER_SIDE_ENCRYPTION);
+        when(mockS3Client.getObjectMetadata(UPLOAD_BUCKET_NAME, UPLOAD_ID_1)).thenReturn(metadata);
+        when(mockS3Client.getObjectMetadata(UPLOAD_BUCKET_NAME, UPLOAD_ID_2)).thenReturn(metadata);
+
+        // Mock uploadIds list
+        List<String> mockUploadIds = Arrays.asList(UPLOAD_ID_1, UPLOAD_ID_2);
+
+        // Mock UploadRedriveList
+        UploadRedriveList mockSmallRedriveList = new UploadRedriveList(mockUploadIds);
+
+        // Mock UploadValidationStatus
+        UploadValidationStatus mockValidationStatusForUploadId1 = makeValidationStatus(UPLOAD_ID_1, SUCCEEDED);
+        UploadValidationStatus mockValidationStatusForUploadId2 = makeValidationStatus(UPLOAD_ID_2, VALIDATION_FAILED);
+        doReturn(mockValidationStatusForUploadId1).when(svc).pollUploadValidationStatusUntilComplete(UPLOAD_ID_1);
+        doReturn(mockValidationStatusForUploadId2).when(svc).pollUploadValidationStatusUntilComplete(UPLOAD_ID_2);
+
+        // Execute
+        svc.redriveUpload(mockSmallRedriveList);
+
+        // Verify call to redriveSmallAmountOfUploads() and upload ids list is sent for redrive.
+        verify(svc).redriveUpload(uploadRedriveListArgumentCaptor.capture());
+
+        assertNotNull(uploadRedriveListArgumentCaptor);
+        assertNotNull(uploadRedriveListArgumentCaptor.getValue());
+        UploadRedriveList capturedRedriveList = uploadRedriveListArgumentCaptor.getValue();
+        assertNotNull(capturedRedriveList.getUploadIds());
+        List<String> capturedUploadIdList = capturedRedriveList.getUploadIds();
+        assertEquals(capturedUploadIdList.size(), 2);
+        assertEquals(capturedUploadIdList.get(0), UPLOAD_ID_1);
+        assertEquals(capturedUploadIdList.get(1), UPLOAD_ID_2);
+
+        // Verify getUpload(): in redriveUpload() & in getUploadValidationStatus()
+        verify(svc, times(2)).getUpload(UPLOAD_ID_1);
+        verify(svc, times(2)).getUpload(UPLOAD_ID_2);
+
+        // Verify healthCodeDao.getAppId() when appId == null
+        verify(mockHealthCodeDao).getAppId(upload2.getHealthCode());
+
+        // Verify uploadComplete
+        verify(svc).uploadComplete(TEST_APP_ID, UploadCompletionClient.REDRIVE, upload1, true);
+        verify(svc).uploadComplete(TEST_APP_ID, UploadCompletionClient.REDRIVE, upload2, true);
+
+        // Verify pollUploadValidationStatusUntilComplete()
+        verify(svc).pollUploadValidationStatusUntilComplete(UPLOAD_ID_1);
+        verify(svc).pollUploadValidationStatusUntilComplete(UPLOAD_ID_2);
+
+        // Verify logger
+        verify(svc).logErrorMessage(UPLOAD_ID_2, mockValidationStatusForUploadId2);
+    }
+
+    @Test
+    public void redriveUpload_largeAmountOfUploads() throws IOException {
+        // Mock uploadIds list
+        List<String> mockLargeUploadIds = Arrays.asList(UPLOAD_ID_1, UPLOAD_ID_2, UPLOAD_ID_3, UPLOAD_ID_4, UPLOAD_ID_5,
+                UPLOAD_ID_6, UPLOAD_ID_7, UPLOAD_ID_8, UPLOAD_ID_9, UPLOAD_ID_10, UPLOAD_ID_11);
+
+        // Mock UploadRedriveList
+        UploadRedriveList mockRedriveList = new UploadRedriveList(mockLargeUploadIds);
+
+        // Mock S3 Key
+        String mockCurrentTime = String.valueOf(TIMESTAMP.getMillis());
+        String mockS3Key = "redrive-upload-id-" + mockCurrentTime;
+
+        // Mock SQS. Return type doesn't actually matter except for logs, but we don't want it to be null.
+        when(mockSqsClient.sendMessage(any(), any())).thenReturn(new SendMessageResult());
+
+        // Execute
+        svc.redriveUpload(mockRedriveList);
+
+        // Verify call to redriveLargeAmountOfUploads() and upload ids list is sent for redrive.
+        verify(svc).redriveUpload(uploadRedriveListArgumentCaptor.capture());
+
+        assertNotNull(uploadRedriveListArgumentCaptor);
+        assertNotNull(uploadRedriveListArgumentCaptor.getValue());
+        UploadRedriveList capturedRedriveList = uploadRedriveListArgumentCaptor.getValue();
+        assertNotNull(capturedRedriveList.getUploadIds());
+        List<String> capturedUploadIdList = capturedRedriveList.getUploadIds();
+        assertEquals(capturedUploadIdList.size(), 11);
+
+        // Verify we write to S3 for the storage location.
+        verify(mockS3Helper).writeLinesToS3(BACKFILL_BUCKET_NAME, mockS3Key,
+                mockLargeUploadIds);
+
+        // Verify call to SQS.
+        ArgumentCaptor<String> requestJsonTextCaptor = ArgumentCaptor.forClass(String.class);
+        verify(mockSqsClient).sendMessage(eq(WORKER_QUEUE_URL), requestJsonTextCaptor.capture());
+
+        String requestJsonText = requestJsonTextCaptor.getValue();
+        WorkerRequest workerRequest = BridgeObjectMapper.get().readValue(requestJsonText, WorkerRequest.class);
+        assertEquals(workerRequest.getService(), UploadService.WORKER_NAME_UPLOAD_REDRIVE);
+
+        // Need to convert WorkerRequest.body again, because it doesn't carry inherent typing information. This is
+        // fine, since outside of unit tests, we never actually need to deserialize it.
+        UploadRedriveWorkerRequest uploadRedriveWorkerRequest = BridgeObjectMapper.get().convertValue(workerRequest.getBody(),
+                UploadRedriveWorkerRequest.class);
+        assertEquals(uploadRedriveWorkerRequest.getS3Key(), mockS3Key);
+        assertEquals(uploadRedriveWorkerRequest.getS3Bucket(), BACKFILL_BUCKET_NAME);
+        assertEquals(uploadRedriveWorkerRequest.getRedriveTypeStr(), "upload_id");
+    }
+
+    private UploadValidationStatus makeValidationStatus(String uploadId, UploadStatus uploadStatus) {
+        return new UploadValidationStatus.Builder().withId(uploadId).withMessageList(ImmutableList.of())
+                .withStatus(uploadStatus).build();
     }
     
     @Test

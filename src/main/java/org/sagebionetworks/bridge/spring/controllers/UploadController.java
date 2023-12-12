@@ -7,6 +7,7 @@ import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
+import java.io.IOException;
 import java.util.EnumSet;
 import java.util.Optional;
 
@@ -20,16 +21,19 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.dao.HealthCodeDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.Metrics;
 import org.sagebionetworks.bridge.models.RequestInfo;
+import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadCompletionClient;
+import org.sagebionetworks.bridge.models.upload.UploadRedriveList;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
 import org.sagebionetworks.bridge.models.upload.UploadSession;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStatus;
@@ -48,6 +52,8 @@ public class UploadController extends BaseController {
     private HealthDataService healthDataService;
     
     private HealthCodeDao healthCodeDao;
+
+    static final StatusMessage REDRIVE_COMPLETE_MSG = new StatusMessage("Upload redrive completed.");
 
     @Autowired
     final void setUploadService(UploadService uploadService) {
@@ -141,7 +147,7 @@ public class UploadController extends BaseController {
             if (appId == null) {
                 appId = healthCodeDao.getAppId(upload.getHealthCode());
             }
-            uploadCompletionClient = UploadCompletionClient.S3_WORKER;
+            uploadCompletionClient = redrive? UploadCompletionClient.REDRIVE : UploadCompletionClient.S3_WORKER;
         } else {
             // Or, the consented user that originally made the upload request. Check that health codes match.
             // Do not need to look up the app.
@@ -166,6 +172,16 @@ public class UploadController extends BaseController {
 
         // Upload validation status may contain the health data record. Use the filter to filter out health code.
         return HealthDataRecord.PUBLIC_RECORD_WRITER.writeValueAsString(validationStatus);
+    }
+
+    @PostMapping("/v3/uploads/redrive")
+    public StatusMessage redriveUploads() throws IOException {
+        getAuthenticatedSession(Roles.SUPERADMIN);
+
+        UploadRedriveList redriveList = parseJson(UploadRedriveList.class);
+        uploadService.redriveUpload(redriveList);
+
+        return REDRIVE_COMPLETE_MSG;
     }
     
     @GetMapping("/v3/uploads/{uploadId}")

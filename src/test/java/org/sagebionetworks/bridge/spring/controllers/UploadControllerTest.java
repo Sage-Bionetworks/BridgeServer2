@@ -25,6 +25,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 import org.mockito.ArgumentCaptor;
@@ -46,12 +47,14 @@ import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.Metrics;
 import org.sagebionetworks.bridge.models.RequestInfo;
+import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadCompletionClient;
+import org.sagebionetworks.bridge.models.upload.UploadRedriveList;
 import org.sagebionetworks.bridge.models.upload.UploadSession;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStatus;
@@ -66,6 +69,8 @@ public class UploadControllerTest extends Mockito {
     private static final String RECORD_ID = "record-id";
     private static final String UPLOAD_ID = "upload-id";
     private static final String VALIDATION_ERROR_MESSAGE = "There was a validation error";
+    private static final String UPLOAD_ID_1 = "upload1";
+    private static final String UPLOAD_ID_2 = "upload2";
 
     @Spy
     @InjectMocks
@@ -223,6 +228,26 @@ public class UploadControllerTest extends Mockito {
     }
 
     @Test
+    public void redriveUploads() throws Exception {
+        // Mock session
+        doReturn(new UserSession()).when(controller).getAuthenticatedSession(SUPERADMIN);
+
+        // Mock request body.
+        mockRequestBody(mockRequest, createJson(
+                "{'uploadIds': ['upload1', 'upload2']}"));
+
+        // Execute and validate
+        StatusMessage message = controller.redriveUploads();
+        assertSame(message, UploadController.REDRIVE_COMPLETE_MSG);
+
+        // Verify service call.
+        ArgumentCaptor<UploadRedriveList> svcInputCaptor = ArgumentCaptor.forClass(UploadRedriveList.class);
+        verify(mockUploadService).redriveUpload(svcInputCaptor.capture());
+        UploadRedriveList svcInput = svcInputCaptor.getValue();
+        assertEquals(svcInput.getUploadIds(), ImmutableList.of(UPLOAD_ID_1, UPLOAD_ID_2));
+    }
+
+    @Test
     public void uploadCompleteAcceptsConsentedUser() throws Exception {
         // setup controller
         doReturn(mockConsentedUserSession).when(controller).getAuthenticatedSession();
@@ -241,7 +266,7 @@ public class UploadControllerTest extends Mockito {
         verify(mockUploadService).getUploadValidationStatus(UPLOAD_ID);
         verify(mockUploadService, never()).pollUploadValidationStatusUntilComplete(any());
     }
-    
+
     @Test
     public void differentUserInSameAppCannotCompleteUpload() throws Exception {
         // setup controller
