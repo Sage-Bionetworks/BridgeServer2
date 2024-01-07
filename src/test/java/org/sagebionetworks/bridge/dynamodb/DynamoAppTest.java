@@ -129,6 +129,7 @@ public class DynamoAppTest {
                 OAuthProviderTest.CALLBACK_URL, null);
         app.getOAuthProviders().put("myProvider", oauthProvider);
 
+        app.setAdherenceReportEnabled(true);
         app.setAutomaticCustomEvents(ImmutableMap.of("3-days-after-enrollment", "P3D"));
         app.setVersion(2L);
         app.setMinSupportedAppVersions(ImmutableMap.<String, Integer>builder().put(OperatingSystem.IOS, 2).build());
@@ -139,6 +140,7 @@ public class DynamoAppTest {
 
         final JsonNode node = BridgeObjectMapper.get().valueToTree(app);
 
+        assertTrue(node.get("adherenceReportEnabled").booleanValue());
         assertTrue(node.get("autoVerificationEmailSuppressed").booleanValue());
         assertEqualsAndNotNull(app.getConsentNotificationEmail(), node.get("consentNotificationEmail").asText());
         assertEqualsAndNotNull(app.getExporter3Configuration(), JsonUtils.asEntity(node,
