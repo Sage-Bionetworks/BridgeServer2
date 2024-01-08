@@ -68,6 +68,7 @@ public final class DynamoApp implements App {
     private String shortName;
     private String sponsorName;
     private String identifier;
+    private boolean adherenceReportEnabled;
     private Map<String, String> automaticCustomEvents;
     private boolean autoVerificationEmailSuppressed;
     private Exporter3Configuration exporter3Configuration;
@@ -183,6 +184,16 @@ public final class DynamoApp implements App {
 
     public void setVersion(Long version) {
         this.version = version;
+    }
+
+    @Override
+    public boolean isAdherenceReportEnabled() {
+        return adherenceReportEnabled;
+    }
+
+    @Override
+    public void setAdherenceReportEnabled(boolean adherenceReportEnabled) {
+        this.adherenceReportEnabled = adherenceReportEnabled;
     }
 
     /** {@inheritDoc} */
@@ -671,7 +682,7 @@ public final class DynamoApp implements App {
     
     @Override
     public int hashCode() {
-        return Objects.hash(name, shortName, sponsorName, identifier, automaticCustomEvents,
+        return Objects.hash(name, shortName, sponsorName, identifier, adherenceReportEnabled, automaticCustomEvents,
                 autoVerificationEmailSuppressed, exporter3Configuration, exporter3Enabled, participantIpLockingEnabled, appIdExcludedInExport,
                 supportEmail, synapseDataAccessTeamId, synapseProjectId, technicalEmail, usesCustomExportSchedule,
                 uploadMetadataFieldDefinitions, uploadValidationStrictness, consentNotificationEmail,
@@ -692,6 +703,7 @@ public final class DynamoApp implements App {
         DynamoApp other = (DynamoApp) obj;
 
         return (Objects.equals(identifier, other.identifier)
+                && Objects.equals(adherenceReportEnabled, other.adherenceReportEnabled)
                 && Objects.equals(automaticCustomEvents, other.automaticCustomEvents)
                 && Objects.equals(autoVerificationEmailSuppressed, other.autoVerificationEmailSuppressed)
                 && Objects.equals(exporter3Configuration, other.exporter3Configuration)
@@ -743,7 +755,7 @@ public final class DynamoApp implements App {
     @Override
     public String toString() {
         return String.format(
-                "DynamoApp [name=%s, shortName=%s, active=%s, sponsorName=%s, identifier=%s, automaticCustomEvents=%s"
+                "DynamoApp [name=%s, shortName=%s, active=%s, sponsorName=%s, identifier=%s, adherenceReportEnabled=%b, automaticCustomEvents=%s"
                         + "autoVerificationEmailSuppressed=%b, minAgeOfConsent=%s, exporter3Configuration=%s, exporter3Enabled=%b, participantIpLockingEnabled=%b, "
                         + "appIdExcludedInExport=%b, supportEmail=%s, synapseDataAccessTeamId=%s, synapseProjectId=%s, "
                         + "technicalEmail=%s, uploadValidationStrictness=%s, consentNotificationEmail=%s, "
@@ -755,7 +767,7 @@ public final class DynamoApp implements App {
                         + "phoneSignInEnabled=%s, accountLimit=%s, oauthProviders=%s, appleAppLinks=%s, androidAppLinks=%s, "
                         + "reauthenticationEnabled=%s, autoVerificationPhoneSuppressed=%s, verifyChannelOnSignInEnabled=%s, "
                         + "defaultTemplates=%s]",
-                name, shortName, active, sponsorName, identifier, automaticCustomEvents,
+                name, shortName, active, sponsorName, identifier, adherenceReportEnabled, automaticCustomEvents,
                 autoVerificationEmailSuppressed, minAgeOfConsent, exporter3Configuration, exporter3Enabled, participantIpLockingEnabled, appIdExcludedInExport,
                 supportEmail, synapseDataAccessTeamId, synapseProjectId, technicalEmail, uploadValidationStrictness,
                 consentNotificationEmail, consentNotificationEmailVerified, version, profileAttributes, taskIdentifiers,

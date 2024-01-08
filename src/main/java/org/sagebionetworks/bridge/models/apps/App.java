@@ -65,6 +65,10 @@ public interface App extends BridgeEntity {
     Long getVersion();
     void setVersion(Long version);
 
+    /** True if this app should run adherence reports. */
+    boolean isAdherenceReportEnabled();
+    void setAdherenceReportEnabled(boolean enabled);
+
     /**
      * Custom events that should be generated for participant upon enrollment. The key in this map is the eventKey, and
      * the value is the offset after the enrollment event (eg, "P1D" for one day after enrollment, "P2W" for 2 weeks
