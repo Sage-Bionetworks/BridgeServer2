@@ -142,7 +142,11 @@ public class GenericUploadFormatHandler implements UploadValidationHandler {
         // Fall back to getting by schema.
         String schemaId = JsonUtils.asText(infoJson, UploadUtil.FIELD_ITEM);
         Integer schemaRev = JsonUtils.asInt(infoJson, UploadUtil.FIELD_SCHEMA_REV);
-        if (StringUtils.isNotBlank(schemaId) && schemaRev != null) {
+        if (schemaRev == null) {
+            // fall back to revision 1
+            schemaRev = 1;
+        }
+        if (StringUtils.isNotBlank(schemaId)) {
             // Note that if there's no schema, we treat this like schemaless.
             return uploadSchemaService.getUploadSchemaByIdAndRevNoThrow(appId, schemaId, schemaRev);
         } else {
