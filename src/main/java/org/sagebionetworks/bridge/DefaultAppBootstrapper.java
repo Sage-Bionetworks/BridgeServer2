@@ -7,6 +7,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
+import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.config.Environment.PROD;
 import static org.sagebionetworks.bridge.models.accounts.SharingScope.NO_SHARING;
 
@@ -133,6 +134,17 @@ public class DefaultAppBootstrapper implements ApplicationListener<ContextRefres
         App shared = createApp(SHARED_APP_ID, "Shared App", null);
         if (bootstrapUserConfigured && bridgeConfig.getEnvironment() != Environment.PROD) {
             createAccount(shared, admin);    
+        }
+
+        // Make worker account.
+        String workerEmail = bridgeConfig.get("worker.email");
+        String workerPassword = bridgeConfig.get("worker.password");
+        if (workerEmail != null && workerPassword != null) {
+            Account worker = Account.create();
+            worker.setEmail(workerEmail);
+            worker.setPassword(workerPassword);
+            worker.setRoles(Sets.newHashSet(WORKER));
+            createAccount(app, worker);
         }
     }
     
