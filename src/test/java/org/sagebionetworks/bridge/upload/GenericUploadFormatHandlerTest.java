@@ -115,6 +115,53 @@ public class GenericUploadFormatHandlerTest {
     }
 
     @Test
+    public void testNoSchemaRev() throws Exception {
+
+        // mock schema service
+        UploadFieldDefinition sanitizeAttachmentTxtField = new UploadFieldDefinition.Builder()
+                .withName("sanitize____attachment.txt").withType(UploadFieldType.ATTACHMENT_V2)
+                .withFileExtension(".txt").withMimeType("text/plain").build();
+        UploadSchema schema = UploadSchema.create();
+        schema.setSchemaId(SCHEMA_ID);
+        schema.setName(SCHEMA_NAME);
+        schema.setRevision(1);
+        schema.setFieldDefinitions(ImmutableList.of(sanitizeAttachmentTxtField));
+        when(mockSchemaService.getUploadSchemaByIdAndRevNoThrow(TEST_APP_ID, SCHEMA_ID, 1)).thenReturn(schema);
+
+        // Setup inputs.
+        File sanitizeAttachmentTxtFile = makeFileWithContent("sanitize!@#$attachment.txt",
+                "Sanitize my filename");
+        Map<String, File> fileMap = ImmutableMap.of("sanitize!@#$attachment.txt", sanitizeAttachmentTxtFile);
+
+        UploadValidationContext context = makeContextWithContent(fileMap);
+        ObjectNode info = makeInfoJson();
+        info.remove(UploadUtil.FIELD_SCHEMA_REV);
+        context.setInfoJsonNode(info);
+
+        // execute and validate
+        handler.handle(context);
+        // Validate common health data record props.
+        HealthDataRecord record = context.getHealthDataRecord();
+        assertEquals(record.getCreatedOn().longValue(), CREATED_ON_MILLIS);
+        assertEquals(record.getCreatedOnTimeZone(), CREATED_ON_TIMEZONE);
+        assertEquals(record.getSchemaId(), SCHEMA_ID);
+        assertEquals(record.getSchemaRevision().intValue(), 1);
+
+        JsonNode dataMap = context.getHealthDataRecord().getData();
+        assertEquals(dataMap.size(), 1);
+        assertEquals(dataMap.get("sanitize____attachment.txt").textValue(), ATTACHMENT_ID);
+
+        ArgumentCaptor<Map> sanitizedFileMapCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(mockUploadFileHelper).findValueForField(eq(UPLOAD_ID), sanitizedFileMapCaptor.capture(),
+                eq(sanitizeAttachmentTxtField), any());
+
+        Map<String, File> sanitizedFileMap = sanitizedFileMapCaptor.getValue();
+        assertEquals(sanitizedFileMap.size(), 1);
+        assertSame(sanitizedFileMap.get("sanitize____attachment.txt"), sanitizeAttachmentTxtFile);
+    }
+
+    
+    @Test
     public void withDataFilename() throws Exception {
         // Same test as above, excecpt with the data filename parameter.
 
