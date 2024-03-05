@@ -88,6 +88,8 @@ public class UploadValidationTask implements Runnable {
         // Create temp dir.
         File tempDir = fileHelper.createTempDir();
         context.setTempDir(tempDir);
+        String tempDirPath = tempDir.getAbsolutePath();
+        logger.info("Created temp dir " + tempDirPath);
 
         Stopwatch stopwatch = Stopwatch.createUnstarted();
         for (UploadValidationHandler oneHandler : handlerList) {
@@ -144,8 +146,9 @@ public class UploadValidationTask implements Runnable {
         // Finally, delete the temp dir.
         try {
             fileHelper.deleteDirRecursively(tempDir);
+            logger.info("Deleted temp dir " + tempDirPath);
         } catch (IOException ex) {
-            logger.error("Error deleting temp dir " + tempDir.getAbsolutePath() + ": " + ex.getMessage(), ex);
+            logger.error("Error deleting temp dir " + tempDirPath + ": " + ex.getMessage(), ex);
         }
     }
 
