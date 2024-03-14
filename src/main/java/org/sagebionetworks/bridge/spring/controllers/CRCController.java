@@ -132,7 +132,7 @@ public class CRCController extends BaseController {
     static final String SHIPMENT_REPORT_KEY_ORDER_ID = "orderNumber";
     static final String CUIMC_USERNAME = "A5hfO-tdLP_eEjx9vf2orSd5";
     static final String SYN_USERNAME = "bridgeit+crc@sagebase.org";
-    static final String TEST_USERNAME = "bridge-testing+crc@sagebase.org";
+    static final String TEST_USERNAME = "testing+crc@bridgedigital.health";
     static final String SELECTED_TAG = AccountStates.SELECTED.name().toLowerCase();
     static final String TEST_TAG = BridgeConstants.TEST_USER_GROUP;
     static final String UPDATE_MSG = "Participant updated.";
@@ -732,7 +732,7 @@ public class CRCController extends BaseController {
             throw new NotAuthenticatedException();
         }
         SignIn.Builder signInBuilder = new SignIn.Builder().withAppId(appId).withPassword(credentials[1]);
-        if (credentials[0].contains("@sagebase.org")) {
+        if (credentials[0].contains("@sagebase.org") || credentials[0].contains("@bridgedigital.health")) {
             signInBuilder.withEmail(credentials[0]);
         } else {
             signInBuilder.withExternalId(credentials[0]);
