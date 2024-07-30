@@ -51,7 +51,7 @@ common: &default_settings
 
   # The log file path.
   # Default same directory as newrelic.jar
-  log_file_path: /var/log/tomcat8
+  log_file_path: /var/log/tomcat
 
   # New Relic Real User Monitoring gives you insight into the performance real users are
   # experiencing with your website. This is accomplished by measuring the time it takes for
