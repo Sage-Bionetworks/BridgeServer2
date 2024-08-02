@@ -29,6 +29,6 @@ deploy:
     develop: org-sagebridge-bridgeserver2-deployment-devdevelop
     uat: org-sagebridge-bridgeserver2-deployment-devstaging
     prod: org-sagebridge-bridgeserver2-deployment-prod
-  zip-file: target/BridgeServer2-2.0.war
+  zip-file: target/BridgeServer2-2.1-SNAPSHOT.war
   on:
     all_branches: true
