@@ -21,8 +21,8 @@
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
         
-        <!-- Elastic Beanstalk instances are currently on 8.5.32. -->
-        <tomcat.version>8.5.32</tomcat.version>
+        <!-- Elastic Beanstalk instances are currently on 9.0.87. -->
+        <tomcat.version>9.0.87</tomcat.version>
     </properties>
 
     <parent>
