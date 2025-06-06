@@ -61,3 +61,6 @@ log_to_stdout: false
 #  environment: production
 #  service: login service
 #  team: alpha-team
+
+distributed_tracing:
+  enabled: true
