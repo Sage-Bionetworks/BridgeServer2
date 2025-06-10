@@ -12,8 +12,8 @@
         <apache.http.version>4.5.13</apache.http.version>
         <aws.version>1.12.261</aws.version>
         <hibernate.version>5.4.27.Final</hibernate.version>
-        <jackson.version>2.12.7</jackson.version>
-        <jackson.databind.version>2.12.7.2</jackson.databind.version>
+        <jackson.version>2.13.5</jackson.version>
+        <jackson.databind.version>2.13.5</jackson.databind.version>
         <java.version>1.8</java.version>
         <logback.version>1.2.13</logback.version>
         <log4j.version>2.17.1</log4j.version>
